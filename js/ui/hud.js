@@ -170,6 +170,7 @@
       this.lastPx = {};
       document.body.classList.toggle('focus', !!B.Settings.get().focusMode);
       $('wall-date').textContent = B.Calendar.dayInfo(g.day).label;
+      this.applyNarrativeSkin(g);
       B.Screens.show('game');
       this.select('INDX');
     },
@@ -187,6 +188,7 @@
     dayStart(g) {
       const d = B.Calendar.dayInfo(g.day);
       $('wall-date').textContent = d.label;
+      this.applyNarrativeSkin(g);
       const sep = { kind: 'sep', text: `— ${d.label} · OPENING BELL —` };
       this.feed.wire.unshift(sep);
       this.feed.chirp.unshift(sep);
@@ -197,6 +199,24 @@
     dayEnd() {
       $('mc-banner').hidden = true;
       this.render(true);
+    },
+
+    applyNarrativeSkin(g) {
+      const body = document.body;
+      if (!g || g.mode.kind !== 'story') {
+        body.dataset.act = 'endless';
+        body.dataset.heat = 'low';
+        $('wall-act').textContent = 'ENDLESS MARKET';
+        if (B.StoryArt) B.StoryArt.draw($('story-art'), null);
+        return;
+      }
+      const act = g.day < 3 ? 1 : g.day < 7 ? 2 : g.day < 11 ? 3 : 4;
+      const names = ['MELT-UP', 'TREMORS', 'CONTAGION', 'RECKONING'];
+      body.dataset.act = String(act);
+      body.dataset.heat = g.mode.S.m.heat >= 70 ? 'high' : g.mode.S.m.heat >= 45 ? 'watch' : 'low';
+      body.dataset.stability = g.mode.S.m.stability < 30 ? 'critical' : g.mode.S.m.stability < 55 ? 'fragile' : 'stable';
+      $('wall-act').textContent = `ACT ${['I', 'II', 'III', 'IV'][act - 1]} · ${names[act - 1]}`;
+      if (B.StoryArt) B.StoryArt.draw($('story-art'), g);
     },
 
     // ---- feed ----
@@ -242,7 +262,8 @@
       if (!list.length) { $('feed-list').innerHTML = '<div class="empty">Nothing yet.</div>'; return; }
       $('feed-list').innerHTML = list.slice(0, 80).map((n) => {
         if (n.kind === 'sep') return `<div class="news sep">${B.esc(n.text)}</div>`;
-        return `<div class="news ${n.kind}${n.big ? ' big' : ''}"><div class="meta"><span>${B.Calendar.fmtTime(n.t || 0)}</span><span class="src">${B.esc(n.src)}</span></div><div class="txt">${B.esc(n.text)}</div></div>`;
+        const channel = n.kind === 'wire' ? 'WIRE' : n.kind === 'chirp' ? 'SOCIAL' : 'DIRECT';
+        return `<div class="news ${n.kind}${n.big ? ' big' : ''}"><div class="meta"><span class="channel">${channel}</span><span>${B.Calendar.fmtTime(n.t || 0)}</span><span class="src">${B.esc(n.src)}</span></div><div class="txt">${B.esc(n.text)}</div></div>`;
       }).join('');
     },
 
@@ -376,6 +397,7 @@
       const g = this.g;
       if (!g) return;
       const m = g.market, b = g.broker;
+      if (force) this.applyNarrativeSkin(g);
       const s = g.stress.level();
       // Price display lag under heavy stress: sometimes the screen just doesn't update.
       const lagging = !force && g.running && s > 0.85 && Math.random() < (s - 0.85) * 2;
@@ -469,12 +491,13 @@
         if (prev != null && Math.abs(tk.last / prev - 1) > 0.004) fl = tk.last > prev ? ' flash-up' : ' flash-down';
         this.lastPx[tk.sym] = tk.last;
         const q = b.posQty(tk.sym);
-        const dot = q ? `<span class="pos-dot" style="background:${q > 0 ? 'var(--up)' : 'var(--down)'}"></span>` : '';
+        const dot = q ? `<span class="pos-dot ${q > 0 ? 'long' : 'short'}"></span>` : '';
         const ban = b.rules.shortBan.includes(tk.sector) ? '<span class="ban-tag">NO SHORT</span>' : '';
         const halted = m.status === 'open' && tk.haltUntil > m.t ? ' halted' : '';
+        const arrow = ch > 0.00005 ? '▲' : ch < -0.00005 ? '▼' : '•';
         return `<div class="wl-row${tk.sym === this.sel ? ' sel' : ''}${fl}${halted}" data-sym="${tk.sym}">
           <div class="wl-sym">${tk.sym}${dot}${ban}</div><div class="wl-px">${F.price(tk.last)}</div>
-          <div class="wl-name">${B.esc(tk.name)}</div><div class="wl-chg ${F.cls(ch)}">${F.pct(ch)}</div></div>`;
+          <div class="wl-name">${B.esc(tk.name)}</div><div class="wl-chg ${F.cls(ch)}"><b>${arrow}</b> ${F.pct(ch)}</div></div>`;
       }).join('');
       $('watch-list').innerHTML = html;
     },

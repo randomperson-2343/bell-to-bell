@@ -6,21 +6,21 @@
 
   const P = {
     // neutrals
-    ink: '#1b1a21', ink2: '#2e2c38', slate: '#454455', slate2: '#5d5c6e',
-    grey: '#7b7a8a', grey2: '#9a99a6',
+    ink: '#171922', ink2: '#272a36', slate: '#3c4354', slate2: '#586176',
+    grey: '#798296', grey2: '#9ba3b1',
     // room
-    putty: '#b9b3a6', putty2: '#cfc9bb', bone: '#e4dfd2', white: '#f4f1e8',
-    carpetD: '#3a4a4a', carpet: '#4d6260', carpet2: '#617874',
-    deskD: '#6b5c4c', desk: '#8a7862', desk2: '#a4917a',
+    putty: '#aaa89f', putty2: '#c7c2b5', bone: '#ded8ca', white: '#f2eee3',
+    carpetD: '#33454d', carpet: '#486069', carpet2: '#60767c',
+    deskD: '#5f5047', desk: '#7b695a', desk2: '#9b8771',
     // hardware
-    plasticD: '#8f8878', plastic: '#b3ab97', plastic2: '#cdc5ae',
-    screenD: '#0d1414', screen: '#14201e', screenGlow: '#1d2e2a',
+    plasticD: '#847f79', plastic: '#a8a39a', plastic2: '#c8c3b7',
+    screenD: '#0c1417', screen: '#122024', screenGlow: '#1c3031',
     // signal
-    phosphor: '#7fd8a0', phosphorD: '#4a9c6c',
-    amber: '#e0b060', amberD: '#a07a38',
-    crimson: '#c2495a', crimsonD: '#8a2f3d',
-    jade: '#4fae7a', jadeD: '#2f7a52',
-    sky: '#6f9fc9', violet: '#9b86c4'
+    phosphor: '#79cfad', phosphorD: '#4b9a81',
+    amber: '#d2a85c', amberD: '#94733d',
+    crimson: '#bd5a66', crimsonD: '#843a46',
+    jade: '#58a982', jadeD: '#36755b',
+    sky: '#739bc4', violet: '#9688b6'
   };
 
   // Single-character keys for the sprite DSL. '.' is always transparent.

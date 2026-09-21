@@ -79,7 +79,7 @@
       wealth: (c) => c.wealth
     },
     {
-      id: 'depression', icon: '&#127786;', title: 'Depression 20XX', hint: 'Systemic stability collapsed. Everyone lost.', lockedHint: 'What happens when nobody catches the fall?',
+      id: 'depression', icon: '&#127786;', title: 'The Long Downturn', hint: 'Systemic stability collapsed. Everyone lost.', lockedHint: 'What happens when nobody catches the fall?',
       test: (c) => c.S.m.stability <= 25,
       headline: 'Nation Enters Worst Downturn in Ninety Years',
       deck: 'Unemployment hits 14% as credit freezes and datacenters go dark.',
