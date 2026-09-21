@@ -169,6 +169,7 @@
       this.updateBadge();
       this.lastPx = {};
       document.body.classList.toggle('focus', !!B.Settings.get().focusMode);
+      $('wall-date').textContent = B.Calendar.dayInfo(g.day).label;
       B.Screens.show('game');
       this.select('INDX');
     },
@@ -379,9 +380,10 @@
       // Price display lag under heavy stress: sometimes the screen just doesn't update.
       const lagging = !force && g.running && s > 0.85 && Math.random() < (s - 0.85) * 2;
 
-      // wall
+      // wall. Before the bell the market clock is still parked at yesterday's
+      // close, so show the time the day is about to start from instead.
       const clock = $('tb-clock');
-      clock.textContent = B.Calendar.fmtTime(m.t, true);
+      clock.textContent = B.Calendar.fmtTime(!g.running && m.status === 'pre' ? 0 : m.t, true);
       clock.className = 'wall-clock' + (m.t > 375 && g.running ? ' final' : m.t > 330 && g.running ? ' late' : '');
       const st = $('tb-status');
       if (!g.running) { st.textContent = m.status === 'pre' ? 'PRE-MARKET' : 'CLOSED'; st.className = 'wall-plate status-closed'; }

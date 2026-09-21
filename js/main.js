@@ -38,6 +38,36 @@
       g.begin();
     },
 
+    // Night skyline behind the menu, drawn on the same palette as the cutscenes.
+    // Deterministic, so it does not shimmer when the window is resized.
+    skyline() {
+      const cv = $('menu-bg');
+      if (!cv || !B.Pixel) return;
+      const V = { w: 320, h: 180 };
+      const { ctx } = B.Pixel.fit(cv, V.w, V.h);
+      const X = B.Pixel, P = B.Pal;
+      X.rect(ctx, 0, 0, V.w, V.h, P.ink);
+      X.gradient(ctx, 0, 0, V.w, 150, P.ink2, P.ink, 8);
+      X.speckle(ctx, 0, 0, V.w, 120, P.slate, 0.0025, 4);
+      // two silhouetted layers for depth, kept low so the menu copy stays readable
+      for (let layer = 0; layer < 2; layer++) {
+        const base = layer ? V.h : V.h - 12;
+        const col = layer ? P.ink : P.ink2;
+        const lit = layer ? P.amberD : P.slate;
+        for (let i = 0; i < 17; i++) {
+          const bw = 13 + ((i * 23 + layer * 7) % 11);
+          const bh = (layer ? 16 : 12) + ((i * 37 + layer * 19) % (layer ? 34 : 26));
+          const bx = i * 20 - 6 + layer * 7;
+          X.rect(ctx, bx, base - bh, bw, bh, col);
+          for (let wy = 4; wy < bh - 3; wy += 6) {
+            for (let wx = 3; wx < bw - 3; wx += 5) {
+              if (((i * 5 + wy * 3 + wx + layer) % 7) < 1) X.rect(ctx, bx + wx, base - bh + wy, 2, 2, lit);
+            }
+          }
+        }
+      }
+    },
+
     tape() {
       const bits = B.TICKERS.filter((t) => t.sector !== 'fear').map((t) => {
         const ch = (Math.random() - 0.45) * 0.04;
@@ -53,7 +83,9 @@
     B.Settings.apply();
     B.UI.init();
     Main.tape();
+    Main.skyline();
     Main.refreshMenu();
+    window.addEventListener('resize', () => Main.skyline());
 
     // The first click is also what unlocks WebAudio in every browser.
     $('btn-boot').addEventListener('click', () => {
