@@ -9,14 +9,14 @@
   B.Calendar = {
     dayInfo(d) {
       const week = Math.floor(d / 5), dow = d % 5;
-      // 2029 is only used for its weekday layout (Oct 1 is a Monday); the year is always shown as 20XX.
+      // 2029 is used only for its weekday layout. The fiction intentionally omits a year.
       const date = new Date(2029, 9, 1 + week * 7 + dow);
       const m = date.getMonth(), dd = date.getDate();
       return {
         dow,
         short: `${MON[m]} ${dd}`,
-        label: `${DOW[dow]}, ${MON[m]} ${dd}, 20XX`,
-        long: `${DOWL[dow]}, ${MONL[m]} ${dd}, 20XX`
+        label: `${DOW[dow]}, ${MON[m]} ${dd}`,
+        long: `${DOWL[dow]}, ${MONL[m]} ${dd}`
       };
     },
     fmtTime(t, withSec) {

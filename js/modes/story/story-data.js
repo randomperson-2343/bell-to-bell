@@ -123,7 +123,7 @@
       calls: (S) => (S.choices.c2 ? [] : [{
         t: 150, scripted: true, kind: 'choice', choiceId: 'c2', timer: 22,
         from: 'Perry Nakash', role: 'Senior Analyst, Meridian Ratings',
-        text: 'I shouldn\'t be calling you. The CASCADE committee met this morning. We are putting the whole 20XX vintage on downgrade watch. It goes public Monday. I just... someone should know.',
+        text: 'I shouldn\'t be calling you. The CASCADE committee met this morning. We are putting the current vintage on downgrade watch. It goes public Monday. I just... someone should know.',
         options: [
           { id: 'trade', label: 'Thank him. Then go short the stack.' },
           { id: 'ignore', label: '"Perry, hang up. I never took this call."' },
@@ -163,7 +163,7 @@
     {
       title: 'The Grid',
       brief: () => [
-        'Three regional grid operators rejected gigawatt-scale interconnect requests overnight. Datacenters that were promised power in 20XX are now being told 20XX plus four years.',
+        'Three regional grid operators rejected gigawatt-scale interconnect requests overnight. Datacenters promised power this decade are now being told to wait another four years.',
         '<b>Sen. Marcus Thorne</b>, who chairs the Senate Markets Committee, wants fifteen minutes with you after the close. His staff called twice. Nobody on the floor knows why he asked for you specifically.'
       ],
       scen: (S) => ({
@@ -354,7 +354,7 @@
           ev(40, 'Executives tell lawmakers the CASCADE ratings were "obtained in good faith"', [['sector', 'bank', -0.02]]),
           ev(120, 'Sen. Thorne: "You sold a circle and called it a AAA bond"', [['sector', 'bank', -0.03, 0.3]], { big: true }),
           ev(215, 'Stabilization Act draft released; vote expected tomorrow', [['market', '', 0.02, 0.5]], { rumor: R(12, 'whip count on the stabilization bill is closer than anyone admits', '@MacroMaven') }),
-          ev(330, 'Meridian Ratings withdraws ratings on the entire 20XX CASCADE vintage', [['sector', 'dc', -0.05 * cm(S), 0.3], ['sector', 'bank', -0.03 * cm(S)]], { big: true })
+          ev(330, 'Meridian Ratings withdraws ratings on the entire current CASCADE vintage', [['sector', 'dc', -0.05 * cm(S), 0.3], ['sector', 'bank', -0.03 * cm(S)]], { big: true })
         ]
       })
     },

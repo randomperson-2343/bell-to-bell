@@ -120,7 +120,14 @@
         const xx = Math.round(x(i));
         ctx.beginPath(); ctx.moveTo(Math.round(xx) + 0.5, y(c.h)); ctx.lineTo(Math.round(xx) + 0.5, y(c.l)); ctx.stroke();
         const top = y(Math.max(c.o, c.c)), bot = y(Math.min(c.o, c.c));
-        ctx.fillRect(Math.round(xx - cwid / 2), Math.round(top), Math.max(1, Math.round(cwid)), Math.max(1, Math.round(bot - top)));
+        const rx = Math.round(xx - cwid / 2), ry = Math.round(top);
+        const rw = Math.max(1, Math.round(cwid)), rh = Math.max(2, Math.round(bot - top));
+        if (upc && rw > 2) {
+          ctx.fillStyle = P.screen;
+          ctx.fillRect(rx, ry, rw, rh);
+          ctx.strokeStyle = col;
+          ctx.strokeRect(rx + 0.5, ry + 0.5, Math.max(1, rw - 1), Math.max(1, rh - 1));
+        } else ctx.fillRect(rx, ry, rw, rh);
       }
       ctx.globalAlpha = 1;
 
@@ -147,7 +154,7 @@
       ctx.fillRect(plotW + 1, ly - 9, padR - 2, 18);
       ctx.fillStyle = P.ink;
       ctx.font = 'bold 11px ' + MONO;
-      ctx.fillText(B.fmt.price(tk.last), plotW + 5, ly + 4);
+      ctx.fillText((upDay ? '▲ ' : '▼ ') + B.fmt.price(tk.last), plotW + 5, ly + 4);
     }
   };
 })(window.BTB);

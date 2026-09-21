@@ -7,44 +7,44 @@
    ============================================================ */
 :root {
   /* --- neutrals --- */
-  --c-ink: #1b1a21;
-  --c-ink2: #2e2c38;
-  --c-slate: #454455;
-  --c-slate2: #5d5c6e;
-  --c-grey: #7b7a8a;
-  --c-grey2: #9a99a6;
+  --c-ink: #171922;
+  --c-ink2: #272a36;
+  --c-slate: #3c4354;
+  --c-slate2: #586176;
+  --c-grey: #798296;
+  --c-grey2: #9ba3b1;
 
   /* --- room --- */
-  --c-putty: #b9b3a6;
-  --c-putty2: #cfc9bb;
-  --c-bone: #e4dfd2;
-  --c-white: #f4f1e8;
-  --c-carpet-d: #3a4a4a;
-  --c-carpet: #4d6260;
-  --c-carpet2: #617874;
-  --c-desk-d: #6b5c4c;
-  --c-desk: #8a7862;
-  --c-desk2: #a4917a;
+  --c-putty: #aaa89f;
+  --c-putty2: #c7c2b5;
+  --c-bone: #ded8ca;
+  --c-white: #f2eee3;
+  --c-carpet-d: #33454d;
+  --c-carpet: #486069;
+  --c-carpet2: #60767c;
+  --c-desk-d: #5f5047;
+  --c-desk: #7b695a;
+  --c-desk2: #9b8771;
 
   /* --- hardware --- */
-  --c-plastic-d: #8f8878;
-  --c-plastic: #b3ab97;
-  --c-plastic2: #cdc5ae;
-  --c-screen-d: #0d1414;
-  --c-screen: #14201e;
-  --c-screen-glow: #1d2e2a;
+  --c-plastic-d: #847f79;
+  --c-plastic: #a8a39a;
+  --c-plastic2: #c8c3b7;
+  --c-screen-d: #0c1417;
+  --c-screen: #122024;
+  --c-screen-glow: #1c3031;
 
   /* --- signal --- */
-  --c-phosphor: #7fd8a0;
-  --c-phosphor-d: #4a9c6c;
-  --c-amber: #e0b060;
-  --c-amber-d: #a07a38;
-  --c-crimson: #c2495a;
-  --c-crimson-d: #8a2f3d;
-  --c-jade: #4fae7a;
-  --c-jade-d: #2f7a52;
-  --c-sky: #6f9fc9;
-  --c-violet: #9b86c4;
+  --c-phosphor: #79cfad;
+  --c-phosphor-d: #4b9a81;
+  --c-amber: #d2a85c;
+  --c-amber-d: #94733d;
+  --c-crimson: #bd5a66;
+  --c-crimson-d: #843a46;
+  --c-jade: #58a982;
+  --c-jade-d: #36755b;
+  --c-sky: #739bc4;
+  --c-violet: #9688b6;
 
   /* --- semantic --- */
   --bg: var(--c-ink);
@@ -60,8 +60,13 @@
   --violet: var(--c-violet);
   --panel: var(--c-screen);
   --panel-2: var(--c-screen-glow);
-  --up-dim: rgba(79, 174, 122, 0.16);
-  --down-dim: rgba(194, 73, 90, 0.16);
+  --up-dim: rgba(88, 169, 130, 0.16);
+  --down-dim: rgba(189, 90, 102, 0.16);
+
+  /* Story-state colours. The HUD updates these without tying the fiction to a year. */
+  --act-accent: var(--c-amber);
+  --act-wash: rgba(210, 168, 92, 0.08);
+  --institution: var(--c-sky);
 
   /* --- type --- */
   --pixel: "Silkscreen", "Press Start 2P", "Courier New", monospace;

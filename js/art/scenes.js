@@ -294,6 +294,193 @@
     }
   }
 
+  // Story-specific broadcast tableaux. These use contemporary systems imagery
+  // without naming a calendar year: fibre maps, server racks, hearings, queues.
+  function briefingTableau(ctx, day, p) {
+    if ([3, 5, 8, 9, 11, 12, 13, 14].indexOf(day) < 0) return false;
+    X.rect(ctx, 0, 0, V.w, V.h, P.ink);
+    X.gradient(ctx, 0, 0, V.w, 138, P.ink2, P.screenD, 7);
+    X.rect(ctx, 0, 0, V.w, 13, P.slate);
+    X.text(ctx, day >= 11 ? 'PUBLIC FEED' : 'OVERNIGHT WIRE', 8, 3, P.bone);
+    X.rect(ctx, 265, 3, 46, 7, day >= 9 ? P.crimsonD : P.sky);
+    X.text(ctx, day >= 9 ? 'LIVE' : 'UPDATE', 288, 3, P.white, { align: 'center' });
+
+    if (day === 3) {
+      // Kavro Strait: a live shipping and cable map.
+      X.gradient(ctx, 0, 13, V.w, 125, P.carpetD, P.screen, 6);
+      X.dither(ctx, 0, 13, 78, 125, P.slate, P.carpet, 0.45);
+      X.dither(ctx, 250, 13, 70, 125, P.slate, P.carpet, 0.5);
+      ctx.strokeStyle = P.sky; ctx.setLineDash([3, 3]);
+      ctx.beginPath(); ctx.moveTo(48, 109); ctx.bezierCurveTo(112, 64, 195, 102, 279, 41); ctx.stroke(); ctx.setLineDash([]);
+      for (let i = 0; i < 3; i++) {
+        const x = 123 + i * 35 + Math.round(p * 9);
+        X.rect(ctx, x, 66 + i * 12, 19, 4, i === 1 ? P.crimson : P.bone);
+        X.rect(ctx, x + 5, 62 + i * 12, 8, 4, P.slate2);
+      }
+      X.box(ctx, 87, 21, 146, 21);
+      X.text(ctx, 'KAVRO STRAIT', 160, 28, P.amber, { align: 'center', spacing: 2 });
+    } else if (day === 5) {
+      // Grid capacity and datacenter demand on the same schematic.
+      X.rect(ctx, 0, 104, V.w, 34, P.carpetD);
+      for (let i = 0; i < 4; i++) {
+        const x = 24 + i * 73;
+        X.rect(ctx, x, 43, 3, 61, P.slate2);
+        X.rect(ctx, x - 12, 55, 27, 2, P.sky);
+        ctx.strokeStyle = i > 1 ? P.crimson : P.amber; ctx.setLineDash([2, 3]);
+        ctx.beginPath(); ctx.moveTo(x - 12, 57); ctx.lineTo(x + 61, 57); ctx.stroke(); ctx.setLineDash([]);
+      }
+      for (let i = 0; i < 5; i++) {
+        const x = 182 + (i % 3) * 34, y = 77 + Math.floor(i / 3) * 21;
+        X.plate(ctx, x, y, 28, 17, P.plastic, P.plastic2, P.plasticD);
+        X.rect(ctx, x + 4, y + 4, 20, 5, i > 2 ? P.crimsonD : P.screenGlow);
+      }
+      X.text(ctx, 'GRID REQUESTS: DELAYED', 12, 23, P.crimson);
+      X.text(ctx, 'COMPUTE LOAD: +38%', 12, 34, P.amber);
+    } else if (day === 8) {
+      // The automated feedback loop, shown as racks feeding one another.
+      for (let i = 0; i < 5; i++) {
+        const x = 28 + i * 55;
+        X.plate(ctx, x, 34, 38, 76, P.slate, P.slate2, P.ink);
+        for (let r = 0; r < 6; r++) {
+          X.rect(ctx, x + 5, 40 + r * 10, 28, 6, P.screen);
+          X.rect(ctx, x + 7 + ((r + i) % 4) * 5, 42 + r * 10, 2, 2, r > 3 ? P.crimson : P.phosphor);
+        }
+        if (i < 4) {
+          X.rect(ctx, x + 38, 70, 16, 2, i > 1 ? P.crimson : P.sky);
+          X.rect(ctx, x + 49, 67, 5, 8, i > 1 ? P.crimson : P.sky);
+        }
+      }
+      X.text(ctx, 'CORRELATED MODEL FLOW', 160, 19, P.violet, { align: 'center', spacing: 2 });
+    } else if (day === 9) {
+      // A bank queue photographed through a phone camera and rebroadcast live.
+      X.rect(ctx, 34, 31, 252, 82, P.putty);
+      X.rect(ctx, 43, 42, 234, 49, P.plastic2);
+      X.rect(ctx, 49, 48, 72, 38, P.screenD);
+      X.rect(ctx, 199, 48, 72, 38, P.screenD);
+      X.rect(ctx, 126, 48, 68, 38, P.sky);
+      X.text(ctx, 'RIDGEWAY TRUST', 160, 34, P.ink, { align: 'center' });
+      for (let i = 0; i < 9; i++) {
+        const x = 52 + i * 27 + Math.round((i % 2) * p * 3);
+        X.rect(ctx, x, 91, 9, 24, i % 3 ? P.ink2 : P.crimsonD);
+        X.rect(ctx, x + 2, 84, 5, 7, i % 2 ? P.desk2 : P.deskD);
+      }
+      X.rect(ctx, 0, 113, V.w, 25, P.ink2);
+      X.text(ctx, 'WITHDRAWAL QUEUE · MERCER STREET', 160, 120, P.white, { align: 'center' });
+    } else if (day === 11) {
+      // Regulatory preservation sweep: cartons, badges and locked terminals.
+      for (let i = 0; i < 6; i++) {
+        const x = 16 + i * 50;
+        X.plate(ctx, x, 76, 42, 31, P.desk2, P.putty2, P.deskD);
+        X.rect(ctx, x + 6, 85, 30, 4, P.crimsonD);
+        X.text(ctx, 'HOLD', x + 21, 94, P.ink, { align: 'center' });
+      }
+      for (let i = 0; i < 3; i++) {
+        const x = 66 + i * 86;
+        X.rect(ctx, x, 37, 13, 31, P.slate);
+        X.rect(ctx, x + 3, 29, 7, 8, P.desk2);
+        X.rect(ctx, x + 2, 46, 9, 7, P.sky);
+      }
+      X.text(ctx, 'PRESERVE ALL RECORDS', 160, 18, P.crimson, { align: 'center', spacing: 2 });
+    } else if (day === 12 || day === 13) {
+      // Hearing and floor vote share the same institutional visual grammar.
+      X.rect(ctx, 0, 93, V.w, 45, P.deskD);
+      X.rect(ctx, 32, 36, 256, 48, P.slate);
+      X.rect(ctx, 40, 44, 240, 31, P.ink2);
+      for (let i = 0; i < 7; i++) {
+        const x = 56 + i * 34;
+        X.rect(ctx, x, 56, 12, 22, P.ink2);
+        X.rect(ctx, x + 3, 49, 6, 7, i === 3 ? P.desk2 : P.grey2);
+      }
+      X.rect(ctx, 86, 96, 148, 11, P.plasticD);
+      X.rect(ctx, 154, 85, 12, 12, P.desk2);
+      X.text(ctx, day === 12 ? 'MARKETS COMMITTEE · LIVE' : 'STABILIZATION VOTE · LIVE', 160, 20, day === 12 ? P.sky : P.amber, { align: 'center' });
+      if (day === 13) {
+        X.box(ctx, 111, 112, 98, 20);
+        X.text(ctx, 'VOTE PENDING', 160, 118, P.crimson, { align: 'center' });
+      }
+    } else {
+      // Final day: the city and network remain, but half the nodes have gone dark.
+      endingShot(ctx, 'dark');
+      for (let i = 0; i < 7; i++) {
+        const x = 24 + i * 45, y = 35 + (i % 3) * 18;
+        X.rect(ctx, x, y, 5, 5, i < 3 ? P.sky : P.crimsonD);
+        if (i < 6) {
+          ctx.strokeStyle = i < 3 ? P.sky : P.slate2;
+          ctx.beginPath(); ctx.moveTo(x + 5, y + 2); ctx.lineTo(x + 45, 37 + ((i + 1) % 3) * 18); ctx.stroke();
+        }
+      }
+      X.text(ctx, 'SYSTEM STATUS: UNRESOLVED', 160, 18, P.bone, { align: 'center' });
+    }
+    X.scanlines(ctx, 0, 13, V.w, 125, P.ink, 0.1);
+    return true;
+  }
+
+  // A compact visual signature for each ending, layered over the city shot.
+  function endingDetail(ctx, id, p) {
+    const cx = 160;
+    if (id === 'wiped') {
+      for (let i = 0; i < 6; i++) {
+        const drop = Math.round(p * i * 2);
+        X.plate(ctx, 116 + i * 6, 22 + i * 7 + drop, 67 - i * 5, 7, P.bone, P.white, P.plasticD);
+        X.rect(ctx, 121 + i * 6, 24 + i * 7 + drop, 21, 2, i > 2 ? P.crimson : P.sky);
+      }
+    } else if (id === 'fired') {
+      X.plate(ctx, 126, 37, 68, 30, P.desk2, P.putty2, P.deskD);
+      X.rect(ctx, 134, 43, 32, 4, P.crimsonD);
+      X.text(ctx, 'PERSONAL', cx, 53, P.ink, { align: 'center' });
+      X.rect(ctx, 145, 27, 30, 10, P.slate);
+    } else if (id === 'perp') {
+      for (let i = 0; i < 5; i++) X.rect(ctx, 112 + i * 24, 19, 7, 53, P.slate2);
+      X.rect(ctx, 139, 34, 42, 28, P.ink2);
+      X.rect(ctx, 151, 25, 18, 13, P.grey2);
+      if (p > .45) X.dither(ctx, 80, 12, 160, 62, P.ink, P.white, .18);
+    } else if (id === 'master') {
+      X.rect(ctx, 86, 59, 148, 5, P.bone);
+      X.rect(ctx, 106, 64, 104, 8, P.plastic2);
+      X.rect(ctx, 138, 38, 42, 21, P.white);
+      X.rect(ctx, 151, 24, 4, 34, P.slate2);
+      X.rect(ctx, 155, 25, 39, 3, P.amber);
+      X.dither(ctx, 0, 72, 320, 18, P.screen, P.sky, .35);
+    } else if (id === 'whistle') {
+      for (let i = 0; i < 4; i++) X.plate(ctx, 106 + i * 5, 25 + i * 7, 95, 13, P.bone, P.white, P.plasticD);
+      X.rect(ctx, 122, 35, 57, 4, P.crimsonD);
+      X.rect(ctx, 122, 46, 48, 2, P.grey);
+      X.rect(ctx, 122, 54, 62, 2, P.grey);
+    } else if (id === 'revolving') {
+      for (let i = 0; i < 5; i++) X.rect(ctx, 102 + i * 28, 31, 8, 40, P.bone);
+      X.rect(ctx, 94, 25, 132, 7, P.sky);
+      X.rect(ctx, 90, 70, 140, 5, P.slate2);
+      X.text(ctx, 'PRIVATE / PUBLIC', cx, 15, P.amber, { align: 'center' });
+    } else if (id === 'depression') {
+      for (let i = 0; i < 8; i++) {
+        X.rect(ctx, 64 + i * 28, 30 + (i % 3) * 8, 20, 44 - (i % 3) * 8, P.ink2);
+        if (i === 2) X.rect(ctx, 70 + i * 28, 39, 4, 4, P.crimsonD);
+      }
+      X.rect(ctx, 54, 73, 222, 4, P.crimsonD);
+    } else if (id === 'soft') {
+      for (let i = 0; i < 7; i++) {
+        X.rect(ctx, 68 + i * 28, 38 + (i % 2) * 9, 21, 36, P.slate);
+        for (let w = 0; w < 2; w++) X.rect(ctx, 73 + i * 28 + w * 8, 48, 4, 4, P.amber);
+      }
+      X.rect(ctx, 52, 74, 216, 4, P.jade);
+    } else if (id === 'quiet') {
+      X.rect(ctx, 111, 18, 98, 58, P.ink2);
+      for (let y = 0; y < 4; y++) for (let x = 0; x < 6; x++) X.rect(ctx, 120 + x * 14, 25 + y * 12, 6, 5, x === 4 && y === 2 ? P.amber : P.screenD);
+    } else if (id === 'replaced') {
+      for (let i = 0; i < 4; i++) {
+        X.plate(ctx, 98 + i * 34, 23, 27, 53, P.slate, P.slate2, P.ink);
+        for (let r = 0; r < 4; r++) X.rect(ctx, 103 + i * 34, 30 + r * 10, 17, 5, P.screenGlow);
+        X.rect(ctx, 105 + i * 34, 31, 2, 2, P.phosphor);
+      }
+    } else {
+      X.plate(ctx, 108, 45, 104, 12, P.desk, P.desk2, P.deskD);
+      X.plate(ctx, 143, 28, 34, 20, P.plastic, P.plastic2, P.plasticD);
+      X.rect(ctx, 148, 33, 24, 10, P.screenGlow);
+      X.rect(ctx, 122, 34, 12, 14, P.bone);
+      X.rect(ctx, 124, 36, 8, 3, P.deskD);
+    }
+  }
+
   // ---------- scene scripts ----------
 
   const Scenes = {
@@ -308,24 +495,28 @@
         {
           dur: 1.5,
           draw(ctx, _v, p) {
-            apartment(ctx, p * 0.7);
-            tvSet(ctx, 40, 50, 104, 68, head, kick, 1 - B.clamp(p * 1.6, 0, 1));
+            if (!briefingTableau(ctx, o.day, p)) {
+              apartment(ctx, p * 0.7);
+              tvSet(ctx, 40, 50, 104, 68, head, kick, 1 - B.clamp(p * 1.6, 0, 1));
+            }
           },
           line: '5:58 AM. The television is already on. It always is.'
         },
         {
           dur: 2.6,
           draw(ctx, _v, p) {
-            apartment(ctx, 0.7);
-            // Push in on the TV, pivoting high enough that the lower-third
-            // headline never slides under the caption box.
-            const z = 1 + p * 0.34;
-            const px = 92, py = 74;
-            ctx.save();
-            ctx.translate(px * (1 - z), py * (1 - z));
-            ctx.scale(z, z);
-            tvSet(ctx, 40, 50, 104, 68, head, kick, 0);
-            ctx.restore();
+            if (!briefingTableau(ctx, o.day, p)) {
+              apartment(ctx, 0.7);
+              // Push in on the TV, pivoting high enough that the lower-third
+              // headline never slides under the caption box.
+              const z = 1 + p * 0.34;
+              const px = 92, py = 74;
+              ctx.save();
+              ctx.translate(px * (1 - z), py * (1 - z));
+              ctx.scale(z, z);
+              tvSet(ctx, 40, 50, 104, 68, head, kick, 0);
+              ctx.restore();
+            }
           },
           line: head || 'Markets open in three and a half hours.'
         }
@@ -415,6 +606,7 @@
         dur: 2.6,
         draw(ctx, _v, p) {
           endingShot(ctx, dark ? 'dark' : 'light');
+          endingDetail(ctx, o.id || 'grind', p);
           const t = B.clamp((p - 0.25) / 0.6, 0, 1);
           if (t <= 0) return;
           ctx.save();

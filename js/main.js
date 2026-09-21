@@ -49,6 +49,23 @@
       X.rect(ctx, 0, 0, V.w, V.h, P.ink);
       X.gradient(ctx, 0, 0, V.w, 150, P.ink2, P.ink, 8);
       X.speckle(ctx, 0, 0, V.w, 120, P.slate, 0.0025, 4);
+      // A present-day infrastructure lattice: fibre, grid and compute all share
+      // the same city. It reads as systems, not a specific decade.
+      ctx.save();
+      ctx.globalAlpha = 0.55;
+      const nodes = [[22, 42], [74, 32], [126, 58], [178, 28], [231, 51], [292, 35]];
+      for (let i = 0; i < nodes.length - 1; i++) {
+        const a = nodes[i], b = nodes[i + 1];
+        ctx.strokeStyle = i < 3 ? P.sky : P.violet;
+        ctx.setLineDash([2, 3]);
+        ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke();
+        ctx.setLineDash([]);
+        X.rect(ctx, a[0] - 2, a[1] - 2, 5, 5, i < 3 ? P.sky : P.violet);
+        X.rect(ctx, a[0] - 1, a[1] - 1, 3, 3, P.ink);
+      }
+      X.rect(ctx, 290, 33, 5, 5, P.crimson);
+      X.rect(ctx, 291, 34, 3, 3, P.ink);
+      ctx.restore();
       // two silhouetted layers for depth, kept low so the menu copy stays readable
       for (let layer = 0; layer < 2; layer++) {
         const base = layer ? V.h : V.h - 12;
@@ -65,6 +82,11 @@
             }
           }
         }
+      }
+      // The CASCADE mark begins aligned and slips as it falls toward the skyline.
+      for (let i = 0; i < 5; i++) {
+        const y = 76 + i * 7;
+        X.rect(ctx, 255 + i * 3, y, 36 - i * 3, 4, i < 2 ? P.amberD : i < 4 ? P.sky : P.crimsonD);
       }
     },
 

@@ -46,13 +46,6 @@
     }
   };
 
-  const AVATAR = {
-    'Desmond Kroll': '#c2495a', 'Imani Rhodes': '#4fae7a', 'Sana Ferreira': '#9b86c4',
-    'Sen. Marcus Thorne': '#6f9fc9', 'Perry Nakash': '#e0b060', 'Adele Venn': '#7fd8a0',
-    'Greta Vail': '#b3ab97'
-  };
-  const initials = (n) => n.replace(/^Sen\. /, '').split(' ').map((w) => w[0]).slice(0, 2).join('');
-
   const Screens = {
     show(id) {
       document.querySelectorAll('.screen').forEach((s) => s.classList.toggle('active', s.id === 'screen-' + id));
@@ -189,11 +182,11 @@
     // ---- story choice ----
     choice(c, S, onPick) {
       const opts = c.options.filter((o) => !o.req || o.req(S));
-      const av = AVATAR[c.speaker] || '#7b7a8a';
-      const body = `<div class="speaker"><div class="avatar" style="background:${av}">${initials(c.speaker)}</div><div><b>${c.speaker}</b><span>${c.role || ''}</span></div></div>` +
+      const body = `<div class="speaker"><canvas class="portrait" data-portrait="${B.esc(c.speaker)}" aria-label="Pixel portrait of ${B.esc(c.speaker)}"></canvas><div><b>${c.speaker}</b><span>${c.role || ''}</span></div></div>` +
         c.text.map((p) => `<p>${p}</p>`).join('');
       const after = `<div class="choice-list">${opts.map((o) => `<button class="choice-btn" data-opt="${o.id}"><b>${o.label}</b>${o.hint ? `<span>${o.hint}</span>` : ''}</button>`).join('')}</div>`;
       const el = this.modal({ kicker: c.kicker || 'DECISION', title: c.title, body, after, wide: true });
+      if (B.Portraits) B.Portraits.drawAll(el);
       B.SFX.choice();
       el.querySelectorAll('.choice-btn').forEach((btn) => btn.addEventListener('click', () => {
         B.SFX.unlock();
@@ -212,7 +205,7 @@
         if (g.mode.kind === 'story') this.storyEnding(g, ending);
         else this.endlessEnding(g, ending);
       };
-      B.Cinematic.play('ending', { title: ending.title, deck: ending.deck, dark: !!ending.dark || ending.good === false }, show);
+      B.Cinematic.play('ending', { id: ending.id, title: ending.title, deck: ending.deck, dark: !!ending.dark || ending.good === false }, show);
     },
 
     storyEnding(g, e) {
