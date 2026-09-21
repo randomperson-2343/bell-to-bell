@@ -4,6 +4,8 @@
   let ctx = null, master = null, noiseBuf = null;
   const S = { vol: 0.6, enabled: true };
 
+  let musicBus = null;
+
   function ensure() {
     if (!ctx) {
       const AC = window.AudioContext || window.webkitAudioContext;
@@ -12,6 +14,10 @@
       master = ctx.createGain();
       master.gain.value = S.vol;
       master.connect(ctx.destination);
+      // Music runs on its own bus so it has an independent volume and mute.
+      musicBus = ctx.createGain();
+      musicBus.gain.value = 0.5;
+      musicBus.connect(ctx.destination);
     }
     if (ctx.state === 'suspended') ctx.resume();
     return ctx;
@@ -69,6 +75,9 @@
 
   B.SFX = {
     unlock() { ensure(); },
+    // Shared with js/audio/music.js: one AudioContext, two buses.
+    context() { return ensure(); },
+    musicBus() { ensure(); return musicBus; },
     setVolume(v) { S.vol = v; if (master) master.gain.value = v; },
     setEnabled(e) { S.enabled = e; },
     bell() { bellRing(7); },

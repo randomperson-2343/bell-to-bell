@@ -114,6 +114,9 @@
       this.fearN = new Factor(this.rng, { vol: 0.05, gap: fg, target: fg * 0.5 }, 1);
 
       this.events = (scen.events || []).map((e) => Object.assign({ fired: false, rumorFired: false }, e)).sort((a, b) => a.t - b.t);
+      // Events injected mid-session (tips, story beats) are recorded so a saved
+      // game can replay the exact same day. See js/core/save.js.
+      this.injected = [];
       for (const h of scen.halts || []) {
         const tk = this.bySym[h.sym];
         if (tk) tk.haltUntil = Math.max(tk.haltUntil, (h.t || 0) + h.dur);
@@ -157,7 +160,8 @@
       }
     }
 
-    injectEvent(e) {
+    injectEvent(e, replaying) {
+      if (!replaying) (this.injected || (this.injected = [])).push(JSON.parse(JSON.stringify(e)));
       this.events.push(Object.assign({ fired: false, rumorFired: false }, e));
       this.events.sort((a, b) => a.t - b.t);
     }
@@ -292,6 +296,23 @@
       const px = {};
       for (const tk of this.tickers) px[tk.sym] = tk.last;
       return { seed: this.seed, volMult: this.volMult, fearLevel: this.fearLevel, px };
+    }
+
+    // Overnight (pre-open) snapshot: the closing prices the next day gaps from.
+    serializeOvernight() {
+      const px = {};
+      for (const tk of this.tickers) px[tk.sym] = tk.prevClose;
+      return { seed: this.seed, volMult: this.volMult, fearLevel: this.fearLevel, px };
+    }
+
+    // Replay the day forward to `t` with no side effects the caller cares about.
+    // Deterministic because step() is the only consumer of this.rng and the game
+    // loop always advances in fixed SUB-minute increments.
+    fastForward(target, sub) {
+      const step = sub || 0.25;
+      let guard = 0;
+      while (this.status === 'open' && this.t < target && guard++ < 4000) this.step(step);
+      return this.t;
     }
 
     restore(o) {

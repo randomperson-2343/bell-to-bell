@@ -2,13 +2,14 @@
 // A "mode" object (story or endless) supplies scenarios, rules, quotas and endings.
 (function (B) {
   'use strict';
-  const SUB = 0.25; // game-minutes per simulation step
+  const SUB = 0.25; // game-minutes per simulation step. Constant, which is what
+                    // makes a day replayable tick-for-tick from a save.
 
   class Game {
     constructor(mode, save) {
       this.mode = mode;
       mode.game = this;
-      this.dayLength = mode.dayLength || 240;
+      this.dayLength = mode.dayLength || 180;
       this.market = new B.Market({ seed: mode.seed, volMult: mode.volMult || 1 });
       this.broker = new B.Broker({ cash: mode.capital, feeMult: mode.feeMult, slipMult: mode.feeMult, maintStrict: mode.maintStrict });
       this.broker.attach(this.market);
@@ -17,6 +18,7 @@
       this.rng = B.RNG(B.hashSeed(mode.seed + '|game'));
       this.startCapital = mode.capital;
       this.day = 0;
+      this.slot = save && save.slot != null ? save.slot : null;
       this.running = false;
       this.paused = false;
       this.speed = 1;
@@ -26,6 +28,8 @@
       this.quota = 0;
       this.history = [];
       this.inboxQueue = [];
+      this.resumeAt = null;    // set when a mid-day save is being restored
+      this.dayOpen = null;     // market state the current day started from
       this.loop = this.loop.bind(this);
       if (save) this.restore(save);
       else this.warmup();
@@ -35,7 +39,7 @@
     // Simulate one quiet session before day 1 so charts open with yesterday's candles.
     warmup() {
       const m = this.market;
-      m.startDay(-1, { regime: this.mode.kind === 'story' ? 'bubble' : 'bull' });
+      m.startDay(-1, { regime: this.mode.kind === 'story' ? 'melt' : 'bull' });
       while (m.status === 'open' && m.t < B.DAY_MIN) m.step(1);
       m.close();
       m.status = 'pre';
@@ -47,7 +51,8 @@
       B.UI.enterGame(this);
       this.last = performance.now();
       requestAnimationFrame(this.loop);
-      this.showBriefing();
+      if (this.resumeAt) this.resumeDay();
+      else this.showBriefing();
     }
 
     loop(ts) {
@@ -67,20 +72,25 @@
       requestAnimationFrame(this.loop);
     }
 
+    // ---- day lifecycle ----
     showBriefing() {
       const b = this.mode.briefing(this.day, this);
-      B.Screens.briefing(this, b, () => this.startDay());
+      const open = () => B.Screens.briefing(this, b, () => this.enterOffice(b));
+      if (b.cinematic !== false) B.Cinematic.play('news', { brief: b, day: this.day, game: this }, open);
+      else open();
+    }
+
+    enterOffice(b) {
+      B.Cinematic.play('office', { brief: b, day: this.day, game: this }, () => this.startDay());
     }
 
     startDay() {
       const m = this.market, b = this.broker;
-      const rules = Object.assign({ maxLev: 4, shortBan: [] }, this.mode.rules(this.day, this));
-      b.rules.maxLev = rules.maxLev;
-      b.rules.overnightLev = rules.overnightLev || Math.max(1, rules.maxLev / 2);
-      b.rules.shortBan = rules.shortBan || [];
-      b.rules.locked = null;
-      this.rules = rules;
+      this.applyRules();
       m.startDay(this.day, this.mode.scenario(this.day, this));
+      // Snapshot the pre-open tape. A mid-day save rewinds to here and replays.
+      this.dayOpen = { px: {}, fearLevel: m.fearLevel };
+      for (const tk of m.tickers) this.dayOpen.px[tk.sym] = tk.prevClose;
       b.startDay();
       this.stress.startDay();
       this.quota = this.mode.quota(this.day, this) || 0;
@@ -92,8 +102,53 @@
       this.interrupts.startDay(this.day, this.mode.calls ? this.mode.calls(this.day, this) : []);
       if (this.mode.onDayStart) this.mode.onDayStart(this);
       B.SFX.bell();
+      B.Music.play('trading');
       this.acc = 0;
       this.running = true;
+      this.autosave();
+    }
+
+    applyRules() {
+      const b = this.broker;
+      const rules = Object.assign({ maxLev: 4, shortBan: [] }, this.mode.rules(this.day, this));
+      b.rules.maxLev = rules.maxLev;
+      b.rules.overnightLev = rules.overnightLev || Math.max(1, rules.maxLev / 2);
+      b.rules.shortBan = rules.shortBan || [];
+      b.rules.locked = null;
+      this.rules = rules;
+    }
+
+    // Rebuild a half-finished day from a save: same seed, same scenario, same
+    // injected events, replayed forward to the exact minute you left off.
+    resumeDay() {
+      const snap = this.resumeAt;
+      this.resumeAt = null;
+      const m = this.market, b = this.broker;
+      this.applyRules();
+      m.restore(snap.dayOpen);
+      m.startDay(this.day, this.mode.scenario(this.day, this));
+      this.dayOpen = snap.dayOpen;
+      for (const e of snap.injected || []) m.injectEvent(e, true);
+      m.fastForward(snap.t, SUB);
+      // Broker state is laid over the replayed tape, so nothing fills twice.
+      b.restore(snap.broker);
+      this.stress.v = snap.stress.v;
+      this.stress.peak = snap.stress.peak;
+      this.quota = snap.quota;
+      this.warned = snap.warned || {};
+      this.earlyEnd = snap.earlyEnd || null;
+      this.inboxQueue = snap.inboxQueue || [];
+      if (snap.rng) this.rng.setState(snap.rng);
+      this.interrupts.startDay(this.day, []);
+      this.interrupts.restore(snap.interrupts);
+      if (this.mode.onResume) this.mode.onResume(this, snap);
+      B.UI.dayStart(this);
+      B.UI.restoreFeed(snap.feed);
+      if (snap.lock) this.setLock(Math.max(0, snap.lock.until - m.t), snap.lock.reason, snap.lock.kind);
+      B.Music.play('trading');
+      this.acc = 0;
+      this.running = true;
+      B.UI.toast(`Resumed at ${B.Calendar.fmtTime(m.t)}. Positions are live.`, 'warn');
     }
 
     tick(dt) {
@@ -107,6 +162,7 @@
       while (this.inboxQueue.length && this.inboxQueue[0].t <= m.t) B.UI.inbox(this.inboxQueue.shift());
       this.interrupts.update(m.t);
       this.stress.update(dt, this);
+      B.Music.setIntensity(this.stress.level(), m.t / B.DAY_MIN);
       if (this.stress.v >= 99.5 && !(this.lock && this.lock.kind === 'panic')) this.panicAttack();
       if (this.mode.onTick) this.mode.onTick(this, m.t);
       if (!this.running) return;
@@ -144,8 +200,9 @@
           break;
         case 'breaker':
           B.SFX.crash();
+          B.Music.cue('breaker');
           B.UI.flash('red');
-          B.UI.shake(18);
+          B.UI.shake(8);
           g.stress.spike(15);
           if (e.level === 3) B.UI.toast('LEVEL 3 CIRCUIT BREAKER: market closed for the day', 'bad big');
           else B.UI.toast(`LEVEL ${e.level} CIRCUIT BREAKER: index down ${e.level === 1 ? '7' : '13'}%. Trading halted 15 minutes.`, 'bad big');
@@ -181,13 +238,14 @@
     onMargin(e) {
       if (e.type === 'mc') {
         B.SFX.alarm();
+        B.Music.cue('margin');
         this.stress.spike(10);
         B.UI.flash('red');
         B.UI.toast('MARGIN CALL! Cut positions before the countdown hits zero.', 'bad big');
       } else if (e.type === 'liq') {
         B.SFX.crash();
         this.stress.spike(15);
-        B.UI.shake(14);
+        B.UI.shake(6);
         B.UI.toast('FORCED LIQUIDATION. Risk dumped your worst positions.', 'bad big');
       } else if (e.type === 'mcClear') {
         B.UI.toast('Margin call cleared.', 'good');
@@ -248,7 +306,7 @@
       if (ff) {
         const what = ff === 'flip' ? 'you hit the WRONG SIDE' : `you typed an extra ${ff === 'x10' ? 'zero' : 'digit'}`;
         B.UI.toast(`FAT FINGER! Hands shaking, ${what}.`, 'bad big');
-        B.UI.shake(10);
+        B.UI.shake(5);
         this.stress.spike(8);
       }
       return res;
@@ -309,6 +367,7 @@
     panicAttack() {
       this.setLock(20, 'PANIC ATTACK', 'panic');
       B.SFX.panic();
+      B.Music.cue('panic');
       B.UI.flash('red');
       if (this.mode.onPanic) this.mode.onPanic(this);
     }
@@ -330,6 +389,7 @@
       if (!this.running) return;
       this.paused = force == null ? !this.paused : force;
       B.UI.pause(this.paused);
+      B.Music.duck(this.paused);
     }
 
     // ---- day end ----
@@ -341,6 +401,7 @@
       m.close();
       this.interrupts.endDay();
       B.SFX.closeBell();
+      B.Music.play('close');
       const eod = b.endOfDay(this.day);
       const eq = b.equity();
       const pnl = eq - b.dayStartEquity;
@@ -365,13 +426,15 @@
       const verdict = this.mode.onDayEnd(this, report) || {};
       report.notes = verdict.notes || [];
       B.UI.dayEnd(this);
-      B.Screens.eod(this, report, () => {
-        if (verdict.ending) return this.finish(verdict.ending);
-        this.mode.afterDay(this, (ending) => {
-          if (ending) return this.finish(ending);
-          this.day++;
-          this.save();
-          this.showBriefing();
+      B.Cinematic.play('close', { report, game: this }, () => {
+        B.Screens.eod(this, report, () => {
+          if (verdict.ending) return this.finish(verdict.ending);
+          this.mode.afterDay(this, (ending) => {
+            if (ending) return this.finish(ending);
+            this.day++;
+            this.autosave();
+            this.showBriefing();
+          });
         });
       });
     }
@@ -379,36 +442,99 @@
     finish(ending) {
       this.running = false;
       this.alive = false;
-      B.storage.remove(this.mode.saveKey);
+      if (this.slot != null) B.Save.finish(this.slot, ending);
+      else B.Save.recordEnding(ending.id);
+      B.Music.play(ending.good === false || /wiped|fired|perp|depression/.test(ending.id) ? 'endingDark' : 'endingLight');
       B.Screens.ending(this, ending);
     }
 
     quit() {
       this.running = false;
       this.alive = false;
+      B.Music.play('menu');
       B.UI.leaveGame();
     }
 
-    save() {
-      B.storage.set(this.mode.saveKey, {
-        v: 1,
+    // ---- saving ----
+    // A snapshot is complete enough to rebuild the session to the exact minute,
+    // including a half-traded day. See js/core/save.js for the storage side.
+    snapshot() {
+      const inDay = this.running || this.paused;
+      const snap = {
+        kind: this.mode.kind,
         day: this.day,
+        dayLength: this.dayLength,
+        inDay,
         mode: this.mode.serialize(),
-        broker: this.broker.serialize(),
-        market: this.market.serialize(),
-        stress: this.stress.v,
         history: this.history,
-        indexStart: this.indexStart
-      });
+        indexStart: this.indexStart,
+        startCapital: this.startCapital,
+        slot: this.slot
+      };
+      if (inDay) {
+        snap.t = this.market.t;
+        snap.dayOpen = this.dayOpen;
+        snap.injected = this.market.injected || [];
+        snap.broker = this.broker.serializeFull();
+        snap.stress = { v: this.stress.v, peak: this.stress.peak };
+        snap.quota = this.quota;
+        snap.warned = this.warned;
+        snap.earlyEnd = this.earlyEnd;
+        snap.inboxQueue = this.inboxQueue;
+        snap.lock = this.lock;
+        snap.rng = this.rng.getState();
+        snap.interrupts = this.interrupts.serialize();
+        snap.feed = B.UI.snapshotFeed();
+      } else {
+        snap.broker = this.broker.serialize();
+        snap.market = this.market.serialize();
+        snap.stress = { v: this.stress.v, peak: this.stress.peak };
+      }
+      return snap;
+    }
+
+    meta() {
+      return {
+        mode: this.mode.kind,
+        day: this.day,
+        label: this.mode.slotLabel ? this.mode.slotLabel(this) : `Day ${this.day + 1}`,
+        equity: Math.round(this.broker.equity()),
+        startCapital: this.startCapital,
+        inDay: this.running || this.paused,
+        clock: this.running || this.paused ? B.Calendar.fmtTime(this.market.t) : null
+      };
+    }
+
+    // Called on a deliberate save from the pause menu.
+    saveNow() {
+      if (this.slot == null) this.slot = B.Save.firstEmpty();
+      if (this.slot < 0) { this.slot = null; return false; }
+      return B.Save.write(this.slot, this.snapshot(), this.meta());
+    }
+
+    // Called at each bell. Silent; never steals a slot that isn't ours.
+    autosave() {
+      if (this.slot == null) return false;
+      return B.Save.write(this.slot, this.snapshot(), this.meta());
     }
 
     restore(s) {
       this.day = s.day;
-      this.broker.restore(s.broker);
-      this.market.restore(s.market);
-      this.stress.v = s.stress || 0;
+      this.dayLength = s.dayLength || this.dayLength;
       this.history = s.history || [];
       this.indexStart = s.indexStart;
+      this.startCapital = s.startCapital || this.startCapital;
+      if (s.inDay) {
+        // The market is rebuilt in resumeDay() once the UI exists.
+        this.resumeAt = s;
+        this.market.restore(s.dayOpen);
+        this.market.status = 'pre';
+      } else {
+        this.broker.restore(s.broker);
+        this.market.restore(s.market);
+        this.stress.v = (s.stress && s.stress.v) || 0;
+        this.stress.peak = (s.stress && s.stress.peak) || 0;
+      }
     }
   }
 

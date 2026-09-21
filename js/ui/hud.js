@@ -1,4 +1,4 @@
-// In-game HUD: top bar, watchlist, feed, phone, positions, overlays, stress effects.
+// In-game HUD: the wall clock, the two monitors, the desk, and the stress effects.
 (function (B) {
   'use strict';
   const $ = B.el;
@@ -80,22 +80,57 @@
       });
       $('btn-coffee').addEventListener('click', () => this.g && this.g.coffee());
       $('btn-pause').addEventListener('click', () => this.g && this.g.togglePause());
+      $('btn-focus').addEventListener('click', () => {
+        const on = document.body.classList.toggle('focus');
+        B.Settings.set('focusMode', on);
+      });
       $('btn-resume').addEventListener('click', () => this.g && this.g.togglePause(false));
+      $('btn-save').addEventListener('click', () => this.saveFromPause(false));
+      $('btn-save-quit').addEventListener('click', () => this.saveFromPause(true));
       $('btn-quit').addEventListener('click', () => {
         if (!this.g) return;
-        B.Screens.confirm('Quit to menu?', 'Today\'s trading will be lost. Your save from the last closing bell is kept.', 'Quit', () => {
-          this.pause(false);
-          this.g.quit();
-        });
+        B.Screens.confirm('Quit without saving?',
+          'Anything since your last save is lost.', 'Quit', () => {
+            this.pause(false);
+            this.g.quit();
+          });
       });
       $('btn-howto-ingame').addEventListener('click', () => B.Screens.howtoModal());
       document.addEventListener('keydown', (e) => this.key(e));
+    },
+
+    saveFromPause(thenQuit) {
+      const g = this.g;
+      if (!g) return;
+      if (g.slot == null && B.Save.firstEmpty() < 0) {
+        B.Screens.confirm('All six slots are full',
+          'Free one up on the Load Game screen, then come back and save.', 'OK', () => {});
+        return;
+      }
+      const ok = g.saveNow();
+      if (!ok) return this.toast('Could not save. Browser storage may be full.', 'bad');
+      const meta = B.Save.meta(g.slot);
+      this.toast(`Saved to slot ${g.slot + 1}: ${meta ? meta.name : ''}`, 'good');
+      this.refreshPauseSlot();
+      if (thenQuit) { this.pause(false); g.quit(); }
+    },
+
+    refreshPauseSlot() {
+      const g = this.g;
+      const el = $('pause-slot');
+      if (!el) return;
+      if (!g) { el.textContent = ''; return; }
+      const meta = g.slot != null ? B.Save.meta(g.slot) : null;
+      el.textContent = meta
+        ? `Slot ${g.slot + 1} · ${meta.name} · last saved ${B.timeAgo(meta.ts)}`
+        : 'Not saved yet. Saving will use the first free slot.';
     },
 
     key(e) {
       const g = this.g;
       if (!g || !$('screen-game').classList.contains('active')) return;
       if (document.querySelector('#modal-layer .modal')) return;
+      if (B.Cinematic.running) return;
       const typing = /INPUT|SELECT|TEXTAREA/.test(document.activeElement && document.activeElement.tagName);
       if (e.key === 'Escape') { e.preventDefault(); if (typing) document.activeElement.blur(); else g.togglePause(); return; }
       if (typing && e.key !== 'Enter') return;
@@ -133,6 +168,7 @@
       this.unread = 0;
       this.updateBadge();
       this.lastPx = {};
+      document.body.classList.toggle('focus', !!B.Settings.get().focusMode);
       B.Screens.show('game');
       this.select('INDX');
     },
@@ -149,7 +185,7 @@
 
     dayStart(g) {
       const d = B.Calendar.dayInfo(g.day);
-      $('tb-date').textContent = d.label;
+      $('wall-date').textContent = d.label;
       const sep = { kind: 'sep', text: `— ${d.label} · OPENING BELL —` };
       this.feed.wire.unshift(sep);
       this.feed.chirp.unshift(sep);
@@ -177,7 +213,22 @@
       if (this.feedTab !== 'inbox') { this.unread++; this.updateBadge(); }
       B.SFX.news();
       this.renderFeed();
-      if (msg.toast !== false) this.toast(`✉ ${msg.from}: ${msg.text.length > 90 ? msg.text.slice(0, 88) + '…' : msg.text}`, 'warn');
+      if (msg.toast !== false) this.toast(`${msg.from}: ${msg.text.length > 90 ? msg.text.slice(0, 88) + '…' : msg.text}`, 'warn');
+    },
+
+    // Feeds are part of a save: coming back to a session with an empty Wire
+    // would lose the whole narrative thread of the day.
+    snapshotFeed() {
+      const trim = (a) => a.slice(0, 60);
+      return { wire: trim(this.feed.wire), chirp: trim(this.feed.chirp), inbox: trim(this.feed.inbox), unread: this.unread };
+    },
+
+    restoreFeed(f) {
+      if (!f) return;
+      this.feed = { wire: f.wire || [], chirp: f.chirp || [], inbox: f.inbox || [] };
+      this.unread = f.unread || 0;
+      this.updateBadge();
+      this.renderFeed();
     },
 
     updateBadge() {
@@ -199,7 +250,7 @@
       const p = $('phone');
       p.hidden = false;
       p.classList.add('ringing');
-      p.innerHTML = `<div class="ph-top"><div><div class="ph-from">&#128222; ${B.esc(call.from)}</div><div class="ph-role">${B.esc(call.role || 'Incoming call')}</div></div>
+      p.innerHTML = `<div class="ph-top"><div><div class="ph-from">&#9742; ${B.esc(call.from)}</div><div class="ph-role">${B.esc(call.role || 'Incoming call')}</div></div>
         <div><button class="btn small buy" data-ph="answer">Answer <kbd>A</kbd></button>${call.kind === 'choice' ? '' : ' <button class="btn small" data-ph="decline">Ignore</button>'}</div></div>
         <div class="ph-timer" id="ph-timer" style="width:100%"></div>`;
       this.ringTimer = true;
@@ -230,7 +281,7 @@
 
     renderTasks(tasks) {
       const open = (tasks || []).filter((t) => !t.done);
-      $('tasks').innerHTML = open.map((t) => `<div class="task"><span>&#128203; Client: <b>${B.esc(t.label)}</b> · fee ${F.money(t.fee)} <em class="muted" data-deadline="${t.id}"></em></span><button class="btn small" data-task="${t.id}">Execute</button></div>`).join('');
+      $('tasks').innerHTML = open.map((t) => `<div class="task"><span>Client: <b>${B.esc(t.label)}</b> · fee ${F.money(t.fee)} <em class="muted" data-deadline="${t.id}"></em></span><button class="btn small" data-task="${t.id}">Execute</button></div>`).join('');
     },
 
     // ---- overlays ----
@@ -245,14 +296,17 @@
     },
 
     flash(color) {
+      if (B.Settings.fx() <= 0) return;
       const f = $('flash');
       f.className = color;
       requestAnimationFrame(() => requestAnimationFrame(() => { f.className = ''; }));
     },
 
+    // V1 shook the whole screen by up to 18px on a circuit breaker. Callers now
+    // pass roughly half that, and the setting scales it again from there.
     shake(n) {
-      if (B.Settings.get().reducedMotion) return;
-      this.shakeAmt = Math.max(this.shakeAmt, n);
+      if (!B.Settings.motion()) return;
+      this.shakeAmt = Math.max(this.shakeAmt, n * B.Settings.fx());
     },
 
     lock(lock) {
@@ -260,33 +314,34 @@
       o.hidden = false;
       o.className = lock.kind === 'panic' ? 'panic' : '';
       const msg = {
-        panic: '<div class="breathe"></div><h2>PANIC ATTACK</h2><p>Your chest is tight. The numbers are swimming. You can\'t make your hands work. Breathe in with the circle. Your positions are still live.</p>',
-        coffee: '<h2>&#9749; COFFEE BREAK</h2><p>You step away from the screens. Your positions are still live. Try not to look.</p>',
-        audit: '<h2>SEC EXAMINERS</h2><p>Two people in grey suits are at your desk asking for your trade blotter. Your account is frozen until they leave.</p>'
+        panic: '<div class="breathe"></div><h2>PANIC ATTACK</h2><p>Your chest is tight. The numbers are swimming. You can\'t make your hands work. Breathe in with the square. Your positions are still live.</p>',
+        coffee: '<h2>COFFEE BREAK</h2><p>You step away from the screens. Your positions are still live. Try not to look.</p>',
+        audit: '<h2>EXAMINERS</h2><p>Two people in grey suits are at your desk asking for your trade blotter. Your account is frozen until they leave.</p>'
       }[lock.kind] || `<h2>LOCKED</h2><p>${B.esc(lock.reason)}</p>`;
       o.innerHTML = `<div class="lock-box">${msg}<div class="lock-pnl" id="lock-pnl"></div><div class="muted" id="lock-left"></div></div>`;
     },
 
-    unlock() {
-      $('lock-overlay').hidden = true;
-    },
+    unlock() { $('lock-overlay').hidden = true; },
 
     pause(on) {
       $('pause-overlay').hidden = !on;
+      if (on) this.refreshPauseSlot();
     },
 
     // ---- per-frame ----
     frame(g, dt) {
       if (!g || g !== this.g) return;
       const s = g.stress.level();
-      const rm = B.Settings.get().reducedMotion;
-      document.documentElement.style.setProperty('--stress', rm ? s * 0.6 : s);
+      const fx = B.Settings.fx();
+      const motion = B.Settings.motion();
+      document.documentElement.style.setProperty('--stress', s);
+      document.documentElement.style.setProperty('--fx', fx);
 
-      // screen shake
+      // screen shake — gentler threshold and a third of V1's amplitude
       let amp = this.shakeAmt;
-      if (!rm && g.running && s > 0.6) amp = Math.max(amp, (s - 0.6) * 12);
-      if (rm) amp = 0;
-      $('game-root').style.transform = amp > 0.3 ? `translate(${(Math.random() - 0.5) * amp}px, ${(Math.random() - 0.5) * amp}px)` : '';
+      if (motion && g.running && s > 0.72) amp = Math.max(amp, (s - 0.72) * 5 * fx);
+      if (!motion) amp = 0;
+      $('game-root').style.transform = amp > 0.3 ? `translate(${Math.round((Math.random() - 0.5) * amp)}px, ${Math.round((Math.random() - 0.5) * amp)}px)` : '';
       this.shakeAmt *= Math.pow(0.02, dt);
 
       // heartbeat + closing ticks
@@ -306,7 +361,7 @@
         }
       }
 
-      const jitter = g.running && s > 0.7 && !rm ? (s - 0.7) * 16 : 0;
+      const jitter = motion && g.running && s > 0.78 ? (s - 0.78) * 7 * fx : 0;
       B.Chart.draw(g, this.sel, jitter);
 
       const now = performance.now();
@@ -322,16 +377,18 @@
       const m = g.market, b = g.broker;
       const s = g.stress.level();
       // Price display lag under heavy stress: sometimes the screen just doesn't update.
-      const lagging = !force && g.running && s > 0.8 && Math.random() < (s - 0.8) * 2;
+      const lagging = !force && g.running && s > 0.85 && Math.random() < (s - 0.85) * 2;
 
-      // top bar
+      // wall
       const clock = $('tb-clock');
       clock.textContent = B.Calendar.fmtTime(m.t, true);
-      clock.className = 'tb-clock' + (m.t > 375 && g.running ? ' final' : m.t > 330 && g.running ? ' late' : '');
+      clock.className = 'wall-clock' + (m.t > 375 && g.running ? ' final' : m.t > 330 && g.running ? ' late' : '');
       const st = $('tb-status');
-      if (!g.running) { st.textContent = m.status === 'pre' ? 'PRE-MARKET' : 'CLOSED'; st.className = 'tb-val status-closed'; }
-      else if (m.halt) { st.textContent = `HALT L${m.halt.level}`; st.className = 'tb-val status-halt'; }
-      else { st.textContent = 'OPEN'; st.className = 'tb-val status-open'; }
+      if (!g.running) { st.textContent = m.status === 'pre' ? 'PRE-MARKET' : 'CLOSED'; st.className = 'wall-plate status-closed'; }
+      else if (m.halt) { st.textContent = `HALT L${m.halt.level}`; st.className = 'wall-plate status-halt'; }
+      else { st.textContent = 'OPEN'; st.className = 'wall-plate status-open'; }
+
+      // terminal stats
       const ip = m.indexDayPct();
       $('tb-indx').innerHTML = `${F.price(m.bySym.INDX.last)} <span class="${F.cls(ip)}">${F.pct(ip)}</span>`;
       const fear = m.bySym.FEAR.last;
@@ -339,7 +396,7 @@
       const eq = b.equity(), pnl = eq - b.dayStartEquity;
       const pe = $('tb-pnl');
       pe.textContent = F.money(pnl, true);
-      pe.className = 'tb-big ' + F.cls(pnl);
+      pe.className = 'v ' + F.cls(pnl);
       $('tb-equity').textContent = F.money(eq);
       $('tb-bp').textContent = F.compact(b.buyingPower());
       if (g.quota > 0) {
@@ -424,7 +481,6 @@
       const g = this.g, b = g.broker, m = g.market;
       $('orders-count').hidden = !b.orders.length;
       $('orders-count').textContent = b.orders.length;
-      const eq = b.equity();
       $('bt-summary').textContent = `Lev ${b.leverage().toFixed(2)}x · Cash ${F.money(b.cash)} · Fees today ${F.money(b.fees - (b.dayFeesStart || 0))}`;
       let html = '';
       if (this.btTab === 'positions') {
@@ -436,7 +492,7 @@
               const p = b.pos[s], last = m.bySym[s].last;
               const u = (last - p.avg) * p.qty;
               const pc = (last / p.avg - 1) * Math.sign(p.qty);
-              return `<tr data-sym="${s}"><td>${s} <span class="${p.qty > 0 ? 'up' : 'down'}">${p.qty > 0 ? 'LONG' : 'SHORT'}</span></td><td>${F.qty(p.qty)}</td><td>${F.price(p.avg)}</td><td>${F.price(last)}</td><td>${F.money(p.qty * last)}</td><td class="${F.cls(u)}">${F.money(u, true)}</td><td class="${F.cls(pc)}">${F.pct(pc)}</td><td><button data-act="half" data-id="${s}">½</button><button data-act="close" data-id="${s}">Close</button></td></tr>`;
+              return `<tr data-sym="${s}"><td>${s} <span class="${p.qty > 0 ? 'up' : 'down'}">${p.qty > 0 ? 'LONG' : 'SHORT'}</span></td><td>${F.qty(p.qty)}</td><td>${F.price(p.avg)}</td><td>${F.price(last)}</td><td>${F.money(p.qty * last)}</td><td class="${F.cls(u)}">${F.money(u, true)}</td><td class="${F.cls(pc)}">${F.pct(pc)}</td><td><button data-act="half" data-id="${s}">&frac12;</button><button data-act="close" data-id="${s}">Close</button></td></tr>`;
             }).join('') + '</tbody></table>';
         }
       } else if (this.btTab === 'orders') {

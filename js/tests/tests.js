@@ -11,7 +11,11 @@
 
   // Minimal stand-ins so game systems run headless.
   if (!B.UI) B.UI = {};
-  ['toast', 'inbox', 'addNews', 'phoneHide', 'renderTasks', 'shake', 'flash'].forEach((k) => { if (!B.UI[k]) B.UI[k] = () => {}; });
+  ['toast', 'inbox', 'addNews', 'phoneHide', 'phoneRing', 'phoneOpen', 'renderTasks', 'renderFeed',
+    'renderWatch', 'renderBottom', 'updateBadge', 'shake', 'flash', 'dayStart', 'dayEnd', 'restoreFeed',
+    'lock', 'unlock', 'pause', 'enterGame', 'leaveGame', 'select', 'frame', 'render'
+  ].forEach((k) => { if (!B.UI[k]) B.UI[k] = () => {}; });
+  if (!B.UI.snapshotFeed) B.UI.snapshotFeed = () => ({ wire: [], chirp: [], inbox: [], unread: 0 });
 
   function mkMarket(scen, seed) {
     const m = new B.Market({ seed: seed || 'test' });
@@ -39,14 +43,25 @@
     assert(sa[0] !== c.next(), 'different seed matches');
   });
 
+  test('RNG state round-trips exactly', () => {
+    const a = B.RNG(7);
+    for (let i = 0; i < 13; i++) a.normal();
+    const st = JSON.parse(JSON.stringify(a.getState()));
+    const want = [a.next(), a.normal(), a.next()];
+    const b = B.RNG(7);
+    b.setState(st);
+    const got = [b.next(), b.normal(), b.next()];
+    assert(want.join() === got.join(), 'state restore diverged');
+  });
+
   // ---------- Broker ----------
   test('Long round trip realizes correct P&L', () => {
     const m = mkMarket(); const b = mkBroker(m);
-    const tk = m.bySym.MRTM;
+    const tk = m.bySym.BLWT;
     tk.last = 100; tk.spread = 1e-12;
-    b.marketOrder('MRTM', 100);
+    b.marketOrder('BLWT', 100);
     tk.last = 110;
-    const r = b.marketOrder('MRTM', -100);
+    const r = b.marketOrder('BLWT', -100);
     near(r.realized, 1000, 0.01, 'realized');
     near(b.equity(), 101000, 0.01, 'equity');
     assert(b.isFlat(), 'should be flat');
@@ -54,51 +69,51 @@
 
   test('Short round trip profits when price falls', () => {
     const m = mkMarket(); const b = mkBroker(m);
-    const tk = m.bySym.MRTM;
+    const tk = m.bySym.BLWT;
     tk.last = 100; tk.spread = 1e-12;
-    b.marketOrder('MRTM', -200);
+    b.marketOrder('BLWT', -200);
     near(b.equity(), 100000, 0.01, 'equity unchanged at entry');
     tk.last = 90;
     near(b.equity(), 102000, 0.01, 'short gains');
-    const r = b.marketOrder('MRTM', 200);
+    const r = b.marketOrder('BLWT', 200);
     near(r.realized, 2000, 0.01);
   });
 
   test('Flip from long to short keeps accounting straight', () => {
     const m = mkMarket(); const b = mkBroker(m);
-    const tk = m.bySym.MRTM;
+    const tk = m.bySym.BLWT;
     tk.last = 50; tk.spread = 1e-12;
-    b.marketOrder('MRTM', 100);
+    b.marketOrder('BLWT', 100);
     tk.last = 60;
-    b.marketOrder('MRTM', -300);
-    assert(b.posQty('MRTM') === -200, 'qty');
-    near(b.pos.MRTM.avg, 60, 1e-9, 'avg resets on flip');
+    b.marketOrder('BLWT', -300);
+    assert(b.posQty('BLWT') === -200, 'qty');
+    near(b.pos.BLWT.avg, 60, 1e-9, 'avg resets on flip');
     near(b.equity(), 101000, 0.01);
   });
 
   test('Buying power limits exposure to max leverage', () => {
     const m = mkMarket(); const b = mkBroker(m);
-    m.bySym.MRTM.last = 100; m.bySym.MRTM.spread = 1e-12;
+    m.bySym.BLWT.last = 100; m.bySym.BLWT.spread = 1e-12;
     b.rules.maxLev = 4;
-    assert(!b.marketOrder('MRTM', 4100).ok, 'should reject > 4x');
-    assert(b.marketOrder('MRTM', 3900).ok, 'should allow < 4x');
-    assert(b.maxQty('MRTM', 1) < 200, 'little buying power left');
+    assert(!b.marketOrder('BLWT', 4100).ok, 'should reject > 4x');
+    assert(b.marketOrder('BLWT', 3900).ok, 'should allow < 4x');
+    assert(b.maxQty('BLWT', 1) < 200, 'little buying power left');
   });
 
   test('Short-sale ban blocks new shorts but allows covering', () => {
     const m = mkMarket(); const b = mkBroker(m);
-    m.bySym.LRMR.spread = 1e-12;
-    b.marketOrder('LRMR', -100);
+    m.bySym.HLST.spread = 1e-12;
+    b.marketOrder('HLST', -100);
     b.rules.shortBan = ['bank'];
-    assert(!b.marketOrder('LRMR', -100).ok, 'ban should block adding');
-    assert(b.marketOrder('LRMR', 100).ok, 'covering allowed');
+    assert(!b.marketOrder('HLST', -100).ok, 'ban should block adding');
+    assert(b.marketOrder('HLST', 100).ok, 'covering allowed');
   });
 
   test('Margin call then liquidation', () => {
     const m = mkMarket(); const b = mkBroker(m);
-    const tk = m.bySym.MRTM;
+    const tk = m.bySym.BLWT;
     tk.last = 100; tk.spread = 1e-12;
-    b.marketOrder('MRTM', 3900);
+    b.marketOrder('BLWT', 3900);
     tk.last = 75; // -25% on ~3.9x
     let ev = b.checkMargin(10);
     assert(ev.some((e) => e.type === 'mc'), 'margin call issued');
@@ -109,9 +124,9 @@
 
   test('Overnight margin force-sells excess at the close', () => {
     const m = mkMarket(); const b = mkBroker(m);
-    m.bySym.MRTM.last = 100; m.bySym.MRTM.spread = 1e-12;
+    m.bySym.BLWT.last = 100; m.bySym.BLWT.spread = 1e-12;
     b.rules.maxLev = 4; b.rules.overnightLev = 2;
-    b.marketOrder('MRTM', 3500);
+    b.marketOrder('BLWT', 3500);
     m.close();
     const out = b.endOfDay(0);
     assert(out.forced.length === 1, 'forced sale');
@@ -120,10 +135,10 @@
 
   test('Bracket stop-loss fires and cancels its take-profit', () => {
     const m = mkMarket(); const b = mkBroker(m);
-    const tk = m.bySym.MRTM;
+    const tk = m.bySym.BLWT;
     tk.last = 100; tk.spread = 1e-12;
-    b.marketOrder('MRTM', 100);
-    b.attachBracket('MRTM', 5, 10);
+    b.marketOrder('BLWT', 100);
+    b.attachBracket('BLWT', 5, 10);
     assert(b.orders.length === 2, 'two bracket orders');
     tk.last = 94;
     b.processOrders();
@@ -141,9 +156,9 @@
 
   test('Option buy, then cash settlement at expiry', () => {
     const m = mkMarket(); const b = mkBroker(m);
-    const tk = m.bySym.MRTM;
+    const tk = m.bySym.BLWT;
     tk.last = 100;
-    const r = b.buyOption('MRTM', 'P', 100, 0, 2);
+    const r = b.buyOption('BLWT', 'P', 100, 0, 2);
     assert(r.ok, r.msg);
     tk.last = 80;
     m.close();
@@ -183,9 +198,9 @@
   });
 
   test('Single-stock volatility halt on a huge shock', () => {
-    const m = mkMarket({ regime: 'chop', events: [{ t: 60, text: 'x', impacts: [{ scope: 'ticker', id: 'NSTG', pct: -0.35 }] }] }, 'luld');
+    const m = mkMarket({ regime: 'chop', events: [{ t: 60, text: 'x', impacts: [{ scope: 'ticker', id: 'FRLN', pct: -0.35 }] }] }, 'luld');
     const out = runDay(m);
-    assert(out.some((e) => e.type === 'luld' && e.sym === 'NSTG'), 'LULD halt');
+    assert(out.some((e) => e.type === 'luld' && e.sym === 'FRLN'), 'LULD halt');
   });
 
   test('Rumors appear before their news', () => {
@@ -195,14 +210,219 @@
     assert(out[1].t - out[0].t >= 9.5, 'lead time');
   });
 
+  test('A day replays identically from the same seed and scenario', () => {
+    const scen = { regime: 'bear', market: { gap: -0.01, target: -0.03 }, events: [{ t: 55, text: 'x', impacts: [{ scope: 'sector', id: 'ai', pct: -0.06 }] }] };
+    const a = new B.Market({ seed: 'replay' });
+    const b = new B.Market({ seed: 'replay' });
+    a.startDay(4, JSON.parse(JSON.stringify(scen)));
+    b.startDay(4, JSON.parse(JSON.stringify(scen)));
+    a.fastForward(213, 0.25);
+    b.fastForward(213, 0.25);
+    for (const tk of a.tickers) near(b.bySym[tk.sym].last, tk.last, 1e-9, tk.sym);
+    near(b.t, a.t, 1e-12, 'clock');
+  });
+
+  // ---------- Save system ----------
+  function mkGame(seed) {
+    const mode = B.StoryMode();
+    mode.seed = seed || mode.seed;
+    return new B.Game(mode);
+  }
+
+  test('Mid-day snapshot restores the exact same session', () => {
+    const g = mkGame();
+    g.day = 2;
+    g.startDay();
+    for (let i = 0; i < 400; i++) g.tick(0.25);     // t = 100
+    g.trade('BLWT', 200);
+    g.trade('CRVS', -40);
+    g.broker.placeOrder('THSI', 100, 'limit', g.market.bySym.THSI.last * 0.97);
+    for (let i = 0; i < 148; i++) g.tick(0.25);     // t = 137
+    const snap = JSON.parse(JSON.stringify(g.snapshot()));
+    assert(snap.inDay, 'should be a mid-day snapshot');
+    near(snap.t, 137, 1e-9, 'snapshot clock');
+
+    const g2 = new B.Game(B.StoryMode(snap.mode), snap);
+    g2.resumeDay();
+    near(g2.market.t, g.market.t, 1e-9, 'clock');
+    for (const tk of g.market.tickers) near(g2.market.bySym[tk.sym].last, tk.last, 1e-8, tk.sym + ' price');
+    near(g2.broker.equity(), g.broker.equity(), 1e-6, 'equity');
+    near(g2.broker.cash, g.broker.cash, 1e-6, 'cash');
+    assert(Object.keys(g2.broker.pos).join() === Object.keys(g.broker.pos).join(), 'positions');
+    assert(g2.broker.posQty('BLWT') === g.broker.posQty('BLWT'), 'BLWT qty');
+    assert(g2.broker.orders.length === g.broker.orders.length, 'working orders');
+    near(g2.stress.v, g.stress.v, 1e-9, 'stress');
+
+    // ...and they stay in step all the way to the bell.
+    for (let i = 0; i < 600; i++) { g.tick(0.25); g2.tick(0.25); }
+    for (const tk of g.market.tickers) near(g2.market.bySym[tk.sym].last, tk.last, 1e-6, tk.sym + ' price after replay');
+    near(g2.broker.equity(), g.broker.equity(), 1e-4, 'equity after replay');
+  });
+
+  test('Snapshot between days restores day, history and book', () => {
+    const g = mkGame();
+    g.startDay();
+    for (let i = 0; i < 40; i++) g.tick(0.25);
+    g.trade('AURX', 60);
+    while (g.running) g.tick(1);
+    const snap = JSON.parse(JSON.stringify(g.snapshot()));
+    assert(!snap.inDay, 'should be a between-days snapshot');
+    const g2 = new B.Game(B.StoryMode(snap.mode), snap);
+    assert(g2.day === g.day, 'day');
+    near(g2.broker.cash, g.broker.cash, 1e-6, 'cash');
+    assert(g2.broker.posQty('AURX') === g.broker.posQty('AURX'), 'position carried');
+    assert(g2.history.length === g.history.length, 'history');
+  });
+
+  test('Save slots: write, read, rename, finish, delete', () => {
+    for (let i = 0; i < B.Save.SLOTS; i++) B.Save.clear(i);
+    assert(B.Save.firstEmpty() === 0, 'all slots free');
+    B.Save.write(0, { kind: 'story', day: 3 }, { mode: 'story', day: 3, equity: 1234, label: 'Day 4' });
+    const m = B.Save.meta(0);
+    assert(m && m.equity === 1234, 'meta written');
+    assert(B.Save.firstEmpty() === 1, 'slot 0 now taken');
+    assert(B.Save.read(0).day === 3, 'payload read back');
+    B.Save.rename(0, 'My Run');
+    assert(B.Save.meta(0).name === 'My Run', 'renamed');
+    B.Save.finish(0, { id: 'grind', title: 'Still Standing', wealth: 9 });
+    assert(B.Save.meta(0).finished.id === 'grind', 'slot marked finished');
+    B.Save.clear(0);
+    assert(!B.Save.meta(0) && !B.Save.read(0), 'cleared');
+  });
+
+  test('Ending tally counts every finished run', () => {
+    for (let i = 0; i < B.Save.SLOTS; i++) B.Save.clear(i);
+    B.storage.remove('endings:tally');
+    B.Save.recordEnding('perp');
+    B.Save.recordEnding('perp');
+    B.Save.recordEnding('soft');
+    assert(B.Save.tally().perp === 2, 'perp counted twice');
+    assert(B.Save.totalRuns() === 3, 'total runs');
+    assert(B.Save.discovered().length === 2, 'two distinct endings');
+    B.storage.remove('endings:tally');
+  });
+
+  // ---------- Pacing / balance ----------
+  test('Quota curve rises and starts near 0.6% of the book', () => {
+    const Q = B.StoryData.QUOTAS;
+    assert(Q.length === B.StoryData.DAYS.length, 'one quota per day');
+    assert(Q[0] >= 0.005 && Q[0] <= 0.008, 'day 1 quota ' + Q[0]);
+    assert(Q[Q.length - 1] >= Q[0] * 3, 'quota should more than triple by the end');
+    for (let i = 1; i < Q.length; i++) assert(Q[i] >= Q[i - 1] - 0.003, 'quota should not collapse at day ' + (i + 1));
+  });
+
+  test('A trading day is three real minutes by default', () => {
+    const mode = B.StoryMode();
+    assert(mode.dayLength === 180, 'day length ' + mode.dayLength);
+    const g = new B.Game(mode);
+    near(g.rate, B.DAY_MIN / 180, 1e-9, 'game-minutes per real second');
+  });
+
+  test('Only about a third of tips actually pay', () => {
+    const ints = new B.Interrupts({ mode: B.StoryMode() });
+    const rng = B.RNG(B.hashSeed('tipdist'));
+    const count = { real: 0, stale: 0, reversal: 0, fake: 0 };
+    for (let i = 0; i < 4000; i++) {
+      ints.tipsActed = 0;              // one session's worth per roll
+      count[ints.rollTipOutcome(rng)]++;
+    }
+    const realShare = count.real / 4000;
+    assert(realShare > 0.25 && realShare < 0.42, 'real tip share ' + realShare.toFixed(3));
+    assert(count.stale > 0 && count.reversal > 0 && count.fake > 0, 'every outcome should occur');
+    assert(count.fake / 4000 > 0.25, 'fakes should stay common');
+  });
+
+  test('Story mode caps working tips at one per session', () => {
+    const ints = new B.Interrupts({ mode: B.StoryMode() });
+    const rng = B.RNG(B.hashSeed('tipcap'));
+    let reals = 0;
+    for (let i = 0; i < 200; i++) if (ints.rollTipOutcome(rng) === 'real') reals++;
+    assert(reals === 1, 'expected exactly one real tip per session, got ' + reals);
+  });
+
+  // ---------- Content safety ----------
+  // Every company, person and event in this game must be invented. This walks
+  // every string the game can print and fails on anything that names a real one.
+  test('No real-world companies, people or events appear anywhere', () => {
+    const DENY = [
+      // firms
+      'lehman', 'bear stearns', 'goldman', 'morgan stanley', 'jpmorgan', 'jp morgan', 'citigroup', 'citibank',
+      'merrill', 'wachovia', 'countrywide', 'washington mutual', 'aig', 'fannie mae', 'freddie mac',
+      'moody', 'standard & poor', 'fitch', 'blackrock', 'blackstone', 'vanguard', 'berkshire',
+      'nvidia', 'openai', 'anthropic', 'deepmind', 'google', 'alphabet', 'microsoft', 'amazon', 'apple',
+      'meta platforms', 'facebook', 'tesla', 'intel', 'amd', 'tsmc', 'oracle', 'coreweave', 'softbank',
+      'walmart', 'exxon', 'chevron', 'robinhood', 'coinbase', 'chatgpt', 'gpt-4', 'gpt4', 'gemini', 'copilot',
+      // people
+      'buffett', 'bernanke', 'yellen', 'greenspan', 'paulson', 'geithner', 'powell', 'dimon', 'fuld',
+      'madoff', 'musk', 'bezos', 'altman', 'zuckerberg', 'huang', 'trump', 'biden', 'obama',
+      // agencies, indices, specific real events
+      'federal reserve', 'the fed', 'sec', 'securities and exchange commission', 'fdic', 'finra',
+      'nasdaq', 'dow jones', 's&p 500', 'nyse', 'wall street journal',
+      'covid', 'subprime', '2008', 'great recession', 'dot-com', 'dotcom',
+      'ukraine', 'russia', 'china', 'taiwan', 'israel', 'gaza', 'iran'
+    ];
+    // Whole-word matching: "Corvus Intelligence" must not trip on "intel", and
+    // "campaign" must not trip on "aig".
+    const rx = DENY.map((w) => ({
+      w,
+      re: new RegExp('(^|[^a-z0-9])' + w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '([^a-z0-9]|$)', 'i')
+    }));
+    const corpus = [];
+    const push = (v) => {
+      if (v == null) return;
+      if (typeof v === 'string') corpus.push(v);
+      else if (Array.isArray(v)) v.forEach(push);
+      else if (typeof v === 'object') Object.keys(v).forEach((k) => push(v[k]));
+    };
+
+    for (const t of B.TICKERS) push([t.sym, t.name]);
+    Object.keys(B.SECTORS).forEach((k) => push(B.SECTORS[k].name));
+    Object.keys(B.REGIMES).forEach((k) => push(B.REGIMES[k].name));
+    push(B.News.HANDLES);
+    push(B.News.NOISE);
+    push(B.News.TEMPLATES);
+
+    const D = B.StoryData;
+    push(D.ACTS);
+    const flagSets = [{}, { dumped: true, insider: true, dereg: true, raid: true, fraud: true, bailout: true, algoDesk: true },
+      { refusedDump: true, leaked: true, regulation: true, letFail: true, shortBanOn: true, testified: true, billPassed: true, toldRidgeway: true }];
+    for (const f of flagSets) {
+      const S = B.StoryMode.freshState(250000);
+      Object.assign(S.f, f);
+      for (const day of D.DAYS) {
+        push(day.title);
+        push(day.brief(S));
+        const sc = day.scen(S);
+        for (const e of sc.events || []) push([e.text, e.src, e.rumor && e.rumor.text, e.rumor && e.rumor.src]);
+        if (day.inbox) for (const msg of day.inbox(S)) push([msg.from, msg.text]);
+        if (day.calls) for (const c of day.calls(S)) push([c.from, c.role, c.text, (c.options || []).map((o) => o.label)]);
+      }
+    }
+    Object.keys(D.CHOICES).forEach((k) => {
+      const c = D.CHOICES[k];
+      push([c.speaker, c.role, c.title, c.kicker, c.text]);
+      for (const o of c.options) push([o.label, o.hint, o.headline, o.reply, o.after]);
+    });
+    for (const e of B.StoryEndings.list) {
+      push([e.title, e.hint, e.lockedHint, e.headline, e.deck]);
+      const S = B.StoryMode.freshState(250000);
+      push(e.story({ S, wealth: 500000, start: 250000, reason: 'final' }));
+    }
+
+    const hay = corpus.join(' \n ').toLowerCase();
+    const hits = rx.filter((x) => x.re.test(hay)).map((x) => x.w);
+    assert(!hits.length, 'real-world references found: ' + hits.join(', '));
+  });
+
   // ---------- Story graph ----------
   const D = B.StoryData;
   function clone(o) { return JSON.parse(JSON.stringify(o)); }
 
   test('Every story day builds a valid scenario and briefing', () => {
-    const variants = [{}, { dereg: true, lorimerFailed: true, fraud: true, insider: true, dumped: true, raid: true },
-      { regulation: true, bailout: true, disclosed: true, leaked: true, reported: true, billPassed: true, tipShortBan: true },
-      { merger: true, defected: true, refusedDump: true }];
+    const variants = [{},
+      { dereg: true, letFail: true, fraud: true, insider: true, dumped: true, raid: true, algoDesk: true },
+      { regulation: true, bailout: true, reported: true, leaked: true, billPassed: true, tipShortBan: true, shortBanOn: true },
+      { defected: true, refusedDump: true, toldRidgeway: true, testified: true }];
     for (const f of variants) {
       const S = B.StoryMode.freshState(250000);
       Object.assign(S.f, f);
@@ -220,12 +440,32 @@
     }
   });
 
+  test('Every decision lands on a day that exists, and mid-session calls are wired up', () => {
+    const ids = Object.keys(D.CHOICES);
+    for (const id of ids) {
+      const c = D.CHOICES[id];
+      assert(c.day >= 0 && c.day < D.DAYS.length, id + ' day out of range');
+      assert(c.options && c.options.length >= 2, id + ' needs options');
+      for (const o of c.options) assert(typeof o.apply === 'function', id + '/' + o.id + ' missing apply');
+      if (c.mid) {
+        const S = B.StoryMode.freshState(250000);
+        const calls = D.DAYS[c.day].calls ? D.DAYS[c.day].calls(S) : [];
+        const wired = calls.some((x) => x.choiceId === id);
+        assert(wired, id + ' is a mid-session choice but no call on day ' + (c.day + 1) + ' triggers it');
+      } else {
+        assert(c.text && c.speaker, id + ' needs a speaker and text');
+      }
+    }
+    assert(ids.length === 8, 'expected 8 decisions, found ' + ids.length);
+  });
+
   test('Story graph: every ending is reachable through choices', () => {
     const order = ['c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7', 'c8'];
     const reached = {};
     let paths = 0;
     const archetypes = [
       { reason: 'final', wealth: 1.3, tradedTip: false },
+      { reason: 'final', wealth: 3.4, tradedTip: false },
       { reason: 'final', wealth: 3.0, tradedTip: true },
       { reason: 'final', wealth: 0.8, tradedTip: false },
       { reason: 'wiped', wealth: 0.05, tradedTip: false },
@@ -246,6 +486,8 @@
         const S2 = clone(S);
         o.apply(S2);
         if (order[i] === 'c2' && o.id === 'trade' && arch.tradedTip) { S2.f.insiderTraded = true; D.adj(S2, { heat: 20 }); }
+        // The firm automates the desk on the deregulated path (see story-engine onDayStart).
+        if (order[i] === 'c6' && S2.f.dereg && !S2.f.regulation && !S2.f.reported) S2.f.algoDesk = true;
         if (order[i] === 'c7') S2.f.billPassed = B.StoryMode.votePasses(S2);
         walk(S2, i + 1, arch);
       }
@@ -259,8 +501,8 @@
 
   test('Stabilization vote can go both ways', () => {
     const S = B.StoryMode.freshState(250000);
-    const a = clone(S); a.f.bailout = true; a.m.anger = 40; a.m.stability = 70;
-    const b2 = clone(S); b2.m.stability = 15; b2.f.lobbyNo = true;
+    const a = clone(S); a.f.whipped = true; a.m.anger = 40; a.m.stability = 70; a.rel.thorne = 60;
+    const b2 = clone(S); b2.m.stability = 15; b2.f.whippedAgainst = true; b2.m.anger = 60;
     assert(B.StoryMode.votePasses(a) === true, 'should pass');
     assert(B.StoryMode.votePasses(b2) === false, 'should fail');
   });

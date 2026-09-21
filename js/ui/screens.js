@@ -5,11 +5,23 @@
   const F = B.fmt;
 
   // ---- settings ----
-  const DEFAULTS = { volume: 0.6, sound: true, reducedMotion: false, storyDayLength: 240 };
+  const DEFAULTS = {
+    volume: 0.6, sound: true,
+    music: true, musicVolume: 0.45,
+    effects: 'full',        // full | reduced | off
+    cinematics: 'full',     // full | short | off
+    storyDayLength: 180,
+    focusMode: false
+  };
+
   B.Settings = {
     cache: null,
     get() {
-      if (!this.cache) this.cache = Object.assign({}, DEFAULTS, B.storage.get('settings', {}));
+      if (!this.cache) {
+        this.cache = Object.assign({}, DEFAULTS, B.storage.get('settings', {}));
+        // Migrate V1's single reducedMotion checkbox.
+        if (this.cache.reducedMotion && this.cache.effects === 'full') this.cache.effects = 'reduced';
+      }
       return this.cache;
     },
     set(k, v) {
@@ -17,16 +29,27 @@
       B.storage.set('settings', this.cache);
       this.apply();
     },
+    // Screen-effect intensity multiplier: vignette, flash, shake.
+    fx() {
+      const e = this.get().effects;
+      return e === 'off' ? 0 : e === 'reduced' ? 0.45 : 1;
+    },
+    // Whether anything is allowed to physically move.
+    motion() { return this.get().effects === 'full'; },
     apply() {
       const s = this.get();
       B.SFX.setVolume(s.volume);
       B.SFX.setEnabled(s.sound);
+      B.Music.setVolume(s.musicVolume);
+      B.Music.setEnabled(s.music);
+      document.documentElement.style.setProperty('--fx', this.fx());
     }
   };
 
   const AVATAR = {
-    'Garrett Vance': '#ff4d61', 'Dana Okafor': '#1fd67f', 'Rae Castellano': '#b48cff', 'Sen. Harlan Whitfield': '#4da3ff',
-    'Theo Mercer': '#ffb627', 'Evelyn Marsh': '#7fd3ff', 'Mara Linde': '#ff9a3c'
+    'Desmond Kroll': '#c2495a', 'Imani Rhodes': '#4fae7a', 'Sana Ferreira': '#9b86c4',
+    'Sen. Marcus Thorne': '#6f9fc9', 'Perry Nakash': '#e0b060', 'Adele Venn': '#7fd8a0',
+    'Greta Vail': '#b3ab97'
   };
   const initials = (n) => n.replace(/^Sen\. /, '').split(' ').map((w) => w[0]).slice(0, 2).join('');
 
@@ -39,6 +62,7 @@
       this.closeModal();
       this.show('menu');
       B.Main.refreshMenu();
+      B.Music.play('menu');
     },
 
     // ---- generic modal ----
@@ -69,6 +93,19 @@
       this.modal({ title, body: `<p>${body}</p>`, buttons: [{ label: 'Cancel' }, { label: okLabel, cls: 'primary', onClick: onOk }] });
     },
 
+    prompt(title, body, value, okLabel, onOk) {
+      this.modal({
+        title,
+        body: `<p>${body}</p><input type="text" id="prompt-input" maxlength="22" value="${B.esc(value || '')}" style="width:100%">`,
+        buttons: [
+          { label: 'Cancel' },
+          { label: okLabel, cls: 'primary', onClick: () => onOk(($('prompt-input') || {}).value) }
+        ]
+      });
+      const inp = $('prompt-input');
+      if (inp) setTimeout(() => { inp.focus(); inp.select(); }, 60);
+    },
+
     howtoModal(onClose) {
       const html = $('screen-howto').querySelector('.howto').innerHTML;
       this.modal({ title: 'How to Play', body: html, wide: true, buttons: [{ label: 'Got it', cls: 'primary', onClick: onClose }] });
@@ -83,6 +120,7 @@
         <div class="stat"><div class="l">Today's quota</div><div class="v">${b.quota > 0 ? F.money(b.quota) : 'none'}</div></div>
         <div class="stat"><div class="l">Open positions</div><div class="v">${Object.keys(g.broker.pos).length + g.broker.opts.length}</div></div>
       </div>`;
+      B.Music.play('brief');
       this.modal({
         kicker: `${b.kicker || ''} ${d.long}`,
         title: b.title,
@@ -90,19 +128,27 @@
         wide: true,
         buttons: [
           { label: 'Menu', onClick: () => this.pauseFromBriefing(g, b, onGo), cls: 'ghost' },
-          { label: '&#128276; Ring the Opening Bell', cls: 'primary', onClick: () => { B.SFX.unlock(); onGo(); } }
+          { label: 'Ring the Opening Bell', cls: 'primary', onClick: () => { B.SFX.unlock(); onGo(); } }
         ]
       });
     },
 
     pauseFromBriefing(g, b, onGo) {
+      const back = () => this.briefing(g, b, onGo);
       this.modal({
         title: 'Paused',
-        body: '<p>Progress auto-saves at the end of each trading day.</p>',
+        body: '<p>You are between trading days. Saving now keeps your progress up to the last closing bell.</p>',
         buttons: [
           { label: 'Quit to Menu', cls: 'ghost', onClick: () => g.quit() },
-          { label: 'How to Play', onClick: () => this.howtoModal(() => this.pauseFromBriefing(g, b, onGo)) },
-          { label: 'Back to Briefing', cls: 'primary', onClick: () => this.briefing(g, b, onGo) }
+          { label: 'How to Play', onClick: () => this.howtoModal(back) },
+          {
+            label: 'Save & Quit',
+            onClick: () => {
+              if (g.saveNow()) { B.UI.toast(`Saved to slot ${g.slot + 1}.`, 'good'); g.quit(); }
+              else { B.UI.toast('No free save slot. Free one up from Load Game.', 'bad'); back(); }
+            }
+          },
+          { label: 'Back to Briefing', cls: 'primary', onClick: back }
         ]
       });
     },
@@ -143,7 +189,7 @@
     // ---- story choice ----
     choice(c, S, onPick) {
       const opts = c.options.filter((o) => !o.req || o.req(S));
-      const av = AVATAR[c.speaker] || '#888';
+      const av = AVATAR[c.speaker] || '#7b7a8a';
       const body = `<div class="speaker"><div class="avatar" style="background:${av}">${initials(c.speaker)}</div><div><b>${c.speaker}</b><span>${c.role || ''}</span></div></div>` +
         c.text.map((p) => `<p>${p}</p>`).join('');
       const after = `<div class="choice-list">${opts.map((o) => `<button class="choice-btn" data-opt="${o.id}"><b>${o.label}</b>${o.hint ? `<span>${o.hint}</span>` : ''}</button>`).join('')}</div>`;
@@ -162,19 +208,23 @@
 
     // ---- endings ----
     ending(g, ending) {
-      if (g.mode.kind === 'story') this.storyEnding(g, ending);
-      else this.endlessEnding(g, ending);
+      const show = () => {
+        if (g.mode.kind === 'story') this.storyEnding(g, ending);
+        else this.endlessEnding(g, ending);
+      };
+      B.Cinematic.play('ending', { title: ending.title, deck: ending.deck, dark: !!ending.dark || ending.good === false }, show);
     },
 
     storyEnding(g, e) {
-      const scr = $('screen-endings').cloneNode(false);
+      const scr = document.createElement('section');
       scr.id = 'screen-ending-page';
       document.querySelectorAll('#screen-ending-page').forEach((x) => x.remove());
       scr.className = 'screen active';
       document.querySelectorAll('.screen').forEach((s) => s.classList.remove('active'));
-      const found = B.StoryEndings.discovered();
+      const tally = B.Save.tally();
+      const found = Object.keys(tally).length;
       scr.innerHTML = `<div class="ending-scroll"><article class="paper">
-        <div class="mast"><h1>The Daily Ledger</h1><div class="row"><span>${B.Calendar.dayInfo(Math.min(g.day + 1, 21)).long}</span><span>Final Edition</span><span>$2.00</span></div></div>
+        <div class="mast"><h1>The Daily Ledger</h1><div class="row"><span>${B.Calendar.dayInfo(Math.min(g.day + 1, 20)).long}</span><span>Final Edition</span><span>$2.00</span></div></div>
         <div class="hl">${e.headline}</div>
         <div class="deck">${e.deck}</div>
         <div class="cols">
@@ -184,19 +234,20 @@
             <ul>${(e.timeline || []).map((t) => `<li>${t}</li>`).join('') || '<li>You kept your head down.</li>'}</ul>
             <div class="box">
               <div><span>ENDING</span><b>${e.title}</b></div>
+              <div><span>Reached</span><b>${tally[e.id] || 1}x</b></div>
               <div><span>Final net worth</span><b>${F.money(e.wealth)}</b></div>
               <div><span>Starting capital</span><span>${F.money(g.startCapital)}</span></div>
               <div><span>Return</span><b>${F.pct(e.wealth / g.startCapital - 1)}</b></div>
               <div><span>Index, month</span><span>${F.pct(e.indexMonth || 0)}</span></div>
               <div><span>Days traded</span><span>${g.history.length}</span></div>
-              <div><span>Endings found</span><span>${found.length} / ${B.StoryEndings.list.length}</span></div>
+              <div><span>Endings found</span><span>${found} / ${B.StoryEndings.list.length}</span></div>
             </div>
           </div>
         </div>
       </article>
       <div class="paper-actions">
         <button class="btn primary" id="end-menu">Main Menu</button>
-        <button class="btn" id="end-again">Play Story Again</button>
+        <button class="btn" id="end-again">New Career</button>
         <button class="btn ghost" id="end-gallery">Endings</button>
       </div></div>`;
       $('app').appendChild(scr);
@@ -231,11 +282,18 @@
     },
 
     showEndings() {
-      const found = B.StoryEndings.discovered();
-      $('endings-list').innerHTML = B.StoryEndings.list.map((e) => {
-        const got = found.includes(e.id);
-        return `<div class="ending-row ${got ? '' : 'locked'}"><div class="ico">${got ? e.icon : '&#128274;'}</div><div><b>${got ? e.title : '???'}</b><span>${got ? e.hint : e.lockedHint}</span></div></div>`;
-      }).join('');
+      const tally = B.Save.tally();
+      const found = Object.keys(tally).length;
+      const total = B.StoryEndings.list.length;
+      const runs = B.Save.totalRuns();
+      $('endings-list').innerHTML =
+        `<p class="endings-summary">${found} of ${total} endings found across ${runs} finished ${runs === 1 ? 'career' : 'careers'}.</p>` +
+        B.StoryEndings.list.map((e) => {
+          const n = tally[e.id] || 0;
+          return `<div class="ending-row ${n ? '' : 'locked'}"><div class="ico">${n ? e.icon : '&#128274;'}</div>
+            <div><b>${n ? e.title : '???'}</b><span>${n ? e.hint : e.lockedHint}</span></div>
+            <div class="count">${n ? '&times;' + n : ''}</div></div>`;
+        }).join('');
       this.show('endings');
     },
 
@@ -245,27 +303,49 @@
         <div class="fieldset">
           <h3>Audio</h3>
           <div class="check"><input type="checkbox" id="set-sound" ${s.sound ? 'checked' : ''}><label for="set-sound">Sound effects</label><span></span></div>
-          <div class="field"><label for="set-vol">Volume</label><input type="range" id="set-vol" min="0" max="1" step="0.05" value="${s.volume}"><output id="set-vol-o">${Math.round(s.volume * 100)}%</output></div>
+          <div class="field"><label for="set-vol">SFX volume</label><input type="range" id="set-vol" min="0" max="1" step="0.05" value="${s.volume}"><output id="set-vol-o">${Math.round(s.volume * 100)}%</output></div>
+          <div class="check"><input type="checkbox" id="set-music" ${s.music ? 'checked' : ''}><label for="set-music">Music</label><span></span></div>
+          <div class="field"><label for="set-mvol">Music volume</label><input type="range" id="set-mvol" min="0" max="1" step="0.05" value="${s.musicVolume}"><output id="set-mvol-o">${Math.round(s.musicVolume * 100)}%</output></div>
           <button class="btn small" id="set-test">Test sound</button>
         </div>
         <div class="fieldset" style="margin-top:14px">
           <h3>Comfort</h3>
-          <div class="check"><input type="checkbox" id="set-rm" ${s.reducedMotion ? 'checked' : ''}><label for="set-rm">Reduced motion (no screen shake or chart jitter)</label><span></span></div>
-          <div class="field"><label for="set-dl">Story day length</label>
-            <select id="set-dl"><option value="120">2 minutes (frantic)</option><option value="240">4 minutes (default)</option><option value="420">7 minutes (relaxed)</option></select><output></output></div>
+          <div class="field"><label for="set-fx">Screen effects</label>
+            <select id="set-fx">
+              <option value="full">Full (shake, vignette, chart jitter)</option>
+              <option value="reduced">Reduced (soft vignette, no movement)</option>
+              <option value="off">Off</option>
+            </select><output></output></div>
+          <div class="field"><label for="set-cine">Cinematics</label>
+            <select id="set-cine">
+              <option value="full">Full</option>
+              <option value="short">Short (one card)</option>
+              <option value="off">Skip</option>
+            </select><output></output></div>
+          <div class="field"><label for="set-dl">Career day length</label>
+            <select id="set-dl">
+              <option value="120">2 minutes (frantic)</option>
+              <option value="180">3 minutes (default)</option>
+              <option value="300">5 minutes (relaxed)</option>
+            </select><output></output></div>
         </div>
         <div class="fieldset" style="margin-top:14px">
           <h3>Data</h3>
           <button class="btn small danger" id="set-reset">Delete all saves, endings and leaderboards</button>
         </div>`;
+      $('set-fx').value = s.effects;
+      $('set-cine').value = s.cinematics;
       $('set-dl').value = String(s.storyDayLength);
       $('set-sound').addEventListener('change', (e) => B.Settings.set('sound', e.target.checked));
       $('set-vol').addEventListener('input', (e) => { B.Settings.set('volume', +e.target.value); $('set-vol-o').textContent = Math.round(e.target.value * 100) + '%'; });
+      $('set-music').addEventListener('change', (e) => { B.Settings.set('music', e.target.checked); if (e.target.checked) B.Music.play('menu', true); });
+      $('set-mvol').addEventListener('input', (e) => { B.Settings.set('musicVolume', +e.target.value); $('set-mvol-o').textContent = Math.round(e.target.value * 100) + '%'; });
       $('set-test').addEventListener('click', () => { B.SFX.unlock(); B.SFX.bell(); });
-      $('set-rm').addEventListener('change', (e) => B.Settings.set('reducedMotion', e.target.checked));
+      $('set-fx').addEventListener('change', (e) => B.Settings.set('effects', e.target.value));
+      $('set-cine').addEventListener('change', (e) => B.Settings.set('cinematics', e.target.value));
       $('set-dl').addEventListener('change', (e) => B.Settings.set('storyDayLength', +e.target.value));
-      $('set-reset').addEventListener('click', () => this.confirm('Delete everything?', 'Removes story and endless saves, discovered endings and leaderboards. This can\'t be undone.', 'Delete', () => {
-        ['save:story', 'save:endless', 'endings', 'leaderboard'].forEach((k) => B.storage.remove(k));
+      $('set-reset').addEventListener('click', () => this.confirm('Delete everything?', 'Removes every save slot, the endings tally and all leaderboards. This can\'t be undone.', 'Delete', () => {
+        B.Save.wipe();
         B.UI.toast('All progress deleted.', 'warn');
         this.renderSettings();
       }));

@@ -1,0 +1,108 @@
+/* ============================================================
+   Bell to Bell V2 — design tokens
+   One locked 32-colour palette, mirrored in js/art/palette.js.
+   Washed-out daylight office: putty walls, dusty carpet, beige
+   CRT plastic, phosphor screens. Low saturation everywhere so
+   the red alerts actually land when they hit.
+   ============================================================ */
+:root {
+  /* --- neutrals --- */
+  --c-ink: #1b1a21;
+  --c-ink2: #2e2c38;
+  --c-slate: #454455;
+  --c-slate2: #5d5c6e;
+  --c-grey: #7b7a8a;
+  --c-grey2: #9a99a6;
+
+  /* --- room --- */
+  --c-putty: #b9b3a6;
+  --c-putty2: #cfc9bb;
+  --c-bone: #e4dfd2;
+  --c-white: #f4f1e8;
+  --c-carpet-d: #3a4a4a;
+  --c-carpet: #4d6260;
+  --c-carpet2: #617874;
+  --c-desk-d: #6b5c4c;
+  --c-desk: #8a7862;
+  --c-desk2: #a4917a;
+
+  /* --- hardware --- */
+  --c-plastic-d: #8f8878;
+  --c-plastic: #b3ab97;
+  --c-plastic2: #cdc5ae;
+  --c-screen-d: #0d1414;
+  --c-screen: #14201e;
+  --c-screen-glow: #1d2e2a;
+
+  /* --- signal --- */
+  --c-phosphor: #7fd8a0;
+  --c-phosphor-d: #4a9c6c;
+  --c-amber: #e0b060;
+  --c-amber-d: #a07a38;
+  --c-crimson: #c2495a;
+  --c-crimson-d: #8a2f3d;
+  --c-jade: #4fae7a;
+  --c-jade-d: #2f7a52;
+  --c-sky: #6f9fc9;
+  --c-violet: #9b86c4;
+
+  /* --- semantic --- */
+  --bg: var(--c-ink);
+  --text: var(--c-bone);
+  --muted: var(--c-grey2);
+  --dim: var(--c-grey);
+  --line: var(--c-slate);
+  --line-2: var(--c-slate2);
+  --up: var(--c-jade);
+  --down: var(--c-crimson);
+  --amber: var(--c-amber);
+  --blue: var(--c-sky);
+  --violet: var(--c-violet);
+  --panel: var(--c-screen);
+  --panel-2: var(--c-screen-glow);
+  --up-dim: rgba(79, 174, 122, 0.16);
+  --down-dim: rgba(194, 73, 90, 0.16);
+
+  /* --- type --- */
+  --pixel: "Silkscreen", "Press Start 2P", "Courier New", monospace;
+  --mono: "JetBrains Mono", "Cascadia Mono", "SF Mono", Consolas, Menlo, monospace;
+  --sans: var(--pixel);
+
+  /* --- pixel grid: everything snaps to 4px --- */
+  --u: 4px;
+  --u2: 8px;
+  --u3: 12px;
+  --u4: 16px;
+  --radius: 0px;
+
+  /* --- live state (set from JS) --- */
+  --stress: 0;
+  --fx: 1;          /* screen-effects multiplier: 1 full, 0.45 reduced, 0 off */
+}
+
+/* Crisp edges everywhere. No blurry upscaling, ever. */
+canvas,
+img {
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+}
+
+/* Chunky 2px bevel, the SNES window frame. */
+.bevel-up {
+  border-style: solid;
+  border-width: 2px;
+  border-color: var(--c-plastic2) var(--c-plastic-d) var(--c-plastic-d) var(--c-plastic2);
+}
+
+.bevel-down {
+  border-style: solid;
+  border-width: 2px;
+  border-color: var(--c-plastic-d) var(--c-plastic2) var(--c-plastic2) var(--c-plastic-d);
+}
+
+.bevel-screen {
+  border-style: solid;
+  border-width: 2px;
+  border-color: var(--c-ink) var(--c-slate) var(--c-slate) var(--c-ink);
+}

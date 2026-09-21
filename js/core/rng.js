@@ -1,4 +1,6 @@
 // Seeded PRNG (mulberry32) so every day/run is reproducible from its seed.
+// getState/setState let a saved game resume at the exact same cursor, which is
+// what makes mid-day saves restore identically (see js/core/save.js).
 (function (B) {
   'use strict';
 
@@ -25,6 +27,12 @@
         const r = Math.sqrt(-2 * Math.log(u));
         spare = r * Math.sin(2 * Math.PI * v);
         return r * Math.cos(2 * Math.PI * v);
+      },
+      getState() { return { s: s, spare: spare }; },
+      setState(st) {
+        if (!st) return;
+        s = (st.s >>> 0) || 1;
+        spare = st.spare == null ? null : st.spare;
       }
     };
   };

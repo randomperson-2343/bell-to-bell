@@ -4,38 +4,65 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Bell to Bell: 20XX</title>
-  <meta name="description" content="A stressful Wall Street day-trading simulator. Make as much money as humanly possible between the opening and closing bell.">
-  <link rel="stylesheet" href="css/style.css">
+  <meta name="description" content="A stressful 16-bit day-trading simulator. Make as much money as humanly possible between the opening and closing bell.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="css/ui.css">
+  <link rel="stylesheet" href="css/office.css">
 </head>
 <body>
   <div id="app">
 
+    <!-- BOOT / DISCLAIMER -->
+    <section id="screen-boot" class="screen active">
+      <div class="boot-wrap">
+        <div class="boot-logo"><span>BELL</span><em>to</em><span>BELL</span></div>
+        <div class="boot-sub">20XX</div>
+        <p class="boot-note">
+          Every company, person, instrument, agency, country and event in this game is
+          invented. Any resemblance to a real firm, a real person or a real event is
+          coincidence, not intention.
+        </p>
+        <button class="btn primary" id="btn-boot">Press Start</button>
+      </div>
+    </section>
+
     <!-- MAIN MENU -->
-    <section id="screen-menu" class="screen active">
+    <section id="screen-menu" class="screen">
       <div class="menu-wrap">
         <div class="ticker-tape" id="menu-tape"></div>
         <h1 class="logo"><span>BELL</span> <em>to</em> <span>BELL</span><small>20XX</small></h1>
         <p class="tagline">9:30 AM to 4:00 PM. Make as much money as humanly possible. Try not to have a breakdown.</p>
         <div class="menu-cols">
           <div class="menu-card">
-            <h2>Story Mode</h2>
-            <p>One trading month. A housing bubble built on HYDRA bonds. Every choice you make moves the market, and the country.</p>
-            <button class="btn primary" id="btn-story-new">New Story</button>
-            <button class="btn" id="btn-story-continue" hidden>Continue</button>
+            <h2>Career</h2>
+            <p>Fifteen trading days. A compute bubble built on CASCADE notes, a war you only see on the tape, and eight decisions that reshape the market and you.</p>
+            <button class="btn primary" id="btn-story-new">New Career</button>
           </div>
           <div class="menu-card">
-            <h2>Endless Mode</h2>
+            <h2>Endless</h2>
             <p>No script. Pick your poison: volatility, leverage, fake rumors, crash odds, and exactly how you want it to end.</p>
             <button class="btn primary" id="btn-endless">Configure Run</button>
-            <button class="btn" id="btn-endless-continue" hidden>Continue</button>
           </div>
         </div>
         <div class="menu-row">
+          <button class="btn" id="btn-load">Load Game</button>
           <button class="btn ghost" id="btn-howto">How to Play</button>
           <button class="btn ghost" id="btn-settings">Settings</button>
           <button class="btn ghost" id="btn-endings">Endings</button>
         </div>
         <p class="fine">All companies, people and events are fictional.</p>
+      </div>
+    </section>
+
+    <!-- SAVE SLOTS -->
+    <section id="screen-saves" class="screen">
+      <div class="page">
+        <div class="page-head"><button class="btn ghost" data-back>&larr; Back</button><h2>Save Slots</h2></div>
+        <div id="slots-list"></div>
+        <p class="fine">Saves live in this browser. A slot that reaches an ending is kept as a record and can't be resumed.</p>
       </div>
     </section>
 
@@ -53,25 +80,34 @@
         <div class="page-head"><button class="btn ghost" data-back>&larr; Back</button><h2>How to Play</h2></div>
         <div class="howto">
           <h3>The goal</h3>
-          <p>Each trading day runs from the <b>opening bell (9:30)</b> to the <b>closing bell (4:00)</b>, which takes about four real minutes. Make as much money as you can. Your boss sets a <b>daily quota</b>. Miss it too often and you're done.</p>
+          <p>Each trading day runs from the <b>opening bell (9:30)</b> to the <b>closing bell (4:00)</b>, which takes about three real minutes. Make as much money as you can. Your boss sets a <b>daily quota</b>. Miss it three days running and you're done.</p>
+          <h3>Your desk</h3>
+          <ul>
+            <li>The <b>left monitor</b> is the trading terminal: watchlist, chart, order ticket, and your positions.</li>
+            <li>The <b>right monitor</b> is comms: the <b>Wire</b> (real news), <b>Chirp</b> (rumors, many of them fake), your <b>Inbox</b>, and the phone when it rings.</li>
+            <li>The <b>desk</b> below holds the clock, your coffee, the stress gauge and the pause button.</li>
+          </ul>
           <h3>Trading</h3>
           <ul>
-            <li><b>Buy</b> goes long and makes money when a stock rises. <b>Sell</b> closes a long position, or goes <b>short</b> when you're flat and makes money when it falls.</li>
-            <li><b>Leverage</b>: you can hold up to 4x your equity during the day, but only 2x overnight. Anything over that is force-sold at the close.</li>
-            <li><b>Margin call</b>: if your equity falls too far, an alarm sounds and a countdown starts. Cut positions or risk will dump your worst ones for you.</li>
+            <li><b>Buy</b> goes long and makes money when a stock rises. <b>Sell</b> closes a long, or goes <b>short</b> when you're flat and makes money when it falls.</li>
+            <li><b>Leverage</b>: you can hold several times your equity during the day, but only half that overnight. Anything over is force-sold at the close.</li>
+            <li><b>Margin call</b>: if equity falls too far, an alarm sounds and a countdown starts. Cut positions or risk will dump your worst ones for you.</li>
             <li><b>Limit</b> and <b>stop</b> orders wait for a price. <b>SL%</b> and <b>TP%</b> attach an automatic stop-loss and take-profit to a market order.</li>
-            <li><b>Options</b>: buy calls (bets that it goes up) or puts (bets that it goes down). You pay the premium in full, the payoff can be huge, and they expire.</li>
-            <li>Watch the <b>Wire</b> for real news. The <b>Chirp</b> feed is rumors. Some are real and early, many are fake.</li>
+            <li><b>Options</b>: calls bet it goes up, puts bet it goes down. You pay the premium in full, the payoff can be huge, and they expire.</li>
             <li><b>FEAR</b> tracks market panic. When it's high, spreads widen, options get expensive and slippage bites.</li>
           </ul>
+          <h3>Phone calls</h3>
+          <p>Clients pay commission for orders you work in time. Your boss calls to shout. And people call with <b>tips</b> — most of which do not work. Some are simply false. Some are true but already in the price. Some run your way just long enough to get you to size up, and then reverse. Acting on every tip is how you go broke.</p>
           <h3>Stress</h3>
-          <p>Losses, leverage, margin calls, ringing phones and a looming close all push up your stress. High stress shakes the screen and makes your hands slip (<b>fat-finger</b> orders). At 100 you have a <b>panic attack</b> and can't trade for a while. Going flat or taking a <b>coffee break</b> brings it down.</p>
+          <p>Losses, leverage, margin calls, ringing phones and a looming close all push up your stress. High stress makes your hands slip (<b>fat-finger</b> orders). At 100 you have a <b>panic attack</b> and can't trade for a while. Going flat or taking a <b>coffee break</b> brings it down.</p>
+          <h3>Saving</h3>
+          <p>Press <kbd>Esc</kbd> any time to pause, and <b>Save</b> or <b>Save &amp; Quit</b> — even in the middle of a session. You come back to the same minute, with the same positions and the same tape. You can keep six saves going at once.</p>
           <h3>Keys</h3>
           <table class="keys">
             <tr><td><kbd>B</kbd></td><td>Buy</td><td><kbd>S</kbd></td><td>Sell / Short</td></tr>
             <tr><td><kbd>C</kbd></td><td>Close selected</td><td><kbd>X</kbd></td><td>Flatten everything</td></tr>
             <tr><td><kbd>1</kbd>&ndash;<kbd>5</kbd></td><td>Size 10/25/50/75/100% of max</td><td><kbd>&uarr;</kbd><kbd>&darr;</kbd></td><td>Change ticker</td></tr>
-            <tr><td><kbd>A</kbd></td><td>Answer phone</td><td><kbd>Esc</kbd></td><td>Pause</td></tr>
+            <tr><td><kbd>A</kbd></td><td>Answer phone</td><td><kbd>Esc</kbd></td><td>Pause / Save</td></tr>
           </table>
         </div>
       </div>
@@ -88,7 +124,7 @@
     <!-- ENDINGS GALLERY -->
     <section id="screen-endings" class="screen">
       <div class="page narrow">
-        <div class="page-head"><button class="btn ghost" data-back>&larr; Back</button><h2>Endings Discovered</h2></div>
+        <div class="page-head"><button class="btn ghost" data-back>&larr; Back</button><h2>Endings</h2></div>
         <div id="endings-list"></div>
       </div>
     </section>
@@ -96,103 +132,135 @@
     <!-- GAME -->
     <section id="screen-game" class="screen">
       <div id="game-root">
-        <header id="topbar">
-          <div class="tb-block tb-time"><div class="tb-label" id="tb-date">&nbsp;</div><div class="tb-clock" id="tb-clock">9:30:00 AM</div></div>
-          <div class="tb-block"><div class="tb-label">Market</div><div class="tb-val" id="tb-status">&nbsp;</div></div>
-          <div class="tb-block"><div class="tb-label">INDX</div><div class="tb-val" id="tb-indx">&nbsp;</div></div>
-          <div class="tb-block"><div class="tb-label">FEAR</div><div class="tb-val" id="tb-fear">&nbsp;</div></div>
-          <div class="tb-block tb-pnl-block"><div class="tb-label">Day P&amp;L</div><div class="tb-big" id="tb-pnl">$0</div></div>
-          <div class="tb-block"><div class="tb-label">Equity</div><div class="tb-val" id="tb-equity">&nbsp;</div></div>
-          <div class="tb-block"><div class="tb-label">Buying Power</div><div class="tb-val" id="tb-bp">&nbsp;</div></div>
-          <div class="tb-block tb-meter"><div class="tb-label">Quota <span id="tb-quota-amt"></span></div><div class="bar"><div id="tb-quota-bar"></div></div></div>
-          <div class="tb-block tb-meter"><div class="tb-label">Stress <span id="tb-stress-num"></span></div><div class="bar stressbar"><div id="tb-stress-bar"></div></div></div>
-          <div class="tb-block tb-actions">
-            <button class="btn small" id="btn-coffee" title="Take a coffee break: lowers stress, but you can't trade for 15 minutes">&#9749; Break</button>
-            <button class="btn small" id="btn-pause" title="Pause (Esc)">&#10074;&#10074;</button>
-          </div>
-        </header>
+        <div id="office">
 
-        <aside id="watch" class="panel">
-          <div class="panel-h">Watchlist <span class="hint">&uarr;&darr;</span></div>
-          <div id="watch-list"></div>
-        </aside>
+          <!-- the wall above the desk -->
+          <header id="wall">
+            <div class="wall-plate" id="wall-date">&nbsp;</div>
+            <div class="wall-clock" id="tb-clock">9:30:00 AM</div>
+            <div class="wall-plate" id="tb-status">PRE-MARKET</div>
+          </header>
 
-        <main id="center" class="panel">
-          <div id="chart-head">
-            <span id="ch-sym" class="ch-sym"></span>
-            <span id="ch-name" class="ch-name"></span>
-            <span id="ch-price" class="ch-price"></span>
-            <span id="ch-chg"></span>
-            <span id="ch-pos" class="ch-pos"></span>
-            <div class="tf">
-              <button data-tf="1">1m</button><button data-tf="5" class="on">5m</button><button data-tf="15">15m</button>
-            </div>
-          </div>
-          <div id="chart-wrap"><canvas id="chart"></canvas><div id="halt-banner" hidden></div></div>
-          <div id="ticket">
-            <div class="tk-tabs">
-              <button class="on" data-tk="stock">Stock</button><button data-tk="options">Options</button>
-              <span id="tk-rules" class="tk-rules"></span>
-            </div>
-            <div id="tk-stock" class="tk-pane">
-              <div class="tk-row">
-                <label for="tk-qty">Qty</label>
-                <input id="tk-qty" type="number" min="1" step="1" value="100">
-                <div class="sizes">
-                  <button data-pct="0.1">10%</button><button data-pct="0.25">25%</button><button data-pct="0.5">50%</button><button data-pct="0.75">75%</button><button data-pct="1">MAX</button>
+          <div id="desk-top">
+
+            <!-- LEFT MONITOR: trading terminal -->
+            <div class="monitor" id="mon-left">
+              <div class="bezel-top"><span class="led"></span>TRADE TERMINAL<span class="bezel-brand">HOLLOWAY STERN</span></div>
+              <div class="screen">
+                <div id="term-stats">
+                  <div class="st"><span class="l">INDX</span><span class="v" id="tb-indx">&nbsp;</span></div>
+                  <div class="st"><span class="l">FEAR</span><span class="v" id="tb-fear">&nbsp;</span></div>
+                  <div class="st big"><span class="l">DAY P&amp;L</span><span class="v" id="tb-pnl">$0</span></div>
+                  <div class="st"><span class="l">EQUITY</span><span class="v" id="tb-equity">&nbsp;</span></div>
+                  <div class="st"><span class="l">BUY PWR</span><span class="v" id="tb-bp">&nbsp;</span></div>
+                  <div class="st meter"><span class="l">QUOTA <i id="tb-quota-amt"></i></span><span class="bar"><i id="tb-quota-bar"></i></span></div>
                 </div>
-                <span id="tk-max" class="muted"></span>
+
+                <aside id="watch" class="panel">
+                  <div class="panel-h">Watchlist <span class="hint">&uarr;&darr;</span></div>
+                  <div id="watch-list"></div>
+                </aside>
+
+                <main id="center" class="panel">
+                  <div id="chart-head">
+                    <span id="ch-sym" class="ch-sym"></span>
+                    <span id="ch-name" class="ch-name"></span>
+                    <span id="ch-price" class="ch-price"></span>
+                    <span id="ch-chg"></span>
+                    <span id="ch-pos" class="ch-pos"></span>
+                    <div class="tf">
+                      <button data-tf="1">1m</button><button data-tf="5" class="on">5m</button><button data-tf="15">15m</button>
+                    </div>
+                  </div>
+                  <div id="chart-wrap"><canvas id="chart"></canvas><div id="halt-banner" hidden></div></div>
+                  <div id="ticket">
+                    <div class="tk-tabs">
+                      <button class="on" data-tk="stock">Stock</button><button data-tk="options">Options</button>
+                      <span id="tk-rules" class="tk-rules"></span>
+                    </div>
+                    <div id="tk-stock" class="tk-pane">
+                      <div class="tk-row">
+                        <label for="tk-qty">Qty</label>
+                        <input id="tk-qty" type="number" min="1" step="1" value="100">
+                        <div class="sizes">
+                          <button data-pct="0.1">10%</button><button data-pct="0.25">25%</button><button data-pct="0.5">50%</button><button data-pct="0.75">75%</button><button data-pct="1">MAX</button>
+                        </div>
+                        <span id="tk-max" class="muted"></span>
+                      </div>
+                      <div class="tk-row">
+                        <label for="tk-type">Type</label>
+                        <select id="tk-type"><option value="market">Market</option><option value="limit">Limit</option><option value="stop">Stop</option></select>
+                        <input id="tk-price" type="number" step="0.01" placeholder="price" disabled>
+                        <label for="tk-sl">SL%</label><input id="tk-sl" class="short" type="number" step="0.5" min="0" placeholder="off">
+                        <label for="tk-tp">TP%</label><input id="tk-tp" class="short" type="number" step="0.5" min="0" placeholder="off">
+                        <span id="tk-est" class="muted"></span>
+                      </div>
+                      <div class="tk-row tk-actions">
+                        <button id="tk-buy" class="btn buy">BUY <kbd>B</kbd></button>
+                        <button id="tk-sell" class="btn sell">SELL / SHORT <kbd>S</kbd></button>
+                        <button id="tk-close" class="btn">CLOSE <kbd>C</kbd></button>
+                        <button id="tk-flat" class="btn danger">FLATTEN <kbd>X</kbd></button>
+                      </div>
+                    </div>
+                    <div id="tk-options" class="tk-pane" hidden>
+                      <div class="tk-row">
+                        <label for="op-exp">Expiry</label><select id="op-exp"></select>
+                        <label for="op-n">Contracts</label><input id="op-n" type="number" min="1" step="1" value="5" class="short">
+                        <span class="muted">1 contract = 100 shares. Paid in full.</span>
+                        <span id="op-iv" class="muted"></span>
+                      </div>
+                      <div id="op-chain"></div>
+                    </div>
+                  </div>
+                </main>
+
+                <section id="bottom" class="panel">
+                  <div class="bt-tabs">
+                    <button class="on" data-bt="positions">Positions</button>
+                    <button data-bt="orders">Orders <span id="orders-count" class="badge dim" hidden>0</span></button>
+                    <button data-bt="opts">Options</button>
+                    <button data-bt="trades">Trades</button>
+                    <span id="bt-summary" class="bt-summary"></span>
+                  </div>
+                  <div id="bt-content"></div>
+                </section>
               </div>
-              <div class="tk-row">
-                <label for="tk-type">Type</label>
-                <select id="tk-type"><option value="market">Market</option><option value="limit">Limit</option><option value="stop">Stop</option></select>
-                <input id="tk-price" type="number" step="0.01" placeholder="price" disabled>
-                <label for="tk-sl">SL%</label><input id="tk-sl" class="short" type="number" step="0.5" min="0" placeholder="off">
-                <label for="tk-tp">TP%</label><input id="tk-tp" class="short" type="number" step="0.5" min="0" placeholder="off">
-                <span id="tk-est" class="muted"></span>
-              </div>
-              <div class="tk-row tk-actions">
-                <button id="tk-buy" class="btn buy">BUY <kbd>B</kbd></button>
-                <button id="tk-sell" class="btn sell">SELL / SHORT <kbd>S</kbd></button>
-                <button id="tk-close" class="btn">CLOSE <kbd>C</kbd></button>
-                <button id="tk-flat" class="btn danger">FLATTEN ALL <kbd>X</kbd></button>
-              </div>
+              <div class="bezel-bottom"><span class="stand"></span></div>
             </div>
-            <div id="tk-options" class="tk-pane" hidden>
-              <div class="tk-row">
-                <label for="op-exp">Expiry</label><select id="op-exp"></select>
-                <label for="op-n">Contracts</label><input id="op-n" type="number" min="1" step="1" value="5" class="short">
-                <span class="muted">1 contract = 100 shares. Paid in full.</span>
-                <span id="op-iv" class="muted"></span>
+
+            <!-- RIGHT MONITOR: comms -->
+            <div class="monitor" id="mon-right">
+              <div class="bezel-top"><span class="led amber"></span>COMMS<span class="bezel-brand">LINE 41</span></div>
+              <div class="screen">
+                <div id="phone" hidden></div>
+                <div id="tasks"></div>
+                <div class="feed-tabs">
+                  <button class="on" data-feed="wire">Wire</button>
+                  <button data-feed="chirp">Chirp</button>
+                  <button data-feed="inbox">Inbox <span id="inbox-badge" class="badge" hidden>0</span></button>
+                </div>
+                <div id="feed-list"></div>
               </div>
-              <div id="op-chain"></div>
+              <div class="bezel-bottom"><span class="stand"></span></div>
             </div>
           </div>
-        </main>
 
-        <aside id="feed" class="panel">
-          <div id="phone" hidden></div>
-          <div id="tasks"></div>
-          <div class="feed-tabs">
-            <button class="on" data-feed="wire">Wire</button>
-            <button data-feed="chirp">Chirp</button>
-            <button data-feed="inbox">Inbox <span id="inbox-badge" class="badge" hidden>0</span></button>
-          </div>
-          <div id="feed-list"></div>
-        </aside>
+          <!-- the desk surface -->
+          <footer id="desk">
+            <button class="desk-btn" id="btn-coffee" title="Coffee break: lowers stress, but you can't trade for 15 minutes">
+              <span class="mug"></span><span class="desk-label">Break</span>
+            </button>
+            <div class="desk-gauge">
+              <span class="desk-label">Stress <i id="tb-stress-num">0</i></span>
+              <span class="gauge"><i id="tb-stress-bar"></i></span>
+            </div>
+            <div class="desk-spacer"></div>
+            <button class="desk-btn" id="btn-focus" title="Hide the office frame"><span class="desk-label">Focus</span></button>
+            <button class="desk-btn" id="btn-pause" title="Pause / Save (Esc)"><span class="desk-label">&#10074;&#10074; Menu</span></button>
+          </footer>
 
-        <section id="bottom" class="panel">
-          <div class="bt-tabs">
-            <button class="on" data-bt="positions">Positions</button>
-            <button data-bt="orders">Orders <span id="orders-count" class="badge dim" hidden>0</span></button>
-            <button data-bt="opts">Options</button>
-            <button data-bt="trades">Trades</button>
-            <span id="bt-summary" class="bt-summary"></span>
-          </div>
-          <div id="bt-content"></div>
-        </section>
-
-        <div id="mc-banner" hidden></div>
+          <div id="mc-banner" hidden></div>
+        </div>
       </div>
     </section>
   </div>
@@ -205,9 +273,11 @@
       <h2>PAUSED</h2>
       <p>The market waits for no one, except you, apparently.</p>
       <button class="btn primary" id="btn-resume">Resume</button>
-      <button class="btn" id="btn-howto-ingame">How to Play</button>
-      <button class="btn ghost" id="btn-quit">Quit to Menu</button>
-      <p class="fine">Progress auto-saves at the end of each trading day.</p>
+      <button class="btn" id="btn-save">Save</button>
+      <button class="btn" id="btn-save-quit">Save &amp; Quit</button>
+      <button class="btn ghost" id="btn-howto-ingame">How to Play</button>
+      <button class="btn ghost" id="btn-quit">Quit without saving</button>
+      <p class="fine" id="pause-slot"></p>
     </div>
   </div>
   <div id="modal-layer"></div>
@@ -218,7 +288,12 @@
   <script src="js/core/rng.js"></script>
   <script src="js/core/events.js"></script>
   <script src="js/core/storage.js"></script>
+  <script src="js/core/save.js"></script>
   <script src="js/core/clock.js"></script>
+  <script src="js/art/palette.js"></script>
+  <script src="js/art/pixel.js"></script>
+  <script src="js/art/scenes.js"></script>
+  <script src="js/art/cinematic.js"></script>
   <script src="js/market/tickers.js"></script>
   <script src="js/market/engine.js"></script>
   <script src="js/market/news.js"></script>
@@ -226,12 +301,14 @@
   <script src="js/trading/broker.js"></script>
   <script src="js/stress.js"></script>
   <script src="js/audio/sfx.js"></script>
+  <script src="js/audio/music.js"></script>
   <script src="js/interrupts.js"></script>
   <script src="js/game.js"></script>
   <script src="js/ui/chart.js"></script>
   <script src="js/ui/ticket.js"></script>
   <script src="js/ui/hud.js"></script>
   <script src="js/ui/screens.js"></script>
+  <script src="js/ui/saveslots.js"></script>
   <script src="js/modes/story/story-data.js"></script>
   <script src="js/modes/story/endings.js"></script>
   <script src="js/modes/story/story-engine.js"></script>

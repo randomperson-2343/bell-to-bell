@@ -36,6 +36,17 @@ window.BTB = window.BTB || {};
     cls(v) { return v > 1e-9 ? 'up' : v < -1e-9 ? 'down' : 'flat'; }
   };
 
+  // "3 minutes ago" for save-slot listings.
+  B.timeAgo = function (ts) {
+    if (!ts) return 'never';
+    const s = Math.max(0, (Date.now() - ts) / 1000);
+    if (s < 60) return 'just now';
+    if (s < 3600) return Math.floor(s / 60) + ' min ago';
+    if (s < 86400) return Math.floor(s / 3600) + 'h ago';
+    const d = Math.floor(s / 86400);
+    return d === 1 ? 'yesterday' : d + ' days ago';
+  };
+
   B.el = (id) => document.getElementById(id);
   B.esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 })(window.BTB);

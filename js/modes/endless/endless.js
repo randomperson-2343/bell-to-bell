@@ -5,10 +5,10 @@
   const F = B.fmt;
 
   const PRESETS = {
-    intern: { presetName: 'Intern', capital: 50000, volMult: 0.7, newsFreq: 1, fakeShare: 0.1, crashProb: 0.02, maxLev: 2, feeMult: 0.5, maintStrict: 0.8, stressRate: 0.6, callFreq: 0.6, dayLength: 240 },
-    trader: { presetName: 'Trader', capital: 100000, volMult: 1, newsFreq: 1.2, fakeShare: 0.25, crashProb: 0.05, maxLev: 4, feeMult: 1, maintStrict: 1, stressRate: 1, callFreq: 1, dayLength: 240 },
-    shark: { presetName: 'Shark', capital: 250000, volMult: 1.4, newsFreq: 1.6, fakeShare: 0.4, crashProb: 0.08, maxLev: 6, feeMult: 1.2, maintStrict: 1.1, stressRate: 1.3, callFreq: 1.3, dayLength: 240 },
-    degenerate: { presetName: 'Degenerate', capital: 5000, volMult: 2.2, newsFreq: 2.2, fakeShare: 0.6, crashProb: 0.18, maxLev: 10, feeMult: 1, maintStrict: 1.25, stressRate: 1.7, callFreq: 1.6, dayLength: 240 }
+    intern: { presetName: 'Intern', capital: 50000, volMult: 0.7, newsFreq: 1, fakeShare: 0.1, crashProb: 0.02, maxLev: 2, feeMult: 0.5, maintStrict: 0.8, stressRate: 0.6, callFreq: 0.6, dayLength: 180 },
+    trader: { presetName: 'Trader', capital: 100000, volMult: 1, newsFreq: 1.2, fakeShare: 0.25, crashProb: 0.05, maxLev: 4, feeMult: 1, maintStrict: 1, stressRate: 1, callFreq: 1, dayLength: 180 },
+    shark: { presetName: 'Shark', capital: 250000, volMult: 1.4, newsFreq: 1.6, fakeShare: 0.4, crashProb: 0.08, maxLev: 6, feeMult: 1.2, maintStrict: 1.1, stressRate: 1.3, callFreq: 1.3, dayLength: 180 },
+    degenerate: { presetName: 'Degenerate', capital: 5000, volMult: 2.2, newsFreq: 2.2, fakeShare: 0.6, crashProb: 0.18, maxLev: 10, feeMult: 1, maintStrict: 1.25, stressRate: 1.7, callFreq: 1.6, dayLength: 180 }
   };
   const DEFAULT_ENDS = { broke: true, drawdown: false, drawdownPct: 50, sudden: false, quota: false, quotaPct: 0.5, panic: false, target: true, targetMult: 3, days: false, daysN: 20 };
 
@@ -51,7 +51,6 @@
     const S = save ? save.S : { regime: 'bull', missStreak: 0, quotaDay: 0, ended: false };
     const mode = {
       kind: 'endless',
-      saveKey: 'save:endless',
       cfg,
       seed: cfg.seed,
       capital: cfg.capital,
@@ -59,7 +58,11 @@
       lastDay: Infinity,
       volMult: cfg.volMult, feeMult: cfg.feeMult, maintStrict: cfg.maintStrict, stressRate: cfg.stressRate,
       callFreq: cfg.callFreq, fakeShare: cfg.fakeShare,
+      // Tips are unreliable here too; the "fake rumors" slider pushes them worse.
+      tipOdds: { real: B.clamp(0.42 - cfg.fakeShare * 0.4, 0.1, 0.42), stale: 0.16, reversal: 0.14 },
       S,
+
+      slotLabel(g) { return `${cfg.presetName} · Day ${g.day + 1}`; },
 
       nextRegime(d) {
         const rng = B.RNG(B.hashSeed(cfg.seed + '|regime|' + d));
@@ -220,7 +223,7 @@
         <div class="presets">${presetBtns}</div>
         <div class="form-grid">
           <div class="fieldset"><h3>Difficulty</h3>${sliders}
-            <div class="field"><label for="es-dayLength">Day length</label><select id="es-dayLength"><option value="120">2 min</option><option value="240">4 min</option><option value="420">7 min</option></select><output></output></div>
+            <div class="field"><label for="es-dayLength">Day length</label><select id="es-dayLength"><option value="120">2 min</option><option value="180">3 min</option><option value="240">4 min</option><option value="420">7 min</option></select><output></output></div>
             <div class="field"><label for="es-seed">Seed</label><input type="text" id="es-seed" value="${B.esc(c.seed)}" maxlength="16"><output></output></div>
           </div>
           <div>

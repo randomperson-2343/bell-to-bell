@@ -13,21 +13,27 @@ function load() {
   };
   ctx.window = ctx;
   vm.createContext(ctx);
-  const files = ['js/core/util.js', 'js/core/rng.js', 'js/core/events.js', 'js/core/storage.js', 'js/core/clock.js',
+  ctx.setInterval = () => 0; ctx.clearInterval = () => {}; ctx.setTimeout = () => 0;
+  const files = ['js/core/util.js', 'js/core/rng.js', 'js/core/events.js', 'js/core/storage.js', 'js/core/save.js', 'js/core/clock.js',
     'js/market/tickers.js', 'js/market/engine.js', 'js/market/news.js', 'js/trading/options.js', 'js/trading/broker.js',
-    'js/stress.js', 'js/audio/sfx.js', 'js/interrupts.js', 'js/game.js'];
+    'js/stress.js', 'js/audio/sfx.js', 'js/audio/music.js', 'js/interrupts.js', 'js/game.js'];
   for (const f of files) vm.runInContext(fs.readFileSync(path.join(root, f), 'utf8'), ctx, { filename: f });
   vm.runInContext(`
     const B = window.BTB;
-    B.Settings = { get: () => ({ storyDayLength: 240, reducedMotion: true }) };
+    B.Settings = {
+      get: () => ({ storyDayLength: 180, effects: 'off', cinematics: 'off' }),
+      set: () => {}, fx: () => 0, motion: () => false, apply: () => {}
+    };
     const noop = () => {};
-    B.UI = new Proxy({}, { get: () => noop });
+    B.UI = new Proxy({}, { get: (t, k) => (k === 'snapshotFeed' ? () => ({}) : noop) });
+    B.Cinematic = { running: false, play: (n, o, cb) => cb && cb() };
     B.Screens = { pendingCb: null, result: null,
       briefing(g, b, cb) { this.pendingCb = cb; },
       eod(g, r, cb) { this.log.push(r); cb(); },
       choice(c, S, pick) { pick(this.policy(c)); },
       aftermath(t, x, cb) { cb(); },
       ending(g, e) { this.result = e; },
+      closeModal() {},
       log: [] };
   `, ctx);
   for (const f of ['js/modes/story/story-data.js', 'js/modes/story/endings.js', 'js/modes/story/story-engine.js', 'js/modes/endless/endless.js']) {
@@ -76,12 +82,12 @@ function play(B, mode, policy, style, seed) {
 }
 
 const POLICIES = {
-  whistle: { c1: 'leak', c2: 'report', c3: 'regulate', c4: 'tip', c5: 'bailout', c6: 'disclose', c7: 'testify', c8: 'book' },
-  depression: { c1: 'comply', c2: 'ignore', c3: 'dereg', c4: 'join', c5: 'fail', c6: 'hide', c7: 'no', c8: 'stay' },
-  soft: { c1: 'refuse', c2: 'report', c3: 'regulate', c4: 'refuse', c5: 'bailout', c6: 'disclose', c7: 'yes', c8: 'stay' },
-  crook: { c1: 'comply', c2: 'trade', c3: 'dereg', c4: 'join', c5: 'merger', c6: 'hide', c7: 'testify', c8: 'flee' },
-  insider: { c1: 'comply', c2: 'trade', c3: 'dereg', c4: 'join', c5: 'bailout', c6: 'hide', c7: 'yes', c8: 'stay' },
-  treasury: { c1: 'comply', c2: 'report', c3: 'dereg', c4: 'refuse', c5: 'bailout', c6: 'defect', c7: 'yes', c8: 'treasury' }
+  whistle: { c1: 'leak', c2: 'warn', c3: 'no', c4: 'tell', c5: 'bail', c6: 'report', c7: 'whip', c8: 'public' },
+  depression: { c1: 'dump', c2: 'ignore', c3: 'yes', c4: 'join', c5: 'fail', c6: 'sign', c7: 'against', c8: 'quiet' },
+  soft: { c1: 'refuse', c2: 'warn', c3: 'no', c4: 'refuse', c5: 'bail', c6: 'refuse', c7: 'whip', c8: 'quiet' },
+  crook: { c1: 'dump', c2: 'trade', c3: 'yes', c4: 'join', c5: 'ban', c6: 'sign', c7: 'position', c8: 'flee' },
+  insider: { c1: 'dump', c2: 'trade', c3: 'yes', c4: 'join', c5: 'bail', c6: 'sign', c7: 'whip', c8: 'quiet' },
+  treasury: { c1: 'dump', c2: 'warn', c3: 'yes', c4: 'refuse', c5: 'bail', c6: 'refuse', c7: 'whip', c8: 'treasury' }
 };
 
 let errors = 0;

@@ -1,5 +1,9 @@
-// STORY MODE CONTENT: 21 trading days in 20XX, 8 decisions.
+// STORY MODE CONTENT: 15 trading days, 8 decisions, 4 acts.
 // Each day's scenario is a function of story state S, so choices reshape the market itself.
+//
+// Everything here is invented. The firms, the people, the instruments, the bills,
+// the countries and the conflicts are fiction. Any resemblance to a real company,
+// person or event is coincidence, not intention.
 (function (B) {
   'use strict';
 
@@ -13,15 +17,18 @@
     for (const k in r || {}) S.rel[k] = B.clamp(S.rel[k] + r[k], 0, 100);
   };
   // Crash severity: low systemic stability and deregulation make every drop deeper.
-  const cm = (S) => B.clamp(1 + (60 - S.m.stability) / 60 * 0.8 + (S.f.dereg ? 0.2 : 0), 0.85, 2.2);
-  const FIN = ['bank', 'lender', 'insurer', 'gse'];
-  const boss = (S) => (S.f.defected ? 'Mara Linde' : 'Garrett Vance');
+  const cm = (S) => B.clamp(1 + (60 - S.m.stability) / 60 * 0.8 + (S.f.dereg ? 0.25 : 0), 0.85, 2.2);
+  const FIN = ['bank', 'lender', 'insurer'];
+  const STACK = ['ai', 'chip', 'dc'];
+  const boss = (S) => (S.f.defected ? 'Imani Rhodes' : 'Desmond Kroll');
 
-  const QUOTAS = [0.003, 0.004, 0.005, 0.005, 0.006, 0.008, 0.008, 0.008, 0.01, 0.012,
-    0.015, 0.015, 0.012, 0.012, 0.012, 0.01, 0.01, 0.02, 0.015, 0.012, 0.015];
+  // Quota as a share of current equity. Roughly double V1 on day one, and it
+  // scales with the book, so getting rich does not get you off the hook.
+  const QUOTAS = [0.006, 0.007, 0.008, 0.009, 0.011, 0.012, 0.014, 0.015,
+    0.017, 0.018, 0.020, 0.020, 0.022, 0.020, 0.025];
 
-  const ACTS = ['I · EUPHORIA', 'II · TREMORS', 'III · CONTAGION', 'IV · RECKONING'];
-  const actOf = (d) => (d < 5 ? ACTS[0] : d < 10 ? ACTS[1] : d < 15 ? ACTS[2] : ACTS[3]);
+  const ACTS = ['I · MELT-UP', 'II · TREMORS', 'III · CONTAGION', 'IV · RECKONING'];
+  const actOf = (d) => (d < 4 ? ACTS[0] : d < 8 ? ACTS[1] : d < 12 ? ACTS[2] : ACTS[3]);
 
   // =====================================================================
   // DAYS
@@ -30,625 +37,796 @@
     // ---- Day 1 ----
     {
       title: 'First Day on the Desk',
-      brief: (S) => [
-        'Halbrook &amp; Vance, 41st floor. Your badge photo is still warm. <b>Garrett Vance</b>, Head of Trading, has given you a <b>$250,000</b> book and one rule: <i>make money every single day.</i>',
-        'The market is at record highs. Home prices have gone up 41 months straight. Everyone is getting rich on <b>HYDRA bonds</b>: AAA-rated bundles of "Flex-rate" mortgages that H&amp;V builds and sells by the billion.',
-        '<b>Dana Okafor</b>, the desk\'s senior trader, slides a coffee across. "Watch the Wire. Chirp is mostly idiots, but idiots move prices. And never, ever hold more than you can stomach overnight."'
+      brief: () => [
+        'Holloway Stern, 41st floor. Your badge photo is still warm. <b>Desmond Kroll</b>, Head of Trading, has given you a <b>$250,000</b> book and one rule: <i>make money every single day.</i>',
+        'The market is at a record. Corvus Intelligence ships a new model tonight and every company that owns a datacenter has tripled. The firm sells <b>CASCADE notes</b> by the billion: datacenter lease payments and consumer loans, bundled together and stamped AAA by <b>Meridian Ratings</b>.',
+        '<b>Imani Rhodes</b>, the desk\'s senior trader, slides a coffee across. "Watch the Wire. Chirp is mostly idiots, but idiots move prices. And never, ever hold more than you can stomach overnight."'
       ],
-      scen: (S) => ({
-        regime: 'bubble', market: { gap: 0.002, target: 0.005 }, sectors: { tech: { target: 0.006 } },
+      scen: () => ({
+        regime: 'melt', market: { gap: 0.002, target: 0.006 }, sectors: { ai: { target: 0.012 }, chip: { target: 0.009 } },
         events: [
-          ev(45, 'Novaline AI unveils "Oracle-5" model; analysts call it "a new industrial revolution"', [['ticker', 'NOVA', 0.05, 0.4]], { rumor: R(8, 'hearing $NOVA has something HUGE dropping this morning. loading up', '@DeepValueDan') }),
-          ev(210, 'Home prices post 42nd straight monthly gain; national index at all-time high', [['sector', 'builder', 0.02], ['market', '', 0.003]]),
-          chirp(250, 'housing literally cannot go down. it is physically impossible. do the math', '@SubprimeSteve'),
-          ev(335, 'NestEgg Home Lending delays quarterly filing, cites "accounting review"', [['ticker', 'NSTG', -0.05, 0.3]], { rumor: R(12, '$NSTG filing late?? something smells in there', '@BearCaveBets') })
+          ev(40, 'Corvus Intelligence unveils LATTICE-9; analysts call it "a new industrial revolution"', [['ticker', 'CRVS', 0.055, 0.4], ['sector', 'chip', 0.02]], { rumor: R(9, 'hearing $CRVS drops something HUGE this morning. loading up', '@ScalingLawSteve') }),
+          ev(205, 'Compute capex forecasts raised again; datacenter leasing at record', [['sector', 'dc', 0.025], ['market', '', 0.003]]),
+          chirp(240, 'compute demand literally cannot go down. it is physically impossible. do the math', '@GPUgoblin'),
+          ev(330, 'Fairline Credit delays quarterly filing, cites "accounting review"', [['ticker', 'FRLN', -0.05, 0.3]], { rumor: R(12, '$FRLN filing late?? something smells in there', '@BearCaveBets') })
         ]
       }),
-      inbox: (S) => [
-        { t: 2, from: 'Dana Okafor', text: 'Welcome. Click a ticker on the left, set a size, hit BUY (B) or SELL (S). SELL when you\'re flat means you\'re short.' },
-        { t: 20, from: 'Dana Okafor', text: 'Your quota is in the top bar. Hit it every day. Vance counts.' },
-        { t: 60, from: 'Dana Okafor', text: 'Stress meter\'s up there too. If it maxes out you\'ll lock up. Going flat or grabbing a coffee brings it down.' },
-        { t: 330, from: 'Dana Okafor', text: 'Keep an eye on NestEgg. Late filings are never good news.' }
+      inbox: () => [
+        { t: 2, from: 'Imani Rhodes', text: 'Welcome. Click a ticker on the left, set a size, hit BUY (B) or SELL (S). SELL when you\'re flat means you\'re short.' },
+        { t: 22, from: 'Imani Rhodes', text: 'Your quota is on the left screen. Hit it every day. Kroll counts.' },
+        { t: 65, from: 'Imani Rhodes', text: 'Stress gauge is on the desk. If it maxes out you lock up. Going flat or grabbing a coffee brings it down.' },
+        { t: 320, from: 'Imani Rhodes', text: 'Watch Fairline. Late filings are never good news. Consumer credit is the quiet half of CASCADE.' }
       ]
     },
+
     // ---- Day 2 ----
     {
       title: 'Up Only',
-      brief: (S) => [
-        'Kingsbridge Homes crushed earnings before the open. Talking heads on every screen say the same thing: <i>this time is different.</i>',
-        'Vance walks past your desk without looking at you. "Rookies usually blow up by Thursday. Prove me wrong."'
+      brief: () => [
+        'Thorncrest Silicon crushed earnings before the open. Every talking head says the same sentence: <i>this time the demand is real.</i>',
+        'Kroll walks past your desk without looking at you. "Rookies usually blow up by Thursday. Prove me wrong."'
       ],
-      scen: (S) => ({
-        regime: 'bubble', market: { gap: 0.001, target: 0.004 }, tickers: { KBLD: { gap: 0.035, target: 0.045 } },
+      scen: () => ({
+        regime: 'melt', market: { gap: 0.001, target: 0.005 }, tickers: { THSI: { gap: 0.038, target: 0.048 } },
         events: [
-          ev(0, 'PRE-MARKET: Kingsbridge Homes beats on revenue, raises full-year outlook', []),
-          chirp(120, 'BREAKING?? $LRMR getting bought by a sovereign fund at 40% premium. source: my uncle', '@CallsOnlyCarl'),
-          ev(150, 'Lorimer Brothers: "We are not in talks with anyone"', [['ticker', 'LRMR', -0.01]]),
-          ev(270, 'Fed minutes: officials see "no urgency" to raise rates', [['market', '', 0.005, 0.5]], { rumor: R(10, 'fed minutes leaking dovish. risk ON', '@MacroMaven') })
+          ev(0, 'PRE-MARKET: Thorncrest Silicon beats on revenue, raises full-year outlook', []),
+          chirp(115, 'BREAKING?? $RDGW getting bought by a sovereign fund at 40% premium. source: my uncle', '@CallsOnlyCarl'),
+          ev(150, 'Ridgeway Trust: "We are not in talks with anyone"', [['ticker', 'RDGW', -0.012]]),
+          ev(230, 'Halcyon Mind Labs raises at a $90B valuation with no product revenue', [['ticker', 'HALO', 0.09, 0.5], ['sector', 'ai', 0.02]]),
+          ev(300, 'Central bank minutes: officials see "no urgency" to raise rates', [['market', '', 0.005, 0.5]], { rumor: R(10, 'minutes leaking dovish. risk ON', '@MacroMaven') })
         ]
       }),
-      inbox: (S) => [{ t: 125, from: 'Dana Okafor', text: 'That Lorimer buyout "rumor" on Chirp? Classic bait. Wait for the Wire.' }]
+      inbox: () => [{ t: 122, from: 'Imani Rhodes', text: 'That Ridgeway buyout "rumor" on Chirp? Classic bait. Wait for the Wire.' }]
     },
+
     // ---- Day 3 ----
     {
-      title: 'The HYDRA Machine',
-      brief: (S) => [
-        'H&amp;V just priced its biggest HYDRA deal ever: <b>$14 billion</b> of Flex-rate mortgages, stamped AAA by Monarch Ratings. The sales floor is ringing a ship\'s bell for every billion sold.',
-        'Dana is quiet this morning. She keeps pulling up delinquency charts nobody else is looking at.'
-      ],
-      scen: (S) => ({
-        regime: 'bull', market: { gap: 0.001, target: 0.002 },
+      title: 'The CASCADE Machine',
+      brief: (S) => {
+        const p = [
+          'Holloway Stern just priced its biggest CASCADE deal ever: <b>$14 billion</b> of datacenter leases stapled to consumer loans, stamped AAA by Meridian. The sales floor rings a ship\'s bell for every billion sold.',
+          'Imani is quiet this morning. She keeps pulling up a chart of consumer delinquencies that nobody else is looking at.'
+        ];
+        if (S.f.dumped) p.push('Kroll clapped you on the shoulder. "Riverbend took all forty million. You\'ll go far." Your bonus hit overnight.');
+        if (S.f.refusedDump) p.push('Kroll cut your limits after you refused the pension trade. Max leverage is <b>3x</b> this week.');
+        if (S.f.leaked) p.push('Sana Ferreira texted at 2 AM: "Got the documents. Running it next week. Thank you."');
+        return p;
+      },
+      scen: () => ({
+        regime: 'bubble', market: { gap: 0.001, target: 0.002 },
         events: [
-          ev(60, 'H&V prices record $14B HYDRA offering; demand "off the charts"', [['ticker', 'HVNB', 0.025, 0.3]]),
-          ev(240, 'Flex-rate mortgage delinquencies climb to 6.1%, highest in a decade', [['sector', 'lender', -0.03, 0.3], ['sector', 'builder', -0.015]], { rumor: R(12, 'delinquency data is going to be ugly. just saying', '@BondVigilante') }),
-          chirp(260, '6.1% delinquencies is fine. FINE. everything is fine', '@TendiesTomorrow')
+          ev(55, 'Holloway Stern prices record $14B CASCADE offering; demand "off the charts"', [['ticker', 'HLST', 0.028, 0.3], ['sector', 'bank', 0.01]]),
+          ev(235, 'Consumer loan delinquencies climb to 6.4%, highest in a decade', [['sector', 'lender', -0.035, 0.3], ['sector', 'bank', -0.012]], { rumor: R(12, 'delinquency print is going to be ugly. just saying', '@BondVigilante') }),
+          chirp(255, '6.4% delinquencies is fine. FINE. the datacenters pay the coupon anyway', '@TendiesTomorrow'),
+          ev(345, 'Bastion Compute signs 12-year lease with an unnamed model lab', [['ticker', 'BSTN', 0.03, 0.3]])
         ]
       }),
-      inbox: (S) => [{ t: 250, from: 'Dana Okafor', text: 'Delinquencies up two points in a year and HYDRA is still AAA. Think about that.' }]
+      inbox: () => [{ t: 246, from: 'Imani Rhodes', text: 'Delinquencies up two points in a year, and CASCADE is still AAA. Think about what that means.' }]
     },
+
     // ---- Day 4 ----
     {
       title: 'Insiders',
-      brief: (S) => {
-        const p = ['Oil is spiking on Middle East headlines. Energy traders are strutting.'];
-        if (S.f.dumped) p.push('Vance clapped you on the shoulder this morning. "Ohio Teachers took all forty million. You\'ll go far." Your bonus hit overnight.');
-        if (S.f.refusedDump) p.push('Vance cut your limits after you refused the pension deal. Your max leverage is <b>3x</b> this week.');
-        if (S.f.leaked) p.push('Rae Castellano texted at 2 AM: "Got the documents. Running it next week. Thank you."');
-        return p;
-      },
-      scen: (S) => ({
-        regime: 'bull', market: { gap: 0.0, target: 0.001 },
-        tickers: S.f.dumped ? { HVNB: { target: 0.015 } } : {},
-        events: [
-          ev(90, 'Oil jumps 6% on supply fears; PetroRex at 52-week high', [['sector', 'energy', 0.035, 0.3]]),
-          ev(315, 'Filings show NestEgg CEO sold 40% of his personal stake last month', [['ticker', 'NSTG', -0.07, 0.3]], { rumor: R(12, 'NestEgg CEO dumping shares?? form 4s are wild rn', '@TheTapeReader') })
-        ]
-      })
-    },
-    // ---- Day 5 ----
-    {
-      title: 'Hairline Cracks',
-      brief: (S) => [
-        'Friday. Sentinel Re, the insurer that guarantees half the HYDRA market, is quietly raising reserves. Nobody on TV mentions it.',
-        'Your phone has three missed calls from <b>Theo Mercer</b>, your college friend who works at Monarch Ratings.'
+      brief: () => [
+        'Something went wrong overnight in the Kavro Strait. Two tankers and a cable-laying ship. Energy is spiking, defense is spiking, and everyone on the floor suddenly has a geopolitical opinion.',
+        'Your phone has three missed calls from <b>Perry Nakash</b>, your college friend who works at Meridian Ratings.'
       ],
-      scen: (S) => ({
-        regime: 'chop', market: { gap: -0.001, target: -0.004 },
+      scen: () => ({
+        regime: 'chop', market: { gap: -0.001, target: 0.0 },
+        sectors: { defense: { gap: 0.02, target: 0.035 }, power: { gap: 0.015, target: 0.03 } },
         events: [
-          ev(30, 'Sentinel Re raises loss reserves on mortgage insurance book', [['ticker', 'SENT', -0.035, 0.3]]),
-          ev(360, 'Monarch Ratings declines to comment on reports of HYDRA review', [['sector', 'lender', -0.02]])
+          ev(35, 'Shipping halted through the Kavro Strait after overnight incident', [['sector', 'power', 0.04, 0.3], ['sector', 'defense', 0.03, 0.2], ['market', '', -0.006]]),
+          ev(120, 'Rare-earth export licences suspended pending "security review"', [['sector', 'chip', -0.035, 0.3]], { rumor: R(11, 'export licences getting pulled. chips are cooked', '@FlopsPerDollar') }),
+          ev(310, 'Filings show Fairline Credit CEO sold 40% of his personal stake last month', [['ticker', 'FRLN', -0.07, 0.3]], { rumor: R(12, 'Fairline CEO dumping shares?? the form 4s are wild rn', '@TheTapeReader') })
         ]
       }),
-      calls: (S) => [{
-        t: 300, scripted: true, kind: 'choice', choiceId: 'c2', from: 'Theo Mercer', role: 'Monarch Ratings · personal cell',
-        text: 'I shouldn\'t be calling you. Monarch downgrades 400+ HYDRA tranches Monday before the open. NestEgg and FlexRate are going to get destroyed. I just... I needed to tell someone.',
+      calls: (S) => (S.choices.c2 ? [] : [{
+        t: 150, scripted: true, kind: 'choice', choiceId: 'c2', timer: 22,
+        from: 'Perry Nakash', role: 'Senior Analyst, Meridian Ratings',
+        text: 'I shouldn\'t be calling you. The CASCADE committee met this morning. We are putting the whole 20XX vintage on downgrade watch. It goes public Monday. I just... someone should know.',
         options: [
-          { id: 'trade', label: 'Say thanks. Position before the close.' },
-          { id: 'report', label: 'Tell Theo you have to report this to compliance.' },
-          { id: 'ignore', label: 'Hang up. Pretend you never heard it.' }
+          { id: 'trade', label: 'Thank him. Then go short the stack.' },
+          { id: 'ignore', label: '"Perry, hang up. I never took this call."' },
+          { id: 'warn', label: 'Tell him to put it in writing and go to his compliance desk.' }
         ],
-        defaultOpt: 'ignore', timer: 20
-      }]
+        defaultOpt: 'ignore'
+      }]),
+      inbox: () => [{ t: 20, from: 'Desmond Kroll', text: 'War tape. Wide spreads, fast fills, real money. Don\'t be a tourist in it.' }]
     },
+
+    // ---- Day 5 ----
+    {
+      title: 'Circular',
+      brief: (S) => {
+        const p = [
+          'A research note went out at 4 AM from a small shop nobody had heard of. It lays out, with citations, that Thorncrest Silicon invested $6 billion into Halcyon Mind Labs, and that Halcyon spent $5.4 billion of it buying Thorncrest chips.',
+          'Both companies booked it as revenue. The note calls it "a circle with an income statement wrapped around it."'
+        ];
+        if (S.f.insiderTraded) p.push('Compliance has asked you, in writing, to explain the timing of your positions. You have not replied.');
+        return p;
+      },
+      scen: (S) => ({
+        regime: 'chop', market: { gap: -0.004, target: -0.008 },
+        sectors: { ai: { gap: -0.02, target: -0.035 }, chip: { gap: -0.015, target: -0.025 } },
+        events: [
+          ev(15, 'Research note alleges circular vendor financing between Thorncrest and Halcyon', [['ticker', 'THSI', -0.05, 0.3], ['ticker', 'HALO', -0.09, 0.4]], { big: true, rumor: R(8, 'someone is about to blow the lid off the chip revenue circle', '@Quant_Kween') }),
+          ev(95, 'Thorncrest Silicon calls the report "a deliberate misreading of standard partnerships"', [['ticker', 'THSI', 0.025, 0.4]]),
+          chirp(140, 'they sold chips to themselves and called it demand. we are all going to be fine though', '@PromptAndPray'),
+          ev(240, 'Meridian Ratings declines to comment on reports of a CASCADE review', [['sector', 'dc', -0.025 * cm(S)]]),
+          ev(355, 'Halcyon Mind Labs cancels three datacenter commitments', [['ticker', 'HALO', -0.06, 0.3], ['sector', 'dc', -0.03, 0.3]])
+        ]
+      }),
+      inbox: () => [{ t: 30, from: 'Imani Rhodes', text: 'Read that note. Not the headline, the footnotes. Whoever wrote it is going to be famous or unemployed.' }]
+    },
+
     // ---- Day 6 ----
     {
-      title: 'Downgrade',
-      brief: (S) => {
-        const p = ['Monday, 6:02 AM: <b>Monarch Ratings downgrades 412 HYDRA tranches.</b> AAA stamps pulled overnight. Futures are red. Mortgage lenders are indicated down double digits.'];
-        if (S.f.reported) p.push('Because you reported Theo\'s call, the SEC is halting NestEgg and FlexRate for the first 30 minutes while it investigates the leak.');
-        if (S.f.insider) p.push('You know exactly why this is happening. So, possibly, does someone else.');
-        return p;
-      },
-      scen: (S) => {
-        const c = cm(S);
-        const lg = S.f.reported ? -0.08 : -0.12;
-        return {
-          regime: 'bear', fearBase: 24,
-          market: { gap: -0.012, target: -0.018 * c },
-          sectors: { lender: { gap: lg, target: lg - 0.04 }, gse: { gap: -0.04, target: -0.05 }, builder: { gap: -0.05, target: -0.06 }, insurer: { gap: -0.03, target: -0.04 } },
-          halts: S.f.reported ? [{ sym: 'NSTG', t: 0, dur: 30 }, { sym: 'FLXR', t: 0, dur: 30 }] : [],
-          events: [
-            ev(0, 'MONARCH DOWNGRADES 412 HYDRA TRANCHES; AAA RATINGS PULLED', [], { big: true }),
-            ev(150, 'Two Halcyon Partners hedge funds freeze investor redemptions', [['sector', 'bank', -0.03, 0.4], ['market', '', -0.01, 0.3]], { rumor: R(10, 'hearing Halcyon is gating. HYDRA marks are fiction', '@BearCaveBets') }),
-            ev(300, 'H&V: exposure to Halcyon funds is "immaterial"', [['ticker', 'HVNB', 0.02, 0.4]])
-          ]
-        };
-      }
+      title: 'The Grid',
+      brief: () => [
+        'Three regional grid operators rejected gigawatt-scale interconnect requests overnight. Datacenters that were promised power in 20XX are now being told 20XX plus four years.',
+        '<b>Sen. Marcus Thorne</b>, who chairs the Senate Markets Committee, wants fifteen minutes with you after the close. His staff called twice. Nobody on the floor knows why he asked for you specifically.'
+      ],
+      scen: (S) => ({
+        regime: 'bear', market: { gap: -0.003, target: -0.01 },
+        sectors: { dc: { gap: -0.02, target: -0.045 * cm(S) }, power: { target: 0.02 } },
+        events: [
+          ev(25, 'Grid operators reject three gigawatt-scale interconnect requests', [['sector', 'dc', -0.04, 0.3], ['sector', 'power', 0.02]], { big: true }),
+          ev(150, 'Power prices in the northern corridor up 38% year on year', [['sector', 'power', 0.03], ['sector', 'dc', -0.02]]),
+          ev(285, 'Bastion Compute says 19% of contracted capacity "may not energize on schedule"', [['ticker', 'BSTN', -0.08, 0.35], ['sector', 'dc', -0.02]], { rumor: R(14, 'BSTN capacity guidance is about to get slashed', '@DeepValueDane') }),
+          chirp(300, 'turns out you need electricity. nobody modelled electricity', '@FlopsPerDollar')
+        ]
+      }),
+      inbox: () => [{ t: 12, from: 'Desmond Kroll', text: 'Thorne asked for you by name. Whatever he wants, remember who signs your bonus.' }]
     },
+
     // ---- Day 7 ----
     {
-      title: 'Frozen',
+      title: 'Hairline Cracks',
       brief: (S) => {
-        const p = ['The funding markets are seizing up. Banks are hoarding cash. Your Bloomberg chat is nothing but "who has HYDRA exposure?"'];
-        if (S.f.leaked) p.push('Rae\'s story drops this morning. Your name isn\'t in it. Yet.');
-        p.push('Senator <b>Harlan Whitfield</b>, chair of the Banking Committee, is unveiling a bill today.');
+        const p = ['Ambervale Re, the insurer standing behind half the CASCADE market, is quietly raising reserves on its compute-lease guarantees. It is on page 14 of a filing nobody read.'];
+        if (S.f.dereg) p.push('The Compute Freedom Act cleared committee. Leverage limits across the street went <b>up</b>. Your desk cheered. Imani did not.');
+        if (S.f.regulation) p.push('Your amendment survived. Position limits are tighter everywhere, your own book included. The desk has not forgiven you.');
         return p;
       },
-      scen: (S) => {
-        const c = cm(S);
-        const ev7 = [
-          ev(90, 'Senate unveils "Financial Freedom Act" to "unleash lending"', [['market', '', 0.008, 0.3], ['sector', 'bank', 0.02]]),
-          ev(270, 'FlexRate Financial slashes dividend 80%', [['ticker', 'FLXR', -0.09, 0.3]], { rumor: R(8, '$FLXR dividend is toast. hearing board meeting today', '@SubprimeSteve') })
-        ];
-        if (S.f.leaked) ev7.unshift(ev(15, 'THE DAILY LEDGER: H&V dumped toxic HYDRA bonds on Ohio teachers\' pension, documents show', [['ticker', 'HVNB', -0.07, 0.2], ['sector', 'bank', -0.01]], { big: true, src: 'THE DAILY LEDGER' }));
-        return { regime: 'bear', market: { gap: -0.004, target: -0.01 * c }, events: ev7 };
-      },
-      inbox: (S) => [{ t: 100, from: 'Dana Okafor', text: 'Whitfield\'s bill would let banks lever 40-to-1. In THIS market. His office wants to talk to traders tonight. Careful.' }]
+      scen: (S) => ({
+        regime: 'bear', market: { gap: -0.002, target: -0.012 * cm(S) },
+        events: [
+          ev(30, 'Ambervale Re raises loss reserves on compute-lease guarantee book', [['ticker', 'AMVL', -0.045, 0.3], ['sector', 'insurer', -0.02]]),
+          ev(140, 'Two CASCADE tranches fail to find buyers at any price', [['sector', 'bank', -0.03, 0.3], ['sector', 'dc', -0.03]], { big: true, rumor: R(13, 'a CASCADE deal just failed to clear. FAILED TO CLEAR', '@BondVigilante') }),
+          ev(265, 'Ridgeway Trust denies "unfounded speculation" about its funding position', [['ticker', 'RDGW', -0.06, 0.4]]),
+          ev(350, 'Bullion hits a record as funds rotate out of the compute trade', [['sector', 'haven', 0.025]])
+        ]
+      }),
+      inbox: () => [{ t: 145, from: 'Imani Rhodes', text: 'A deal that cannot be priced is a deal that is worthless. Everyone on this floor knows that and nobody will say it out loud.' }]
     },
+
     // ---- Day 8 ----
     {
-      title: 'Dead Cat Bounce',
-      brief: (S) => {
-        const p = ['The Fed is expected to act. Shorts are nervous. Longs are praying.'];
-        if (S.f.dereg) p.push('Whitfield\'s office sent a thank-you basket. Your firm raised your leverage cap to <b>6x</b>.');
-        if (S.f.regulation) p.push('After your testimony to Whitfield\'s staff, compliance capped your leverage at <b>3x</b>. Reformers are quoting you anonymously.');
-        return p;
-      },
-      scen: (S) => {
-        const e = [
-          ev(60, 'Fed injects $50B in emergency liquidity into funding markets', [['market', '', 0.015, 0.6]], { big: true }),
-          ev(320, 'NestEgg draws down entire $4B credit line', [['ticker', 'NSTG', -0.11, 0.3]], { rumor: R(10, 'NestEgg just maxed their revolver. that is a bank run in slow motion', '@BondVigilante') })
-        ];
-        if (S.f.dereg) e.push(ev(200, 'Financial Freedom Act clears committee', [['sector', 'bank', 0.025]]));
-        if (S.f.regulation) e.push(ev(200, 'Reform amendment to Freedom Act gains bipartisan support', [['sector', 'bank', -0.01]]));
-        return { regime: 'chop', market: { gap: 0.003, target: 0.012 }, events: e };
-      }
+      title: 'The Pack',
+      brief: () => [
+        'Ridgeway Trust has the weakest funding profile on the street and everyone knows it. Four desks are circling. Somebody is going to push it over, and the only question is whether you are standing on it when it goes.',
+        '<b>Greta Vail</b> runs the biggest of those desks. She has never once spoken to you.'
+      ],
+      scen: (S) => ({
+        regime: 'bear', market: { gap: -0.004, target: -0.016 * cm(S) },
+        sectors: { bank: { target: -0.03 * cm(S) } },
+        events: [
+          ev(60, 'Ridgeway Trust shares slide as credit default costs spike', [['ticker', 'RDGW', -0.07, 0.35], ['sector', 'bank', -0.02]]),
+          chirp(70, 'someone is absolutely hammering $RDGW. this is coordinated, screenshot this post', '@TheTapeReader'),
+          ev(200, 'Ridgeway CEO: "We have ample liquidity and no need to raise capital"', [['ticker', 'RDGW', 0.04, 0.5]]),
+          ev(320, 'Two counterparties reportedly pull credit lines from Ridgeway Trust', [['ticker', 'RDGW', -0.11, 0.3], ['sector', 'bank', -0.025], ['market', '', -0.008]], { big: true })
+        ]
+      }),
+      calls: (S) => (S.choices.c4 ? [] : [{
+        t: 130, scripted: true, kind: 'choice', choiceId: 'c4', timer: 20,
+        from: 'Greta Vail', role: 'Head of Trading, Calloway Partners',
+        text: 'Four of us are going to size into Ridgeway shorts at the same time and put the rumor into the right ears. It falls, the funding goes, and we all get paid. You have a seat if you want it. Thirty seconds.',
+        options: [
+          { id: 'join', label: 'Take the seat. Size in with them.' },
+          { id: 'refuse', label: '"I\'ll trade my own book, thanks."' },
+          { id: 'tell', label: 'Refuse, then tell Ridgeway\'s desk what\'s coming.' }
+        ],
+        defaultOpt: 'refuse'
+      }])
     },
+
     // ---- Day 9 ----
     {
-      title: 'The Pack',
-      brief: (S) => [
-        'Lorimer Brothers, the fourth-largest investment bank in the country, is sitting on $60 billion of HYDRA. Its credit-default swaps are flashing red.',
-        'The desk heads have been in Vance\'s office with the door closed since 7 AM.'
+      title: 'The Loop',
+      brief: () => [
+        'At 6:40 this morning, an autonomous execution system at a large fund began selling to hedge a position. The selling moved the price. The move triggered the same model at four other funds, which had been trained on the same data. Which moved the price.',
+        'Nobody has turned it off. Nobody is completely sure who could.'
       ],
       scen: (S) => {
-        const c = cm(S);
-        const e = [
-          ev(180, 'Lorimer credit-default swaps blow out to record', [['ticker', 'LRMR', S.f.raid ? -0.12 : -0.06, 0.3]], { rumor: R(10, 'LRMR CDS going vertical. someone knows something', '@TheTapeReader') }),
-          ev(330, S.f.tipShortBan ? 'SEC weighs emergency short-sale ban on financial stocks' : 'SEC chair: "We are monitoring unusual short activity"', [['sector', 'bank', S.f.tipShortBan ? 0.03 : 0.01]])
-        ];
-        return { regime: 'bear', market: { gap: -0.004, target: -0.012 * c }, tickers: { LRMR: { target: -0.03 } }, events: e };
+        const sev = cm(S);
+        const t1 = 105;
+        return {
+          regime: 'panic', market: { gap: -0.012 * sev, target: -0.05 * sev },
+          sectors: { ai: { target: -0.07 * sev }, chip: { target: -0.06 * sev }, dc: { target: -0.07 * sev }, haven: { target: 0.03 } },
+          events: [
+            ev(20, 'Unusual selling pressure across model-lab and compute names', [['sector', 'ai', -0.03 * sev, 0.2]]),
+            ev(t1, 'FLASH CRASH: correlated model selling cascades across the tape', [['market', '', -0.055 * sev, 0.25], ['sector', 'chip', -0.04 * sev]], { big: true, rumor: R(6, 'every fund runs the same model and they are all selling at once', '@Quant_Kween') }),
+            ev(t1 + 22, 'Exchanges say systems are functioning normally; no plans to halt', [['market', '', -0.012 * sev]]),
+            ev(t1 + 70, 'Buyers step in at the lows; violent reversal off the bottom', [['market', '', 0.035 * sev, 0.4]]),
+            ev(300, 'Regulator opens review into automated execution behaviour', [['sector', 'ai', -0.02]]),
+            chirp(320, 'the machines are front-running the machines and we all agreed this was fine', '@PromptAndPray')
+          ]
+        };
       },
-      calls: (S) => [{
-        t: 90, scripted: true, kind: 'choice', choiceId: 'c4', from: boss(S), role: 'Head of Trading · internal line',
-        text: 'Listen close. Every big desk on the Street is shorting Lorimer today. Together. We push it under, we buy the pieces cheap. I\'m putting a short in your book equal to your whole account. You in?',
-        options: [
-          { id: 'join', label: '"I\'m in." (Take the short)' },
-          { id: 'refuse', label: '"Not my trade, Garrett."' },
-          { id: 'tip', label: 'Say yes, then quietly call the SEC.' }
-        ],
-        defaultOpt: 'refuse', timer: 20
-      }]
+      inbox: () => [{ t: 8, from: 'Desmond Kroll', text: 'Nobody is getting a normal fill today. Use limits. If you market-order into this I will personally take your keyboard.' }]
     },
+
     // ---- Day 10 ----
     {
-      title: 'Run on Lorimer',
+      title: 'Run on Ridgeway',
       brief: (S) => {
-        const p = ['Friday. Hedge funds are pulling their money out of Lorimer Brothers. Depositors are lining up at its private bank branches.'];
-        if (S.f.raid) p.push('Your book holds a massive Lorimer short. Every tick down is money in your pocket. Every tick up could end you.');
-        if (S.f.tipShortBan) p.push('<b>SEC EMERGENCY ORDER:</b> short selling of financial stocks is BANNED through Tuesday.');
+        const p = ['Ridgeway Trust could not fund itself this morning. Its counterparties want collateral it does not have. There is a camera crew outside a branch on Mercer Street filming a queue that does not need to exist.'];
+        if (S.f.raid) p.push('Your name is on a chat log with four other desks. So far nobody has asked about it.');
+        if (S.f.toldRidgeway) p.push('Ridgeway\'s desk head left you a voicemail at 5 AM. He just says "thank you," twice, and hangs up.');
         return p;
       },
       scen: (S) => {
-        const c = cm(S);
+        const sev = cm(S);
         return {
-          regime: 'bear', fearBase: 32,
-          market: { gap: -0.006, target: -0.025 * c },
-          tickers: { LRMR: { gap: -0.04, target: S.f.raid ? -0.18 : -0.1 } },
+          regime: 'panic', market: { gap: -0.01 * sev, target: -0.035 * sev },
+          sectors: { bank: { gap: -0.05 * sev, target: -0.09 * sev }, haven: { target: 0.03 } },
+          tickers: { RDGW: { gap: -0.22 * sev, target: -0.42 * sev }, HLST: { target: -0.06 * sev } },
+          halts: [{ sym: 'RDGW', t: 90, dur: 20 }],
           events: [
-            ev(30, 'Three major hedge funds pull prime brokerage accounts from Lorimer', [['ticker', 'LRMR', -0.08, 0.3]]),
-            ev(210, 'Lorimer CEO: "Our liquidity position is strong"', [['ticker', 'LRMR', 0.06, 0.8]]),
-            ev(300, 'Report: Lorimer burned through $30B of cash in two days', [['ticker', 'LRMR', -0.14, 0.2], ['sector', 'bank', -0.03]], { big: true, rumor: R(8, 'lorimer is DONE. friends there are packing boxes', '@HedgeHog88') }),
-            ev(370, 'Treasury Secretary Evelyn Marsh summons bank CEOs for emergency weekend talks', [])
+            ev(0, 'PRE-MARKET: Ridgeway Trust fails to meet intraday funding call', [], { big: true }),
+            ev(75, 'Ridgeway Trust halted, limit down', [['sector', 'bank', -0.04 * sev]], { big: true }),
+            ev(175, 'Treasury Secretary Adele Venn: "All options remain on the table"', [['market', '', 0.02, 0.5], ['sector', 'bank', 0.03, 0.5]]),
+            ev(280, 'Money market funds report heavy redemptions', [['market', '', -0.025 * sev, 0.3], ['sector', 'bank', -0.03 * sev]]),
+            ev(360, 'Emergency weekend talks confirmed at Treasury', [['market', '', 0.012, 0.6]], { script: 'rescueWeekend' })
           ]
         };
-      }
+      },
+      inbox: () => [{ t: 185, from: 'Imani Rhodes', text: '"All options on the table" means they have not decided. Which means the weekend decides it. Which means someone is going to ask you what you think.' }]
     },
+
     // ---- Day 11 ----
     {
       title: 'Monday',
       brief: (S) => {
-        if (S.f.bailout) return ['<b>TREASURY RESCUES LORIMER.</b> $85 billion of taxpayer money, announced at 11 PM Sunday. Futures are up big. Chirp is on fire: <i>#NoMoreBailouts</i>.'];
-        if (S.f.merger) return ['<b>H&amp;V TO ABSORB LORIMER</b> in a Treasury-brokered deal. You\'re holding a slice of the new giant. Your firm now owns $60B of Lorimer\'s HYDRA on top of its own.'];
-        return ['<b>LORIMER BROTHERS FILES FOR BANKRUPTCY.</b> 158 years, gone in a weekend. Asian markets lost 6% overnight. Futures are limit down.', 'Dana, staring at the pre-market screen: "Nobody knows who owes what to whom. This is how it starts."'];
-      },
-      scen: (S) => {
-        const c = cm(S);
-        if (S.f.bailout) {
-          return {
-            regime: 'recovery', market: { gap: 0.025, target: 0.005 }, sectors: { bank: { gap: 0.04, target: 0.02 } },
-            tickers: { LRMR: { gap: 0.25, target: 0.12 } },
-            events: [
-              ev(0, 'TREASURY RESCUES LORIMER WITH $85B LIFELINE', [], { big: true }),
-              chirp(120, 'so we just print money for bankers now? cool cool cool #NoMoreBailouts', '@RealFinanceGuy'),
-              ev(200, 'Protesters surround Treasury; lawmakers vow "never again"', [['market', '', -0.01, 0.3]])
-            ]
-          };
-        }
-        if (S.f.merger) {
-          return {
-            regime: 'bear', market: { gap: -0.01, target: -0.02 * c },
-            tickers: { HVNB: { gap: -0.12, target: -0.15 }, LRMR: { gap: 0.18, target: 0.2 } },
-            events: [
-              ev(0, 'H&V TO ABSORB LORIMER IN TREASURY-BROKERED DEAL', [], { big: true }),
-              ev(200, 'Analysts question whether H&V can digest Lorimer\'s HYDRA book', [['ticker', 'HVNB', -0.05, 0.3]])
-            ]
-          };
-        }
-        return {
-          regime: 'panic', fearBase: 45, market: { gap: -0.035 * c, target: -0.09 * c },
-          sectors: { lender: { gap: -0.15, target: -0.25 }, insurer: { gap: -0.12, target: -0.2 }, bank: { gap: -0.05, target: -0.1 } },
-          tickers: { LRMR: { gap: -0.82, target: -0.9 }, SENT: { gap: -0.08, target: -0.15 } },
-          halts: [{ sym: 'LRMR', t: 0, dur: 25 }],
-          events: [
-            ev(0, 'LORIMER BROTHERS FILES FOR CHAPTER 11 BANKRUPTCY', [], { big: true }),
-            ev(75, 'Reserve Prime money market fund "breaks the buck" on Lorimer losses', [['market', '', -0.03, 0.3]], { big: true }),
-            ev(250, 'Sentinel Re shares halted; insurer seeks emergency funding', [['ticker', 'SENT', -0.2, 0.2]], { halt: { sym: 'SENT', dur: 15 } })
-          ]
-        };
-      },
-      inbox: (S) => S.f.raid && S.f.bailout ? [{ t: 5, from: 'Dana Okafor', text: 'You\'re short Lorimer into a bailout. Get out. NOW.' }] : []
-    },
-    // ---- Day 12 ----
-    {
-      title: 'Contagion',
-      brief: (S) => [
-        'Sentinel Re insured over $400 billion of HYDRA against default. If it goes, every bank that bought that insurance goes with it.',
-        S.f.lorimerFailed ? 'With Lorimer gone, Sentinel\'s counterparties are panicking.' : 'The Lorimer deal bought a weekend. It didn\'t fix anything.'
-      ],
-      scen: (S) => {
-        const c = cm(S);
-        const hit = S.f.lorimerFailed ? -0.4 : -0.25;
-        return {
-          regime: 'panic', market: { gap: -0.01 * c, target: -0.03 * c },
-          events: [
-            ev(60, 'Sentinel Re seeks $40B emergency loan; downgrade looms', [['ticker', 'SENT', hit, 0.2], ['sector', 'bank', -0.03]], { big: true, halt: { sym: 'SENT', dur: 10 } }),
-            ev(270, 'Federal Reserve agrees to rescue Sentinel Re', [['market', '', 0.03, 0.5], ['ticker', 'SENT', 0.3, 0.5]], { big: true, rumor: R(12, 'hearing the Fed is taking Sentinel. squeeze incoming', '@MacroMaven') })
-          ]
-        };
-      }
-    },
-    // ---- Day 13 ----
-    {
-      title: 'Whipsaw',
-      brief: (S) => ['Shorts are scrambling to cover after the Sentinel rescue. Europe opens in a panic. Nobody knows which way this breaks.'],
-      scen: (S) => {
-        const c = cm(S);
-        return {
-          regime: 'panic', market: { gap: 0.008, target: -0.01 * c },
-          events: [
-            ev(30, 'Short sellers scramble to cover; financials rip higher', [['market', '', 0.025, 0.3], ['sector', 'bank', 0.03]]),
-            ev(240, 'Global markets slide as contagion spreads to European banks', [['market', '', -0.04 * c, 0.2], ['sector', 'bank', -0.03]], { big: true }),
-            chirp(250, 'I went long at 10am and short at 2pm and somehow lost money on both', '@TendiesTomorrow')
-          ]
-        };
-      }
-    },
-    // ---- Day 14 ----
-    {
-      title: 'The Auditors',
-      brief: (S) => [
-        'Outside auditors arrived at Halbrook &amp; Vance at 7 AM. They\'ve been in the CFO\'s office ever since.',
-        S.f.merger ? 'With Lorimer\'s book added, H&amp;V holds more than $90 billion of HYDRA.' : 'H&amp;V says it holds $12 billion of HYDRA. Dana thinks it\'s closer to forty.'
-      ],
-      scen: (S) => {
-        const c = cm(S);
-        return {
-          regime: 'bear', market: { gap: -0.005, target: -0.02 * c },
-          events: [
-            chirp(120, 'hearing $HVNB is hiding HUGE hydra losses. like enron huge', '@BearCaveBets'),
-            ev(150, 'Sources: H&V\'s HYDRA exposure may be triple the reported figure', [['ticker', 'HVNB', S.f.merger ? -0.1 : -0.07, 0.3]]),
-            ev(240, 'H&V: reports are "false and irresponsible"', [['ticker', 'HVNB', 0.04, 0.5]])
-          ]
-        };
-      }
-    },
-    // ---- Day 15 ----
-    {
-      title: 'Consequences',
-      brief: (S) => {
-        if (S.f.disclosed) return ['H&amp;V announced <b>$41 billion</b> in HYDRA writedowns before the open. The stock is indicated down 35%. Vance hasn\'t spoken to you. Dana left a note on your keyboard: <i>"Proud of you. Watch your back."</i>'];
-        if (S.f.fraud) return ['The auditors signed off on H&amp;V\'s marks. The stock is up in pre-market. Vance winked at you in the elevator.', 'The real numbers are in a spreadsheet called <i>Q3_final_FINAL_v2</i>. You know where it is.'];
-        if (S.f.defected) return ['You\'re at <b>Goldstone Capital</b> now, with a new desk and a new boss: <b>Mara Linde</b>. H&amp;V\'s lawyers have already called. Twice.'];
-        return ['H&amp;V is holding its breath.'];
-      },
-      scen: (S) => {
-        const c = cm(S);
-        const t = {};
-        if (S.f.disclosed) t.HVNB = { gap: S.f.merger ? -0.5 : -0.35, target: S.f.merger ? -0.55 : -0.4 };
-        else if (S.f.fraud) t.HVNB = { gap: 0.02, target: 0.03 };
-        else if (S.f.defected) t.HVNB = { gap: -0.12, target: -0.14 };
-        return {
-          regime: 'bear', market: { gap: -0.004, target: -0.015 * c }, tickers: t,
-          events: [
-            ev(330, 'Treasury unveils $700B "Stabilization Act" to buy toxic HYDRA assets', [['market', '', 0.04, 0.5], ['sector', 'bank', 0.06, 0.4]], { big: true, rumor: R(10, 'hearing Treasury announcing something MASSIVE before the close', '@MacroMaven') })
-          ]
-        };
-      }
-    },
-    // ---- Day 16 ----
-    {
-      title: 'The Hearing',
-      brief: (S) => {
-        const p = ['Secretary Marsh testifies before Congress today. The Stabilization Act needs votes. America is furious.'];
-        if (S.f.dumped) p.push('<b>Ohio Teachers\' Retirement System sued H&amp;V overnight. You are named in the complaint.</b> Legal says your share of the settlement is $40,000.');
+        const p = [];
+        if (S.f.bailout) p.push('They did it. Ridgeway\'s book was taken onto the public balance sheet over the weekend at a price nobody wants explained. Futures gapped up 3% and then started sliding at 4 AM.');
+        else if (S.f.letFail) p.push('They let it go. Ridgeway Trust filed at 11:40 PM Sunday, the largest failure in the country\'s history. Futures are limit down.');
+        else p.push('The weekend produced a press conference and no decision. The market has decided to interpret that badly.');
+        if (S.f.shortBanOn) p.push('An emergency order bans short selling in financials. Your shorts in those names are frozen where they are.');
         return p;
       },
       scen: (S) => {
-        const e = [
-          ev(90, 'Marsh to senators: "If this bill fails, God help us"', [['market', '', -0.02, 0.3]]),
-          ev(270, 'Senate leaders signal deal on Stabilization Act', [['market', '', 0.025, 0.3]])
-        ];
-        if (S.f.dumped) e.unshift(ev(0, 'Ohio teachers sue H&V over HYDRA sales; junior trader named', [['ticker', 'HVNB', -0.03]], { big: true }));
-        if (S.f.bailout) e.push(ev(150, 'Goldstone shares wobble as investors test the next "too big to fail"', [['ticker', 'GSTN', -0.08, 0.3]]));
-        return { regime: 'chop', fearBase: 34, market: { gap: 0, target: 0.003 }, events: e };
+        const sev = cm(S);
+        const rescued = !!S.f.bailout;
+        return {
+          regime: rescued ? 'recovery' : 'panic',
+          market: { gap: rescued ? 0.025 : -0.045 * sev, target: rescued ? -0.01 : -0.06 * sev },
+          sectors: {
+            bank: { gap: rescued ? 0.06 : -0.10 * sev, target: rescued ? 0.02 : -0.12 * sev },
+            insurer: { target: rescued ? 0.01 : -0.07 * sev },
+            haven: { target: rescued ? -0.01 : 0.04 }
+          },
+          events: [
+            ev(10, rescued ? 'Treasury takes Ridgeway book onto public balance sheet' : 'Ridgeway Trust files; largest failure on record',
+              rescued ? [['sector', 'bank', 0.04, 0.4]] : [['market', '', -0.03 * sev, 0.3], ['sector', 'bank', -0.05 * sev]], { big: true }),
+            ev(110, rescued ? 'Public anger builds over terms of the Ridgeway rescue' : 'Three regional lenders halt withdrawals',
+              rescued ? [['market', '', -0.015]] : [['sector', 'lender', -0.08 * sev, 0.3], ['market', '', -0.02 * sev]]),
+            ev(230, 'Ambervale Re downgraded three notches; guarantee book in doubt', [['ticker', 'AMVL', -0.14 * sev, 0.3], ['sector', 'insurer', -0.05 * sev]]),
+            ev(330, 'Holloway Stern says its CASCADE marks are "appropriate and independently reviewed"', [['ticker', 'HLST', -0.04 * sev, 0.4]], { rumor: R(15, 'nobody at HLST believes their own marks. nobody', '@BearCaveBets') })
+          ]
+        };
       }
     },
-    // ---- Day 17 ----
+
+    // ---- Day 12 ----
     {
-      title: 'Whip Count',
-      brief: (S) => ['The House votes tomorrow at 2 PM. Every news channel has a vote tracker. Every trader in America is staring at it.'],
+      title: 'The Auditors',
+      brief: (S) => {
+        const p = ['There are people in the building who do not work here. They have laptops and lanyards and they are going desk by desk asking for trade blotters.'];
+        if (S.f.fraud) p.push('You signed the marks. Your initials are on a page that is now in a banker\'s box on the 38th floor.');
+        if (S.m.heat >= 50) p.push('Two of them have already asked for you by name.');
+        return p;
+      },
       scen: (S) => ({
-        regime: 'bear', market: { gap: -0.004, target: -0.015 },
+        regime: 'bear', market: { gap: -0.004, target: -0.018 * cm(S) },
         events: [
-          chirp(60, 'hill staffer here: votes are NOT there. anyone saying otherwise is lying', '@BondVigilante'),
-          chirp(120, 'VOTE IS IN THE BAG. 300+ yes votes. load the boat', '@CallsOnlyCarl'),
-          ev(200, 'House whip: "We do not have the votes"', [['market', '', -0.02, 0.3]]),
-          ev(330, 'Late push for votes; leadership "optimistic"', [['market', '', 0.015, 0.3]])
+          ev(45, 'Regulators open formal inquiry into CASCADE valuation practices', [['sector', 'bank', -0.04, 0.3]], { big: true }),
+          ev(140, 'Unemployment claims jump; economists cut growth forecasts', [['market', '', -0.02 * cm(S), 0.3], ['sector', 'retail', -0.03]]),
+          ev(250, 'Corvus Intelligence cuts capex plan by 40%', [['ticker', 'CRVS', -0.09, 0.3], ['sector', 'chip', -0.05], ['sector', 'dc', -0.05]], { big: true }),
+          ev(340, 'Senate hearing on the compute crisis set for this week', [['market', '', -0.008]])
         ]
       }),
-      inbox: (S) => [{ t: 340, from: 'Sen. Harlan Whitfield', text: 'Tomorrow decides everything. I need people who move markets to pick a side tonight.' }]
+      inbox: () => [{ t: 55, from: 'Compliance', text: 'Preserve everything. Messages, notes, voicemails. Deleting anything today is a much worse crime than whatever you think you did.' }]
     },
-    // ---- Day 18 ----
+
+    // ---- Day 13 ----
+    {
+      title: 'The Hearing',
+      brief: (S) => {
+        const p = ['The hearing runs on every screen on the floor. Kroll is in the second row behind counsel, and he has not blinked in four minutes.'];
+        if (S.f.testified) p.push('You testified this morning. You are told you did well. Nobody on the desk will look at you.');
+        if (S.f.leaked) p.push('Sana Ferreira\'s piece ran on the front page. Every question the senators ask comes straight out of it.');
+        return p;
+      },
+      scen: (S) => ({
+        regime: 'chop', market: { gap: 0.002, target: -0.004 },
+        events: [
+          ev(40, 'Executives tell lawmakers the CASCADE ratings were "obtained in good faith"', [['sector', 'bank', -0.02]]),
+          ev(120, 'Sen. Thorne: "You sold a circle and called it a AAA bond"', [['sector', 'bank', -0.03, 0.3]], { big: true }),
+          ev(215, 'Stabilization Act draft released; vote expected tomorrow', [['market', '', 0.02, 0.5]], { rumor: R(12, 'whip count on the stabilization bill is closer than anyone admits', '@MacroMaven') }),
+          ev(330, 'Meridian Ratings withdraws ratings on the entire 20XX CASCADE vintage', [['sector', 'dc', -0.05 * cm(S), 0.3], ['sector', 'bank', -0.03 * cm(S)]], { big: true })
+        ]
+      })
+    },
+
+    // ---- Day 14 ----
     {
       title: 'The Vote',
       brief: (S) => [
-        'The House votes on the <b>Stabilization Act at 2:00 PM</b>, in the middle of the trading session.',
-        'If it passes, the market rips. If it fails... nobody wants to say it out loud.',
-        '<i>Position accordingly. Or don\'t.</i>'
+        'The Stabilization Act goes to the floor at 2 PM. If it passes, the guarantee stops the bleeding. If it fails, there is nothing underneath any of this.',
+        S.f.lobbyYes ? 'You spent the week making calls for it. Thorne\'s office says it is "very close."'
+          : S.f.lobbyNo ? 'You spent the week arguing against it. Several people who used to take your calls no longer do.'
+            : 'You stayed out of it. Both sides noticed.'
       ],
       scen: (S) => {
-        const c = cm(S);
         const pass = S.f.billPassed;
-        const e = [
-          ev(240, 'House floor vote on Stabilization Act underway', []),
-          chirp(255, 'vote count on CSPAN is... not great. not great at all', '@TheTapeReader')
-        ];
-        if (pass) {
-          e.push(ev(270, 'HOUSE PASSES STABILIZATION ACT, 263-171', [['market', '', 0.045, 0.4], ['sector', 'bank', 0.06, 0.4]], { big: true }));
-        } else {
-          e.push(ev(270, 'HOUSE REJECTS STABILIZATION ACT, 205-228', [['market', '', -0.075 * c, 0.1], ['sector', 'bank', -0.08], ['sector', 'lender', -0.1], ['sector', 'insurer', -0.08]], { big: true, script: 'voteFail' }));
-          e.push(ev(300, 'Credit markets freeze; interbank lending rates spike to record', [['market', '', -0.04 * c, 0.2]], { big: true }));
-        }
-        return { regime: pass ? 'bear' : 'panic', fearBase: 36, market: { gap: 0.003, target: 0.008 }, events: e };
+        const sev = cm(S);
+        return {
+          regime: pass ? 'recovery' : 'panic',
+          market: { gap: 0.004, target: pass ? 0.05 : -0.09 * sev },
+          sectors: pass ? { bank: { target: 0.08 }, haven: { target: -0.02 } } : { bank: { target: -0.14 * sev }, haven: { target: 0.05 } },
+          events: [
+            ev(60, 'Floor debate opens on the Stabilization Act; whip count called "razor thin"', [['market', '', -0.01, 0.4]]),
+            ev(270, pass ? 'STABILIZATION ACT PASSES' : 'STABILIZATION ACT FAILS ON THE FLOOR',
+              pass ? [['market', '', 0.05, 0.4], ['sector', 'bank', 0.09, 0.4]] : [['market', '', -0.10 * sev, 0.2], ['sector', 'bank', -0.15 * sev, 0.2]],
+              { big: true, script: pass ? 'votePass' : 'voteFail' }),
+            ev(310, pass ? 'Credit markets reopen; first new issuance in two weeks' : 'Credit markets seize; no issuance at any price',
+              pass ? [['market', '', 0.015, 0.5]] : [['market', '', -0.03 * sev, 0.3]])
+          ]
+        };
       }
     },
-    // ---- Day 19 ----
-    {
-      title: 'Aftershock',
-      brief: (S) => S.f.billPassed
-        ? ['The bill passed. The relief rally is already fading. It turns out $700 billion doesn\'t fix a broken housing market overnight.']
-        : ['The biggest point drop in history. Retirement accounts cut in half overnight. Congress is scrambling to rewrite the bill.'],
-      scen: (S) => {
-        const c = cm(S);
-        const e = [];
-        if (S.f.fraud && !S.f.defected) e.push(ev(90, 'AUDITORS: H&V HID $41B IN HYDRA LOSSES', [['ticker', 'HVNB', -0.55, 0.1]], { big: true, halt: { sym: 'HVNB', dur: 30 } }));
-        if (S.f.insider && S.m.heat >= 50) e.push(ev(200, 'SEC opens insider-trading probe into trades ahead of HYDRA downgrade', [['sector', 'lender', -0.01]], { big: true }));
-        return S.f.billPassed
-          ? { regime: 'bear', market: { gap: 0.005, target: -0.015 }, events: e }
-          : { regime: 'panic', fearBase: 48, market: { gap: -0.025 * c, target: -0.035 * c }, events: e };
-      }
-    },
-    // ---- Day 20 ----
-    {
-      title: 'Second Chances',
-      brief: (S) => S.f.billPassed
-        ? ['Central banks around the world are rumored to be coordinating an emergency rate cut.']
-        : ['A revised Stabilization Act, now packed with sweeteners, goes to a second vote this afternoon.'],
-      scen: (S) => S.f.billPassed
-        ? { regime: 'recovery', market: { gap: 0.004, target: -0.005 }, events: [ev(30, 'Central banks announce coordinated emergency rate cut', [['market', '', 0.025, 0.5]], { big: true })] }
-        : { regime: 'recovery', fearBase: 40, market: { gap: -0.01, target: 0.0 }, events: [ev(210, 'House passes revised Stabilization Act on second vote', [['market', '', 0.06, 0.3], ['sector', 'bank', 0.05]], { big: true })] }
-    },
-    // ---- Day 21 ----
+
+    // ---- Day 15 ----
     {
       title: 'The Reckoning',
-      brief: (S) => [
-        'The last trading day of the month. Whatever happens at 4:00 PM is how this chapter of your life ends.',
-        S.m.stability >= 60 ? 'For the first time in weeks, the pre-market is calm.' : S.m.stability >= 30 ? 'The pre-market is shaky. Nobody believes the worst is over.' : 'Global markets are in freefall. Unemployment claims just posted their biggest jump since the Depression.'
-      ],
-      scen: (S) => {
-        const c = cm(S);
-        const e = [];
-        if ((S.f.fraud || S.f.insiderTraded) && S.m.heat >= 70 && !S.f.cooperated) e.push(ev(180, 'FBI agents seen entering H&V headquarters', [['ticker', 'HVNB', -0.1]], { big: true }));
-        if (S.m.stability >= 60) return { regime: 'recovery', market: { gap: 0.004, target: 0.015 }, events: e };
-        if (S.m.stability >= 30) return { regime: 'bear', market: { gap: -0.005, target: -0.02 }, events: e };
-        e.push(ev(150, 'Global markets in freefall as recession fears spike', [['market', '', -0.04 * c, 0.2]], { big: true }));
-        return { regime: 'panic', fearBase: 50, market: { gap: -0.02, target: -0.08 * c }, events: e };
-      }
+      brief: (S) => {
+        const p = ['Last day of the month. Whatever this was, it is nearly over, and what you are holding when the bell rings is what you keep.'];
+        if (S.m.stability < 35) p.push('Unemployment is at 9.4% and climbing. Three more lenders failed over the weekend.');
+        else if (S.f.billPassed) p.push('The tape has stopped falling. People are using the word "floor" again, carefully.');
+        if (S.m.heat >= 60) p.push('A lawyer you have never met has left two messages. She says it is "not urgent," which is how lawyers say it is urgent.');
+        return p;
+      },
+      scen: (S) => ({
+        regime: S.f.billPassed ? 'recovery' : S.m.stability < 35 ? 'panic' : 'chop',
+        market: { gap: 0.002, target: S.f.billPassed ? 0.02 : S.m.stability < 35 ? -0.05 * cm(S) : -0.005 },
+        events: [
+          ev(80, S.f.billPassed ? 'Guarantee facility opens; first drawdowns reported' : 'Second wave of redemption freezes hits credit funds',
+            S.f.billPassed ? [['sector', 'bank', 0.03, 0.4]] : [['sector', 'bank', -0.05, 0.3]]),
+          ev(200, 'Month-end rebalancing drives outsized moves into the close', [['market', '', 0.01, 0.6]]),
+          ev(355, 'Final bell of the worst month in a generation', [])
+        ]
+      }),
+      inbox: (S) => [{ t: 10, from: 'Imani Rhodes', text: S.f.defected ? 'Whatever happens at 4:00, you did the part you could do.' : 'Flat by the close. Whatever you are holding tonight, you own it for a long time.' }]
     }
   ];
 
   // =====================================================================
-  // CHOICES (end-of-day unless noted). req() hides options; apply() mutates S.
-  // pending actions: {type:'cash',amount,reason} | {type:'short',sym,mult} | {type:'grant',sym,value}
+  // DECISIONS
   // =====================================================================
   const CHOICES = {
     c1: {
-      day: 2, speaker: 'Garrett Vance', role: 'Head of Trading, Halbrook & Vance', title: 'The Pension Dump',
+      day: 1, speaker: 'Desmond Kroll', role: 'Head of Trading, Holloway Stern', title: 'The Pension Dump',
+      kicker: 'DECISION 1',
       text: [
-        '"Close the door." Vance doesn\'t look up from his screen. "We\'ve got forty million of HYDRA-7 mezzanine sitting on our books. The stuff the rating says is AAA but, you know."',
-        '"Ohio Teachers\' Retirement System wants yield. You\'re going to call them tonight and sell it to them. Easy trade. Nice bonus. Your first real test."'
+        'Kroll closes your office door with his foot, which you did not know was possible.',
+        '"We are holding forty million of CASCADE paper that is not worth forty million. Riverbend Teachers\' Retirement wants yield. Their consultant does not read footnotes. You walk them through the deck and they buy it at par."',
+        '"It is not lying. Everything in the deck is true. It is just not all of it."'
       ],
       options: [
-        { id: 'comply', label: 'Make the call.', hint: 'Easy money. Teachers probably won\'t notice for years.',
-          apply: (S) => { S.f.dumped = true; adj(S, { integrity: -20, anger: 5 }, { vance: 15, dana: -10 }); S.pending.push({ type: 'cash', amount: 25000, reason: 'Pension deal bonus' }); },
-          after: ['You make the call. Forty million dollars of teachers\' retirement money buys bonds you wouldn\'t touch yourself.', 'A $25,000 bonus lands in your account before you get home.'],
-          headline: 'Trader sold toxic HYDRA to Ohio teachers\' pension' },
-        { id: 'refuse', label: 'Refuse.', hint: 'Vance won\'t forget.',
-          apply: (S) => { S.f.refusedDump = true; adj(S, { integrity: 10 }, { vance: -20, dana: 10 }); },
-          after: ['"Then get out of my office." Your leverage gets cut to 3x for the rest of the week.', 'Someone else makes the call.'],
-          headline: 'Refused to dump HYDRA on a pension fund' },
-        { id: 'leak', label: 'Say yes. Then send the deal docs to a reporter.', hint: 'Rae Castellano at the Daily Ledger has been sniffing around HYDRA.',
-          apply: (S) => { S.f.leaked = true; adj(S, { integrity: 15, heat: 10, stability: 5, firm: -10 }, { rae: 35, vance: -5 }); },
-          after: ['You send the documents from a burner email at 1 AM. Rae replies in four minutes: "Holy. Okay. Give me a week."'],
-          headline: 'Leaked pension-dump documents to the Daily Ledger' }
+        {
+          id: 'dump', label: 'Sell the paper to Riverbend.', hint: 'Big bonus. Your fingerprints on it forever.',
+          headline: 'Sold $40M of impaired CASCADE paper to a teachers\' pension fund',
+          apply: (S) => {
+            S.f.dumped = true;
+            adj(S, { integrity: -22, heat: 8, firm: 14, stability: -4 }, { kroll: 16, imani: -12 });
+            S.pending.push({ type: 'cash', amount: 45000, reason: 'Desk bonus' });
+          },
+          reply: 'Kroll: "Good. You\'re going to be fine here."',
+          after: [
+            'The consultant asks two questions. Neither is the right one.',
+            'The wire clears at 3:51 PM. Forty million dollars of something nobody wants is now owned by eleven thousand retired teachers, and your bonus is real money in a real account.',
+            'Imani watched the whole call from four desks away and has not said a word since.'
+          ]
+        },
+        {
+          id: 'refuse', label: 'Refuse. Tell him to find someone else.', hint: 'Kroll will remember. Your limits get cut.',
+          headline: 'Refused to place impaired CASCADE paper with a pension fund',
+          apply: (S) => {
+            S.f.refusedDump = true;
+            adj(S, { integrity: 16, firm: -12 }, { kroll: -18, imani: 12 });
+          },
+          reply: 'Kroll: "Noted."',
+          after: [
+            '"Noted," he says, and writes nothing down, which is worse.',
+            'Someone else does the call within the hour. The paper still moves. The only thing your refusal changed is your leverage limit, which is now 3x, and the way Kroll says your name.',
+            'Imani buys you a coffee the next morning without commenting on it.'
+          ]
+        },
+        {
+          id: 'leak', label: 'Refuse, and copy the deck to a reporter.', hint: 'Sana Ferreira has been circling. High risk.',
+          headline: 'Leaked the internal CASCADE valuation deck to the press',
+          apply: (S) => {
+            S.f.refusedDump = true;
+            S.f.leaked = true;
+            S.f.public = true;
+            adj(S, { integrity: 26, heat: 18, firm: -18, anger: 8 }, { kroll: -20, imani: 10, sana: 45 });
+          },
+          reply: 'Sana Ferreira: "I have it. Do not email me again from that address."',
+          after: [
+            'You photograph fourteen pages in a stairwell with your phone at a bad angle.',
+            'Sana Ferreira replies in ninety seconds: <i>I have it. Do not email me again from that address.</i>',
+            'You go back to your desk and trade for three more hours like a person who did not just do that.'
+          ]
+        }
       ]
     },
-    c2: { // mid-session call, day 5
-      day: 4, mid: true, title: 'The Tip',
+
+    c2: { // mid-session call, day 4
+      day: 3, mid: true, title: 'The Tip', kicker: 'DECISION 2',
       options: [
-        { id: 'trade', apply: (S) => { S.f.insider = true; adj(S, { integrity: -15, heat: 20 }, { dana: -5 }); },
-          reply: 'Theo: "Just... be careful. Please." Monday\'s gap is coming. Position before the close, if you dare.',
-          headline: 'Traded on an inside tip about the HYDRA downgrade' },
-        { id: 'report', apply: (S) => { S.f.reported = true; adj(S, { integrity: 15, heat: -5, influence: 5 }, { dana: 5 }); },
-          reply: 'Compliance thanks you and forwards the report to the SEC. Theo stops answering your texts.',
-          headline: 'Reported a ratings-agency leak to regulators' },
-        { id: 'ignore', apply: (S) => { S.f.ignoredTip = true; },
-          reply: 'You hang up. It doesn\'t stop you from thinking about it.',
-          headline: null }
+        {
+          id: 'trade', label: 'Trade on it.',
+          headline: 'Traded ahead of the Meridian downgrade on a tip from inside the agency',
+          apply: (S) => {
+            S.f.insider = true;
+            adj(S, { integrity: -18, heat: 14 }, { perry: -10 });
+          },
+          reply: 'Perry: "Don\'t make it obvious. Please."'
+        },
+        {
+          id: 'ignore', label: 'Never took the call.',
+          headline: 'Refused a downgrade tip from inside Meridian Ratings',
+          apply: (S) => { adj(S, { integrity: 10 }, { perry: 5 }); },
+          reply: 'Perry: "Yeah. Yeah, you\'re right. Forget it."'
+        },
+        {
+          id: 'warn', label: 'Tell him to go to compliance.',
+          headline: 'Told a ratings analyst to put the CASCADE downgrade in writing',
+          apply: (S) => {
+            S.f.perryFiled = true;
+            adj(S, { integrity: 16, stability: 4 }, { perry: 20 });
+          },
+          reply: 'Perry: "If I file this they will know it was me." ... "Okay. Okay."'
+        }
       ]
     },
+
     c3: {
-      day: 6, speaker: 'Sen. Harlan Whitfield', role: 'Chair, Senate Banking Committee', title: 'The Financial Freedom Act',
+      day: 5, speaker: 'Sen. Marcus Thorne', role: 'Chair, Senate Markets Committee', title: 'The Compute Freedom Act',
+      kicker: 'DECISION 3',
       text: [
-        'A steakhouse on K Street. Whitfield cuts his ribeye into perfect squares. "Traders like you understand what bureaucrats don\'t. Capital needs to <i>move</i>."',
-        '"My Freedom Act lifts leverage limits and ends HYDRA reporting rules. A few words from the Street and it sails through. Or," he dabs his mouth, "you could tell me why I\'m wrong."'
+        'Thorne does not sit down. He stands at the window with his back to you, which you suspect he practised.',
+        '"The Compute Freedom Act raises leverage limits for institutions funding compute infrastructure. My colleagues will vote however the industry tells them to vote, and the industry will say whatever a working trader tells it to say."',
+        '"So. You are the working trader. Does it make the system stronger, or does it make it bigger right before it breaks?"'
       ],
       options: [
-        { id: 'dereg', label: 'Back the bill. Lobby for deregulation.', hint: 'More leverage for everyone, including you.',
-          apply: (S) => { S.f.dereg = true; adj(S, { stability: -20, influence: 15 }, { whitfield: 20 }); },
-          after: ['Whitfield beams. "You\'ll find I have a long memory for friends." By morning your leverage cap is 6x.'],
-          headline: 'Lobbied for the Financial Freedom Act' },
-        { id: 'regulate', label: 'Tell him the truth about HYDRA. Push for regulation.', hint: 'Safer system. Tighter limits on you.',
-          apply: (S) => { S.f.regulation = true; adj(S, { stability: 20, influence: 5, anger: -5, integrity: 5 }, { whitfield: -15 }); },
-          after: ['Whitfield\'s smile doesn\'t move, but his eyes go cold. Two days later, reformers add your arguments to an amendment. Compliance caps your leverage at 3x.'],
-          headline: 'Warned Congress about HYDRA and pushed for reform' },
-        { id: 'stayout', label: 'Eat the steak. Commit to nothing.', hint: 'Politics isn\'t your job.',
-          apply: (S) => { adj(S, {}, { whitfield: -5 }); },
-          after: ['You nod a lot and say nothing quotable. Whitfield picks up the check without looking at you.'],
-          headline: null }
+        {
+          id: 'yes', label: 'Back the bill. Higher limits, bigger book.', hint: 'Your leverage goes to 6x. So does everyone else\'s.',
+          headline: 'Publicly backed the Compute Freedom Act',
+          apply: (S) => {
+            S.f.dereg = true;
+            S.f.lobbyYes = true;
+            adj(S, { integrity: -10, influence: 18, firm: 12, stability: -14 }, { thorne: 18, kroll: 12, imani: -8 });
+          },
+          reply: 'Thorne: "That is what I hoped you would say."',
+          after: [
+            'It clears committee in nine days. Leverage limits go up across the street.',
+            'Your desk can now hold 6x. So can every desk that is worse at this than you are.',
+            'Imani reads the bill text twice and then goes home early for the first time in two years.'
+          ]
+        },
+        {
+          id: 'no', label: 'Argue against it. Tighter limits.', hint: 'Costs you influence and your own leverage.',
+          headline: 'Testified against the Compute Freedom Act',
+          apply: (S) => {
+            S.f.regulation = true;
+            S.f.lobbyNo = true;
+            S.f.public = true;
+            adj(S, { integrity: 18, influence: -6, firm: -14, stability: 14 }, { thorne: 8, kroll: -14, imani: 14 });
+          },
+          reply: 'Thorne: "You have just made both of our lives harder."',
+          after: [
+            'Your amendment survives by four votes. Position limits tighten everywhere.',
+            'Your own book is capped at 3x now, which you argued for, which does not make it feel better on a fast day.',
+            'Two months from now, people will argue about whether those four votes mattered. They did.'
+          ]
+        },
+        {
+          id: 'dodge', label: 'Say nothing useful.', hint: 'Keep your hands clean. Keep your influence small.',
+          headline: 'Declined to take a position on the Compute Freedom Act',
+          apply: (S) => { adj(S, { influence: -8 }, { thorne: -10 }); },
+          reply: 'Thorne: "Everybody wants to be in the room and nobody wants to be in the minutes."',
+          after: [
+            'You give him forty minutes of balanced, careful, completely useless commentary.',
+            '"Everybody wants to be in the room," he says at the door, "and nobody wants to be in the minutes."',
+            'The bill passes anyway, watered down, by a margin that would not have needed you.'
+          ]
+        }
       ]
     },
-    c4: { // mid-session call, day 9
-      day: 8, mid: true, title: 'The Pack',
+
+    c4: { // mid-session call, day 8
+      day: 7, mid: true, title: 'The Pack', kicker: 'DECISION 4',
       options: [
-        { id: 'join', apply: (S) => { S.f.raid = true; adj(S, { integrity: -10, heat: 15, stability: -10 }, { vance: 10 }); S.pending.push({ type: 'short', sym: 'LRMR', mult: 1.0 }); },
-          reply: 'A Lorimer short worth your entire account appears in your book. Vance: "Welcome to the big leagues."',
-          headline: 'Joined a coordinated short raid on Lorimer Brothers' },
-        { id: 'refuse', apply: (S) => { adj(S, { integrity: 5 }, { vance: -10, dana: 5 }); },
-          reply: 'Vance: "Your loss, choirboy." The line goes dead.',
-          headline: null },
-        { id: 'tip', apply: (S) => { S.f.tipShortBan = true; adj(S, { integrity: 10, heat: -5, stability: 10 }, { vance: -15 }); },
-          reply: 'The SEC listens. Tomorrow an emergency order bans short selling of financial stocks for three days.',
-          headline: 'Tipped the SEC about a coordinated short raid' }
+        {
+          id: 'join', label: 'Join the raid.',
+          headline: 'Joined a coordinated short raid on Ridgeway Trust',
+          apply: (S) => {
+            S.f.raid = true;
+            adj(S, { integrity: -16, heat: 16, stability: -10, anger: 6 }, { greta: 20 });
+            S.pending.push({ type: 'short', sym: 'RDGW', mult: 0.8 });
+          },
+          reply: 'Vail: "Welcome to the pack. Don\'t get sentimental."'
+        },
+        {
+          id: 'refuse', label: 'Trade your own book.',
+          headline: 'Declined to join the coordinated raid on Ridgeway Trust',
+          apply: (S) => { adj(S, { integrity: 8 }, { greta: -12 }); },
+          reply: 'Vail: "Cute. Enjoy your principles."'
+        },
+        {
+          id: 'tell', label: 'Refuse, then warn Ridgeway.',
+          headline: 'Warned Ridgeway Trust about a coordinated short raid',
+          apply: (S) => {
+            S.f.toldRidgeway = true;
+            adj(S, { integrity: 14, heat: 10, stability: 6 }, { greta: -30 });
+          },
+          reply: 'Vail: "Somebody talked. I will find out who."'
+        }
       ]
     },
+
     c5: {
-      day: 9, speaker: 'Evelyn Marsh', role: 'Secretary of the Treasury', title: 'Rescue Weekend',
-      kicker: 'SATURDAY, 11:40 PM · FEDERAL RESERVE BANK OF NEW YORK',
+      day: 9, speaker: 'Adele Venn', role: 'Secretary of the Treasury', title: 'Rescue Weekend',
+      kicker: 'DECISION 5',
       text: [
-        'You\'re in a conference room with the most powerful people in finance, because Marsh wants someone who actually trades HYDRA. Cold pizza. Nobody has slept.',
-        '"Lorimer opens Monday or it doesn\'t," Marsh says. "Option one: taxpayers bail it out. Option two: we let it fail and send a message. Option three: someone buys it. Your firm is the only bidder. What do you tell me?"'
+        'You are in a conference room at Treasury at 10 PM on a Saturday because somebody on Thorne\'s staff put your name on a list.',
+        'Venn has been awake for thirty-one hours. "Ridgeway does not open Monday unless we do something. If we guarantee it, every bank on the street learns that we always will. If we don\'t, we find out what is actually connected to what."',
+        '"You trade this paper. You are going to tell me which of those is worse."'
       ],
       options: [
-        { id: 'bailout', label: '"Bail them out. The system can\'t take it."', hint: 'Stops the bleeding. The public will be furious.',
-          apply: (S) => { S.f.bailout = true; adj(S, { stability: 10, anger: 20, influence: 10 }, {}); },
-          after: ['Marsh closes her eyes. "God help us." At 11 PM Sunday, Treasury announces an $85 billion rescue of Lorimer Brothers.'],
-          headline: 'Advised Treasury to bail out Lorimer Brothers' },
-        { id: 'fail', label: '"Let it fail. No more moral hazard."', hint: 'A clean message. Maybe a catastrophe.',
-          apply: (S) => { S.f.lorimerFailed = true; adj(S, { stability: -25, anger: -5, influence: 5 }, {}); },
-          after: ['The room goes silent. Marsh nods slowly. At 1:45 AM Monday, Lorimer Brothers files for bankruptcy.'],
-          headline: 'Advised Treasury to let Lorimer Brothers fail' },
-        { id: 'merger', label: '"Let H&V buy it. I\'ll make it work."', hint: 'You get a stake. H&V inherits the toxic book.',
-          req: (S) => S.rel.vance >= 35 && !S.f.defected,
-          apply: (S) => { S.f.merger = true; adj(S, { stability: 5, firm: -20, influence: 5 }, { vance: 15 }); S.pending.push({ type: 'grant', sym: 'HVNB', value: 50000 }); },
-          after: ['Vance signs at 4 AM. For your trouble you get $50,000 of H&V stock. Nobody has fully read Lorimer\'s balance sheet.'],
-          headline: 'Brokered H&V\'s takeover of Lorimer Brothers' }
+        {
+          id: 'bail', label: 'Guarantee it. Stop the run.', hint: 'Stability now. Public fury, and moral hazard, later.',
+          headline: 'Argued for a public guarantee of Ridgeway Trust',
+          apply: (S) => {
+            S.f.bailout = true;
+            adj(S, { stability: 22, anger: 20, influence: 10 }, { venn: 16, thorne: 6 });
+          },
+          reply: 'Venn: "Then I own this. Thank you for being in the room."',
+          after: [
+            'They announce it at 11:40 PM Sunday. Futures gap up three percent.',
+            'By Tuesday the phrase "public money, private bonuses" is on every screen in the country, and it will be for a year.',
+            'It worked. That is the part people will find hardest to forgive.'
+          ]
+        },
+        {
+          id: 'fail', label: 'Let it fail. Take the pain now.', hint: 'Honest. Also possibly catastrophic.',
+          headline: 'Argued that Ridgeway Trust should be allowed to fail',
+          apply: (S) => {
+            S.f.letFail = true;
+            adj(S, { stability: -24, integrity: 10, anger: -6 }, { venn: 8 });
+          },
+          reply: 'Venn: "I hope you are right. I genuinely do."',
+          after: [
+            'Ridgeway files at 11:40 PM Sunday. It is the largest failure in the country\'s history by a factor of four.',
+            'On Monday, three things nobody had connected to Ridgeway stop working.',
+            'Venn calls you at 6 AM. She does not say anything for a while. Then: "Come in."'
+          ]
+        },
+        {
+          id: 'ban', label: 'Guarantee it, and ban shorting financials.', hint: 'Buys a week. Freezes your own shorts too.',
+          headline: 'Argued for a rescue plus an emergency short-selling ban',
+          apply: (S) => {
+            S.f.bailout = true;
+            S.f.shortBanOn = true;
+            S.f.tipShortBan = true;
+            adj(S, { stability: 16, anger: 14, influence: 8 }, { venn: 12, greta: -20 });
+          },
+          reply: 'Venn: "The ban buys us a week. I hope a week is enough."',
+          after: [
+            'The emergency order lands at 4 AM Monday. Short selling in financials is prohibited until further notice.',
+            'Volumes collapse. Spreads triple. Prices stop falling, which everyone agrees is not the same thing as prices being right.',
+            'Your own shorts in those names are frozen exactly where they were, which you had not thought about until now.'
+          ]
+        }
       ]
     },
+
     c6: {
-      day: 13, speaker: 'Garrett Vance', role: 'Head of Trading, Halbrook & Vance', title: 'The Marks',
+      day: 10, speaker: 'Desmond Kroll', role: 'Head of Trading, Holloway Stern', title: 'The Marks',
+      kicker: 'DECISION 6',
       text: [
-        'Vance\'s office, 9 PM. For once he looks scared. "The auditors want our HYDRA marks. We\'ve got it at 92 cents on the dollar. Real market\'s about... thirty."',
-        '"You built the model. Tell them 92 is right, sign off, and nobody finds out until this blows over. Or we\'re all finished. You included."'
+        'The valuation committee needs a trading signature on the CASCADE book by 6 PM. Kroll has brought the folder to you personally, which he has never done.',
+        '"Model says sixty-one cents. The desk says twenty-two. If we print twenty-two, our capital ratio breaks, the regulator walks in on Thursday, and eleven thousand people here find out what happens next."',
+        '"Sign the sixty-one. It is a model output. Models are opinions. Opinions are not lies."'
       ],
       options: [
-        { id: 'hide', label: 'Sign off on the fake marks.', hint: 'Save the firm. Commit fraud.',
-          req: (S) => !S.f.defected,
-          apply: (S) => { S.f.fraud = true; adj(S, { integrity: -20, heat: 20 }, { vance: 15, dana: -15 }); },
-          after: ['You sign. Your hand only shakes a little. H&amp;V reports "manageable" HYDRA exposure. The stock holds up.'],
-          headline: 'Signed off on fraudulent HYDRA valuations' },
-        { id: 'disclose', label: 'Refuse. Tell the auditors the real number.', hint: 'The stock will crater. So might your career.',
-          apply: (S) => { S.f.disclosed = true; adj(S, { integrity: 20, heat: -10, firm: -20 }, { vance: -25, rae: 10, dana: 15 }); },
-          after: ['You walk the auditors through the real model. It takes four hours. At 5 AM, H&amp;V announces $41 billion in writedowns.'],
-          headline: 'Exposed H&V\'s hidden HYDRA losses to auditors' },
-        { id: 'defect', label: 'Walk out. Take your client list to Goldstone.', hint: 'New desk, new boss. H&V\'s lawyers will be furious.',
-          apply: (S) => { S.f.defected = true; adj(S, { integrity: -10, heat: 15, influence: 5 }, {}); S.rel.vance = 50; },
-          after: ['Mara Linde at Goldstone answers on the first ring. "Be here at six. Bring the list." You leave your H&amp;V badge on Vance\'s chair.'],
-          headline: 'Defected to Goldstone with H&V\'s client list' }
+        {
+          id: 'sign', label: 'Sign the marks.', hint: 'The firm survives the week. So does the fraud.',
+          headline: 'Signed off on CASCADE marks at 61 cents against a desk bid of 22',
+          apply: (S) => {
+            S.f.fraud = true;
+            adj(S, { integrity: -26, heat: 24, firm: 18, stability: -8 }, { kroll: 18, imani: -18 });
+            S.pending.push({ type: 'grant', sym: 'HLST', value: 60000 });
+          },
+          reply: 'Kroll: "You just saved this firm. Nobody will ever thank you for it."',
+          after: [
+            'You sign on the second page. It takes four seconds.',
+            'The capital ratio holds. The regulator comes Thursday and leaves Thursday. Sixty thousand dollars of restricted Holloway Stern stock appears in your account on Friday.',
+            'Every one of those things is a separate reason you will not sleep well.'
+          ]
+        },
+        {
+          id: 'refuse', label: 'Refuse to sign.', hint: 'Someone else signs it. You are no longer on the inside.',
+          headline: 'Refused to sign the CASCADE valuation',
+          apply: (S) => {
+            adj(S, { integrity: 20, firm: -16 }, { kroll: -22, imani: 16 });
+          },
+          reply: 'Kroll: "Fine. I\'ll find a signature. They\'re not rare."',
+          after: [
+            'He finds a signature in twenty minutes. Signatures are not rare.',
+            'The marks go out at sixty-one anyway. The only difference is whose name is on page two.',
+            'You are removed from the valuation distribution list that evening, which is how this firm says goodbye.'
+          ]
+        },
+        {
+          id: 'report', label: 'Refuse, and report it.', hint: 'Regulators, in writing, today. No going back.',
+          headline: 'Reported the CASCADE valuation to regulators',
+          apply: (S) => {
+            S.f.reported = true;
+            S.f.public = true;
+            adj(S, { integrity: 30, heat: -10, firm: -30, stability: 8, anger: 6 }, { kroll: -40, imani: 20, sana: 20 });
+          },
+          reply: 'Enforcement Division: "We have your submission. Do not discuss it internally."',
+          after: [
+            'The form is eleven pages. You fill it out at your own desk, which feels insane, because it is.',
+            'Confirmation arrives in four minutes: <i>We have your submission. Do not discuss it internally.</i>',
+            'Kroll walks past you twice that afternoon without turning his head, and you understand that he already knows.'
+          ]
+        }
       ]
     },
+
     c7: {
-      day: 16, speaker: 'Sen. Harlan Whitfield', role: 'Chair, Senate Banking Committee', title: 'The Stabilization Act',
+      day: 12, speaker: 'Sen. Marcus Thorne', role: 'Chair, Senate Markets Committee', title: 'The Stabilization Act',
+      kicker: 'DECISION 7',
       text: [
-        'Whitfield calls at 10 PM. "Tomorrow at two the House votes on Marsh\'s $700 billion. The people I talk to are split down the middle."',
-        '"Cable news wants a trader on air tonight. Somebody who can explain what happens if this fails. Or what happens if it passes. Which somebody are you?"'
+        'Thorne calls at 9 PM from a corridor. You can hear a vote bell in the background.',
+        '"Stabilization Act. Seven hundred billion guarantee facility, and it is four votes short. Four. Some of those votes listen to people who listen to you."',
+        '"You want to be useful? Now is the only time it counts."'
       ],
       options: [
-        { id: 'yes', label: 'Go on TV. Lobby for YES.', hint: '"Pass it or we all go down together."',
-          apply: (S) => { S.f.lobbyYes = true; adj(S, { influence: 15, anger: 5 }, { whitfield: 10 }); },
-          after: ['You tell nine million viewers their 401(k)s depend on this bill. Clips go viral in both directions.'],
-          headline: 'Went on national TV to push the bailout bill' },
-        { id: 'no', label: 'Go on TV. Lobby for NO.', hint: '"No more bailouts for Wall Street."',
-          apply: (S) => { S.f.lobbyNo = true; adj(S, { influence: 5, anger: -10, stability: -10 }, { whitfield: -10 }); },
-          after: ['"Let them fail," you say. A populist congressman retweets you. Marsh\'s office stops returning calls.'],
-          headline: 'Went on national TV to kill the bailout bill' },
-        { id: 'testify', label: 'Testify publicly about what really happened.', hint: 'The whole truth: HYDRA, the ratings, the lies.',
-          req: (S) => S.rel.rae >= 40 || S.m.integrity >= 60,
-          apply: (S) => { S.f.testified = true; const exposed = S.f.fraud || S.f.insider || S.f.raid || S.f.dumped; adj(S, { integrity: 15, stability: 10, anger: -10, heat: exposed ? 25 : 0 }, { rae: 15 }); },
-          after: ['You testify for three hours. You name names. Some of them, uncomfortably, include your own.'],
-          headline: 'Testified before Congress about the HYDRA scheme' },
-        { id: 'quiet', label: 'Decline. Let the vote happen.', hint: 'Trade the outcome instead of changing it.',
-          apply: (S) => {},
-          after: ['You turn your phone off and stare at the ceiling until 4 AM.'],
-          headline: null }
+        {
+          id: 'whip', label: 'Work the phones for it.', hint: 'Spend everything you have on the vote.',
+          headline: 'Lobbied hard for the Stabilization Act',
+          apply: (S) => {
+            S.f.whipped = true;
+            adj(S, { influence: 12, integrity: 4, stability: 8 }, { thorne: 20 });
+          },
+          reply: 'Thorne: "Keep calling."',
+          after: ['You make fourteen calls. Two of them matter. You will never find out which two.']
+        },
+        {
+          id: 'against', label: 'Work against it.', hint: 'No more rescues. Let the system clear.',
+          headline: 'Lobbied against the Stabilization Act',
+          apply: (S) => {
+            S.f.whippedAgainst = true;
+            adj(S, { influence: 8, stability: -12, anger: -10 }, { thorne: -25 });
+          },
+          reply: 'Thorne: "Then I hope you can live with the arithmetic."',
+          after: ['"I hope you can live with the arithmetic," he says, and hangs up before you answer.']
+        },
+        {
+          id: 'position', label: 'Say nothing. Position for both.', hint: 'Straddle it. Make money either way, if you are right.',
+          headline: 'Stayed silent on the vote and positioned for both outcomes',
+          apply: (S) => {
+            S.f.straddled = true;
+            adj(S, { integrity: -8, influence: -10 }, { thorne: -14 });
+            S.pending.push({ type: 'cash', amount: 0, reason: 'No position taken' });
+          },
+          reply: 'Thorne: "I\'ll take that as a no."',
+          after: ['You buy protection on both sides of the tape and tell yourself that is not a position. It is a position.']
+        }
       ]
     },
+
     c8: {
-      day: 18, speaker: 'Dana Okafor', role: 'Senior Trader · your mentor', title: 'The Offer',
-      kicker: 'THURSDAY NIGHT · A BAR ON STONE STREET',
+      day: 13, speaker: 'Imani Rhodes', role: 'Senior Trader · your mentor', title: 'The Offer',
+      kicker: 'FINAL DECISION',
       text: [
-        'Dana orders two whiskeys. "Whatever you do next, you do it now. The music stopped. Everybody\'s looking for a chair."',
-        '"People have been calling me about you. Here\'s what\'s on the table."'
+        'Imani finds you in the stairwell at 7 PM with a folder she should not have.',
+        '"Enforcement wants someone who was in the room. Not a witness, a participant. They are offering full cooperation terms, and they are offering them today."',
+        '"There is also a car downstairs that Kroll sent, and there is a plane at Teterboro, and there is a man from Treasury who has called you twice. Everyone is offering you something. Pick one, and pick it now, because tomorrow there is only one option left and it is not a good one."'
       ],
       options: [
-        { id: 'treasury', label: 'Take the Deputy Treasury Secretary job.', hint: 'Marsh wants someone who knows where the bodies are buried.',
-          req: (S) => S.m.influence >= 50 && S.f.billPassed,
-          apply: (S) => { S.f.treasury = true; adj(S, { influence: 10 }, {}); },
-          after: ['Marsh calls personally. "Start Monday. Divest everything." Two more days of trading, then you work for the people you just advised.'],
-          headline: 'Accepted a senior post at Treasury' },
-        { id: 'book', label: 'Go public with Rae. Tell the whole story.', hint: 'A book deal, and your name on everything.',
-          req: (S) => S.rel.rae >= 50,
-          apply: (S) => { S.f.goPublic = true; adj(S, { integrity: 10 }, { rae: 20 }); },
-          after: ['Rae buys the next round. "This is going to be the story of the decade. You understand that, right?"'],
-          headline: 'Went public with the Daily Ledger' },
-        { id: 'cooperate', label: 'Cooperate with federal prosecutors.', hint: 'Pay a fine. Tell them everything. Stay out of prison.',
-          req: (S) => S.m.heat >= 45,
-          apply: (S) => { S.f.cooperated = true; adj(S, { heat: -40, integrity: 15 }, { vance: -30 }); S.pending.push({ type: 'fineFrac', frac: 0.25, reason: 'Cooperation settlement' }); },
-          after: ['You meet the Assistant U.S. Attorney at 7 AM. You pay 25% of everything you have. You start talking.'],
-          headline: 'Cooperated with federal prosecutors' },
-        { id: 'flee', label: 'Take the jet to Port Solace. Tonight.', hint: 'No extradition treaty. Liquidate everything and go.',
-          req: (S, w) => S.m.heat >= 55 || (w || 0) >= 2 * S.startCapital,
-          apply: (S) => { S.f.fled = true; },
-          after: ['A private terminal in Teterboro. No questions asked. By sunrise you\'re over the Atlantic with everything you own converted to cash.'],
-          headline: 'Fled the country on a private jet' },
-        { id: 'stay', label: 'Keep your head down. Trade.', hint: 'Finish the month. See what\'s left standing.',
-          apply: (S) => {},
-          after: ['Dana nods, finishes her drink and leaves a hundred on the bar. "See you at the bell."'],
-          headline: null }
+        {
+          id: 'testify', label: 'Cooperate. Tell them everything.', hint: 'Immunity, probably. A career, no.',
+          headline: 'Agreed to cooperate with federal investigators',
+          apply: (S) => {
+            S.f.testified = true;
+            S.f.cooperated = true;
+            S.f.public = true;
+            adj(S, { integrity: 30, heat: -40, stability: 6, firm: -40 }, { imani: 20, kroll: -50 });
+          },
+          reply: '',
+          after: [
+            'It takes nine hours over two days and a lawyer you cannot really afford.',
+            'They record everything. At one point you have to explain what a tranche is to someone who will later write the law about tranches.',
+            'You walk out at 6 PM on the second day and nobody is waiting for you, which is the whole point.'
+          ]
+        },
+        {
+          id: 'public', label: 'Go public. Give it all to Sana.', hint: 'Maximum truth, maximum exposure.',
+          headline: 'Gave the full CASCADE file to the press',
+          req: (S) => S.rel.sana >= 30 || S.f.leaked,
+          apply: (S) => {
+            S.f.goPublic = true;
+            S.f.public = true;
+            adj(S, { integrity: 26, heat: 14, anger: 14, firm: -45, stability: 4 }, { sana: 30, kroll: -50 });
+          },
+          reply: '',
+          after: [
+            'Nine thousand words on a Sunday, with the valuation deck reproduced in full on page A14.',
+            'By Monday morning it is the only thing anyone is talking about. By Monday afternoon two congressional committees have demanded the same documents you already handed over.',
+            'Sana calls once, to say thank you, and then never contacts you again, which is how she protects you.'
+          ]
+        },
+        {
+          id: 'treasury', label: 'Take the Treasury job.', hint: 'Needs real influence. The revolving door swings both ways.',
+          req: (S) => S.m.influence >= 45 && S.rel.venn >= 40,
+          apply: (S) => {
+            S.f.treasury = true;
+            adj(S, { influence: 20, heat: -25, integrity: -8 }, { venn: 15 });
+          },
+          reply: '',
+          after: [
+            'Deputy Secretary for Financial Stability. The office has a window and a fern that somebody else waters.',
+            'On your first day you are handed a briefing on the exact instrument you spent a month trading, prepared by people who have never traded anything.',
+            'You are, unfortunately, the most qualified person in the room.'
+          ]
+        },
+        {
+          id: 'flee', label: 'Take the plane.', hint: 'Liquidate everything tonight. No extradition treaty.',
+          req: (S, wealth) => wealth >= 400000,
+          apply: (S) => {
+            S.f.fled = true;
+            adj(S, { integrity: -30, heat: 20 }, { imani: -40 });
+          },
+          reply: '',
+          after: [
+            'You liquidate the entire book in ninety minutes of after-hours trading at prices that make you wince.',
+            'The wire goes out at 11 PM. The plane leaves at 1:40 AM.',
+            'Imani sends one message while you are taxiing. You do not open it.'
+          ]
+        },
+        {
+          id: 'quiet', label: 'Say nothing. Go back to the desk.', hint: 'Whatever happens next, happens without you.',
+          headline: 'Declined to cooperate, testify or run',
+          apply: (S) => {
+            S.f.quiet = true;
+            adj(S, { integrity: -4 }, { imani: -10 });
+          },
+          reply: '',
+          after: [
+            '"Okay," Imani says, after a long time. "Okay."',
+            'You go back upstairs. There are forty minutes left in the after-hours session and you spend them working an order, because it is the only thing in the building that still makes sense.',
+            'Nobody comes for you. That is not the same as being fine.'
+          ]
+        }
       ]
     }
   };
 
-  B.StoryData = { DAYS, CHOICES, QUOTAS, actOf, adj, cm, boss, FIN };
+  B.StoryData = { DAYS, CHOICES, QUOTAS, ACTS, actOf, adj, boss, cm, FIN, STACK, ev, chirp, imp, R };
 })(window.BTB);

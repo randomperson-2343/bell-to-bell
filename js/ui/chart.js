@@ -2,6 +2,7 @@
 (function (B) {
   'use strict';
   let cv, ctx, W = 0, H = 0, dpr = 1, MONO = 'monospace';
+  const P = B.Pal;
 
   function resize() {
     const r = cv.getBoundingClientRect();
@@ -74,8 +75,8 @@
 
       // grid + axis
       ctx.font = '11px ' + MONO;
-      ctx.fillStyle = '#56657a';
-      ctx.strokeStyle = '#151d27';
+      ctx.fillStyle = P.phosphorD;
+      ctx.strokeStyle = '#182622';
       ctx.lineWidth = 1;
       const steps = 5;
       for (let i = 0; i <= steps; i++) {
@@ -87,11 +88,11 @@
       // session separator + time labels
       if (tf !== 1 && sepIdx > 0) {
         const sx = Math.round(sepIdx * bw) + 0.5;
-        ctx.strokeStyle = '#2a394a';
+        ctx.strokeStyle = P.slate2;
         ctx.setLineDash([2, 3]);
         ctx.beginPath(); ctx.moveTo(sx, padT); ctx.lineTo(sx, H - padB); ctx.stroke();
         ctx.setLineDash([]);
-        ctx.fillStyle = '#56657a';
+        ctx.fillStyle = P.phosphorD;
         ctx.fillText('prev', Math.max(2, sx - 34), H - 6);
         for (const hr of [0, 90, 210, 330]) {
           const xi = sepIdx + hr / tf;
@@ -101,25 +102,25 @@
       // prev close line
       if (tk.prevClose) {
         const yy = Math.round(y(tk.prevClose)) + 0.5;
-        ctx.strokeStyle = '#3b4a5e';
+        ctx.strokeStyle = P.slate2;
         ctx.setLineDash([4, 4]);
         ctx.beginPath(); ctx.moveTo(0, yy); ctx.lineTo(plotW, yy); ctx.stroke();
         ctx.setLineDash([]);
       }
       // candles
-      const cwid = Math.max(1, bw * 0.7);
+      const cwid = Math.max(1, Math.round(bw * 0.7));
       for (let i = 0; i < view.length; i++) {
         const c = view[i];
         const isPrev = offset + i < sepIdx;
         const upc = c.c >= c.o;
-        const col = upc ? '#1fd67f' : '#ff4d61';
+        const col = upc ? P.jade : P.crimson;
         ctx.globalAlpha = isPrev ? 0.35 : 1;
         ctx.strokeStyle = col;
         ctx.fillStyle = col;
-        const xx = x(i);
+        const xx = Math.round(x(i));
         ctx.beginPath(); ctx.moveTo(Math.round(xx) + 0.5, y(c.h)); ctx.lineTo(Math.round(xx) + 0.5, y(c.l)); ctx.stroke();
         const top = y(Math.max(c.o, c.c)), bot = y(Math.min(c.o, c.c));
-        ctx.fillRect(xx - cwid / 2, top, cwid, Math.max(1, bot - top));
+        ctx.fillRect(Math.round(xx - cwid / 2), Math.round(top), Math.max(1, Math.round(cwid)), Math.max(1, Math.round(bot - top)));
       }
       ctx.globalAlpha = 1;
 
@@ -133,18 +134,18 @@
         ctx.fillStyle = col;
         ctx.fillText(label, 4, yy - 4);
       };
-      if (p) hline(p.avg, '#ffb627', `${p.qty > 0 ? 'LONG' : 'SHORT'} ${B.fmt.qty(Math.abs(p.qty))} @ ${B.fmt.price(p.avg)}`, [6, 3]);
+      if (p) hline(p.avg, P.amber, `${p.qty > 0 ? 'LONG' : 'SHORT'} ${B.fmt.qty(Math.abs(p.qty))} @ ${B.fmt.price(p.avg)}`, [6, 3]);
       for (const o of g.broker.orders) {
         if (o.sym !== sym) continue;
-        hline(o.price, o.type === 'stop' ? '#ff4d61' : '#4da3ff', `${o.label || o.type.toUpperCase()} ${B.fmt.price(o.price)}`, [2, 3]);
+        hline(o.price, o.type === 'stop' ? P.crimson : P.sky, `${o.label || o.type.toUpperCase()} ${B.fmt.price(o.price)}`, [2, 3]);
       }
 
       // last price tag
       const ly = y(tk.last);
       const upDay = tk.last >= tk.prevClose;
-      ctx.fillStyle = upDay ? '#1fd67f' : '#ff4d61';
+      ctx.fillStyle = upDay ? P.jade : P.crimson;
       ctx.fillRect(plotW + 1, ly - 9, padR - 2, 18);
-      ctx.fillStyle = '#05070a';
+      ctx.fillStyle = P.ink;
       ctx.font = 'bold 11px ' + MONO;
       ctx.fillText(B.fmt.price(tk.last), plotW + 5, ly + 4);
     }

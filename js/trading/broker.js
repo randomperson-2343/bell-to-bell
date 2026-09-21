@@ -357,9 +357,27 @@
 
     dayTrades() { return this.trades.slice(this.dayTradeStart || 0); }
 
+    // Between-day state: what survives the closing bell.
     serialize() {
       return { cash: this.cash, pos: this.pos, opts: this.opts, orders: this.orders.filter((o) => o.bracket), fees: this.fees, feeMult: this.feeMult, slipMult: this.slipMult, maintStrict: this.maintStrict, oid: OID };
     }
+
+    // Everything, including the half-finished session: working orders, today's
+    // trade blotter, the running margin call. Used by mid-day saves.
+    serializeFull() {
+      return Object.assign(this.serialize(), {
+        full: true,
+        orders: this.orders,
+        trades: this.trades,
+        dayStartEquity: this.dayStartEquity,
+        dayPeak: this.dayPeak,
+        dayTradeStart: this.dayTradeStart || 0,
+        dayFeesStart: this.dayFeesStart || 0,
+        mc: this.mc,
+        rules: { maxLev: this.rules.maxLev, overnightLev: this.rules.overnightLev, shortBan: this.rules.shortBan, locked: this.rules.locked }
+      });
+    }
+
     restore(o) {
       this.cash = o.cash;
       this.pos = o.pos || {};
@@ -367,6 +385,14 @@
       this.orders = o.orders || [];
       this.fees = o.fees || 0;
       OID = Math.max(OID, o.oid || 1);
+      if (!o.full) return;
+      this.trades = o.trades || [];
+      this.dayStartEquity = o.dayStartEquity;
+      this.dayPeak = o.dayPeak;
+      this.dayTradeStart = o.dayTradeStart || 0;
+      this.dayFeesStart = o.dayFeesStart || 0;
+      this.mc = o.mc || null;
+      if (o.rules) Object.assign(this.rules, o.rules);
     }
   }
 

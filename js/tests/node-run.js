@@ -7,26 +7,37 @@ const root = path.join(__dirname, '..', '..');
 const store = {};
 const ctx = {
   console, Math, Date, JSON, Intl, performance: { now: () => Date.now() },
-  localStorage: { getItem: (k) => (k in store ? store[k] : null), setItem: (k, v) => { store[k] = String(v); }, removeItem: (k) => { delete store[k]; } }
+  setInterval: () => 0, clearInterval: () => {}, setTimeout: () => 0,
+  localStorage: {
+    getItem: (k) => (k in store ? store[k] : null),
+    setItem: (k, v) => { store[k] = String(v); },
+    removeItem: (k) => { delete store[k]; }
+  }
 };
 ctx.window = ctx;
 vm.createContext(ctx);
 
-const files = [
-  'js/core/util.js', 'js/core/rng.js', 'js/core/events.js', 'js/core/storage.js', 'js/core/clock.js',
+const run = (f) => vm.runInContext(fs.readFileSync(path.join(root, f), 'utf8'), ctx, { filename: f });
+
+[
+  'js/core/util.js', 'js/core/rng.js', 'js/core/events.js', 'js/core/storage.js', 'js/core/save.js', 'js/core/clock.js',
   'js/market/tickers.js', 'js/market/engine.js', 'js/market/news.js',
   'js/trading/options.js', 'js/trading/broker.js', 'js/stress.js',
-  'js/modes/story/story-data.js', 'js/modes/story/endings.js',
-  'js/tests/tests.js'
-];
-// story-engine needs B.Settings; provide a stub before loading it.
-for (const f of files) {
-  if (f === 'js/tests/tests.js') {
-    vm.runInContext('window.BTB.Settings = { get: () => ({ storyDayLength: 240 }) };', ctx);
-    vm.runInContext(fs.readFileSync(path.join(root, 'js/modes/story/story-engine.js'), 'utf8'), ctx, { filename: 'story-engine.js' });
-  }
-  vm.runInContext(fs.readFileSync(path.join(root, f), 'utf8'), ctx, { filename: f });
-}
+  'js/audio/sfx.js', 'js/audio/music.js', 'js/interrupts.js', 'js/game.js'
+].forEach(run);
+
+// Headless stand-ins for everything that needs a DOM.
+vm.runInContext(`
+  const B = window.BTB;
+  B.Settings = {
+    get: () => ({ storyDayLength: 180, effects: 'off', cinematics: 'off' }),
+    set: () => {}, fx: () => 0, motion: () => false, apply: () => {}
+  };
+  B.Cinematic = { running: false, play: (n, o, cb) => cb && cb() };
+  B.Screens = { briefing: (g, b, cb) => cb && cb(), eod: (g, r, cb) => cb && cb(), choice: () => {}, aftermath: (t, x, cb) => cb && cb(), ending: () => {}, closeModal: () => {} };
+`, ctx);
+
+['js/modes/story/story-data.js', 'js/modes/story/endings.js', 'js/modes/story/story-engine.js', 'js/tests/tests.js'].forEach(run);
 
 const res = ctx.BTB.Tests.results;
 let fail = 0;

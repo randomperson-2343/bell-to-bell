@@ -5,9 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Bell to Bell Tests</title>
   <style>
-    body { background: #07090d; color: #d7e0ea; font-family: Consolas, Menlo, monospace; padding: 24px; }
-    .pass { color: #1fd67f; } .fail { color: #ff4d61; }
-    li { margin: 4px 0; } small { color: #7d8b9c; display: block; margin-left: 20px; }
+    body { background: #1b1a21; color: #e4dfd2; font-family: Consolas, Menlo, monospace; padding: 24px; }
+    .pass { color: #4fae7a; } .fail { color: #c2495a; }
+    li { margin: 4px 0; } small { color: #9a99a6; display: block; margin-left: 20px; }
   </style>
 </head>
 <body>
@@ -19,6 +19,7 @@
   <script src="js/core/rng.js"></script>
   <script src="js/core/events.js"></script>
   <script src="js/core/storage.js"></script>
+  <script src="js/core/save.js"></script>
   <script src="js/core/clock.js"></script>
   <script src="js/market/tickers.js"></script>
   <script src="js/market/engine.js"></script>
@@ -26,7 +27,18 @@
   <script src="js/trading/options.js"></script>
   <script src="js/trading/broker.js"></script>
   <script src="js/stress.js"></script>
-  <script>window.BTB.Settings = { get: () => ({ storyDayLength: 240 }) };</script>
+  <script src="js/audio/sfx.js"></script>
+  <script src="js/audio/music.js"></script>
+  <script src="js/interrupts.js"></script>
+  <script src="js/game.js"></script>
+  <script>
+    window.BTB.Settings = {
+      get: () => ({ storyDayLength: 180, effects: 'off', cinematics: 'off' }),
+      set: () => {}, fx: () => 0, motion: () => false, apply: () => {}
+    };
+    window.BTB.Cinematic = { running: false, play: (n, o, cb) => cb && cb() };
+    window.BTB.Screens = { briefing: (g, b, cb) => cb && cb(), eod: (g, r, cb) => cb && cb(), choice: () => {}, aftermath: (t, x, cb) => cb && cb(), ending: () => {}, closeModal: () => {} };
+  </script>
   <script src="js/modes/story/story-data.js"></script>
   <script src="js/modes/story/endings.js"></script>
   <script src="js/modes/story/story-engine.js"></script>

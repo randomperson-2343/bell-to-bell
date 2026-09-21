@@ -1,66 +1,76 @@
 // Headline templates + random news/rumor generation (Endless mode and story filler).
+// All firms, agencies and handles are invented.
 (function (B) {
   'use strict';
 
-  const HANDLES = ['@DeepValueDan', '@BearCaveBets', '@MacroMaven', '@BondVigilante', '@TendiesTomorrow',
-    '@RealFinanceGuy', '@HedgeHog88', '@Quant_Kween', '@CallsOnlyCarl', '@SubprimeSteve', '@TheTapeReader', '@DiamondHandsDiane'];
+  const HANDLES = ['@DeepValueDane', '@BearCaveBets', '@MacroMaven', '@BondVigilante', '@TendiesTomorrow',
+    '@PromptAndPray', '@HedgeHog88', '@Quant_Kween', '@CallsOnlyCarl', '@ScalingLawSteve',
+    '@TheTapeReader', '@DiamondHandsDiane', '@GPUgoblin', '@FlopsPerDollar'];
 
   const POS = [
     '{name} smashes earnings estimates, raises guidance',
     '{name} announces surprise $5B buyback',
-    'Upgrade: Goldstone raises {name} to BUY',
+    'Upgrade: Calloway Research raises {name} to BUY',
     '{name} lands major federal contract',
     'Report: {name} in early takeover talks',
-    '{name} CEO buys $12M of stock on open market'
+    '{name} CEO buys $12M of stock on open market',
+    '{name} signs multi-year compute supply deal'
   ];
   const NEG = [
     '{name} misses on revenue, slashes outlook',
     '{name} CFO resigns "effective immediately"',
     'Downgrade: {name} cut to SELL, target halved',
-    '{name} discloses DOJ probe into accounting',
-    '{name} recalls flagship product line',
-    '{name} warns of "near-term liquidity pressure"'
+    '{name} discloses federal probe into revenue recognition',
+    '{name} delays flagship launch indefinitely',
+    '{name} warns of "near-term liquidity pressure"',
+    '{name} writes down $2B of capacity commitments'
   ];
   const SECTOR_POS = {
-    bank: ['Regulators ease bank capital requirements'],
-    lender: ['Mortgage applications jump 12% week over week'],
-    builder: ['Housing starts crush forecasts'],
+    ai: ['New benchmark results send model labs vertical', 'Enterprise adoption survey: AI budgets up 60%'],
+    chip: ['Foundry yields improve; silicon rips higher', 'Export licences granted for next-gen accelerators'],
+    dc: ['Datacenter vacancy hits record low', 'Hyperscale leasing demand described as "insatiable"'],
+    power: ['Grid operators approve fast-track interconnects', 'Power prices ease as new capacity comes online'],
+    bank: ['Regulators ease bank capital requirements', 'Loan loss provisions come in far below estimates'],
+    lender: ['Consumer credit applications jump 12% week over week'],
     insurer: ['Catastrophe losses come in far below estimates'],
-    gse: ['Congress extends mortgage-agency credit line'],
-    tech: ['Chip shortage ends early; tech rips higher'],
+    defense: ['Supplemental appropriations clear committee'],
     retail: ['Consumer spending surges for third straight month'],
-    energy: ['OPEC+ announces surprise production cut'],
-    haven: ['Central banks step up gold purchases']
+    haven: ['Central banks step up bullion purchases']
   };
   const SECTOR_NEG = {
+    ai: ['Model lab funding round reportedly collapses', 'Study finds AI deployments failing to convert to revenue'],
+    chip: ['Order cancellations ripple through the supply chain', 'Export controls widen; silicon sells off hard'],
+    dc: ['Datacenter lease cancellations surface in filings', 'Utility rejects three gigawatt-scale interconnect requests'],
+    power: ['Power prices spike as grid strains under new load', 'Fuel supply disruption hits regional generators'],
     bank: ['Interbank lending rates spike; banks slide'],
-    lender: ['Mortgage delinquencies hit decade high'],
-    builder: ['New home sales collapse 18%'],
-    insurer: ['Insurers face record claims after hurricane'],
-    gse: ['Mortgage agencies told to raise capital'],
-    tech: ['Antitrust crackdown targets Big Tech'],
+    lender: ['Consumer delinquencies hit decade high'],
+    insurer: ['Insurers face record claims after storm season'],
+    defense: ['Procurement freeze announced pending review'],
     retail: ['Retail sales unexpectedly shrink'],
-    energy: ['Oil plunges on demand fears'],
-    haven: ['Gold slides as dollar surges']
+    haven: ['Bullion slides as the dollar surges']
   };
-  const MARKET_POS = ['Fed signals rate cuts ahead', 'Jobs report blows past expectations', 'Inflation cools more than expected', 'Trade deal announced; futures jump'];
-  const MARKET_NEG = ['Hot inflation print rattles markets', 'Fed hints at more hikes', 'IMF issues global recession warning', 'Bond yields spike to 16-year high'];
+  const MARKET_POS = ['Central bank signals rate cuts ahead', 'Jobs report blows past expectations', 'Inflation cools more than expected', 'Trade framework announced; futures jump'];
+  const MARKET_NEG = ['Hot inflation print rattles markets', 'Central bank hints at more hikes', 'Global growth warning issued as trade slows', 'Bond yields spike to a 16-year high'];
   const FAKE = [
     'BREAKING?? {sym} about to get bought out at 40% premium. source: trust me',
-    'hearing {sym} gets halted soon. SEC raid?? 👀',
-    '{sym} CEO seen walking into bankruptcy lawyer\'s office. not financial advice',
-    'my cousin at {sym} says earnings are going to be INSANE. loading calls',
-    '{sym} is the next 10-bagger, shorts are about to get obliterated'
+    'hearing {sym} gets halted soon. regulators in the building??',
+    '{sym} CFO seen walking into a bankruptcy lawyer\'s office. not financial advice',
+    'my cousin at {sym} says the next earnings are INSANE. loading calls',
+    '{sym} is the next 10-bagger, shorts are about to get obliterated',
+    'a model told me to buy {sym} and models are never wrong',
+    '{sym} datacenter is running on a diesel generator lmao. someone check this'
   ];
   const NOISE = [
     'is it too late to buy the dip or too early to panic',
     'chart looks like a ski slope and I forgot my skis',
     'my portfolio is down 30% but my conviction is up 300%',
     'who is selling at these prices. show yourself',
-    'the fed has a printer and it goes brrr apparently',
+    'every fund on earth runs the same model and we call that diversification',
     'just a reminder that the market can stay irrational longer than you can stay solvent',
     'green candle. I have been healed',
-    'if this closes red I am becoming a farmer'
+    'if this closes red I am becoming a farmer',
+    'we automated the analysts and kept the bubble. efficiency',
+    'the machines are front-running the machines now'
   ];
 
   const fill = (tpl, tk) => tpl.replace('{name}', tk.name).replace('{sym}', '$' + tk.sym);
@@ -68,6 +78,8 @@
   B.News = {
     HANDLES,
     NOISE,
+    // Exposed so js/tests/tests.js can lint every string the game can print.
+    TEMPLATES: { POS, NEG, SECTOR_POS, SECTOR_NEG, MARKET_POS, MARKET_NEG, FAKE },
     handle(rng) { return rng.pick(HANDLES); },
 
     // Build a list of random intraday events for a day.
