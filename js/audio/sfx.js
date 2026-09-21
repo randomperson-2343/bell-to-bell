@@ -90,6 +90,7 @@
     loss() { tone(300, 0.35, { type: 'sawtooth', gain: 0.06, slide: 140 }); },
     reject() { tone(170, 0.2, { type: 'square', gain: 0.07 }); },
     click() { tone(1800, 0.02, { type: 'square', gain: 0.03 }); },
+    ground() { tone(330, 0.09, { type: 'triangle', gain: 0.08 }); tone(494, 0.12, { type: 'triangle', gain: 0.06, when: 0.07 }); },
     tick() { tone(2400, 0.012, { type: 'square', gain: 0.025 }); },
     news() { tone(1250, 0.05, { gain: 0.05 }); tone(1650, 0.05, { gain: 0.05, when: 0.06 }); },
     alarm() { for (let i = 0; i < 6; i++) tone(i % 2 ? 740 : 988, 0.13, { type: 'square', gain: 0.07, when: i * 0.14 }); },
@@ -104,6 +105,13 @@
     crash() { noise(1.8, { gain: 0.35, filter: 380 }); tone(120, 1.6, { type: 'sawtooth', gain: 0.09, slide: 35 }); },
     halt() { tone(520, 0.6, { type: 'square', gain: 0.06 }); tone(390, 0.8, { type: 'square', gain: 0.06, when: 0.6 }); },
     panic() { noise(2.5, { gain: 0.25, filter: 200 }); tone(40, 2.5, { gain: 0.3, type: 'sine' }); },
+    room() { noise(2.0, { gain: 0.045, filter: 170 }); tone(58, 1.8, { gain: 0.025, type: 'sine' }); },
+    broadcast() { noise(0.18, { gain: 0.08, filter: 2600 }); tone(1040, 0.05, { gain: 0.035, type: 'square', when: 0.16 }); },
+    elevator() { tone(784, 0.55, { gain: 0.09, type: 'sine' }); tone(1175, 0.7, { gain: 0.06, type: 'sine', when: 0.08 }); },
+    office() {
+      noise(1.7, { gain: 0.04, filter: 1800 });
+      [0.12, 0.28, 0.52, 0.58, 0.86, 1.18, 1.24].forEach((w, i) => tone(1450 + (i % 3) * 240, 0.018, { gain: 0.018, type: 'square', when: w }));
+    },
     choice() { tone(392, 0.25, { gain: 0.08, type: 'triangle' }); tone(523, 0.35, { gain: 0.08, type: 'triangle', when: 0.15 }); }
   };
 })(window.BTB);

@@ -37,6 +37,23 @@
     X.rect(ctx, 0, 140, V.w, 40, P.ink2);
     X.rect(ctx, 0, 140, V.w, 1, P.slate);
     X.plate(ctx, 150, 118, 130, 30, P.slate, P.slate2, P.ink);
+    // Blinds cut the television glow into hard, tired bands.
+    ctx.save();
+    ctx.globalAlpha = 0.24 * glow;
+    for (let i = 0; i < 6; i++) X.rect(ctx, 0, 73 + i * 9, 184 - i * 9, 2, P.sky);
+    ctx.restore();
+    // Phone and alarm clock keep the setting contemporary without naming a year.
+    X.plate(ctx, 158, 112, 24, 10, P.ink, P.slate, P.ink2);
+    X.text(ctx, '5:58', 170, 114, P.crimson, { align: 'center' });
+    X.plate(ctx, 190, 116, 12, 21, P.ink2, P.slate2, P.ink);
+    X.rect(ctx, 192, 119, 8, 14, P.screenGlow);
+    X.rect(ctx, 195, 121, 2, 2, P.sky);
+    // The player stays anonymous: a foreground shoulder makes the shot feel
+    // observed rather than diagrammed.
+    X.rect(ctx, 0, 126, 34, 54, P.ink);
+    X.rect(ctx, 8, 112, 18, 19, P.ink2);
+    X.rect(ctx, 11, 108, 12, 9, P.slate);
+    X.rect(ctx, 12, 108, 10, 3, P.ink);
   }
 
   // The TV itself, with whatever headline is running under it.
@@ -113,6 +130,12 @@
     // wall + windows behind the floor
     X.rect(ctx, 0, 0, V.w, V.h, P.putty);
     X.gradient(ctx, 0, 0, V.w, sy(70), P.putty2, P.putty, 6);
+    // Fluorescent ceiling tracks converge toward the desk and strengthen the
+    // one-point composition.
+    for (let i = 0; i < 5; i++) {
+      const x = sx(32 + i * 64);
+      X.rect(ctx, x, sy(5 + Math.abs(2 - i) * 2), sw(32), Math.max(1, sw(2)), lit ? P.bone : P.slate2);
+    }
     for (let i = 0; i < 6; i++) {
       const wx = sx(8 + i * 52), wy = sy(14), ww = sw(40), wh = sw(48);
       if (wx + ww < 0 || wx > V.w) continue;
@@ -155,6 +178,18 @@
           X.rect(ctx, x + sw(12), y + sw(1), sw(5), sw(4), P.slate2);
         }
       }
+    }
+    // Foreground figures crop into frame as the camera pushes forward.
+    if (zoom > 0.12) {
+      const a = B.clamp((zoom - 0.12) * 2, 0, 1);
+      ctx.save(); ctx.globalAlpha = a;
+      X.rect(ctx, 0, 111, 31, 69, P.ink2);
+      X.rect(ctx, 8, 98, 17, 19, P.slate);
+      X.rect(ctx, 10, 95, 13, 7, P.ink);
+      X.rect(ctx, 287, 116, 33, 64, P.ink2);
+      X.rect(ctx, 296, 103, 16, 18, P.deskD);
+      X.rect(ctx, 295, 100, 18, 7, P.ink);
+      ctx.restore();
     }
   }
 
@@ -200,6 +235,12 @@
     X.rect(ctx, 96, 146, 40, 12, P.bone);                             // paper
     X.rect(ctx, 98, 149, 36, 1, P.grey);
     X.rect(ctx, 98, 152, 28, 1, P.grey);
+    // Keyboard, hands and a CASCADE briefing sheet anchor the point of view.
+    X.plate(ctx, 135, 148, 76, 16, P.plasticD, P.plastic2, P.ink2);
+    for (let ky = 0; ky < 2; ky++) for (let kx = 0; kx < 9; kx++) X.rect(ctx, 140 + kx * 7, 151 + ky * 5, 5, 3, P.slate);
+    X.rect(ctx, 116, 158, 19, 12, P.desk2);
+    X.rect(ctx, 210, 157, 19, 13, P.desk2);
+    for (let i = 0; i < 4; i++) X.rect(ctx, 101 + i * 2, 155 - i * 2, 25 - i * 2, 2, i < 2 ? P.sky : P.crimsonD);
   }
 
   // Closing bell on the wall, with the floor emptying out below it.
@@ -213,8 +254,8 @@
     // wall clock, stuck on four o'clock
     X.plate(ctx, 30, 24, 30, 30, P.plastic, P.plastic2, P.plasticD);
     X.inset(ctx, 33, 27, 24, 24, P.bone, P.plastic2, P.plasticD);
-    X.rect(ctx, 44, 33, 2, 8, P.ink);                  // hour hand to 12
-    X.rect(ctx, 46, 38, 8, 2, P.ink);                  // minute hand to 4
+    X.rect(ctx, 44, 29, 2, 11, P.ink);                 // minute hand to 12
+    X.rect(ctx, 46, 39, 7, 2, P.ink);                  // hour hand to 4
     X.rect(ctx, 44, 38, 2, 2, P.crimson);
 
     // the bell: bracket, yoke, flared body, rim, clapper
@@ -493,7 +534,8 @@
       const kick = (b.kicker || '').replace(/[^\w\s·&.-]/g, '').trim();
       return [
         {
-          dur: 1.5,
+          dur: 2.4,
+          sfx: 'room',
           draw(ctx, _v, p) {
             if (!briefingTableau(ctx, o.day, p)) {
               apartment(ctx, p * 0.7);
@@ -503,7 +545,8 @@
           line: '5:58 AM. The television is already on. It always is.'
         },
         {
-          dur: 2.6,
+          dur: 3.4,
+          sfx: 'broadcast',
           draw(ctx, _v, p) {
             if (!briefingTableau(ctx, o.day, p)) {
               apartment(ctx, 0.7);
@@ -528,17 +571,19 @@
       const crash = o && o.brief && /crash|panic|collapse|halt/i.test(o.brief.title || '');
       return [
         {
-          dur: 1.6,
+          dur: 2.4,
+          sfx: 'elevator',
           draw(ctx, _v, p) { elevator(ctx, B.clamp((p - 0.45) * 2.4, 0, 1), 41); },
           line: 'Forty-first floor. The doors take their time.'
         },
         {
-          dur: 2.2,
+          dur: 3.0,
+          sfx: 'office',
           draw(ctx, _v, p) { tradingFloor(ctx, p * 0.35, true, 3); },
           line: 'Two hundred people, all of them certain about something different.'
         },
         {
-          dur: 1.8,
+          dur: 2.5,
           draw(ctx, _v, p) {
             tradingFloor(ctx, 0.35 + p * 0.65, true, 3);
             if (p > 0.55) {
@@ -552,7 +597,7 @@
           line: ''
         },
         {
-          dur: 1.1,
+          dur: 1.8,
           draw(ctx, _v, p) {
             deskCloseup(ctx, 1, { crash });
             if (p > 0.55) {
@@ -574,12 +619,14 @@
       const met = r.quotaMet;
       return [
         {
-          dur: 1.7,
+          dur: 2.5,
+          sfx: 'closeBell',
           draw(ctx, _v, p) { bellScene(ctx, p, false); },
           line: '4:00 PM. Somebody rings it like they mean it.'
         },
         {
-          dur: 2.4,
+          dur: 3.2,
+          sfx: 'office',
           draw(ctx, _v, p) {
             bellScene(ctx, 1, true);
             ctx.save();
@@ -603,7 +650,8 @@
     ending(o) {
       const dark = !!o.dark;
       return [{
-        dur: 2.6,
+        dur: 3.6,
+        sfx: 'room',
         draw(ctx, _v, p) {
           endingShot(ctx, dark ? 'dark' : 'light');
           endingDetail(ctx, o.id || 'grind', p);

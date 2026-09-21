@@ -157,10 +157,16 @@ body[data-heat="high"] .act-plate::after { content: " · PRESERVE RECORDS"; colo
   border-top: 3px solid #b09d85;
   box-shadow: inset 0 -4px 0 var(--c-desk-d);
 }
-#story-art { width: 180px; height: 40px; image-rendering: pixelated; flex: none; }
+#story-art { width: 220px; height: 44px; image-rendering: pixelated; flex: none; }
 body[data-act="endless"] #story-art { display: none; }
 .desk-spacer { flex: 1; }
 .desk-label { font-size: 9px; letter-spacing: .1em; color: #3c3226; }
+.desk-label b { font-family: var(--pixel); font-size: 8px; font-weight: 400; margin-left: 5px; }
+.desk-gauge[data-stage="loaded"] .desk-label b { color: #6f4f20; }
+.desk-gauge[data-stage="tunnel"] .desk-label b { color: #7a3039; }
+.desk-gauge[data-stage="critical"] .desk-label b { color: #641b28; animation: blink .8s steps(2) infinite; }
+.desk-gauge[data-stage="tunnel"] .gauge i { background: var(--c-amber); }
+.desk-gauge[data-stage="critical"] .gauge i { background: var(--c-crimson); }
 .desk-btn {
   display: flex; align-items: center; gap: 7px; cursor: pointer; padding: 5px 11px;
   background: var(--c-plastic); color: #3c3226; font-family: var(--pixel);

@@ -45,6 +45,9 @@ The visual tone is colourful but washed out. Every hue should feel filtered thro
 - A distinct procedural visual signature for every story ending.
 - Hollow rising candles, filled falling candles, arrows and position shapes for colour-independent market direction.
 - Clear feed-channel labels and lighter CRT treatment over dense information.
+- Cinematic letterboxing, foreground silhouettes, practical desk detail and environmental sound-only beats before music enters.
+- Persistent quota slips and a visibly fragmenting CASCADE stack on the desk as institutional stability falls.
+- Silkscreen restricted to display moments, with IBM Plex Mono carrying body copy, tables and financial data.
 
 ## Guardrails
 

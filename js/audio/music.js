@@ -34,12 +34,12 @@
       layers: { pad: 0.7, lead: 0.4, drums: 0 }
     },
     trading: {
-      bpm: 118, root: 40,
+      bpm: 108, root: 40,
       bass: [0, _, 0, _, 7, _, 0, _, -2, _, -2, _, 5, _, 3, _],
       pad: [12, _, _, _, 15, _, _, _, 14, _, _, _, 17, _, _, _],
-      lead: [24, _, 27, _, 31, _, 27, _, 26, _, 22, _, 19, _, 22, _],
-      drums: [1, _, 2, _, 3, _, 2, _, 1, _, 2, 2, 3, _, 2, 2],
-      layers: { pad: 0.55, lead: 0.5, drums: 0.7 }
+      lead: [24, _, _, _, 31, _, _, _, 26, _, _, _, 19, _, 22, _],
+      drums: [1, _, _, _, 3, _, 2, _, 1, _, _, _, 3, _, 2, _],
+      layers: { pad: 0.42, lead: 0.24, drums: 0.35 }
     },
     close: {
       bpm: 92, root: 43,
@@ -157,7 +157,7 @@
       const t = this.track;
       if (!c || !t) return;
       // Tempo tightens as stress rises and the close approaches.
-      const bpm = t.bpm * (1 + this.intensity * 0.16 + this.dayPos * 0.06);
+      const bpm = t.bpm * (1 + this.intensity * 0.10 + this.dayPos * 0.04);
       const spb = 60 / bpm / 4; // sixteenth notes
       while (this.nextTime < c.currentTime + LOOKAHEAD) {
         this.playStep(this.step % STEP, this.nextTime, spb);
@@ -172,8 +172,8 @@
       // Bass and pad hold the floor; lead and drums come in as it gets worse.
       this.voice(t.bass[i], t.root, when, spb * 3.2, 'triangle', 0.16 * L.pad + 0.06);
       this.voice(t.pad[i], t.root, when, spb * 3.6, 'square', 0.035 * L.pad * (0.6 + ramp * 0.5));
-      this.voice(t.lead[i], t.root, when, spb * 1.6, 'square', 0.04 * L.lead * (0.35 + ramp * 0.9));
-      this.drum(t.drums[i], when, 0.9 * L.drums * (0.4 + ramp * 0.8));
+      this.voice(t.lead[i], t.root, when, spb * 1.6, 'square', 0.035 * L.lead * (0.3 + ramp * 0.7));
+      this.drum(t.drums[i], when, 0.72 * L.drums * (0.35 + ramp * 0.6));
     },
 
     voice(n, root, when, dur, type, gain) {

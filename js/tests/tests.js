@@ -13,7 +13,7 @@
   if (!B.UI) B.UI = {};
   ['toast', 'inbox', 'addNews', 'phoneHide', 'phoneRing', 'phoneOpen', 'renderTasks', 'renderFeed',
     'renderWatch', 'renderBottom', 'updateBadge', 'shake', 'flash', 'dayStart', 'dayEnd', 'restoreFeed',
-    'lock', 'unlock', 'pause', 'enterGame', 'leaveGame', 'select', 'frame', 'render'
+    'lock', 'unlock', 'panicProgress', 'pause', 'enterGame', 'leaveGame', 'select', 'frame', 'render'
   ].forEach((k) => { if (!B.UI[k]) B.UI[k] = () => {}; });
   if (!B.UI.snapshotFeed) B.UI.snapshotFeed = () => ({ wire: [], chirp: [], inbox: [], unread: 0 });
 
@@ -197,6 +197,39 @@
     assert(out.some((e) => e.type === 'breaker' && e.level === 1), 'L1 breaker');
   });
 
+  // ---------- Stress 2.0 ----------
+  test('Stress impairment escalates in readable stages', () => {
+    const s = new B.Stress(1);
+    s.v = 20; assert(s.stage().id === 'steady', '20 should be steady');
+    s.v = 50; assert(s.stage().id === 'loaded', '50 should be loaded');
+    s.v = 75; assert(s.stage().id === 'tunnel', '75 should be tunnel');
+    s.v = 92; assert(s.stage().id === 'critical', '92 should be critical');
+    assert(s.fatFingerChance() > 0 && s.fatFingerChance() < 0.12, 'critical impairment should be meaningful but bounded');
+  });
+
+  test('Panic resistance blocks chains but permits one catastrophe bypass', () => {
+    const s = new B.Stress(1);
+    s.v = 100;
+    assert(s.beginPanic(false), 'ordinary panic should begin at 100');
+    s.v = 100;
+    assert(!s.canPanic(false), 'cooldown should block repeat panic');
+    s.v = 94;
+    assert(s.beginPanic(true), 'catastrophe should bypass ordinary cooldown once');
+    s.v = 100;
+    assert(!s.canPanic(true), 'catastrophe bypass should be spent for the day');
+  });
+
+  test('Stress state survives a save round trip', () => {
+    const s = new B.Stress(1);
+    s.v = 83; s.peak = 97; s.cooldown = 31; s.resistance = 0.64; s.panicCount = 2; s.catastropheReady = false;
+    const restored = new B.Stress(1);
+    restored.restore(JSON.parse(JSON.stringify(s.serialize())));
+    near(restored.v, 83, 1e-9, 'value');
+    near(restored.cooldown, 31, 1e-9, 'cooldown');
+    near(restored.resistance, 0.64, 1e-9, 'resistance');
+    assert(restored.panicCount === 2 && !restored.catastropheReady, 'panic history');
+  });
+
   test('Single-stock volatility halt on a huge shock', () => {
     const m = mkMarket({ regime: 'chop', events: [{ t: 60, text: 'x', impacts: [{ scope: 'ticker', id: 'FRLN', pct: -0.35 }] }] }, 'luld');
     const out = runDay(m);
@@ -228,6 +261,21 @@
     mode.seed = seed || mode.seed;
     return new B.Game(mode);
   }
+
+  test('A panic is short and the grounding sequence ends it early', () => {
+    const g = mkGame('panic-qte');
+    g.startDay();
+    g.stress.v = 100;
+    assert(g.panicAttack(false), 'panic should start');
+    const duration = g.lock.until - g.market.t;
+    assert(duration <= 6, 'ordinary panic duration ' + duration);
+    assert(duration / g.rate < 4, 'ordinary panic should stay under four real seconds');
+    const seq = g.lock.seq.slice();
+    seq.forEach((k) => g.panicInput(k));
+    assert(!g.lock, 'grounding sequence should unlock trading');
+    assert(g.stress.v <= 56, 'interactive recovery should lower stress');
+    assert(g.stress.cooldown > 0, 'recovery should keep a cooldown');
+  });
 
   test('Mid-day snapshot restores the exact same session', () => {
     const g = mkGame();
@@ -303,12 +351,12 @@
   });
 
   // ---------- Pacing / balance ----------
-  test('Quota curve rises and starts near 0.6% of the book', () => {
+  test('Quota curve rises every day and starts near 0.8% of the book', () => {
     const Q = B.StoryData.QUOTAS;
     assert(Q.length === B.StoryData.DAYS.length, 'one quota per day');
-    assert(Q[0] >= 0.005 && Q[0] <= 0.008, 'day 1 quota ' + Q[0]);
-    assert(Q[Q.length - 1] >= Q[0] * 3, 'quota should more than triple by the end');
-    for (let i = 1; i < Q.length; i++) assert(Q[i] >= Q[i - 1] - 0.003, 'quota should not collapse at day ' + (i + 1));
+    assert(Q[0] >= 0.0075 && Q[0] <= 0.01, 'day 1 quota ' + Q[0]);
+    assert(Q[Q.length - 1] >= Q[0] * 4, 'quota should quadruple by the end');
+    for (let i = 1; i < Q.length; i++) assert(Q[i] > Q[i - 1], 'quota should rise at day ' + (i + 1));
   });
 
   test('A trading day is three real minutes by default', () => {

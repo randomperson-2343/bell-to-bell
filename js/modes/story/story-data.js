@@ -22,13 +22,14 @@
   const STACK = ['ai', 'chip', 'dc'];
   const boss = (S) => (S.f.defected ? 'Imani Rhodes' : 'Desmond Kroll');
 
-  // Quota as a share of current equity. Roughly double V1 on day one, and it
-  // scales with the book, so getting rich does not get you off the hook.
-  const QUOTAS = [0.006, 0.007, 0.008, 0.009, 0.011, 0.012, 0.014, 0.015,
-    0.017, 0.018, 0.020, 0.020, 0.022, 0.020, 0.025];
+  // The desk raises the floor every day. It scales with the book, so getting
+  // rich increases the demand instead of buying safety from it.
+  const QUOTAS = [0.008, 0.009, 0.010, 0.0115, 0.013, 0.0145, 0.016, 0.0175,
+    0.020, 0.0215, 0.0235, 0.025, 0.027, 0.029, 0.032];
 
   const ACTS = ['I · MELT-UP', 'II · TREMORS', 'III · CONTAGION', 'IV · RECKONING'];
-  const actOf = (d) => (d < 4 ? ACTS[0] : d < 8 ? ACTS[1] : d < 12 ? ACTS[2] : ACTS[3]);
+  const actIndex = (d) => (d < 4 ? 0 : d < 8 ? 1 : d < 12 ? 2 : 3);
+  const actOf = (d) => ACTS[actIndex(d)];
 
   // =====================================================================
   // DAYS
@@ -828,5 +829,5 @@
     }
   };
 
-  B.StoryData = { DAYS, CHOICES, QUOTAS, ACTS, actOf, adj, boss, cm, FIN, STACK, ev, chirp, imp, R };
+  B.StoryData = { DAYS, CHOICES, QUOTAS, ACTS, actIndex, actOf, adj, boss, cm, FIN, STACK, ev, chirp, imp, R };
 })(window.BTB);

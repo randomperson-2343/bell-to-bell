@@ -50,6 +50,7 @@
       briefing(d, g) {
         const day = D.DAYS[d];
         const r = this.rules(d);
+        const qm = this.quotaMeta(d, g);
         const rules = [];
         if (r.maxLev !== 4) rules.push(`Leverage limit: ${r.maxLev}x intraday / ${r.maxLev / 2}x overnight`);
         if (r.shortBan.length) rules.push('EMERGENCY ORDER: short selling of financial stocks is banned');
@@ -61,6 +62,7 @@
           title: `Day ${d + 1}: ${day.title}`,
           html: day.brief(S).filter(Boolean).map((p) => `<p>${p}</p>`).join(''),
           quota: this.quota(d, g),
+          quotaMeta: qm,
           rules
         };
       },
@@ -93,6 +95,19 @@
       quota(d, g) {
         const eq = g ? g.broker.equity() : capital;
         return Math.round(Math.max(750, eq * D.QUOTAS[d]) / 50) * 50;
+      },
+
+      quotaMeta(d, g) {
+        const labels = ['BASELINE FLOOR', 'GROWTH MANDATE', 'LIQUIDITY EXTRACTION', 'SURVIVAL FLOOR'];
+        const pct = D.QUOTAS[d];
+        const prev = d > 0 ? D.QUOTAS[d - 1] : pct;
+        const raised = d > 0 ? Math.round((pct / prev - 1) * 100) : 0;
+        const amount = this.quota(d, g);
+        const who = D.boss(S);
+        const memo = d === 0
+          ? `${who}: Desk floor set at ${B.fmt.money(amount)}. This is the minimum, not the target.`
+          : `${who}: New ${labels[D.actIndex(d)].toLowerCase()}: ${B.fmt.money(amount)}. ${raised > 0 ? `Up ${raised}% from yesterday.` : 'No relief from yesterday.'} Volatility is not an excuse.`;
+        return { label: labels[D.actIndex(d)], pct, previousPct: prev, raised, memo };
       },
 
       calls(d) { return D.DAYS[d].calls ? D.DAYS[d].calls(S) : []; },

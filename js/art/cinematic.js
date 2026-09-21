@@ -1,5 +1,5 @@
 // Cutscene player. Runs a list of beats from js/art/scenes.js on a full-screen
-// pixel canvas, types the caption underneath, and gets out of the way fast.
+// pixel canvas, types the caption underneath, and leaves room for silent beats.
 //
 // Skippable at any moment with any key or a click — a game you replay for its
 // endings cannot make you sit through the same elevator ride fifteen times.
@@ -55,6 +55,10 @@
       this.done = done;
       this.running = true;
       this.el.hidden = false;
+      // Cutscenes use environmental sound only. Their destination screen decides
+      // which score, if any, begins after the final cut.
+      B.Music.stop();
+      this.playBeat();
       this.onKey = () => this.skip();
       window.addEventListener('keydown', this.onKey);
       this.last = performance.now();
@@ -68,6 +72,7 @@
           this.i++;
           this.t = 0;
           if (this.i >= this.beats.length) return this.finish();
+          this.playBeat();
         }
         this.draw();
         this.raf = requestAnimationFrame(step);
@@ -84,13 +89,19 @@
       try { beat.draw(ctx, V, p, this.optsOf(beat)); } catch (e) { X.rect(ctx, 0, 0, V.w, V.h, P.ink); }
       ctx.restore();
 
+      // Hard letterbox edges make every composition feel authored rather than
+      // like a full-screen gameplay canvas.
+      X.rect(ctx, 0, 0, V.w, 6, P.ink);
+      X.rect(ctx, 0, V.h - 6, V.w, 6, P.ink);
+
       // caption box, typewritten
       if (beat.line) {
         const bw = V.w - 24, bx = 12, bh = 34, by = V.h - bh - 8;
         X.box(ctx, bx, by, bw, bh);
         const lines = X.wrap(beat.line, bw - 16).slice(0, 2);
         const total = lines.join(' ').length;
-        const shown = Math.ceil(total * B.clamp(this.t / Math.min(1.1, beat.dur * 0.6), 0, 1));
+        const delay = beat.captionDelay == null ? 0.28 : beat.captionDelay;
+        const shown = Math.ceil(total * B.clamp((this.t - delay) / Math.min(1.35, beat.dur * 0.58), 0, 1));
         let used = 0;
         lines.forEach((ln, k) => {
           const take = B.clamp(shown - used, 0, ln.length);
@@ -109,6 +120,13 @@
     },
 
     optsOf() { return {}; },
+
+    playBeat() {
+      const beat = this.beats && this.beats[this.i];
+      if (!beat || !beat.sfx || !B.SFX) return;
+      const fn = B.SFX[beat.sfx];
+      if (typeof fn === 'function') fn.call(B.SFX);
+    },
 
     skip() {
       if (!this.running) return;

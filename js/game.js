@@ -81,19 +81,23 @@
     }
 
     enterOffice(b) {
+      B.Music.stop();
       B.Cinematic.play('office', { brief: b, day: this.day, game: this }, () => this.startDay());
     }
 
     startDay() {
       const m = this.market, b = this.broker;
       this.applyRules();
+      // The desk sets the number before the opening gap, so the amount shown in
+      // the briefing is the amount the player is actually judged against.
+      this.quota = this.mode.quota(this.day, this) || 0;
+      this.quotaMeta = this.mode.quotaMeta ? this.mode.quotaMeta(this.day, this) : null;
       m.startDay(this.day, this.mode.scenario(this.day, this));
       // Snapshot the pre-open tape. A mid-day save rewinds to here and replays.
       this.dayOpen = { px: {}, fearLevel: m.fearLevel };
       for (const tk of m.tickers) this.dayOpen.px[tk.sym] = tk.prevClose;
       b.startDay();
       this.stress.startDay();
-      this.quota = this.mode.quota(this.day, this) || 0;
       this.lock = null;
       this.warned = {};
       this.earlyEnd = null;
@@ -132,9 +136,9 @@
       m.fastForward(snap.t, SUB);
       // Broker state is laid over the replayed tape, so nothing fills twice.
       b.restore(snap.broker);
-      this.stress.v = snap.stress.v;
-      this.stress.peak = snap.stress.peak;
+      this.stress.restore(snap.stress);
       this.quota = snap.quota;
+      this.quotaMeta = snap.quotaMeta || (this.mode.quotaMeta ? this.mode.quotaMeta(this.day, this) : null);
       this.warned = snap.warned || {};
       this.earlyEnd = snap.earlyEnd || null;
       this.inboxQueue = snap.inboxQueue || [];
@@ -144,7 +148,7 @@
       if (this.mode.onResume) this.mode.onResume(this, snap);
       B.UI.dayStart(this);
       B.UI.restoreFeed(snap.feed);
-      if (snap.lock) this.setLock(Math.max(0, snap.lock.until - m.t), snap.lock.reason, snap.lock.kind);
+      if (snap.lock) this.setLock(Math.max(0, snap.lock.until - m.t), snap.lock.reason, snap.lock.kind, snap.lock);
       B.Music.play('trading');
       this.acc = 0;
       this.running = true;
@@ -158,12 +162,12 @@
       for (const e of b.checkMargin(m.t)) this.onMargin(e);
       const eq = b.equity();
       if (eq > b.dayPeak) b.dayPeak = eq;
-      if (this.lock && m.t >= this.lock.until) this.unlock();
+      if (this.lock && m.t >= this.lock.until) this.unlock(false);
       while (this.inboxQueue.length && this.inboxQueue[0].t <= m.t) B.UI.inbox(this.inboxQueue.shift());
       this.interrupts.update(m.t);
       this.stress.update(dt, this);
       B.Music.setIntensity(this.stress.level(), m.t / B.DAY_MIN);
-      if (this.stress.v >= 99.5 && !(this.lock && this.lock.kind === 'panic')) this.panicAttack();
+      if (!this.lock && this.stress.canPanic(false)) this.panicAttack(false);
       if (this.mode.onTick) this.mode.onTick(this, m.t);
       if (!this.running) return;
 
@@ -204,6 +208,7 @@
           B.UI.flash('red');
           B.UI.shake(8);
           g.stress.spike(15);
+          if (e.level >= 2) g.panicAttack(true);
           if (e.level === 3) B.UI.toast('LEVEL 3 CIRCUIT BREAKER: market closed for the day', 'bad big');
           else B.UI.toast(`LEVEL ${e.level} CIRCUIT BREAKER: index down ${e.level === 1 ? '7' : '13'}%. Trading halted 15 minutes.`, 'bad big');
           B.UI.addNews({ kind: 'wire', text: `MARKET-WIDE CIRCUIT BREAKER TRIPPED (LEVEL ${e.level})`, src: 'EXCHANGE', t: g.market.t, big: true });
@@ -245,6 +250,7 @@
       } else if (e.type === 'liq') {
         B.SFX.crash();
         this.stress.spike(15);
+        this.panicAttack(true);
         B.UI.shake(6);
         B.UI.toast('FORCED LIQUIDATION. Risk dumped your worst positions.', 'bad big');
       } else if (e.type === 'mcClear') {
@@ -280,10 +286,10 @@
       if (!q) return this.reject('Enter a size');
       let ff = null;
       if (this.rng.next() < this.stress.fatFingerChance()) {
-        ff = this.rng.pick(['x10', 'x3', 'flip']);
+        ff = this.rng.pick(['x3', 'flip']);
         if (ff === 'flip') q = -q;
         else {
-          q *= ff === 'x10' ? 10 : 3;
+          q *= 3;
           const mx = b.maxQty(sym, Math.sign(q));
           if (Math.abs(q) > mx) q = Math.sign(q) * mx;
         }
@@ -304,7 +310,7 @@
         else this.reject(res.msg);
       }
       if (ff) {
-        const what = ff === 'flip' ? 'you hit the WRONG SIDE' : `you typed an extra ${ff === 'x10' ? 'zero' : 'digit'}`;
+        const what = ff === 'flip' ? 'you hit the WRONG SIDE' : 'you typed an extra digit';
         B.UI.toast(`FAT FINGER! Hands shaking, ${what}.`, 'bad big');
         B.UI.shake(5);
         this.stress.spike(8);
@@ -364,22 +370,60 @@
       B.UI.toast('You step away from the screens. Positions stay live.', '');
     }
 
-    panicAttack() {
-      this.setLock(20, 'PANIC ATTACK', 'panic');
+    panicAttack(catastrophic) {
+      if (this.lock || !this.stress.beginPanic(!!catastrophic)) return false;
+      const keys = ['a', 's', 'd'];
+      const seq = [];
+      while (seq.length < 3) {
+        let k = this.rng.pick(keys);
+        if (seq.length && k === seq[seq.length - 1]) k = keys[(keys.indexOf(k) + 1) % keys.length];
+        seq.push(k);
+      }
+      const mins = catastrophic ? 8 : 6;
+      this.setLock(mins, catastrophic ? 'SYSTEM SHOCK' : 'PANIC ATTACK', 'panic', {
+        seq, step: 0, mistakes: 0, catastrophic: !!catastrophic,
+        startedAt: this.market.t, maxUntil: this.market.t + mins + 2
+      });
       B.SFX.panic();
       B.Music.cue('panic');
       B.UI.flash('red');
       if (this.mode.onPanic) this.mode.onPanic(this);
+      return true;
     }
 
-    setLock(mins, reason, kind) {
-      this.lock = { until: this.market.t + mins, reason, kind };
+    panicInput(key) {
+      const lock = this.lock;
+      if (!lock || lock.kind !== 'panic') return false;
+      const expected = lock.seq[lock.step];
+      const ok = String(key || '').toLowerCase() === expected;
+      if (ok) {
+        lock.step++;
+        lock.until = Math.max(this.market.t + 0.5, lock.until - 1.25);
+        this.stress.spike(-3);
+        B.SFX.ground();
+        if (lock.step >= lock.seq.length) {
+          this.unlock(true);
+          B.UI.toast('BREATH BACK. Hands steady enough. Keep trading.', 'good');
+          return true;
+        }
+      } else {
+        lock.mistakes++;
+        lock.until = Math.min(lock.maxUntil, lock.until + 0.75);
+        B.SFX.reject();
+        B.UI.shake(2);
+      }
+      B.UI.panicProgress(lock, ok);
+      return ok;
+    }
+
+    setLock(mins, reason, kind, extra) {
+      this.lock = Object.assign({ until: this.market.t + mins, reason, kind }, extra || {});
       this.broker.rules.locked = reason;
       B.UI.lock(this.lock);
     }
 
-    unlock() {
-      if (this.lock && this.lock.kind === 'panic') this.stress.v = 55;
+    unlock(interactive) {
+      if (this.lock && this.lock.kind === 'panic') this.stress.recover(!!interactive);
       this.lock = null;
       this.broker.rules.locked = null;
       B.UI.unlock();
@@ -400,8 +444,7 @@
       if (this.lock) this.unlock();
       m.close();
       this.interrupts.endDay();
-      B.SFX.closeBell();
-      B.Music.play('close');
+      B.Music.stop();
       const eod = b.endOfDay(this.day);
       const eq = b.equity();
       const pnl = eq - b.dayStartEquity;
@@ -427,6 +470,7 @@
       report.notes = verdict.notes || [];
       B.UI.dayEnd(this);
       B.Cinematic.play('close', { report, game: this }, () => {
+        B.Music.play('close');
         B.Screens.eod(this, report, () => {
           if (verdict.ending) return this.finish(verdict.ending);
           this.mode.afterDay(this, (ending) => {
@@ -444,7 +488,7 @@
       this.alive = false;
       if (this.slot != null) B.Save.finish(this.slot, ending);
       else B.Save.recordEnding(ending.id);
-      B.Music.play(ending.good === false || /wiped|fired|perp|depression/.test(ending.id) ? 'endingDark' : 'endingLight');
+      B.Music.stop();
       B.Screens.ending(this, ending);
     }
 
@@ -476,8 +520,9 @@
         snap.dayOpen = this.dayOpen;
         snap.injected = this.market.injected || [];
         snap.broker = this.broker.serializeFull();
-        snap.stress = { v: this.stress.v, peak: this.stress.peak };
+        snap.stress = this.stress.serialize();
         snap.quota = this.quota;
+        snap.quotaMeta = this.quotaMeta;
         snap.warned = this.warned;
         snap.earlyEnd = this.earlyEnd;
         snap.inboxQueue = this.inboxQueue;
@@ -488,7 +533,7 @@
       } else {
         snap.broker = this.broker.serialize();
         snap.market = this.market.serialize();
-        snap.stress = { v: this.stress.v, peak: this.stress.peak };
+        snap.stress = this.stress.serialize();
       }
       return snap;
     }
@@ -532,8 +577,7 @@
       } else {
         this.broker.restore(s.broker);
         this.market.restore(s.market);
-        this.stress.v = (s.stress && s.stress.v) || 0;
-        this.stress.peak = (s.stress && s.stress.peak) || 0;
+        this.stress.restore(s.stress);
       }
     }
   }

@@ -96,6 +96,10 @@
           });
       });
       $('btn-howto-ingame').addEventListener('click', () => B.Screens.howtoModal());
+      onPress($('lock-overlay'), (e) => {
+        const btn = e.target.closest('button[data-panic]');
+        if (btn && this.g) { e.preventDefault(); this.g.panicInput(btn.dataset.panic); }
+      });
       document.addEventListener('keydown', (e) => this.key(e));
     },
 
@@ -132,6 +136,11 @@
       if (document.querySelector('#modal-layer .modal')) return;
       if (B.Cinematic.running) return;
       const typing = /INPUT|SELECT|TEXTAREA/.test(document.activeElement && document.activeElement.tagName);
+      if (g.lock && g.lock.kind === 'panic') {
+        const k = e.key.toLowerCase();
+        if (['a', 's', 'd'].includes(k)) { e.preventDefault(); g.panicInput(k); }
+        return;
+      }
       if (e.key === 'Escape') { e.preventDefault(); if (typing) document.activeElement.blur(); else g.togglePause(); return; }
       if (typing && e.key !== 'Enter') return;
       if (g.paused) return;
@@ -192,6 +201,11 @@
       const sep = { kind: 'sep', text: `— ${d.label} · OPENING BELL —` };
       this.feed.wire.unshift(sep);
       this.feed.chirp.unshift(sep);
+      if (g.quotaMeta && g.quota > 0) {
+        this.feed.inbox.unshift({ kind: 'inbox', text: g.quotaMeta.memo, src: g.mode.bossName ? g.mode.bossName() : 'Desk Management', t: 0 });
+        this.unread++;
+        this.updateBadge();
+      }
       this.renderFeed();
       this.render(true);
     },
@@ -210,7 +224,7 @@
         if (B.StoryArt) B.StoryArt.draw($('story-art'), null);
         return;
       }
-      const act = g.day < 3 ? 1 : g.day < 7 ? 2 : g.day < 11 ? 3 : 4;
+      const act = B.StoryData && B.StoryData.actIndex ? B.StoryData.actIndex(g.day) + 1 : (g.day < 4 ? 1 : g.day < 8 ? 2 : g.day < 12 ? 3 : 4);
       const names = ['MELT-UP', 'TREMORS', 'CONTAGION', 'RECKONING'];
       body.dataset.act = String(act);
       body.dataset.heat = g.mode.S.m.heat >= 70 ? 'high' : g.mode.S.m.heat >= 45 ? 'watch' : 'low';
@@ -336,11 +350,27 @@
       o.hidden = false;
       o.className = lock.kind === 'panic' ? 'panic' : '';
       const msg = {
-        panic: '<div class="breathe"></div><h2>PANIC ATTACK</h2><p>Your chest is tight. The numbers are swimming. You can\'t make your hands work. Breathe in with the square. Your positions are still live.</p>',
+        panic: `<div class="breathe"></div><div class="panic-kicker">${lock.catastrophic ? 'CATASTROPHIC MARKET SHOCK' : 'PRESSURE BREAK'}</div><h2>${lock.catastrophic ? 'SYSTEM SHOCK' : 'PANIC ATTACK'}</h2><p>The tape is still moving. Complete the grounding sequence to return early.</p>
+          <div class="panic-seq" id="panic-seq">${(lock.seq || ['a', 's', 'd']).map((k, i) => `<button data-panic="${k}" aria-label="Ground with ${k.toUpperCase()}"><kbd>${k.toUpperCase()}</kbd><span>${['BREATHE', 'FOCUS', 'GROUND'][i]}</span></button>`).join('')}</div>
+          <div class="panic-progress" id="panic-progress"><i></i><i></i><i></i></div>`,
         coffee: '<h2>COFFEE BREAK</h2><p>You step away from the screens. Your positions are still live. Try not to look.</p>',
         audit: '<h2>EXAMINERS</h2><p>Two people in grey suits are at your desk asking for your trade blotter. Your account is frozen until they leave.</p>'
       }[lock.kind] || `<h2>LOCKED</h2><p>${B.esc(lock.reason)}</p>`;
       o.innerHTML = `<div class="lock-box">${msg}<div class="lock-pnl" id="lock-pnl"></div><div class="muted" id="lock-left"></div></div>`;
+      if (lock.kind === 'panic') this.panicProgress(lock, true);
+    },
+
+    panicProgress(lock, ok) {
+      const root = $('panic-seq');
+      if (!root || !lock) return;
+      root.querySelectorAll('button').forEach((btn, i) => {
+        btn.classList.toggle('done', i < lock.step);
+        btn.classList.toggle('next', i === lock.step);
+      });
+      const p = $('panic-progress');
+      if (p) p.querySelectorAll('i').forEach((dot, i) => dot.classList.toggle('done', i < lock.step));
+      root.classList.toggle('miss', ok === false);
+      if (ok === false) setTimeout(() => root && root.classList.remove('miss'), 180);
     },
 
     unlock() { $('lock-overlay').hidden = true; },
@@ -434,6 +464,9 @@
       }
       $('tb-stress-bar').style.width = (s * 100) + '%';
       $('tb-stress-num').textContent = Math.round(g.stress.v);
+      const stage = g.stress.stage();
+      $('tb-stress-stage').textContent = stage.label;
+      $('stress-gauge').dataset.stage = stage.id;
 
       // margin call banner
       const mc = $('mc-banner');

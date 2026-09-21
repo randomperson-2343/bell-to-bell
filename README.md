@@ -20,7 +20,8 @@ No install and no build. Open `index.html` in any modern browser.
 - **Circuit breakers**: the whole market halts at -7% and -13% and closes for the day at -20%. Single stocks halt after a sudden 10% move.
 - Two feeds carry news. The **Wire** is real news. **Chirp** is rumour.
 - **Phone tips are unreliable on purpose.** A tip resolves one of four ways: it pays, it's true but already in the price, it runs your way just long enough to get you to size up and then reverses, or it's simply false. Roughly one in three pays. Acting on every call is how you go broke.
-- **Stress** rises with losses, leverage, margin calls, ringing phones and a looming close. It brings a heartbeat and a shaking screen, then fat-fingered orders, then a full **panic attack** that locks you out while your positions keep moving.
+- **Stress 2.0** rises with losses, leverage, margin calls, ringing phones and a looming close. It escalates through visible Loaded, Tunnel and Critical impairment. Panic attacks now last under four real seconds at normal speed and an A/S/D grounding sequence ends them immediately. Recovery creates temporary resistance and a cooldown; one true market catastrophe can bypass it. Fat-finger risk is capped and can no longer add a zero.
+- **Desk quotas escalate every day.** The exact mandate, percentage of book and overnight increase are visible in the briefing, inbox and physical desk art.
 - **Interruptions**: clients with orders to work, your boss calling to shout, tipsters, and your mother. Some decisions arrive as a timed phone call mid-session.
 
 ### Saving
@@ -39,12 +40,13 @@ A slot that reaches an ending becomes a read-only record and counts toward the e
 | `C` | Close selected | `X` | Flatten everything |
 | `1`–`5` | Size 10/25/50/75/100% of max | `↑` `↓` | Change ticker |
 | `A` | Answer phone | `Esc` | Pause / save |
+| `A` `S` `D` | Ground during panic | Tap | Grounding buttons |
 
 ## Look and sound
 
-- **16-bit art**, drawn procedurally: a locked 32-colour palette, a 4px design grid, 2px bevels, ordered dithering and a 5x7 bitmap font. No image assets ship with the game. Pixel chrome everywhere; prices and tables stay in a readable mono, because a 16-bit look should not cost you the ability to read a P&L at a glance.
-- **Cinematics** before the open, on the way into the office, at the closing bell and at each ending. Skippable with any key, and Settings can cut them to a single card or turn them off.
-- **Adaptive chiptune score**, synthesized with WebAudio: two pulse voices, a triangle bass and a noise channel. Layers fade in and the tempo tightens as your stress rises and the close approaches. `Music.useTrack(name, url)` swaps in a real audio file later without touching the game code.
+- **16-bit art**, drawn procedurally: a locked 32-colour palette, a 4px design grid, 2px bevels, ordered dithering and a 5x7 bitmap font. The cinematic sets now use foreground silhouettes, practical desk details, harder compositions and visibly deteriorating CASCADE paperwork. IBM Plex Mono handles body copy and financial data while Silkscreen is reserved for display lettering.
+- **Cinematics** before the open, on the way into the office, at the closing bell and at each ending. They use longer silent holds, hard letterboxing and environmental SFX. Music stays out until the bell or destination screen. Every scene remains skippable, and Settings can cut them to one card or turn them off.
+- **Adaptive chiptune score**, synthesized with WebAudio: two pulse voices, a triangle bass and a noise channel. Trading music is deliberately sparse and stays underneath the tape; its layers and tempo tighten gently with stress and the close. `Music.useTrack(name, url)` swaps in a real audio file later without touching the game code.
 - **Screen effects** (vignette, shake, chart jitter) can be set to Full, Reduced or Off.
 
 ## Project layout
@@ -84,7 +86,7 @@ Alongside the usual engine tests, the suite checks that:
 - a **mid-day save restores bit-for-bit** — snapshot at 11:17, rebuild, and every price, position, working order and the equity match, then stay matched all the way to the bell;
 - **every ending is reachable** through some path of the eight decisions (the graph walk explores ~39,000 paths);
 - **no real-world company, person or event** appears in any string the game can print, checked with word-boundary matching against a denylist;
-- the **pacing holds**: the quota curve rises, a day is three real minutes, and tips pay about a third of the time.
+- the **pacing holds**: the quota curve rises every day, ordinary panic stays under four real seconds, a day is three real minutes, and tips pay about a third of the time.
 
 **Debug overlay**: open `index.html?debug=1` for time acceleration, skip-to-close, day jumps, live story meters, forced margin calls and crashes, a save-and-restore-right-now button, and each cinematic on demand.
 

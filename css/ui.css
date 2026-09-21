@@ -10,9 +10,9 @@
 html, body {
   margin: 0; height: 100%; overflow: hidden;
   background: var(--c-ink); color: var(--text);
-  font-family: var(--pixel); font-size: 13px;
-  line-height: 1.5;
-  -webkit-font-smoothing: none;
+  font-family: var(--ui); font-size: 14px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
   text-rendering: geometricPrecision;
 }
 
@@ -76,7 +76,7 @@ input[type=checkbox] { accent-color: var(--c-amber); width: 15px; height: 15px; 
 .brand-mark i:nth-child(3) { width: 47px; left: 23px; top: 20px; background: var(--c-sky); }
 .brand-mark i:nth-child(4) { width: 34px; left: 37px; top: 30px; background: var(--c-crimson); }
 .brand-mark::after { content: ""; position: absolute; right: 4px; top: 0; width: 4px; height: 37px; background: var(--c-crimson-d); opacity: .8; }
-.boot-logo { font-size: clamp(22px, 5vw, 38px); letter-spacing: .06em; }
+.boot-logo { font-family: var(--pixel); font-size: clamp(22px, 5vw, 38px); letter-spacing: .06em; }
 .boot-logo span { color: var(--c-bone); }
 .boot-logo em { color: var(--c-amber); font-style: normal; font-size: .6em; margin: 0 .4em; }
 .boot-sub { color: var(--c-crimson); letter-spacing: .7em; margin: 10px 0 30px; padding-left: .7em; font-size: 14px; }
@@ -99,18 +99,18 @@ input[type=checkbox] { accent-color: var(--c-amber); width: 15px; height: 15px; 
 .menu-mark { margin-bottom: 8px; transform: scale(.85); }
 .ticker-tape .inner { display: inline-block; animation: tape 44s linear infinite; }
 @keyframes tape { from { transform: translateX(0); } to { transform: translateX(-50%); } }
-.logo { font-size: clamp(28px, 6.5vw, 60px); margin: 0; letter-spacing: .04em; line-height: 1.25; }
+.logo { font-family: var(--pixel); font-size: clamp(28px, 6.5vw, 60px); margin: 0; letter-spacing: .04em; line-height: 1.25; }
 .logo span { color: var(--c-bone); text-shadow: 3px 3px 0 var(--c-ink2); }
 .logo em { color: var(--c-amber); font-style: normal; font-size: .5em; vertical-align: middle; margin: 0 .3em; }
 .logo small { display: block; font-size: 13px; letter-spacing: .6em; color: var(--c-crimson); margin-top: 14px; padding-left: .6em; }
-.tagline { color: var(--muted); font-size: 11px; line-height: 1.9; margin: 22px auto 36px; max-width: 540px; }
+.tagline { color: var(--muted); font-size: 13px; line-height: 1.75; margin: 22px auto 36px; max-width: 580px; }
 .menu-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; text-align: left; }
 .menu-card {
   background: var(--c-ink2); padding: 20px; display: flex; flex-direction: column; gap: 10px;
   border: 2px solid; border-color: var(--c-slate) var(--c-ink) var(--c-ink) var(--c-slate);
 }
-.menu-card h2 { margin: 0; font-size: 17px; color: var(--c-amber); letter-spacing: .04em; }
-.menu-card p { color: var(--muted); margin: 0 0 8px; line-height: 1.8; flex: 1; font-size: 11px; }
+.menu-card h2 { margin: 0; font-family: var(--pixel); font-size: 17px; color: var(--c-amber); letter-spacing: .04em; }
+.menu-card p { color: var(--muted); margin: 0 0 8px; line-height: 1.75; flex: 1; font-size: 13px; }
 .menu-row { display: flex; gap: 10px; justify-content: center; margin-top: 22px; flex-wrap: wrap; }
 .fine { color: var(--dim); font-size: 10px; margin-top: 22px; line-height: 1.8; }
 
@@ -118,7 +118,7 @@ input[type=checkbox] { accent-color: var(--c-amber); width: 15px; height: 15px; 
 .page { max-width: 1040px; margin: 0 auto; padding: 24px 16px 48px; }
 .page.narrow { max-width: 760px; }
 .page-head { display: flex; align-items: center; gap: 16px; margin-bottom: 20px; }
-.page-head h2 { margin: 0; font-size: 20px; color: var(--c-amber); letter-spacing: .05em; }
+.page-head h2 { margin: 0; font-family: var(--pixel); font-size: 20px; color: var(--c-amber); letter-spacing: .05em; }
 .howto h3 { color: var(--c-amber); margin: 22px 0 8px; font-size: 12px; letter-spacing: .08em; }
 .howto p, .howto li { line-height: 2; color: var(--c-putty2); font-size: 11px; }
 .howto ul { padding-left: 18px; }
@@ -302,12 +302,23 @@ input.short { width: 60px; }
 
 #lock-overlay { position: fixed; inset: 0; z-index: 45; display: flex; align-items: center; justify-content: center; background: rgba(8, 8, 12, .8); }
 #lock-overlay.panic { background: rgba(28, 6, 10, .92); }
-.lock-box { text-align: center; max-width: 520px; padding: 24px; }
+.lock-box { text-align: center; max-width: 620px; padding: 24px; }
 .lock-box h2 { letter-spacing: .15em; margin: 0 0 12px; font-size: 20px; color: var(--c-amber); }
-.lock-box p { color: var(--c-putty); line-height: 2; font-size: 11px; }
+.lock-box p { color: var(--c-putty); line-height: 1.75; font-size: 13px; }
 .lock-box .lock-pnl { font-family: var(--mono); font-size: 28px; font-weight: 800; margin: 12px 0; }
 .lock-box .breathe { width: 84px; height: 84px; margin: 18px auto; border: 3px solid var(--c-crimson); animation: breathe 4s steps(8) infinite; }
 @keyframes breathe { 0%, 100% { transform: scale(.6); opacity: .5; } 50% { transform: scale(1.15); opacity: 1; } }
+.panic-kicker { color: var(--c-crimson); font-family: var(--pixel); font-size: 10px; letter-spacing: .16em; margin-bottom: 8px; }
+.panic-seq { display: grid; grid-template-columns: repeat(3, minmax(110px, 1fr)); gap: 8px; margin: 20px auto 10px; max-width: 520px; }
+.panic-seq button { background: var(--c-ink2); border: 2px solid var(--c-slate2); color: var(--c-grey2); padding: 10px 8px; cursor: pointer; font-family: var(--ui); }
+.panic-seq button kbd { display: block; width: 34px; margin: 0 auto 6px; padding: 3px; font-size: 15px; color: var(--c-bone); opacity: 1; }
+.panic-seq button span { font-family: var(--pixel); font-size: 9px; letter-spacing: .08em; }
+.panic-seq button.next { border-color: var(--c-amber); color: var(--c-amber); background: rgba(210, 168, 92, .12); }
+.panic-seq button.done { border-color: var(--c-jade); color: var(--c-jade); opacity: .55; }
+.panic-seq.miss { transform: translateX(3px); filter: saturate(1.5); }
+.panic-progress { display: flex; justify-content: center; gap: 7px; margin: 8px 0; }
+.panic-progress i { width: 32px; height: 4px; background: var(--c-slate); }
+.panic-progress i.done { background: var(--c-jade); }
 
 #pause-overlay { position: fixed; inset: 0; z-index: 60; background: rgba(8, 8, 12, .9); display: flex; align-items: center; justify-content: center; }
 .pause-box { text-align: center; display: flex; flex-direction: column; gap: 9px; min-width: 300px; padding: 16px; }
@@ -339,8 +350,8 @@ input.short { width: 60px; }
 .modal.wide { max-width: 860px; }
 .modal-h { padding: 18px 22px 0; }
 .modal-h .kicker { font-size: 10px; color: var(--c-amber); letter-spacing: .18em; }
-.modal-h h2 { margin: 8px 0 0; font-size: 18px; line-height: 1.4; color: var(--c-bone); }
-.modal-b { padding: 14px 22px; line-height: 2; color: var(--c-putty2); font-size: 11px; }
+.modal-h h2 { margin: 8px 0 0; font-family: var(--pixel); font-size: 18px; line-height: 1.4; color: var(--c-bone); }
+.modal-b { padding: 14px 22px; line-height: 1.75; color: var(--c-putty2); font-size: 13px; }
 .modal-b p { margin: 0 0 12px; }
 .modal-f { padding: 0 22px 20px; display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
 .speaker { display: flex; gap: 14px; align-items: center; margin-bottom: 14px; padding-bottom: 12px; border-bottom: 2px solid var(--c-slate); }
@@ -359,6 +370,11 @@ input.short { width: 60px; }
 .stat { background: var(--c-ink); padding: 9px 11px; }
 .stat .l { font-size: 9px; color: var(--muted); letter-spacing: .08em; }
 .stat .v { font-family: var(--mono); font-size: 15px; font-weight: 700; margin-top: 3px; }
+.quota-stat { box-shadow: inset 0 3px 0 var(--c-amber-d); }
+.quota-delta { color: var(--c-amber); font-family: var(--mono); font-size: 11px; margin-top: 3px; }
+.quota-order { border: 2px solid var(--c-amber-d); background: rgba(210, 168, 92, .07); padding: 10px 12px; margin: 0 0 14px; }
+.quota-order > span { color: var(--c-amber); font-family: var(--pixel); font-size: 10px; letter-spacing: .12em; }
+.quota-order p { color: var(--c-bone); font-family: var(--mono); font-size: 13px; line-height: 1.6; margin: 7px 0 0; }
 .eod-big { font-size: 36px; font-weight: 800; text-align: center; margin: 6px 0; }
 .stamp { display: inline-block; font-weight: 700; letter-spacing: .12em; padding: 4px 10px; border: 3px solid; font-size: 12px; }
 .stamp.good { color: var(--up); }

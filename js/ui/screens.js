@@ -110,14 +110,15 @@
       const rules = b.rules && b.rules.length ? `<div class="rules-list">${b.rules.map((r) => `<div>&#9656; ${r}</div>`).join('')}</div>` : '';
       const stats = `<div class="stats">
         <div class="stat"><div class="l">Equity</div><div class="v">${F.money(g.broker.equity())}</div></div>
-        <div class="stat"><div class="l">Today's quota</div><div class="v">${b.quota > 0 ? F.money(b.quota) : 'none'}</div></div>
+        <div class="stat quota-stat"><div class="l">${b.quotaMeta ? B.esc(b.quotaMeta.label) : 'Today\'s quota'}</div><div class="v">${b.quota > 0 ? F.money(b.quota) : 'none'}</div>${b.quotaMeta ? `<div class="quota-delta">${(b.quotaMeta.pct * 100).toFixed(2)}% of book${b.quotaMeta.raised ? ` · ↑ ${b.quotaMeta.raised}% overnight` : ''}</div>` : ''}</div>
         <div class="stat"><div class="l">Open positions</div><div class="v">${Object.keys(g.broker.pos).length + g.broker.opts.length}</div></div>
       </div>`;
+      const mandate = b.quotaMeta ? `<div class="quota-order"><span>DESK MANDATE</span><p>${B.esc(b.quotaMeta.memo)}</p></div>` : '';
       B.Music.play('brief');
       this.modal({
         kicker: `${b.kicker || ''} ${d.long}`,
         title: b.title,
-        body: stats + (b.html || '') + rules,
+        body: stats + mandate + (b.html || '') + rules,
         wide: true,
         buttons: [
           { label: 'Menu', onClick: () => this.pauseFromBriefing(g, b, onGo), cls: 'ghost' },
@@ -201,7 +202,9 @@
 
     // ---- endings ----
     ending(g, ending) {
+      const track = ending.good === false || /wiped|fired|perp|depression/.test(ending.id) ? 'endingDark' : 'endingLight';
       const show = () => {
+        B.Music.play(track);
         if (g.mode.kind === 'story') this.storyEnding(g, ending);
         else this.endlessEnding(g, ending);
       };

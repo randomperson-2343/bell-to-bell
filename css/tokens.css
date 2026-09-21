@@ -69,9 +69,10 @@
   --institution: var(--c-sky);
 
   /* --- type --- */
-  --pixel: "Silkscreen", "Press Start 2P", "Courier New", monospace;
-  --mono: "JetBrains Mono", "Cascadia Mono", "SF Mono", Consolas, Menlo, monospace;
-  --sans: var(--pixel);
+  --pixel: "Silkscreen", "Press Start 2P", monospace;
+  --mono: "IBM Plex Mono", "Cascadia Mono", "SF Mono", Consolas, Menlo, monospace;
+  --ui: "IBM Plex Mono", "Cascadia Mono", Consolas, monospace;
+  --sans: var(--ui);
 
   /* --- pixel grid: everything snaps to 4px --- */
   --u: 4px;

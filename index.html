@@ -8,7 +8,7 @@
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32' shape-rendering='crispEdges'%3E%3Crect width='32' height='32' fill='%23171922'/%3E%3Cpath d='M5 5h18v5H5zm3 7h18v5H8zm3 7h16v5H11zm4 7h12v3H15z' fill='%23d2a85c'/%3E%3Cpath d='M23 5h4v5h-4zm3 7h3v5h-3z' fill='%23bd5a66'/%3E%3C/svg%3E">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,400;0,500;0,600;0,700;1,400&amp;family=Silkscreen:wght@400;700&amp;display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/tokens.css">
   <link rel="stylesheet" href="css/ui.css">
   <link rel="stylesheet" href="css/office.css">
@@ -103,7 +103,7 @@
           <h3>Phone calls</h3>
           <p>Clients pay commission for orders you work in time. Your boss calls to shout. And people call with <b>tips</b> — most of which do not work. Some are simply false. Some are true but already in the price. Some run your way just long enough to get you to size up, and then reverse. Acting on every tip is how you go broke.</p>
           <h3>Stress</h3>
-          <p>Losses, leverage, margin calls, ringing phones and a looming close all push up your stress. High stress makes your hands slip (<b>fat-finger</b> orders). At 100 you have a <b>panic attack</b> and can't trade for a while. Going flat or taking a <b>coffee break</b> brings it down.</p>
+          <p>Losses, leverage, margin calls, ringing phones and a looming close all push up your stress through <b>Loaded</b>, <b>Tunnel</b> and <b>Critical</b> stages. High stress can still cause a bounded fat-finger order. At 100, a short <b>panic attack</b> begins. Complete its A/S/D grounding sequence to return immediately. Recovery creates temporary resistance so attacks cannot chain. Going flat or taking a <b>coffee break</b> also brings stress down.</p>
           <h3>Saving</h3>
           <p>Press <kbd>Esc</kbd> any time to pause, and <b>Save</b> or <b>Save &amp; Quit</b> — even in the middle of a session. You come back to the same minute, with the same positions and the same tape. You can keep six saves going at once.</p>
           <h3>Keys</h3>
@@ -112,6 +112,7 @@
             <tr><td><kbd>C</kbd></td><td>Close selected</td><td><kbd>X</kbd></td><td>Flatten everything</td></tr>
             <tr><td><kbd>1</kbd>&ndash;<kbd>5</kbd></td><td>Size 10/25/50/75/100% of max</td><td><kbd>&uarr;</kbd><kbd>&darr;</kbd></td><td>Change ticker</td></tr>
             <tr><td><kbd>A</kbd></td><td>Answer phone</td><td><kbd>Esc</kbd></td><td>Pause / Save</td></tr>
+            <tr><td><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></td><td>Ground during panic</td><td>Tap</td><td>Grounding buttons</td></tr>
           </table>
         </div>
       </div>
@@ -255,8 +256,8 @@
             <button class="desk-btn" id="btn-coffee" title="Coffee break: lowers stress, but you can't trade for 15 minutes">
               <span class="mug"></span><span class="desk-label">Break</span>
             </button>
-            <div class="desk-gauge">
-              <span class="desk-label">Stress <i id="tb-stress-num">0</i></span>
+            <div class="desk-gauge" id="stress-gauge" data-stage="steady">
+              <span class="desk-label">Stress <i id="tb-stress-num">0</i> <b id="tb-stress-stage">Steady</b></span>
               <span class="gauge"><i id="tb-stress-bar"></i></span>
             </div>
             <canvas id="story-art" aria-label="Story objects collected on the desk"></canvas>
