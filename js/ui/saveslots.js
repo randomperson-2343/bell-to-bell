@@ -75,6 +75,7 @@
         return B.UI.toast('That save could not be loaded.', 'bad');
       }
       g.begin();
+      if (snap.migrationNotice) setTimeout(() => B.UI.toast(snap.migrationNotice, 'warn big'), 250);
     }
   };
 

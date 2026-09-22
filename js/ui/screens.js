@@ -61,6 +61,7 @@
     // ---- generic modal ----
     modal(o) {
       const layer = $('modal-layer');
+      this.closeModal();
       const buttons = (o.buttons || []).map((b, i) => `<button class="btn ${b.cls || ''}" data-mb="${i}">${b.label}</button>`).join('');
       layer.innerHTML = `<div class="modal ${o.wide ? 'wide' : ''}" role="dialog" aria-modal="true">
         <div class="modal-h">${o.kicker ? `<div class="kicker">${o.kicker}</div>` : ''}${o.title ? `<h2>${o.title}</h2>` : ''}</div>
@@ -77,18 +78,29 @@
       }));
       const primary = layer.querySelector('.btn.primary');
       if (primary) setTimeout(() => primary.focus(), 50);
+      if (o.dismissible) {
+        this.modalKey = (e) => { if (e.key === 'Escape') { e.preventDefault(); this.closeModal(); if (o.onDismiss) o.onDismiss(); } };
+        document.addEventListener('keydown', this.modalKey);
+        layer.onclick = (e) => { if (e.target === layer) { this.closeModal(); if (o.onDismiss) o.onDismiss(); } };
+      }
       return layer.querySelector('.modal');
     },
 
-    closeModal() { $('modal-layer').innerHTML = ''; },
+    closeModal() {
+      if (this.modalKey) document.removeEventListener('keydown', this.modalKey);
+      this.modalKey = null;
+      const layer = $('modal-layer');
+      layer.onclick = null;
+      layer.innerHTML = '';
+    },
 
     confirm(title, body, okLabel, onOk) {
-      this.modal({ title, body: `<p>${body}</p>`, buttons: [{ label: 'Cancel' }, { label: okLabel, cls: 'primary', onClick: onOk }] });
+      this.modal({ title, body: `<p>${body}</p>`, dismissible: true, buttons: [{ label: 'Cancel' }, { label: okLabel, cls: 'primary', onClick: onOk }] });
     },
 
     prompt(title, body, value, okLabel, onOk) {
       this.modal({
-        title,
+        title, dismissible: true,
         body: `<p>${body}</p><input type="text" id="prompt-input" maxlength="22" value="${B.esc(value || '')}" style="width:100%">`,
         buttons: [
           { label: 'Cancel' },
@@ -101,7 +113,7 @@
 
     howtoModal(onClose) {
       const html = $('screen-howto').querySelector('.howto').innerHTML;
-      this.modal({ title: 'How to Play', body: html, wide: true, buttons: [{ label: 'Got it', cls: 'primary', onClick: onClose }] });
+      this.modal({ title: 'How to Play', body: html, wide: true, dismissible: true, onDismiss: onClose, buttons: [{ label: 'Got it', cls: 'primary', onClick: onClose }] });
     },
 
     // ---- day briefing ----
@@ -129,13 +141,14 @@
         <div class="stat"><div class="l">Open positions</div><div class="v">${Object.keys(g.broker.pos).length + g.broker.opts.length}</div></div>
         ${b.quotaStrikes ? `<div class="stat strike-stat"><div class="l">Career strikes</div><div class="v">${b.quotaStrikes.count} / ${b.quotaStrikes.limit}</div></div>` : ''}
       </div>`;
+      const anomalyHelp = b.anomalyCount == null ? '' : '<p class="anomaly-help"><b>Anomalies</b> are unusual details hidden in pre-open items. Open a suspicious item to inspect it. Enough verified anomalies can unlock the final systems decision.</p>';
       const mandate = b.quotaMeta ? `<div class="quota-order"><span>DESK MANDATE</span><p>${B.esc(b.quotaMeta.memo)}</p></div>` : '';
       B.Music.play('brief');
       const opened = new Set();
       const el = this.modal({
         kicker: `${b.kicker || ''} ${dateLabel}`,
         title: b.title,
-        body: `<div class="briefing-layout">${phone}<div class="briefing-dossier">${stats + mandate + (b.html || '') + rules}</div></div>`,
+        body: `<div class="briefing-layout">${phone}<div class="briefing-dossier">${stats + anomalyHelp + mandate + (b.html || '') + rules}</div></div>`,
         wide: true,
         buttons: [
           { label: 'Menu', onClick: () => this.pauseFromBriefing(g, b, onGo), cls: 'ghost' },
@@ -209,6 +222,7 @@
           <div class="stat"><div class="l">Best trade</div><div class="v ${F.cls(r.best)}">${F.money(r.best, true)}</div></div>
           <div class="stat"><div class="l">Worst trade</div><div class="v ${F.cls(r.worst)}">${F.money(r.worst, true)}</div></div>
           <div class="stat"><div class="l">Stress peak</div><div class="v ${r.stressPeak > 80 ? 'down' : r.stressPeak > 50 ? 'amber' : ''}">${Math.round(r.stressPeak)}</div></div>
+          ${r.quotaStrikeLimit ? `<div class="stat strike-stat"><div class="l">Career strikes</div><div class="v">${r.quotaStrikes} / ${r.quotaStrikeLimit}</div>${r.quotaStrikeLimit - r.quotaStrikes === 1 ? '<div class="quota-delta">FINAL WARNING · ONE MISS LEFT</div>' : ''}</div>` : ''}
         </div>
         ${notes.length ? `<ul class="notes">${notes.map((n) => `<li>${n}</li>`).join('')}</ul>` : ''}`;
       this.modal({
@@ -243,10 +257,12 @@
     ending(g, ending) {
       const track = ending.dark || ending.good === false || /wiped|fired|perp|depression/.test(ending.id) ? 'endingDark' : 'endingLight';
       const show = () => {
+        if (B.Cinematic.endChain) B.Cinematic.endChain();
         B.Music.play(track);
         if (g.mode.kind === 'story') this.storyEnding(g, ending);
         else this.endlessEnding(g, ending);
       };
+      if (B.Cinematic.startChain) B.Cinematic.startChain('ending');
       B.Cinematic.play('ending', { id: ending.id, title: ending.title, deck: ending.deck, dark: !!ending.dark || ending.good === false }, show);
     },
 

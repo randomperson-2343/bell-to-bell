@@ -1,308 +1,219 @@
-// Cinematic Rhythm presentation layer.
-//
-// The story is locked. This file never supplies plot, choices, market events or
-// dialogue. It gives each of the 61 existing sessions a distinct visual
-// storyboard, adds the physical phone handoff into the pre-open feed, and gives
-// Friday closes a short weekend breath before Monday begins.
+// V4.1 authored 640x360 storyboard layer. The story remains in StoryData;
+// this file owns only composition, timing and visual treatment.
 (function (B) {
   'use strict';
-  const X = B.Pixel;
-  const P = B.Pal;
-  const HV = { w: 480, h: 270 };
+  const X = B.Pixel, P = B.Pal;
+  const V = { w: 640, h: 360 };
+  const PLACES = ['apartment','subway','lobby','kitchen','street','rideshare','elevator','platform','breakroom','desk'];
+  const CAMERAS = ['wide','profile','over-shoulder','insert','close','desk'];
+  const ENDING_IDS = ['wiped','fired','exit','nobody','master','whistle','revolving','perp','fall-guy','cassandra','acquirer','ward','clawback','right-early','fund','everything-rally','lost-decade','soft','quiet','replaced','depression','grind'];
 
-  const PLACES = [
-    'apartment', 'subway', 'lobby', 'kitchen', 'street',
-    'rideshare', 'elevator', 'platform', 'breakroom', 'desk'
-  ];
-  const CAMERAS = ['wide', 'profile', 'over-shoulder', 'reflection', 'low', 'compressed', 'still'];
-
+  function hash(s) { return B.hashSeed(String(s || '')); }
+  function clean(s) { return String(s || '').replace(/<[^>]+>/g, ''); }
   function board(day) {
-    const d = Math.max(0, day | 0);
-    const week = Math.floor(d / 5) + 1;
-    const place = PLACES[d % PLACES.length];
-    const camera = CAMERAS[Math.floor(d / PLACES.length) % CAMERAS.length];
-    const act = d < 15 ? 1 : d < 30 ? 2 : d < 45 ? 3 : 4;
-    return {
-      day: d, week, place, camera, act,
-      // The tuple stays unique across the 61-session campaign without writing
-      // any new narrative fact into the game.
-      signature: `${place}:${week}:${camera}`
-    };
+    const d = Math.max(0, day | 0), act = d < 15 ? 1 : d < 30 ? 2 : d < 45 ? 3 : 4;
+    const place = PLACES[d % PLACES.length], camera = CAMERAS[(Math.floor(d / 5) + d) % CAMERAS.length];
+    const crop = { wide: 0, profile: -42, 'over-shoulder': 36, insert: -88, close: 74, desk: 18 }[camera];
+    return { day: d, week: Math.floor(d / 5) + 1, act, place, camera, crop,
+      signature: `${d + 1}:${place}:${camera}:${crop}` };
   }
-
   const STORYBOARDS = Array.from({ length: 61 }, (_, day) => board(day));
 
-  function paletteFor(act) {
-    if (act === 2) return { wash: P.violet, signal: P.sky, dark: P.ink2 };
-    if (act === 3) return { wash: P.sky, signal: P.crimson, dark: P.screenD };
-    if (act === 4) return { wash: P.crimsonD, signal: P.crimson, dark: P.ink };
-    return { wash: P.amberD, signal: P.amber, dark: P.ink2 };
+  function colors(act) {
+    return act === 4 ? { wash:P.crimsonD, signal:P.crimson, sky:P.ink2 }
+      : act === 3 ? { wash:P.sky, signal:P.crimson, sky:P.screenD }
+      : act === 2 ? { wash:P.violet, signal:P.sky, sky:P.ink2 }
+      : { wash:P.amberD, signal:P.amber, sky:P.ink2 };
   }
-
-  function label(ctx, text, x, y, color, align) {
-    X.textShadow(ctx, String(text || '').slice(0, 54), x, y, color || P.bone, P.ink, { align: align || 'left' });
+  function text(ctx, value, x, y, color, align) {
+    X.textShadow(ctx, clean(value).slice(0, 80), x, y, color || P.bone, P.ink, { align: align || 'left' });
   }
-
-  function city(ctx, y, act, seed) {
-    const q = paletteFor(act);
-    X.gradient(ctx, 0, 0, HV.w, y, q.dark, P.ink, 10);
-    for (let i = 0; i < 22; i++) {
-      const w = 12 + ((i * 19 + seed * 7) % 19);
-      const h = 24 + ((i * 37 + seed * 13) % 74);
-      const x = i * 23 - 9;
-      X.rect(ctx, x, y - h, w, h, i % 3 ? P.ink2 : P.slate);
-      for (let wy = 6; wy < h - 4; wy += 8) {
-        for (let wx = 4; wx < w - 3; wx += 7) {
-          if ((i * 11 + wy + wx + seed) % 9 < 2) X.rect(ctx, x + wx, y - h + wy, 2, 2, q.wash);
-        }
+  function skyline(ctx, act, seed, y) {
+    const c = colors(act); y = y || 248;
+    X.gradient(ctx, 0, 0, V.w, y, c.sky, P.ink, 12);
+    for (let i = 0; i < 34; i++) {
+      const w = 10 + ((i * 17 + seed * 3) % 22), h = 34 + ((i * 41 + seed * 11) % 128), x = i * 20 - 9;
+      X.rect(ctx, x, y - h, w, h, i % 4 ? P.ink2 : P.slate);
+      for (let yy = 7; yy < h - 5; yy += 10) for (let xx = 4; xx < w - 3; xx += 8) {
+        if ((i * 13 + xx + yy + seed) % 11 < 2) X.rect(ctx, x + xx, y - h + yy, 2, 2, c.wash);
       }
     }
   }
-
-  function person(ctx, x, y, scale, facing, act) {
-    const s = scale || 1;
-    const dir = facing < 0 ? -1 : 1;
-    const skin = act > 2 ? P.deskD : P.desk2;
-    X.rect(ctx, x - 13 * s, y, 26 * s, 48 * s, P.ink2);
-    X.rect(ctx, x - 8 * s, y - 16 * s, 16 * s, 18 * s, skin);
-    X.rect(ctx, x - 9 * s, y - 18 * s, 18 * s, 6 * s, P.ink);
-    X.rect(ctx, x + dir * 7 * s, y - 8 * s, 2 * s, 2 * s, P.ink);
+  function person(ctx, x, y, scale, act, face) {
+    const s = scale || 1, dir = face < 0 ? -1 : 1;
+    X.rect(ctx, x - 11*s, y, 22*s, 45*s, P.ink2);
+    X.rect(ctx, x - 7*s, y - 15*s, 14*s, 17*s, act > 2 ? P.deskD : P.desk2);
+    X.rect(ctx, x - 8*s, y - 18*s, 16*s, 5*s, P.ink);
+    X.rect(ctx, x + dir*5*s, y - 8*s, 2*s, 2*s, P.ink);
   }
-
-  function newsScreen(ctx, x, y, w, h, head, kick, act, p) {
-    const q = paletteFor(act);
-    X.plate(ctx, x - 5, y - 5, w + 10, h + 12, P.plastic, P.plastic2, P.plasticD);
+  function monitor(ctx, x, y, w, h, headline, act) {
+    const c = colors(act);
+    X.plate(ctx, x-5, y-5, w+10, h+10, P.plastic, P.plastic2, P.plasticD);
     X.crt(ctx, x, y, w, h, true);
-    X.gradient(ctx, x + 2, y + 2, w - 4, h - 19, P.screenGlow, P.screen, 6);
-    const cx = x + (w / 2 | 0);
-    X.rect(ctx, cx - 11, y + 19, 22, 24, P.ink2);
-    X.rect(ctx, cx - 7, y + 8, 14, 14, P.slate2);
-    X.rect(ctx, cx - 7, y + 8, 14, 4, P.ink);
-    X.rect(ctx, x + 2, y + h - 22, w - 4, 20, q.signal);
-    X.rect(ctx, x + 2, y + h - 22, w - 4, 4, P.ink2);
-    label(ctx, (kick || 'OVERNIGHT WIRE').slice(0, 25), x + 7, y + h - 20, P.bone);
-    const lines = X.wrap(head || '', w - 16).slice(0, 2);
-    lines.forEach((line, i) => label(ctx, line, x + 7, y + h - 13 + i * 8, P.ink));
-    if (p < .16) X.speckle(ctx, x + 2, y + 2, w - 4, h - 4, P.grey2, .16, act * 19);
-    X.scanlines(ctx, x + 2, y + 2, w - 4, h - 4, P.ink, .12);
+    X.rect(ctx, x+3, y+h-48, w-6, 45, c.signal);
+    text(ctx, 'OVERNIGHT WIRE', x+10, y+h-42, P.bone);
+    X.wrap(clean(headline), w-24).slice(0,3).forEach((line,i) => text(ctx, line, x+10, y+h-29+i*10, P.ink));
+  }
+  function chart(ctx, x, y, w, h, seed, down) {
+    X.crt(ctx, x, y, w, h, true);
+    let py = y + h/2;
+    for (let i = 0; i < w-12; i += 5) {
+      py = B.clamp(py + (((i*19+seed)%13)-6) * .7 + (down ? .5 : -.25), y+10, y+h-18);
+      X.rect(ctx, x+6+i, py, 3, 2, down ? P.crimson : P.jade);
+    }
   }
 
-  function phone(ctx, x, y, w, h, open, feed, act) {
-    const q = paletteFor(act);
+  function placeFrame(ctx, sb, headline, detail) {
+    const c = colors(sb.act), shift = sb.crop;
+    X.rect(ctx, 0, 0, V.w, V.h, P.ink);
+    skyline(ctx, sb.act, sb.day, 252);
+    X.rect(ctx, 0, 252, V.w, 108, sb.place === 'street' || sb.place === 'platform' ? P.ink2 : P.carpetD);
+    if (sb.place === 'subway' || sb.place === 'platform') {
+      X.rect(ctx, 0, 26, V.w, 226, P.plasticD);
+      for (let i=0;i<7;i++) X.inset(ctx, 18+i*94, 52, 76, 92, P.screenD, P.plastic2, P.plasticD);
+      X.rect(ctx, 0, 252, V.w, 108, P.carpetD);
+    } else if (sb.place === 'lobby' || sb.place === 'elevator') {
+      X.gradient(ctx, 0, 0, V.w, 278, P.putty2, P.plasticD, 10);
+      for (let i=0;i<10;i++) X.rect(ctx, i*68, 0, 2, 278, P.plastic);
+      X.rect(ctx, 0, 278, V.w, 82, P.slate);
+    } else if (sb.place === 'kitchen' || sb.place === 'breakroom') {
+      X.gradient(ctx, 0, 0, V.w, 255, P.putty2, P.putty, 9);
+      X.rect(ctx, 0, 255, V.w, 105, P.desk);
+      for (let i=0;i<9;i++) X.plate(ctx, 12+i*72, 52, 62, 52, P.plastic, P.plastic2, P.plasticD);
+    } else if (sb.place === 'desk') {
+      X.gradient(ctx, 0, 0, V.w, 226, P.putty2, P.putty, 9);
+      X.rect(ctx, 0, 226, V.w, 134, P.desk);
+      chart(ctx, 374+shift/3, 66, 198, 130, sb.day, sb.act >= 3);
+    } else if (sb.place === 'rideshare') {
+      X.rect(ctx, 0, 0, V.w, 360, P.ink2); skyline(ctx, sb.act, sb.day, 210);
+      X.rect(ctx, 0, 214, V.w, 146, P.ink);
+      person(ctx, 74, 250, 2, sb.act, 1); person(ctx, 574, 250, 2, sb.act, -1);
+    }
+    const mx = B.clamp(70 + shift, 24, 330), my = detail ? 56 : 76, mw = detail ? 300 : 250, mh = detail ? 170 : 142;
+    monitor(ctx, mx, my, mw, mh, headline, sb.act);
+    if (!detail) person(ctx, B.clamp(470-shift/2,380,560), 244, 2, sb.act, -1);
+    text(ctx, `WEEK ${sb.week} · ${sb.camera.toUpperCase()}`, 24, 24, c.wash);
+    // Observable composition markers: framing and subject position vary by camera.
+    if (sb.camera === 'insert') X.plate(ctx, 468, 86, 116, 82, P.bone, P.white, P.plasticD);
+    if (sb.camera === 'over-shoulder') { person(ctx, 576, 234, 3, sb.act, -1); X.rect(ctx, 516, 278, 124, 82, P.ink2); }
+    if (sb.camera === 'close') { person(ctx, 516, 205, 4, sb.act, -1); }
+    X.scanlines(ctx, 0, 0, V.w, V.h, P.ink, .08);
+  }
+
+  function phone(ctx, x, y, w, h, feed, act, day) {
+    const c = colors(act), rows = (feed || []).slice(0, 4), compact = rows.length <= 2;
+    // Glow is behind the device and never becomes an opaque slab.
+    ctx.save(); ctx.globalAlpha = .12 + act*.025; X.rect(ctx, x-8, y-8, w+16, h+16, c.signal); ctx.restore();
     X.plate(ctx, x, y, w, h, P.ink2, P.slate2, P.ink);
-    X.rect(ctx, x + 5, y + 7, w - 10, h - 14, P.screen);
-    X.rect(ctx, x + w / 2 - 16, y + 3, 32, 4, P.ink);
-    X.rect(ctx, x + w / 2 - 2, y + h - 5, 4, 2, P.slate2);
-    label(ctx, '6:' + String(3 + (act * 7) % 5) + '8', x + 9, y + 12, P.grey2);
-    if (!open) {
-      X.rect(ctx, x + 12, y + 32, w - 24, 1, P.slate);
-      X.rect(ctx, x + 12, y + 43, w - 38, 2, q.wash);
-      X.rect(ctx, x + 12, y + 51, w - 51, 2, P.slate2);
-      return;
-    }
-    const shown = Math.min(4, Math.max(2, (feed || []).length));
-    for (let i = 0; i < shown; i++) {
-      const item = feed[i] || {};
-      const yy = y + 29 + i * 34;
-      X.rect(ctx, x + 10, yy, w - 20, 29, i === 0 ? P.screenGlow : P.screenD);
-      X.rect(ctx, x + 10, yy, 3, 29, item.kind === 'chirp' ? P.violet : item.kind === 'mail' ? P.amber : P.sky);
-      label(ctx, (item.source || 'WIRE').slice(0, 18), x + 18, yy + 5, q.wash);
-      label(ctx, (item.title || 'Before the bell').slice(0, 26), x + 18, yy + 16, P.bone);
-    }
-  }
-
-  function establish(ctx, sb, head, kick, p) {
-    const q = paletteFor(sb.act);
-    X.rect(ctx, 0, 0, HV.w, HV.h, P.ink);
-    city(ctx, 181, sb.act, sb.day);
-
-    switch (sb.place) {
-      case 'subway':
-        X.rect(ctx, 0, 0, HV.w, HV.h, P.plasticD);
-        X.rect(ctx, 0, 18, HV.w, 166, P.plastic);
-        for (let i = 0; i < 5; i++) X.inset(ctx, 20 + i * 92, 36, 72, 67, P.screenD, P.plastic2, P.plasticD);
-        X.rect(ctx, 0, 184, HV.w, 86, P.carpetD);
-        for (let i = 0; i < 6; i++) { X.rect(ctx, 38 + i * 76, 18, 3, 31, P.slate); X.rect(ctx, 27 + i * 76, 46, 25, 4, P.slate2); }
-        newsScreen(ctx, 164, 28, 152, 83, head, kick, sb.act, p);
-        person(ctx, 78, 156, 2, 1, sb.act); person(ctx, 401, 160, 2, -1, sb.act);
-        break;
-      case 'lobby':
-        X.gradient(ctx, 0, 0, HV.w, 206, P.putty2, P.putty, 8);
-        X.rect(ctx, 0, 206, HV.w, 64, P.slate);
-        X.inset(ctx, 28, 31, 220, 142, P.screenD, P.plastic2, P.plasticD);
-        newsScreen(ctx, 48, 46, 180, 110, head, kick, sb.act, p);
-        X.plate(ctx, 336, 22, 104, 184, P.plastic, P.plastic2, P.plasticD);
-        X.rect(ctx, 386, 31, 4, 166, P.plasticD);
-        person(ctx, 299, 172, 2, -1, sb.act);
-        break;
-      case 'kitchen':
-      case 'breakroom':
-        X.gradient(ctx, 0, 0, HV.w, 195, P.putty2, P.putty, 7);
-        X.rect(ctx, 0, 195, HV.w, 75, P.desk);
-        for (let i = 0; i < 7; i++) X.plate(ctx, 12 + i * 68, 43, 58, 47, P.plastic, P.plastic2, P.plasticD);
-        newsScreen(ctx, 284, 31, 166, 104, head, kick, sb.act, p);
-        X.plate(ctx, 61, 166, 54, 47, P.bone, P.white, P.plasticD);
-        X.rect(ctx, 66, 170, 44, 7, P.deskD);
-        person(ctx, 194, 175, 2, 1, sb.act);
-        break;
-      case 'street':
-      case 'platform':
-        X.rect(ctx, 0, 181, HV.w, 89, P.ink2);
-        X.dither(ctx, 0, 181, HV.w, 40, P.ink2, P.slate, .32);
-        X.plate(ctx, 271, 28, 179, 124, P.slate, P.slate2, P.ink);
-        newsScreen(ctx, 286, 42, 149, 95, head, kick, sb.act, p);
-        for (let i = 0; i < 4; i++) person(ctx, 58 + i * 74 + Math.round(p * (i % 2 ? -7 : 7)), 176, 2, i % 2 ? -1 : 1, sb.act);
-        break;
-      case 'rideshare':
-        X.rect(ctx, 0, 0, HV.w, HV.h, P.ink2);
-        X.gradient(ctx, 64, 22, 352, 135, P.slate2, P.ink2, 8);
-        city(ctx, 154, sb.act, sb.day);
-        X.rect(ctx, 0, 157, HV.w, 113, P.ink);
-        X.plate(ctx, 190, 61, 100, 126, P.slate, P.slate2, P.ink);
-        newsScreen(ctx, 205, 77, 70, 73, head, kick, sb.act, p);
-        person(ctx, 48, 184, 2, 1, sb.act); person(ctx, 432, 184, 2, -1, sb.act);
-        break;
-      case 'elevator':
-        X.gradient(ctx, 0, 0, HV.w, HV.h, P.plastic2, P.plasticD, 8);
-        for (let i = 0; i < 8; i++) X.rect(ctx, i * 64, 0, 2, HV.h, P.plastic);
-        newsScreen(ctx, 157, 31, 166, 111, head, kick, sb.act, p);
-        X.inset(ctx, 421, 52, 28, 57, P.ink, P.plastic2, P.plasticD);
-        for (let i = 0; i < 4; i++) X.rect(ctx, 430, 61 + i * 11, 10, 4, i === sb.act - 1 ? q.signal : P.slate2);
-        person(ctx, 91, 178, 2, 1, sb.act); person(ctx, 390, 178, 2, -1, sb.act);
-        break;
-      case 'desk':
-        X.gradient(ctx, 0, 0, HV.w, 174, P.putty2, P.putty, 7);
-        X.rect(ctx, 0, 174, HV.w, 96, P.desk);
-        X.plate(ctx, 30, 36, 270, 155, P.plastic, P.plastic2, P.plasticD);
-        newsScreen(ctx, 48, 51, 234, 121, head, kick, sb.act, p);
-        X.plate(ctx, 328, 55, 120, 137, P.plastic, P.plastic2, P.plasticD);
-        X.crt(ctx, 341, 69, 94, 95, true);
-        for (let i = 0; i < 6; i++) X.rect(ctx, 351, 79 + i * 13, 70 - i * 4, 3, i < 2 ? q.wash : P.phosphorD);
-        break;
-      default:
-        X.gradient(ctx, 0, 0, HV.w, 197, P.ink2, P.ink, 8);
-        X.rect(ctx, 0, 197, HV.w, 73, P.ink2);
-        X.inset(ctx, 330, 28, 111, 82, P.slate, P.ink2, P.ink);
-        city(ctx, 108, sb.act, sb.day);
-        newsScreen(ctx, 45, 72, 190, 111, head, kick, sb.act, p);
-        X.plate(ctx, 269, 173, 151, 31, P.slate, P.slate2, P.ink);
-        person(ctx, 305, 184, 2, -1, sb.act);
-        break;
-    }
-
-    // Every board receives a different crop marker and light pattern. These are
-    // visual production notes made visible as framing, not story text.
-    const crop = (sb.week * 17 + sb.day * 3) % 66;
+    const sx=x+8, sy=y+12, sw=w-16, sh=h-24;
+    X.rect(ctx, sx, sy, sw, sh, P.screen);
+    X.rect(ctx, x+w/2-18, y+4, 36, 4, P.ink);
+    const minute = String(31 + ((day || 0) % 24)).padStart(2,'0');
+    text(ctx, `6:${minute}`, sx+7, sy+6, P.grey2);
+    text(ctx, `${rows.length}`, sx+sw-8, sy+6, c.wash, 'right');
     ctx.save();
-    ctx.globalAlpha = .14;
-    X.rect(ctx, crop, 0, 2, HV.h, q.wash);
-    X.rect(ctx, 0, 20 + (sb.day * 11) % 92, HV.w, 1, q.wash);
+    ctx.beginPath(); ctx.rect(sx+2, sy+21, sw-4, sh-24); ctx.clip();
+    const rowH = compact ? 52 : 39;
+    rows.forEach((item,i) => {
+      const yy=sy+25+i*(rowH+5);
+      X.rect(ctx, sx+5, yy, sw-10, rowH, i===0 ? P.screenGlow : P.screenD);
+      X.rect(ctx, sx+5, yy, 3, rowH, item.kind==='chirp'?P.violet:item.kind==='mail'?P.amber:P.sky);
+      text(ctx, clean(item.source || 'WIRE').slice(0,18), sx+14, yy+6, c.wash);
+      X.wrap(clean(item.title || ''), sw-34).slice(0, compact?3:2).forEach((line,k) => text(ctx,line,sx+14,yy+19+k*10,P.bone));
+    });
     ctx.restore();
+    return rows.length;
   }
 
-  function phonePocket(ctx, p, sb, feed) {
-    X.rect(ctx, 0, 0, HV.w, HV.h, P.ink);
-    X.gradient(ctx, 0, 0, HV.w, HV.h, P.ink2, P.ink, 7);
-    // Coat and pocket in close-up.
-    X.rect(ctx, 0, 0, 287, HV.h, P.slate);
-    X.dither(ctx, 0, 0, 287, HV.h, P.slate, P.ink2, .24);
-    X.rect(ctx, 48, 90, 171, 135, P.ink2);
-    X.rect(ctx, 48, 90, 171, 5, P.slate2);
-    const rise = Math.round(B.clamp(p * 1.35, 0, 1) * 108);
-    const px = 91, py = 131 - rise;
-    phone(ctx, px, py, 94, 158, p > .58, feed, sb.act);
-    // Hand and fingers overlap the device so it reads as an object being taken.
-    X.rect(ctx, 178, 167 - rise * .45, 86, 46, P.desk2);
-    X.rect(ctx, 165, 144 - rise * .45, 26, 18, P.desk2);
-    for (let i = 0; i < 4; i++) X.rect(ctx, 184 + i * 17, 153 - rise * .45, 13, 35, P.desk2);
-    X.rect(ctx, 287, 0, 193, HV.h, P.ink2);
-    X.dither(ctx, 287, 0, 193, HV.h, P.ink2, paletteFor(sb.act).wash, .08);
-    label(ctx, 'PRE-OPEN', 382, 93, paletteFor(sb.act).wash, 'center');
-    label(ctx, String((feed || []).length) + ' NOTIFICATIONS', 382, 111, P.bone, 'center');
+  function phoneFrame(ctx, sb, feed, close) {
+    X.rect(ctx,0,0,V.w,V.h,P.ink); X.gradient(ctx,0,0,V.w,V.h,P.ink2,P.ink,10);
+    const count=(feed||[]).slice(0,4).length;
+    const w = close || count>2 ? 226 : 180, h = close || count>2 ? 308 : 250;
+    const x=(V.w-w)/2, y=18;
+    phone(ctx,x,y,w,h,feed,sb.act,sb.day);
+    text(ctx,'PRE-OPEN', close?92:88, 92, colors(sb.act).wash);
+    text(ctx,`${count} NOTIFICATION${count===1?'':'S'}`,close?92:88,110,P.bone);
   }
 
-  function phoneClose(ctx, p, sb, feed) {
-    X.rect(ctx, 0, 0, HV.w, HV.h, P.ink);
-    X.dither(ctx, 0, 0, HV.w, HV.h, P.ink, paletteFor(sb.act).wash, .08);
-    const w = 170, h = 238, x = (HV.w - w) / 2, y = 14;
-    phone(ctx, x, y, w, h, p > .18, feed, sb.act);
-    // Thumb moves toward the first notification, handing control to the DOM UI.
-    const tx = 338 - Math.round(p * 36), ty = 232 - Math.round(p * 131);
-    X.rect(ctx, tx, ty, 65, 45, P.desk2);
-    X.rect(ctx, tx - 14, ty - 8, 29, 20, P.desk2);
+  function officeFrame(ctx, day, detail) {
+    const sb=board(day), c=colors(sb.act);
+    X.rect(ctx,0,0,V.w,V.h,P.putty); X.gradient(ctx,0,0,V.w,235,P.putty2,P.putty,10); X.rect(ctx,0,235,V.w,125,P.desk);
+    for(let i=0;i<5;i++){const x=24+i*124;X.plate(ctx,x,78,104,126,P.plastic,P.plastic2,P.plasticD);chart(ctx,x+10,92,84,78,day+i,sb.act>=3);}
+    X.plate(ctx,196,250,248,40,P.plasticD,P.plastic2,P.ink2);
+    for(let i=0;i<12;i++) X.rect(ctx,208+i*18,260,12,5,i%4?P.slate:P.slate2);
+    if(detail){X.plate(ctx,58,246,110,62,P.bone,P.white,P.plasticD);text(ctx,'CASCADE',113,261,c.signal,'center');chart(ctx,478,238,130,73,day,true);}
   }
-
-  function weekendFrame(ctx, week, act, night, p) {
-    const q = paletteFor(act);
-    X.rect(ctx, 0, 0, HV.w, HV.h, P.ink);
-    X.gradient(ctx, 0, 0, HV.w, 189, night ? P.ink2 : P.sky, P.ink, 9);
-    city(ctx, 189, act, week * 9);
-    X.rect(ctx, 0, 189, HV.w, 81, night ? P.ink2 : P.carpetD);
-    X.plate(ctx, 67, 159, 266, 41, P.slate, P.slate2, P.ink);
-    X.plate(ctx, 357, 147, 54, 79, P.ink2, P.slate2, P.ink);
-    X.rect(ctx, 364, 158, 40, 53, P.screen);
-    if (night) {
-      for (let i = 0; i < 5; i++) X.rect(ctx, 370, 166 + i * 8, 26 + (i % 2) * 8, 2, i < 2 ? q.signal : P.phosphorD);
-    } else {
-      X.rect(ctx, 375, 178, 18, 18, q.wash);
-      X.rect(ctx, 382, 168, 4, 39, P.bone);
+  function closeFrame(ctx, report, detail) {
+    const good=(report.pnl||0)>=0, met=!!report.quotaMet;
+    officeFrame(ctx, report.day||0, true); ctx.save(); ctx.globalAlpha=.32;X.rect(ctx,0,0,V.w,V.h,P.ink);ctx.restore();
+    X.box(ctx,165,72,310,112);
+    text(ctx, met?'QUOTA MET':report.quota>0?'QUOTA MISSED':'CLOSING BELL',320,93,met?P.jade:P.crimson,'center');
+    text(ctx,B.fmt.money(report.pnl||0,true),320,124,good?P.jade:P.crimson,'center');
+    if(detail){text(ctx,`QUOTA ${B.fmt.money(report.quota||0)}`,320,146,P.grey2,'center');text(ctx,clean(report.date||''),320,162,P.putty,'center');}
+  }
+  function weekendFrame(ctx, sb, night) {
+    const c=colors(sb.act);X.rect(ctx,0,0,V.w,V.h,P.ink);X.gradient(ctx,0,0,V.w,250,night?P.ink2:P.sky,P.ink,12);skyline(ctx,sb.act,sb.week*9,250);
+    X.rect(ctx,0,250,V.w,110,night?P.ink2:P.carpetD);X.plate(ctx,92,216,360,54,P.slate,P.slate2,P.ink);
+    X.plate(ctx,492,194,86,114,P.ink2,P.slate2,P.ink);chart(ctx,502,208,66,76,sb.week,night);
+    phone(ctx,386,226,54,78,[],sb.act,sb.day);
+    if(night) { ctx.save();ctx.globalAlpha=.09;X.rect(ctx,376,216,74,98,c.signal);ctx.restore(); }
+  }
+  function endingFrame(ctx, o, detail) {
+    const id=o.id||'grind', dark=!!o.dark, seed=hash(id), c=colors(dark?4:1);
+    X.rect(ctx,0,0,V.w,V.h,P.ink);X.gradient(ctx,0,0,V.w,238,dark?P.slate2:P.amber,dark?P.ink2:P.crimsonD,12);skyline(ctx,dark?4:1,seed%97,244);X.rect(ctx,0,244,V.w,116,P.ink);
+    // Every ending gets a stable, visibly unique signature made from its id.
+    for(let i=0;i<12;i++){
+      const bit=(seed >>> (i%24))&1, x=128+i*32, h=20+((seed >>> ((i*3)%24))&31);
+      X.rect(ctx,x,190-h,bit?20:11,h,bit?c.signal:c.wash);
+      if((seed+i)%3===0) X.rect(ctx,x+3,184-h,5,5,P.bone);
     }
-    // Phone remains present even in the quiet shot, increasingly bright by act.
-    phone(ctx, 271, 166, 30, 50, night && p > .35, [], act);
-    if (act >= 3 && night) X.rect(ctx, 269, 164, 34, 54, q.signal);
+    text(ctx,id.replace(/-/g,' ').toUpperCase(),320,42,c.signal,'center');
+    if(detail){X.box(ctx,80,82,480,92);text(ctx,clean(o.title).slice(0,42),320,104,dark?P.crimson:P.amber,'center');X.wrap(clean(o.deck),430).slice(0,3).forEach((line,i)=>text(ctx,line,320,130+i*11,P.bone,'center'));}
   }
 
+  function beat(scene, id, dur, draw, line, extra) {
+    return Object.assign({ id:`${scene}:${id}`, view:V, dur, draw, line:line||'', cache:true, transition:'cut' }, extra||{});
+  }
   B.Rhythm = {
-    view: HV,
-    storyboards: STORYBOARDS,
-    storyboard(day) { return STORYBOARDS[day] || board(day); }
+    view:V, storyboards:STORYBOARDS, endingIds:ENDING_IDS,
+    phoneRowCount(feed){return Math.min(4,(feed||[]).length);},
+    storyboard(day){return STORYBOARDS[day]||board(day);},
+    frameMap(day){const sb=this.storyboard(day);return [
+      {id:`news:${day}:place`,purpose:'establish',camera:sb.camera},
+      {id:`news:${day}:headline`,purpose:'meaningful insert',camera:'insert'},
+      {id:`news:${day}:reaction`,purpose:'environmental reaction',camera:'profile'},
+      {id:`news:${day}:hold`,purpose:'pressure hold',camera:'still'}
+    ];}
   };
 
-  // Replace the repeated apartment/TV opener with a 61-board visual grammar.
-  B.Scenes.news = function (o) {
-    const b = o.brief || {};
-    const sb = B.Rhythm.storyboard(o.day || 0);
-    const head = String(b.title || '').replace(/<[^>]+>/g, '');
-    const kick = String(b.kicker || '').replace(/[^\w\s·&.-]/g, '').trim();
-    const date = B.Calendar && B.Calendar.storyLabel ? B.Calendar.storyLabel(o.day || 0) : `SESSION ${(o.day || 0) + 1}`;
-    return [
-      {
-        view: HV, dur: 2.35, sfx: sb.place === 'elevator' ? 'elevator' : 'room',
-        draw(ctx, _v, p) { establish(ctx, sb, head, kick, p * .45); },
-        line: date.toUpperCase()
-      },
-      {
-        view: HV, dur: 3.0, sfx: 'broadcast',
-        draw(ctx, _v, p) { establish(ctx, sb, head, kick, .45 + p * .55); },
-        line: head
-      },
-      {
-        view: HV, dur: 1.25, sfx: 'room',
-        draw(ctx) {
-          establish(ctx, sb, head, kick, 1);
-          ctx.save(); ctx.globalAlpha = .18; X.rect(ctx, 0, 0, HV.w, HV.h, P.ink); ctx.restore();
-        },
-        line: ''
-      }
-    ];
-  };
-
-  B.Scenes.phone = function (o) {
-    const sb = B.Rhythm.storyboard(o.day || 0);
-    const feed = (o.brief && o.brief.feed) || [];
-    return [
-      { view: HV, dur: 2.0, sfx: 'room', draw(ctx, _v, p) { phonePocket(ctx, p, sb, feed); }, line: '' },
-      { view: HV, dur: 2.25, sfx: 'news', draw(ctx, _v, p) { phoneClose(ctx, p, sb, feed); }, line: 'PRE-OPEN FEED' }
-    ];
-  };
-
-  B.Scenes.weekend = function (o) {
-    const day = o.day || 0;
-    const sb = B.Rhythm.storyboard(day);
-    return [
-      { view: HV, dur: 2.4, sfx: 'room', draw(ctx, _v, p) { weekendFrame(ctx, sb.week, sb.act, false, p); }, line: `WEEK ${sb.week} · SATURDAY` },
-      { view: HV, dur: 2.8, sfx: 'room', draw(ctx, _v, p) { weekendFrame(ctx, sb.week, sb.act, true, p); }, line: 'SUNDAY · 11:48 PM' },
-      { view: HV, dur: 1.4, draw(ctx, _v, p) { weekendFrame(ctx, sb.week, sb.act, true, 1); ctx.save(); ctx.globalAlpha = p; X.rect(ctx, 0, 0, HV.w, HV.h, P.ink); ctx.restore(); }, line: '' }
-    ];
-  };
+  B.Scenes.news = function(o){const sb=board(o.day||0), title=clean((o.brief||{}).title), date=B.Calendar&&B.Calendar.storyLabel?B.Calendar.storyLabel(o.day||0):`SESSION ${(o.day||0)+1}`;return [
+    beat('news',`${sb.day}:place`,1.65,(c)=>placeFrame(c,sb,title,false),date,{sfx:/subway|platform/.test(sb.place)?'transit':sb.place==='street'?'street':/kitchen|breakroom/.test(sb.place)?'kitchen':'apartment',transition:'fade'}),
+    beat('news',`${sb.day}:headline`,2.15,(c)=>placeFrame(c,sb,title,true),title,{sfx:'broadcast',informative:true}),
+    beat('news',`${sb.day}:reaction`,1.55,(c)=>placeFrame(c,Object.assign({},sb,{crop:-sb.crop}),title,false),'',{}),
+    beat('news',`${sb.day}:hold`,1.0,(c)=>{placeFrame(c,sb,title,true);c.save();c.globalAlpha=.12;X.rect(c,0,0,V.w,V.h,P.ink);c.restore();},'',{})
+  ];};
+  B.Scenes.phone = function(o){const sb=board(o.day||0),feed=(o.brief&&o.brief.feed)||[];return [
+    beat('phone',`${sb.day}:handoff`,1.4,(c)=>phoneFrame(c,sb,feed,false),'',{sfx:'apartment',transition:'fade'}),
+    beat('phone',`${sb.day}:read`,2.0,(c)=>phoneFrame(c,sb,feed,true),'PRE-OPEN FEED',{sfx:'news',informative:true})
+  ];};
+  B.Scenes.office = function(o){const day=o.day||0;return [
+    beat('office',`${day}:wide`,1.45,(c)=>officeFrame(c,day,false),'FORTY-FIRST FLOOR.',{sfx:'elevator',transition:'fade'}),
+    beat('office',`${day}:desk`,1.8,(c)=>officeFrame(c,day,true),'THE DESK IS ALREADY AWAKE.',{sfx:'office',informative:true}),
+    beat('office',`${day}:hold`,.85,(c)=>officeFrame(c,day,true),'SIT DOWN. NINE THIRTY.',{})
+  ];};
+  B.Scenes.close = function(o){const r=o.report||{};return [
+    beat('close',`${r.day||0}:bell`,1.25,(c)=>closeFrame(c,r,false),'4:00 PM.',{sfx:'closeBell',transition:'fade'}),
+    beat('close',`${r.day||0}:report`,2.0,(c)=>closeFrame(c,r,true),(r.pnl||0)>=0?'YOU MADE MONEY. NOBODY SAYS WELL DONE.':'YOU LOST MONEY. EVERYBODY NOTICED.',{sfx:'office',informative:true}),
+    beat('close',`${r.day||0}:hold`,.85,(c)=>closeFrame(c,r,true),'',{})
+  ];};
+  B.Scenes.weekend = function(o){const sb=board(o.day||0);return [
+    beat('weekend',`${sb.week}:sat`,1.6,(c)=>weekendFrame(c,sb,false),`WEEK ${sb.week} · SATURDAY`,{sfx:'apartment',transition:'fade',informative:true}),
+    beat('weekend',`${sb.week}:sun`,1.8,(c)=>weekendFrame(c,sb,true),'SUNDAY · 11:48 PM',{sfx:'apartment'}),
+    beat('weekend',`${sb.week}:hold`,.8,(c)=>weekendFrame(c,sb,true),'',{})
+  ];};
+  B.Scenes.ending = function(o){return [
+    beat('ending',`${o.id}:world`,1.7,(c)=>endingFrame(c,o,false),'',{sfx:'apartment',transition:'fade'}),
+    beat('ending',`${o.id}:card`,2.4,(c)=>endingFrame(c,o,true),clean(o.deck),{informative:true}),
+    beat('ending',`${o.id}:hold`,1.0,(c)=>endingFrame(c,o,true),'ENDING REACHED',{})
+  ];};
 })(window.BTB);

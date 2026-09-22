@@ -1,0 +1,19 @@
+STORY full-smoke flat    -> Soft Landing           days=61 equity=$333,450
+STORY whistle    careful -> Fired                  days=34 equity=$33,771 vote=undefined stab=71.7363996672 heat=98.8 INDX 518->400(min)->400
+STORY whistle    yolo    -> Wiped Out              days=30 equity=$24,732 vote=undefined stab=72.75695616 heat=100 INDX 518->493(min)->495
+STORY depression careful -> Wiped Out              days=31 equity=$24,917 vote=undefined stab=46.1292003328 heat=92.8 INDX 518->484(min)->484
+STORY depression yolo    -> Wiped Out              days=23 equity=$24,847 vote=undefined stab=49.916352 heat=100 INDX 518->518(min)->550
+STORY soft       careful -> Wiped Out              days=34 equity=$24,837 vote=undefined stab=68.53479966719999 heat=100 INDX 518->421(min)->421
+STORY soft       yolo    -> Wiped Out              days=36 equity=$24,626 vote=undefined stab=80.61201569382399 heat=92.8 INDX 518->381(min)->381
+STORY crook      careful -> Wiped Out              days=34 equity=$24,845 vote=undefined stab=46.1292003328 heat=100 INDX 518->427(min)->427
+STORY crook      yolo    -> Wiped Out              days=19 equity=$24,658 vote=undefined stab=57.8656 heat=100 INDX 518->518(min)->533
+STORY insider    careful -> Wiped Out              days=31 equity=$24,741 vote=undefined stab=46.1292003328 heat=92.8 INDX 518->440(min)->440
+STORY insider    yolo    -> Wiped Out              days=29 equity=$24,633 vote=undefined stab=44.923043840000005 heat=100 INDX 518->511(min)->511
+STORY treasury   careful -> Wiped Out              days=31 equity=$24,838 vote=undefined stab=53.127232 heat=92.8 INDX 518->490(min)->490
+STORY treasury   yolo    -> Wiped Out              days=20 equity=$23,973 vote=undefined stab=60 heat=100 INDX 518->518(min)->524
+ENDLESS intern     -> Survivor (Barely) days=15 equity=$35,462
+ENDLESS trader     -> Survivor (Barely) days=15 equity=$34,214
+ENDLESS shark      -> Survivor (Barely) days=15 equity=$21,611
+ENDLESS degenerate -> Legend days=3 equity=$15,356
+
+All simulated runs completed.

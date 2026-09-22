@@ -106,6 +106,10 @@
     halt() { tone(520, 0.6, { type: 'square', gain: 0.06 }); tone(390, 0.8, { type: 'square', gain: 0.06, when: 0.6 }); },
     panic() { noise(2.5, { gain: 0.25, filter: 200 }); tone(40, 2.5, { gain: 0.3, type: 'sine' }); },
     room() { noise(2.0, { gain: 0.045, filter: 170 }); tone(58, 1.8, { gain: 0.025, type: 'sine' }); },
+    apartment() { noise(1.8, { gain: 0.028, filter: 140 }); tone(52, 1.5, { gain: 0.018, type: 'sine' }); },
+    kitchen() { noise(1.5, { gain: 0.025, filter: 900 }); tone(1860, 0.04, { gain: 0.018, type: 'triangle', when: 0.28 }); },
+    transit() { noise(1.9, { gain: 0.05, filter: 260 }); tone(74, 1.7, { gain: 0.035, type: 'sine' }); tone(920, 0.22, { gain: 0.025, when: 0.7 }); },
+    street() { noise(1.6, { gain: 0.035, filter: 1200 }); tone(330, 0.18, { gain: 0.018, when: 0.45 }); tone(294, 0.18, { gain: 0.016, when: 0.72 }); },
     broadcast() { noise(0.18, { gain: 0.08, filter: 2600 }); tone(1040, 0.05, { gain: 0.035, type: 'square', when: 0.16 }); },
     elevator() { tone(784, 0.55, { gain: 0.09, type: 'sine' }); tone(1175, 0.7, { gain: 0.06, type: 'sine', when: 0.08 }); },
     office() {

@@ -1,0 +1,14 @@
+{
+  "resolution": [
+    640,
+    360
+  ],
+  "sampleHash": "43b32bf1370ab096d00b",
+  "newsUnique": 61,
+  "endingUnique": 22,
+  "weekendUnique": 12,
+  "emptyPhoneRows": 0,
+  "onePhoneRows": 1,
+  "fullPhoneRows": 4,
+  "render61Ms": 4448.5
+}

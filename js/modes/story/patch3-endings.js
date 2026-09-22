@@ -34,7 +34,9 @@
 
   const nobody = {
     id:'nobody', icon:'&#128268;', title:'Nobody Turned It Off', hint:'The market remained open after price discovery ended.', lockedHint:'Some warnings only look like noise until the loop closes.',
-    test:(c)=>!!c.S.f.aiUncontained && !c.S.f.pulledPlug && ((c.S.anomalies || 0) < 10 || c.S.m.stability < 55),
+    // This is the direct consequence of the final Leave It Running decision,
+    // not a broad low-anomaly or low-stability fallback.
+    test:(c)=>!!c.S.f.leftStack && !!c.S.f.aiUncontained && !c.S.f.pulledPlug,
     headline:'Market Opens, Price Discovery Does Not',
     deck:'Identical autonomous systems converge on the same trade until no human price remains.',
     story:()=>[
@@ -58,7 +60,7 @@
 
   const fallGuy = {
     id:'fall-guy', icon:'&#128196;', title:'The Fall Guy', hint:'Refused the marks, then inherited somebody else’s signature.', lockedHint:'A blank signature line is still a position.',
-    test:(c)=>!!c.S.f.externalFraud && c.S.m.heat >= 55 && !c.S.f.cooperated,
+    test:(c)=>!!c.S.f.externalFraud && c.S.m.heat >= 40 && !c.S.f.cooperated,
     headline:'Former Holloway Trader Sentenced in Valuation Case', deck:'The signature was not theirs. The responsibility became theirs anyway.',
     story:()=>[
       'The trader refused to sign the sixty-one-cent mark. Another officer signed it twenty minutes later. At trial, prosecutors argued that refusing privately while continuing to trade publicly made the trader part of the same representation.',
@@ -69,7 +71,7 @@
 
   const acquirer = {
     id:'acquirer', icon:'&#127970;', title:'The Acquirer', hint:'Bought the carcass and inherited the combined desk.', lockedHint:'Failure creates inventory for whoever still has a balance sheet.',
-    test:(c)=>!!c.S.f.letFail && c.S.m.firm >= 75 && c.S.m.influence >= 40,
+    test:(c)=>!!c.S.f.letFail && c.S.m.firm >= 64 && c.S.m.influence >= 30,
     headline:'Holloway Stern Acquires Ridgeway for Nominal Sum', deck:'Junior trader named to combined desk after weekend seizure.',
     story:(c)=>[
       'Ridgeway failed before midnight. Holloway Stern bought the operating assets before breakfast for less than the value of its headquarters.',
@@ -80,7 +82,7 @@
 
   const ward = {
     id:'ward', icon:'&#127963;', title:'Ward of the State', hint:'The guarantee became ownership and the job survived.', lockedHint:'A rescue can keep the chair while changing who owns it.',
-    test:(c)=>!!c.S.f.bailout && c.S.m.stability >= 35 && c.S.m.stability <= 50 && c.S.m.firm < 40,
+    test:(c)=>!!c.S.f.bailout && c.S.m.stability >= 50 && c.S.m.stability <= 60 && c.S.m.firm < 40 && !c.S.f.leftStack,
     headline:'Government Takes Controlling Stake in Holloway Stern', deck:'Firm survives under public ownership and compensation review.',
     story:(c)=>[
       'The guarantee became preferred shares, then voting shares, then control. Holloway Stern still opened Monday. Its logo remained above the doors.',
@@ -91,7 +93,7 @@
 
   const clawback = {
     id:'clawback', icon:'&#8634;', title:'Clawback', hint:'The bonus was seized after the trade was already celebrated.', lockedHint:'Bonuses settle faster than consequences.',
-    test:(c)=>c.wealth >= c.start * 2 && (c.S.f.dumped || c.S.f.fraud) && c.S.m.anger >= 60,
+    test:(c)=>c.wealth >= c.start * 2 && (c.S.f.dumped || c.S.f.fraud) && c.S.m.anger >= 38,
     headline:'Crisis-Era Bonuses Seized Under Emergency Rules', deck:'Trader keeps the record and forty cents on every dollar.',
     story:(c)=>[
       'The bonus cleared months before the rule existed. The clawback reached backward anyway.',
@@ -124,7 +126,7 @@
 
   const cassandra = {
     id:'cassandra', icon:'&#128483;', title:'Cassandra', hint:'Warned everyone, changed nothing, and watched it happen.', lockedHint:'Truth without influence is still truth.',
-    test:(c)=>c.S.m.integrity >= 85 && c.S.m.influence < 20 && c.S.m.stability <= 30,
+    test:(c)=>c.S.m.integrity >= 68 && c.S.m.influence < 22 && c.S.m.stability <= 45,
     headline:'Warnings Proven Correct After System Collapses', deck:'The record was clear. The response was not.',
     story:()=>[
       'The testimony, memoranda and timestamped warnings were entered into the record. Each described the failure before it happened.',
@@ -150,7 +152,7 @@
 
   const everything = {
     id:'everything-rally', icon:'&#128200;', title:'The Everything Rally', hint:'Asset prices recovered. The economy did not.', lockedHint:'A green screen can hide a country in recession.',
-    test:(c)=>!!c.S.f.bailout && !!c.S.f.billPassed && c.S.m.stability >= 28 && c.S.m.stability <= 40 && c.wealth >= c.start * 2,
+    test:(c)=>!!c.S.f.bailout && !!c.S.f.billPassed && c.S.m.stability >= 45 && c.S.m.stability <= 55 && c.wealth >= c.start * 2 && !c.S.f.leftStack,
     headline:'Markets Triple as Recovery Passes Households By', deck:'Liquidity restores every asset price except the price of ordinary life.',
     story:(c)=>[
       `The account finished at ${B.fmt.compact(c.wealth * 2)} after emergency liquidity lifted every security the trader could still buy.`,
@@ -159,13 +161,19 @@
     ], wealth:(c)=>c.wealth * 2
   };
 
-  // Keep the original eleven in their original order. New endings are inserted
-  // only where the Patch 3 priority rules require them.
+  // Specific decision consequences precede broad state-based outcomes.
+  // Priority is consequence-first: emergency terminations, explicit final
+  // decisions, explicit career choices, then narrower meter outcomes, then
+  // broad systemic outcomes and the survival fallback.
   const LIST = [
-    by('wiped'), by('fired'), nobody, by('perp'), fallGuy, by('master'), by('whistle'), cassandra,
-    by('revolving'), acquirer, ward, clawback, rightEarly, lost, fund, everything,
-    by('depression'), by('soft'), by('quiet'), by('replaced'), exit, by('grind')
+    by('wiped'), by('fired'), nobody, by('master'), by('whistle'), by('revolving'),
+    by('perp'), fallGuy, cassandra, acquirer, ward, clawback, rightEarly, fund,
+    everything, lost, by('soft'), by('quiet'), by('replaced'), by('depression'), exit, by('grind')
   ];
+  const priority = [
+    { rank:1, id:'wiped', title:'Wiped Out' }, { rank:2, id:'fired', title:'Fired' },
+    { rank:3, id:'exit', title:'The Exit · Pull the Plug' }, { rank:4, id:'nobody', title:'Nobody Turned It Off · Leave It Running' }
+  ].concat(LIST.filter((e)=>!['wiped','fired','exit','nobody'].includes(e.id)).map((e,i)=>({rank:i+5,id:e.id,title:e.title})));
   ['nobody','fall-guy','ward','clawback','lost-decade','cassandra'].forEach((id) => {
     const ending = LIST.find((e) => e.id === id);
     if (ending) ending.dark = true;
@@ -173,7 +181,14 @@
 
   B.StoryEndings = {
     list: LIST,
-    resolve(ctx) { return LIST.find((e) => e.test(ctx)); },
+    priority,
+    resolve(ctx) {
+      if (ctx.reason === 'wiped') return by('wiped');
+      if (ctx.reason === 'fired') return by('fired');
+      if (ctx.S.f.pulledPlug) return exit;
+      if (ctx.S.f.leftStack && ctx.S.f.aiUncontained) return nobody;
+      return LIST.find((e) => e.test(ctx));
+    },
     discovered() { return B.Save.discovered(); },
     count(id) { return B.Save.tally()[id] || 0; },
     record(id) { B.Save.recordEnding(id); }

@@ -2,7 +2,10 @@
 (function (B) {
   'use strict';
   const D = B.StoryData;
-  const QUOTA_STRIKE_LIMIT = 12;
+  // Calibrated against real Market/Broker runs. Twelve cumulative misses fired
+  // even a perfect-foresight trader before the late-game choices. Thirty keeps
+  // misses permanent while allowing a competent run to reach session 61.
+  const QUOTA_STRIKE_LIMIT = 30;
   // Sectors outside the CASCADE story. Background noise lives here so every day
   // stays tradable even when the scripted drama is pointed somewhere else.
   const SAFE_SECTORS = ['retail', 'haven', 'defense', 'power'];
@@ -72,7 +75,11 @@
         if (r.maxLev !== 4) rules.push(`Leverage limit: ${r.maxLev}x intraday / ${r.maxLev / 2}x overnight`);
         if (r.shortBan.length) rules.push('EMERGENCY ORDER: short selling of financial stocks is banned');
         if (S.m.heat >= 50) rules.push('Compliance is watching you. Examiners may visit your desk.');
+        const remaining = QUOTA_STRIKE_LIMIT - S.quotaStrikes;
         if (S.quotaStrikes > 0) rules.push(`Career quota strikes: ${S.quotaStrikes}/${QUOTA_STRIKE_LIMIT}`);
+        if (remaining === 1) rules.push('FINAL WARNING: one more missed quota ends this career.');
+        else if (remaining === 2) rules.push('WARNING: two missed quotas remain before termination.');
+        if (S.f.v2RewoundToBell) rules.push('SAVE MIGRATION: this V2 mid-session save was rewound to the matching opening bell; book and decisions were preserved.');
         if (d === 0) rules.push('Tip: open How to Play from the pause menu (Esc) any time.');
         return {
           kicker: D.actOf(d) + ' ·',
@@ -124,10 +131,28 @@
         const raised = d > 0 ? Math.round((pct / prev - 1) * 100) : 0;
         const amount = this.quota(d, g);
         const who = D.boss(S);
-        const memo = d === 0
+        let memo = d === 0
           ? `${who}: Desk floor set at ${B.fmt.money(amount)}. This is the minimum, not the target.`
           : `${who}: New ${labels[D.actIndex(d)].toLowerCase()}: ${B.fmt.money(amount)}. ${raised > 0 ? `Up ${raised}% from yesterday.` : 'No relief from yesterday.'} Volatility is not an excuse.`;
+        const remaining = QUOTA_STRIKE_LIMIT - S.quotaStrikes;
+        if (remaining === 1) memo += ' FINAL WARNING: one more miss ends your career.';
+        else if (remaining === 2) memo += ' WARNING: only two misses remain.';
         return { label: labels[D.actIndex(d)], pct, previousPct: prev, raised, memo };
+      },
+
+      bearishExposure(g) {
+        const eq = Math.max(1, g.broker.equity());
+        let notional = 0;
+        for (const sym of CASCADE_NAMES) {
+          const qty = g.broker.posQty(sym);
+          if (qty < 0 && g.market.bySym[sym]) notional += Math.abs(qty) * g.market.bySym[sym].last;
+        }
+        for (const o of g.broker.opts || []) {
+          if (o.type === 'P' && CASCADE_NAMES.indexOf(o.sym) >= 0 && g.market.bySym[o.sym]) {
+            notional += Math.abs(o.qty) * 100 * g.market.bySym[o.sym].last;
+          }
+        }
+        return notional / eq;
       },
 
       stressCarry(d) { return d > 0 && d % 5 === 0 ? 0.08 : 0.15; },
@@ -292,10 +317,20 @@
           S.f.aiUncontained = true;
         }
         if (g.day === 25) {
-          S.f.shortBeforeD26 = CASCADE_NAMES.some((s) => g.broker.posQty(s) < 0)
-            || g.broker.opts.some((o) => CASCADE_NAMES.indexOf(o.sym) >= 0 && o.type === 'P');
+          S.falseDawnBear = { boundary: this.bearishExposure(g) >= 0.10, hits: 0, gaps: 0, maxGap: 0, samples: [] };
         }
-        if (g.day === 48 && S.f.shortBeforeD26 && r.equity < capital) S.f.rightTooEarly = true;
+        if (g.day >= 41 && g.day <= 48) {
+          S.falseDawnBear = S.falseDawnBear || { boundary: false, hits: 0, gaps: 0, maxGap: 0, samples: [] };
+          const ratio = this.bearishExposure(g);
+          const held = ratio >= 0.10;
+          S.falseDawnBear.samples.push({ day: g.day, ratio: +ratio.toFixed(4), held });
+          if (held) { S.falseDawnBear.hits++; S.falseDawnBear.gaps = 0; }
+          else { S.falseDawnBear.gaps++; S.falseDawnBear.maxGap = Math.max(S.falseDawnBear.maxGap, S.falseDawnBear.gaps); }
+        }
+        if (g.day === 48) {
+          const x = S.falseDawnBear;
+          S.f.rightTooEarly = !!(x && x.boundary && x.hits >= 6 && x.maxGap <= 2 && r.equity < capital);
+        }
         if (r.quota > 0) {
           if (r.quotaMet) {
             S.missStreak = 0;
@@ -307,7 +342,9 @@
               S.quotaLedger.sort((a, b) => a.day - b.day);
             }
             S.quotaStrikes = S.quotaLedger.length;
-            notes.push(`<b>Missed quota. Career strike ${S.quotaStrikes} of ${QUOTA_STRIKE_LIMIT}.</b> ${D.boss(S)} logged the miss.`);
+            const left = QUOTA_STRIKE_LIMIT - S.quotaStrikes;
+            const warning = left === 1 ? ' FINAL WARNING: one more miss ends your career.' : left === 2 ? ' Only two misses remain.' : '';
+            notes.push(`<b>Missed quota. Career strike ${S.quotaStrikes} of ${QUOTA_STRIKE_LIMIT}.</b>${warning} ${D.boss(S)} logged the miss.`);
           }
         }
         if (r.earlyEnd === 'wiped' || r.equity < capital * 0.1) return { notes, ending: this.buildEnding(g, 'wiped') };
@@ -371,6 +408,7 @@
 
       serialize() { return { S }; }
     };
+    mode.strikeLimit = QUOTA_STRIKE_LIMIT;
     return mode;
   };
 

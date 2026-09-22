@@ -146,6 +146,52 @@
     assert(b.orders.length === 0, 'OCO cancelled');
   });
 
+  test('Bracket validation rejects impossible protection values', () => {
+    assert(!B.Broker.validateBracket(100.1, 10).ok, 'stop over 95% accepted');
+    assert(!B.Broker.validateBracket(5, 500.1).ok, 'take-profit over 500% accepted');
+    assert(!B.Broker.validateBracket(-1, 5).ok, 'negative stop accepted');
+    assert(B.Broker.validateBracket(95, 500).ok, 'documented maxima rejected');
+  });
+
+  test('Programmatic bracket attachment clamps long and short triggers', () => {
+    const m = mkMarket(); const b = mkBroker(m);
+    m.bySym.BLWT.last = 100; m.bySym.BLWT.spread = 1e-12;
+    b.marketOrder('BLWT', 100); b.attachBracket('BLWT', 500, 900);
+    const longStop = b.orders.find((o) => o.label === 'STOP-LOSS');
+    assert(longStop.price === 5 && longStop.price > 0, 'long stop was not clamped to 95%');
+    b.flattenAll('TEST', true);
+    b.marketOrder('BLWT', -100); b.attachBracket('BLWT', 500, 900);
+    const shortStop = b.orders.find((o) => o.label === 'STOP-LOSS');
+    assert(shortStop.price === 195, 'short stop uses wrong side or clamp');
+  });
+
+  test('Resting limit and stop fills reattach saved protection', () => {
+    for (const type of ['limit', 'stop']) {
+      const m = mkMarket(); const b = mkBroker(m);
+      m.bySym.BLWT.last = 100; m.bySym.BLWT.spread = 1e-12;
+      const r = b.placeOrder('BLWT', 100, type, type === 'limit' ? 101 : 99, { protect: { sl: 5, tp: 12 } });
+      assert(r.ok && r.order.protect.sl === 5, type + ' lost metadata at placement');
+      const done = b.processOrders();
+      assert(done.length === 1 && done[0].res.ok, type + ' did not fill');
+      assert(b.orders.filter((o) => o.bracket).length === 2, type + ' did not attach OCO bracket');
+    }
+  });
+
+  test('Protection survives order reload and sizes to the filled position', () => {
+    const m = mkMarket(); const b = mkBroker(m);
+    m.bySym.BLWT.last = 100; m.bySym.BLWT.spread = 1e-12;
+    b.marketOrder('BLWT', 40);
+    b.placeOrder('BLWT', 60, 'limit', 101, { protect: { sl: 7, tp: 15 } });
+    const saved = JSON.parse(JSON.stringify(b.serializeFull()));
+    const b2 = mkBroker(m); b2.restore(saved);
+    assert(b2.orders[0].protect.tp === 15, 'working protection did not reload');
+    b2.processOrders();
+    const brackets = b2.orders.filter((o) => o.bracket);
+    assert(brackets.length === 2 && brackets.every((o) => Math.abs(o.qty) === 100), 'bracket did not cover full resulting position');
+    b2.cancelOrder(brackets[0].id);
+    assert(b2.orders.length === 1, 'explicit bracket cancellation failed');
+  });
+
   test('Option pricing sanity (put-call parity, monotonic in strike)', () => {
     const S = 100, T = 0.1, v = 0.3;
     const c = B.Options.bs(S, 100, T, v, 'C'), p = B.Options.bs(S, 100, T, v, 'P');
@@ -398,9 +444,9 @@
     const news = B.Scenes.news({ day: 60, brief: { title: 'Orphan Monday', kicker: 'IV · RECKONING', feed: [] } });
     const phone = B.Scenes.phone({ day: 60, brief: { feed: [{ source: 'WIRE', title: 'Before the bell' }] } });
     const weekend = B.Scenes.weekend({ day: 54 });
-    assert(news.length >= 3 && news.every((beat) => beat.view.w === 480 && beat.view.h === 270), 'news boards are not high resolution');
-    assert(phone.length === 2 && phone.every((beat) => beat.view.w === 480), 'phone handoff is missing');
-    assert(weekend.length === 3 && weekend.every((beat) => beat.view.h === 270), 'weekend punctuation is missing');
+    assert(news.length >= 3 && news.every((beat) => beat.view.w === 640 && beat.view.h === 360), 'news boards are not native 640x360');
+    assert(phone.length === 2 && phone.every((beat) => beat.view.w === 640), 'phone handoff is missing');
+    assert(weekend.length === 3 && weekend.every((beat) => beat.view.h === 360), 'weekend punctuation is missing');
   });
 
   test('Version 2 story saves migrate to matching Patch 3 beats', () => {
@@ -409,6 +455,14 @@
     assert(m.v === 3 && m.day === 55, 'day 14 should map to session 56');
     assert(m.mode.S.choices.c8 === 'whip' && m.mode.S.choices.c9 === 'quiet', 'choice ids migrated');
     assert(m.history[0].day === 51 && m.mode.S.log[0].day === 55, 'history/log days migrated');
+  });
+
+  test('Version 2 mid-session saves rewind honestly to the mapped bell', () => {
+    const old = { v:2, kind:'story', day:3, inDay:true, dayOpen:{fearLevel:20,px:{}}, broker:{cash:250000,pos:{},opts:[],orders:[]}, stress:{}, mode:{S:B.StoryMode.freshState(250000)}, history:[] };
+    const migrated = B.Save.migrateV2Snapshot(old);
+    assert(migrated.day === 12 && migrated.inDay === false, 'incompatible mid-day save did not rewind');
+    assert(migrated.migrationNotice && migrated.mode.S.f.v2RewoundToBell, 'rewind was not disclosed');
+    assert(migrated.market === migrated.dayOpen, 'opening tape was not promoted to a between-day snapshot');
   });
 
   test('A trading day is three real minutes by default', () => {
@@ -560,7 +614,7 @@
     assert(ids.map((id) => D.CHOICES[id].day).join(',') === '9,13,19,28,34,36,37,54,57,59', 'decision chronology drifted');
   });
 
-  test('Quota misses are cumulative, logged once, and terminate on strike twelve', () => {
+  test('Quota misses are cumulative, logged once, and terminate at the configured limit', () => {
     const mode = B.StoryMode();
     const S = mode.S;
     const g = {
@@ -579,19 +633,20 @@
       g.history.push({ day, pnl: quotaMet ? 2500 : -100, quotaMet });
       return mode.onDayEnd(g, report(day, quotaMet));
     };
-    for (let i = 0; i < 11; i++) {
-      const verdict = close(i * 2, false);
+    const limit = B.StoryMode.QUOTA_STRIKE_LIMIT;
+    assert(limit === 30, 'calibrated strike limit drifted');
+    for (let i = 0; i < limit - 1; i++) {
+      const verdict = close(i, false);
       assert(!verdict.ending, `fired early on strike ${i + 1}`);
-      close(i * 2 + 1, true);
       assert(S.quotaStrikes === i + 1, 'a met quota erased cumulative strikes');
     }
     // Reprocessing one closing report must not create a duplicate strike.
-    g.day = 20;
-    mode.onDayEnd(g, report(20, false));
-    assert(S.quotaStrikes === 11 && S.quotaLedger.length === 11, 'duplicate strike was logged');
-    const finalVerdict = close(22, false);
-    assert(S.quotaStrikes === 12, 'twelfth strike not recorded');
-    assert(finalVerdict.ending && finalVerdict.ending.id === 'fired', 'twelfth strike did not terminate the career');
+    g.day = limit - 2;
+    mode.onDayEnd(g, report(limit - 2, false));
+    assert(S.quotaStrikes === limit - 1 && S.quotaLedger.length === limit - 1, 'duplicate strike was logged');
+    const finalVerdict = close(limit - 1, false);
+    assert(S.quotaStrikes === limit, 'final strike not recorded');
+    assert(finalVerdict.ending && finalVerdict.ending.id === 'fired', 'configured strike limit did not terminate the career');
   });
 
   test('Quota strike ledger rebuilds from legacy save history', () => {
@@ -606,6 +661,30 @@
     ]);
     assert(mode.S.quotaStrikes === 2, 'legacy misses were not deduplicated by session');
     assert(mode.S.quotaLedger[0].day === 0 && mode.S.quotaLedger[1].day === 2, 'ledger order is wrong');
+  });
+
+  test('Right Too Early requires meaningful repeated false-dawn exposure', () => {
+    function run(exposedDays) {
+      const mode = B.StoryMode(), S = mode.S;
+      const g = { day:0, history:[], indexStart:500, market:{bySym:{INDX:{last:500},BSTN:{last:100},HLST:{last:100},RDGW:{last:100},FRLN:{last:100},AMVL:{last:100}}},
+        broker:{ equity:()=>200000, opts:[], posQty:(sym)=>sym==='BSTN' && exposedDays.has(g.day)?-300:0 } };
+      const r = (day) => ({day,date:'x',pnl:0,equity:200000,quota:0,quotaMet:true,earlyEnd:null});
+      for (const day of [25,41,42,43,44,45,46,47,48]) { g.day=day; mode.onDayEnd(g,r(day)); }
+      return S.f.rightTooEarly;
+    }
+    assert(run(new Set([25,41,42,43,44,45,46])) === true, 'six repeated sessions should qualify');
+    assert(!run(new Set([25])), 'boundary-only loophole still qualifies');
+    assert(!run(new Set([41,42,43,44,45,46,47,48])), 'no boundary exposure qualifies');
+  });
+
+  test('Final decision priority is explicit and Nobody is not a meter fallback', () => {
+    const base = () => ({ S:B.StoryMode.freshState(250000), wealth:500000, start:250000, reason:'final', days:61, quotaMet:40 });
+    let c=base(); c.S.f.pulledPlug=true; c.S.f.leftStack=true; c.S.f.aiUncontained=true;
+    assert(B.StoryEndings.resolve(c).id==='exit','Pull the Plug lost priority');
+    c=base(); c.S.f.leftStack=true; c.S.f.aiUncontained=true; c.S.f.fled=true;
+    assert(B.StoryEndings.resolve(c).id==='nobody','Leave It Running lost direct consequence');
+    c=base(); c.S.f.aiUncontained=true; c.S.anomalies=1; c.S.m.stability=10;
+    assert(B.StoryEndings.resolve(c).id!=='nobody','Nobody still acts as a broad fallback');
   });
 
   test('Story graph: every chronological decision path resolves safely', () => {
@@ -659,20 +738,20 @@
     const cases = {
       wiped: (c) => { c.reason = 'wiped'; c.wealth = 10000; },
       fired: (c) => { c.reason = 'fired'; },
-      nobody: (c,S) => { S.f.aiUncontained = true; S.anomalies = 6; },
+      nobody: (c,S) => { S.f.aiUncontained = true; S.f.leftStack = true; S.anomalies = 6; },
       perp: (c,S) => { S.f.fraud = true; S.m.heat = 72; },
       'fall-guy': (c,S) => { S.f.externalFraud = true; S.m.heat = 58; },
       master: (c,S) => { S.f.fled = true; },
       whistle: (c,S) => { S.m.integrity = 75; S.f.reported = true; },
-      cassandra: (c,S) => { S.m.integrity = 90; S.m.influence = 10; S.m.stability = 28; },
+      cassandra: (c,S) => { S.m.integrity = 78; S.m.influence = 18; S.m.stability = 42; },
       revolving: (c,S) => { S.f.treasury = true; },
-      acquirer: (c,S) => { S.f.letFail = true; S.m.firm = 80; S.m.influence = 45; },
-      ward: (c,S) => { S.f.bailout = true; S.m.stability = 42; S.m.firm = 30; },
-      clawback: (c,S) => { c.wealth = 550000; S.f.dumped = true; S.m.anger = 65; },
+      acquirer: (c,S) => { S.f.letFail = true; S.m.firm = 68; S.m.influence = 34; },
+      ward: (c,S) => { S.f.bailout = true; S.m.stability = 54; S.m.firm = 30; },
+      clawback: (c,S) => { c.wealth = 550000; S.f.dumped = true; S.m.anger = 40; },
       'right-early': (c,S) => { S.f.rightTooEarly = true; },
       'lost-decade': (c,S) => { S.f.regulation = true; S.f.billPassed = false; S.m.stability = 40; },
       fund: (c,S) => { c.wealth = 1125000; S.m.heat = 12; S.rel.imani = 70; },
-      'everything-rally': (c,S) => { c.wealth = 550000; S.f.bailout = true; S.f.billPassed = true; S.m.stability = 35; S.m.firm = 60; },
+      'everything-rally': (c,S) => { c.wealth = 550000; S.f.bailout = true; S.f.billPassed = true; S.m.stability = 50; S.m.firm = 60; },
       depression: (c,S) => { S.m.stability = 22; },
       soft: (c,S) => { S.m.stability = 60; S.f.regulation = true; S.f.billPassed = true; },
       quiet: (c,S) => { c.wealth = 800000; S.m.heat = 12; S.rel.imani = 40; },
