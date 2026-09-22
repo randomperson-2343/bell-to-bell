@@ -2,7 +2,7 @@
 // pixel canvas, types the caption underneath, and leaves room for silent beats.
 //
 // Skippable at any moment with any key or a click — a game you replay for its
-// endings cannot make you sit through the same elevator ride fifteen times.
+// endings cannot make you sit through the same elevator ride sixty-one times.
 // Settings can turn cinematics down to a single static card, or off entirely.
 (function (B) {
   'use strict';

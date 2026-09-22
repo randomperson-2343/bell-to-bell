@@ -97,7 +97,7 @@
       this.dayOpen = { px: {}, fearLevel: m.fearLevel };
       for (const tk of m.tickers) this.dayOpen.px[tk.sym] = tk.prevClose;
       b.startDay();
-      this.stress.startDay();
+      this.stress.startDay(this.mode.stressCarry ? this.mode.stressCarry(this.day) : undefined);
       this.lock = null;
       this.warned = {};
       this.earlyEnd = null;
@@ -452,7 +452,7 @@
       const realized = trades.map((x) => x.realized);
       const report = {
         day: this.day,
-        date: B.Calendar.dayInfo(this.day).long,
+        date: this.mode.kind === 'story' && B.Calendar.storyLabel ? B.Calendar.storyLabel(this.day) : B.Calendar.dayInfo(this.day).long,
         pnl, equity: eq, start: b.dayStartEquity,
         quota: this.quota,
         quotaMet: this.quota <= 0 || pnl >= this.quota,

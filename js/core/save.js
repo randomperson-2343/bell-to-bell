@@ -13,7 +13,7 @@
   'use strict';
 
   const SLOTS = 6;
-  const VERSION = 2;
+  const VERSION = 3;
   const IDX = 'saves:index';
   const key = (i) => 'save:slot:' + i;
 
@@ -68,8 +68,35 @@
 
     read(i) {
       const d = B.storage.get(key(i), null);
-      if (!d || d.v !== VERSION) return null;
-      return d;
+      if (!d) return null;
+      if (d.v === VERSION) return d;
+      if (d.v === 2) return this.migrateV2Snapshot(d);
+      return null;
+    },
+
+    migrateV2Snapshot(d) {
+      const out = JSON.parse(JSON.stringify(d));
+      out.v = VERSION;
+      if (out.kind !== 'story') return out;
+      // Map the shipped fifteen beats to the same beats in the expanded story.
+      const map = [0, 3, 8, 12, 15, 18, 23, 26, 30, 33, 36, 39, 51, 55, 60];
+      out.day = map[Math.max(0, Math.min(14, out.day || 0))];
+      out.history = (out.history || []).map((h) => Object.assign({}, h, { day: map[Math.max(0, Math.min(14, h.day || 0))] }));
+      const S = out.mode && out.mode.S;
+      if (S) {
+        S.choices = S.choices || {};
+        if (S.choices.c8 != null) { S.choices.c9 = S.choices.c8; delete S.choices.c8; }
+        if (S.choices.c7 != null) { S.choices.c8 = S.choices.c7; delete S.choices.c7; }
+        S.log = (S.log || []).map((x) => Object.assign({}, x, { day: map[Math.max(0, Math.min(14, x.day || 0))] }));
+        S.anomalies = S.anomalies || 0;
+        S.openedAnomalies = S.openedAnomalies || {};
+        S.feedsSkipped = S.feedsSkipped || 0;
+        S.feedOpenedDays = S.feedOpenedDays || {};
+        S.feedSkippedDays = S.feedSkippedDays || {};
+        S.f = S.f || {};
+        S.f.migratedPatch3 = true;
+      }
+      return out;
     },
 
     clear(i) {

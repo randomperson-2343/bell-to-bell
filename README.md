@@ -4,7 +4,9 @@ A stressful present-day Wall Street simulator rendered in timeless 16-bit pixel 
 
 You sit at a desk on the 41st floor with two CRT monitors: the left one trades, the right one is the phone, the newswire and the rumour mill. A trading day takes about **three real minutes**.
 
-- **Career**: fifteen trading days. A compute bubble built on **CASCADE notes** — datacenter leases stapled to consumer loans and stamped AAA — is about to come apart, while a conflict you only ever see on the tape takes the power grid with it. Eight decisions reshape the market itself, change the rules you trade under, and send you to one of **11 endings**.
+- **Career**: sixty-one trading sessions across thirteen calendar weeks. A compute bubble built on **CASCADE notes** — datacenter leases stapled to consumer loans and stamped AAA — comes apart while a conflict you only ever see on the tape constrains the power grid. Ten decisions reshape the market itself, change the rules you trade under, and send you to one of **22 endings**.
+- Every session begins with a skippable subway-phone feed. Twelve unmarked anomalies are hidden in public information; opening them changes what is possible on the final weekend.
+- The story uses two false dawns: an eight-session rally that punishes correct shorts, then one violent relief session after the rescue passes before the worst selloff of the campaign.
 - **Endless**: random market regimes and crash days, with sliders for capital, volatility, leverage, fake rumours, crash odds, fees, margin strictness, stress and interruptions. You pick your own win and lose conditions, and each set of settings has its own local leaderboard.
 
 Every company, person, instrument, agency, country and event in this game is invented. Any resemblance to a real firm, person or event is coincidence, not intention — and a test enforces it (see below).
@@ -66,7 +68,7 @@ js/stress.js            stress meter
 js/interrupts.js        phone calls, client orders, mid-session decisions, tip outcomes
 js/game.js              day lifecycle, player actions, snapshot/restore
 js/ui/                  chart, order ticket, HUD, screens, save slots, debug overlay
-js/modes/story/         15 days of content, 8 decisions, story engine, 11 endings
+js/modes/story/         61 sessions, pre-open feeds, 10 decisions, story engine, 22 endings
 js/modes/endless/       presets, config screen, regimes, end conditions, leaderboard
 js/tests/               test suite + headless runners
 ```
@@ -84,7 +86,9 @@ js/tests/               test suite + headless runners
 Alongside the usual engine tests, the suite checks that:
 
 - a **mid-day save restores bit-for-bit** — snapshot at 11:17, rebuild, and every price, position, working order and the equity match, then stay matched all the way to the bell;
-- **every ending is reachable** through some path of the eight decisions (the graph walk explores ~39,000 paths);
+- **all 22 ending gates are reachable** without priority collisions, while the chronological decision walk explores more than 59,000 valid paths;
+- the **calendar arithmetic holds** at twelve full trading weeks plus one final Monday, with every decision and anomaly on its specified session;
+- the **false dawn and collapse arithmetic holds**: no rally gap above 0.4%, no rally session above 2.2%, then -9%, +5%, -4%, -7% and -11%;
 - **no real-world company, person or event** appears in any string the game can print, checked with word-boundary matching against a denylist;
 - the **pacing holds**: the quota curve rises every day, ordinary panic stays under four real seconds, a day is three real minutes, and tips pay about a third of the time.
 

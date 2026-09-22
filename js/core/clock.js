@@ -3,20 +3,17 @@
   'use strict';
   const DOW = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
   const DOWL = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
-  const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  const MONL = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-
   B.Calendar = {
+    storyLabel(d) {
+      return `Week ${Math.floor(d / 5) + 1} · ${DOWL[d % 5]}`;
+    },
     dayInfo(d) {
       const week = Math.floor(d / 5), dow = d % 5;
-      // 2029 is used only for its weekday layout. The fiction intentionally omits a year.
-      const date = new Date(2029, 9, 1 + week * 7 + dow);
-      const m = date.getMonth(), dd = date.getDate();
       return {
         dow,
-        short: `${MON[m]} ${dd}`,
-        label: `${DOW[dow]}, ${MON[m]} ${dd}`,
-        long: `${DOWL[dow]}, ${MONL[m]} ${dd}`
+        short: `W${week + 1} ${DOW[dow]}`,
+        label: `Week ${week + 1} · ${DOW[dow]}`,
+        long: `Week ${week + 1} · ${DOWL[dow]}`
       };
     },
     fmtTime(t, withSec) {
