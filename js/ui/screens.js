@@ -114,11 +114,20 @@
         <strong>${B.esc(item.title || 'Before the bell')}</strong>
         <p hidden>${B.esc(item.text || '')}</p>
       </button>`).join('');
-      const phone = feed ? `<section class="preopen-phone"><div class="preopen-top"><span>PRE-OPEN FEED</span>${b.anomalyCount == null ? '' : `<b>ANOMALIES: ${b.anomalyCount}</b>`}</div><div class="preopen-scroll">${feed}</div></section>` : '';
+      const phone = feed ? `<section class="preopen-device" aria-label="Pre-open phone feed">
+        <div class="preopen-speaker" aria-hidden="true"></div>
+        <div class="preopen-screen">
+          <div class="preopen-status"><span>6:38</span><i></i><span>LTE&nbsp;▮▮▮</span></div>
+          <div class="preopen-top"><span>PRE-OPEN</span>${b.anomalyCount == null ? '<b>NOTIFICATIONS</b>' : `<b>ANOMALIES: ${b.anomalyCount}</b>`}</div>
+          <div class="preopen-scroll">${feed}</div>
+        </div>
+        <div class="preopen-home" aria-hidden="true"></div>
+      </section>` : '';
       const stats = `<div class="stats">
         <div class="stat"><div class="l">Equity</div><div class="v">${F.money(g.broker.equity())}</div></div>
         <div class="stat quota-stat"><div class="l">${b.quotaMeta ? B.esc(b.quotaMeta.label) : 'Today\'s quota'}</div><div class="v">${b.quota > 0 ? F.money(b.quota) : 'none'}</div>${b.quotaMeta ? `<div class="quota-delta">${(b.quotaMeta.pct * 100).toFixed(2)}% of book${b.quotaMeta.raised ? ` · ↑ ${b.quotaMeta.raised}% overnight` : ''}</div>` : ''}</div>
         <div class="stat"><div class="l">Open positions</div><div class="v">${Object.keys(g.broker.pos).length + g.broker.opts.length}</div></div>
+        ${b.quotaStrikes ? `<div class="stat strike-stat"><div class="l">Career strikes</div><div class="v">${b.quotaStrikes.count} / ${b.quotaStrikes.limit}</div></div>` : ''}
       </div>`;
       const mandate = b.quotaMeta ? `<div class="quota-order"><span>DESK MANDATE</span><p>${B.esc(b.quotaMeta.memo)}</p></div>` : '';
       B.Music.play('brief');
@@ -126,7 +135,7 @@
       const el = this.modal({
         kicker: `${b.kicker || ''} ${dateLabel}`,
         title: b.title,
-        body: phone + stats + mandate + (b.html || '') + rules,
+        body: `<div class="briefing-layout">${phone}<div class="briefing-dossier">${stats + mandate + (b.html || '') + rules}</div></div>`,
         wide: true,
         buttons: [
           { label: 'Menu', onClick: () => this.pauseFromBriefing(g, b, onGo), cls: 'ghost' },
@@ -142,6 +151,7 @@
         ]
       });
       el.querySelectorAll('[data-feed-item]').forEach((node) => node.addEventListener('click', () => {
+        B.SFX.click();
         const i = +node.dataset.feedItem;
         const item = b.feed[i];
         const detail = node.querySelector('p');

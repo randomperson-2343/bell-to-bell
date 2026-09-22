@@ -76,7 +76,8 @@
     showBriefing() {
       const b = this.mode.briefing(this.day, this);
       const open = () => B.Screens.briefing(this, b, () => this.enterOffice(b));
-      if (b.cinematic !== false) B.Cinematic.play('news', { brief: b, day: this.day, game: this }, open);
+      const phone = () => B.Cinematic.play('phone', { brief: b, day: this.day, game: this }, open);
+      if (b.cinematic !== false) B.Cinematic.play('news', { brief: b, day: this.day, game: this }, phone);
       else open();
     }
 
@@ -475,9 +476,14 @@
           if (verdict.ending) return this.finish(verdict.ending);
           this.mode.afterDay(this, (ending) => {
             if (ending) return this.finish(ending);
-            this.day++;
-            this.autosave();
-            this.showBriefing();
+            const advance = () => {
+              this.day++;
+              this.autosave();
+              this.showBriefing();
+            };
+            const weekend = this.mode.kind === 'story' && this.day % 5 === 4 && this.day < this.mode.lastDay;
+            if (weekend) B.Cinematic.play('weekend', { day: this.day, game: this }, advance);
+            else advance();
           });
         });
       });
@@ -567,6 +573,7 @@
       this.day = s.day;
       this.dayLength = s.dayLength || this.dayLength;
       this.history = s.history || [];
+      if (this.mode.reconcileQuotaStrikes) this.mode.reconcileQuotaStrikes(this.history);
       this.indexStart = s.indexStart;
       this.startCapital = s.startCapital || this.startCapital;
       if (s.inDay) {

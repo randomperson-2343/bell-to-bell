@@ -81,9 +81,9 @@
     },
 
     draw() {
-      const V = B.Scenes.V;
-      const { ctx } = X.fit(this.canvas, V.w, V.h);
       const beat = this.beats[this.i];
+      const V = beat.view || B.Scenes.V;
+      const { ctx } = X.fit(this.canvas, V.w, V.h);
       const p = B.clamp(this.t / beat.dur, 0, 1);
       ctx.save();
       try { beat.draw(ctx, V, p, this.optsOf(beat)); } catch (e) { X.rect(ctx, 0, 0, V.w, V.h, P.ink); }
@@ -91,14 +91,16 @@
 
       // Hard letterbox edges make every composition feel authored rather than
       // like a full-screen gameplay canvas.
-      X.rect(ctx, 0, 0, V.w, 6, P.ink);
-      X.rect(ctx, 0, V.h - 6, V.w, 6, P.ink);
+      const unit = V.w / 320;
+      X.rect(ctx, 0, 0, V.w, Math.round(6 * unit), P.ink);
+      X.rect(ctx, 0, V.h - Math.round(6 * unit), V.w, Math.round(6 * unit), P.ink);
 
       // caption box, typewritten
       if (beat.line) {
-        const bw = V.w - 24, bx = 12, bh = 34, by = V.h - bh - 8;
+        const pad = Math.round(12 * unit);
+        const bw = V.w - pad * 2, bx = pad, bh = Math.round(34 * unit), by = V.h - bh - Math.round(8 * unit);
         X.box(ctx, bx, by, bw, bh);
-        const lines = X.wrap(beat.line, bw - 16).slice(0, 2);
+        const lines = X.wrap(beat.line, bw - Math.round(16 * unit)).slice(0, 2);
         const total = lines.join(' ').length;
         const delay = beat.captionDelay == null ? 0.28 : beat.captionDelay;
         const shown = Math.ceil(total * B.clamp((this.t - delay) / Math.min(1.35, beat.dur * 0.58), 0, 1));
@@ -106,7 +108,7 @@
         lines.forEach((ln, k) => {
           const take = B.clamp(shown - used, 0, ln.length);
           used += ln.length;
-          if (take > 0) X.text(ctx, ln.slice(0, take), bx + 8, by + 9 + k * 10, P.bone);
+          if (take > 0) X.text(ctx, ln.slice(0, take), bx + Math.round(8 * unit), by + Math.round(9 * unit) + k * Math.round(10 * unit), P.bone);
         });
       }
       // first/last beat fade

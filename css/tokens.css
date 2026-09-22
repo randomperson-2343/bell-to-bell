@@ -69,9 +69,10 @@
   --institution: var(--c-sky);
 
   /* --- type --- */
-  --pixel: "Silkscreen", "Press Start 2P", monospace;
+  --pixel: "Pixelify Sans", "Cascadia Mono", monospace;
   --mono: "IBM Plex Mono", "Cascadia Mono", "SF Mono", Consolas, Menlo, monospace;
-  --ui: "IBM Plex Mono", "Cascadia Mono", Consolas, monospace;
+  --ui: "IBM Plex Sans Condensed", "Arial Narrow", sans-serif;
+  --narrative: "IBM Plex Sans Condensed", "Arial Narrow", sans-serif;
   --sans: var(--ui);
 
   /* --- pixel grid: everything snaps to 4px --- */

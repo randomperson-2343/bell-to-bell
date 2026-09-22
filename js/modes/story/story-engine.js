@@ -2,6 +2,7 @@
 (function (B) {
   'use strict';
   const D = B.StoryData;
+  const QUOTA_STRIKE_LIMIT = 12;
   // Sectors outside the CASCADE story. Background noise lives here so every day
   // stays tradable even when the scripted drama is pointed somewhere else.
   const SAFE_SECTORS = ['retail', 'haven', 'defense', 'power'];
@@ -12,7 +13,7 @@
     return {
       m: { integrity: 50, heat: 10, influence: 20, firm: 60, stability: 60, anger: 20 },
       rel: { imani: 60, sana: 20, thorne: 30, kroll: 50, venn: 25, perry: 45, greta: 20 },
-      f: {}, choices: {}, log: [], pending: [], missStreak: 0, startCapital: capital, complianceWarned: false,
+      f: {}, choices: {}, log: [], pending: [], missStreak: 0, quotaStrikes: 0, quotaLedger: [], startCapital: capital, complianceWarned: false,
       anomalies: 0, openedAnomalies: {}, feedsSkipped: 0, feedOpenedDays: {}, feedSkippedDays: {}
     };
   }
@@ -41,6 +42,10 @@
     S.feedsSkipped = S.feedsSkipped || 0;
     S.feedOpenedDays = S.feedOpenedDays || {};
     S.feedSkippedDays = S.feedSkippedDays || {};
+    S.quotaLedger = Array.isArray(S.quotaLedger) ? S.quotaLedger : [];
+    // Legacy saves only knew the current consecutive streak. Preserve that
+    // value until Game.restore can rebuild the cumulative ledger from history.
+    if (!Number.isFinite(S.quotaStrikes)) S.quotaStrikes = Math.max(0, S.missStreak | 0);
 
     const mode = {
       kind: 'story',
@@ -67,7 +72,7 @@
         if (r.maxLev !== 4) rules.push(`Leverage limit: ${r.maxLev}x intraday / ${r.maxLev / 2}x overnight`);
         if (r.shortBan.length) rules.push('EMERGENCY ORDER: short selling of financial stocks is banned');
         if (S.m.heat >= 50) rules.push('Compliance is watching you. Examiners may visit your desk.');
-        if (S.missStreak > 0) rules.push(`Missed-quota strikes: ${S.missStreak}/3`);
+        if (S.quotaStrikes > 0) rules.push(`Career quota strikes: ${S.quotaStrikes}/${QUOTA_STRIKE_LIMIT}`);
         if (d === 0) rules.push('Tip: open How to Play from the pause menu (Esc) any time.');
         return {
           kicker: D.actOf(d) + ' ·',
@@ -75,6 +80,7 @@
           html: day.brief(S).filter(Boolean).map((p) => `<p>${p}</p>`).join(''),
           feed: day.feed || [],
           anomalyCount: d >= 15 ? S.anomalies : null,
+          quotaStrikes: { count: S.quotaStrikes, limit: QUOTA_STRIKE_LIMIT },
           quota: this.quota(d, g),
           quotaMeta: qm,
           rules
@@ -125,6 +131,17 @@
       },
 
       stressCarry(d) { return d > 0 && d % 5 === 0 ? 0.08 : 0.15; },
+      reconcileQuotaStrikes(history) {
+        const byDay = {};
+        for (const entry of S.quotaLedger) if (entry && Number.isFinite(entry.day)) byDay[entry.day] = entry;
+        for (const row of history || []) {
+          if (!row || row.quotaMet !== false || byDay[row.day]) continue;
+          byDay[row.day] = { day: row.day, pnl: row.pnl || 0, migrated: true };
+        }
+        S.quotaLedger = Object.keys(byDay).map((k) => byDay[k]).sort((a, b) => a.day - b.day);
+        S.quotaStrikes = S.quotaLedger.length;
+        return S.quotaStrikes;
+      },
       onFeedOpen(g, item) {
         S.feedOpenedDays[g.day] = true;
         if (!item || !item.anomalyId || S.openedAnomalies[item.anomalyId]) return;
@@ -282,16 +299,19 @@
         if (r.quota > 0) {
           if (r.quotaMet) {
             S.missStreak = 0;
-            if (!S.f.defected) D.adj(S, {}, { kroll: 3 });
             notes.push(`${D.boss(S)}: "Quota met. Again tomorrow."`);
           } else {
             S.missStreak++;
-            if (!S.f.defected) D.adj(S, {}, { kroll: -8 });
-            notes.push(`<b>Missed quota. Strike ${S.missStreak} of 3.</b> ${D.boss(S)} is not happy.`);
+            if (!S.quotaLedger.some((entry) => entry.day === g.day)) {
+              S.quotaLedger.push({ day: g.day, pnl: r.pnl, quota: r.quota, date: r.date });
+              S.quotaLedger.sort((a, b) => a.day - b.day);
+            }
+            S.quotaStrikes = S.quotaLedger.length;
+            notes.push(`<b>Missed quota. Career strike ${S.quotaStrikes} of ${QUOTA_STRIKE_LIMIT}.</b> ${D.boss(S)} logged the miss.`);
           }
         }
         if (r.earlyEnd === 'wiped' || r.equity < capital * 0.1) return { notes, ending: this.buildEnding(g, 'wiped') };
-        if (S.missStreak >= 3 || (!S.f.defected && S.rel.kroll <= 0)) return { notes, ending: this.buildEnding(g, 'fired') };
+        if (S.quotaStrikes >= QUOTA_STRIKE_LIMIT || (!S.f.defected && S.rel.kroll <= 0)) return { notes, ending: this.buildEnding(g, 'fired') };
         if (g.day % 5 === 4 && g.day < D.DAYS.length - 1) {
           const bases = { integrity: 50, heat: 10, influence: 20, firm: 60, stability: 60, anger: 20 };
           for (const k in bases) S.m[k] = B.clamp(S.m[k] + (bases[k] - S.m[k]) * 0.08, 0, 100);
@@ -356,4 +376,5 @@
 
   B.StoryMode.votePasses = votePasses;
   B.StoryMode.freshState = freshState;
+  B.StoryMode.QUOTA_STRIKE_LIMIT = QUOTA_STRIKE_LIMIT;
 })(window.BTB);
