@@ -18,7 +18,7 @@
       wealth: (c) => c.wealth
     },
     {
-      id: 'fired', icon: '&#128230;', title: 'Fired', hint: 'Missed quota three days running, or burned your boss completely.', lockedHint: 'Your boss is always counting.',
+      id: 'fired', icon: '&#128230;', title: 'Fired', hint: 'Reached the cumulative quota-strike limit, or burned your boss completely.', lockedHint: 'Your boss is always counting.',
       test: (c) => c.reason === 'fired',
       headline: 'Another Trader Shown the Door',
       deck: 'Firm cites "persistent underperformance" as the crisis claims another desk.',
@@ -30,7 +30,7 @@
     },
     {
       id: 'perp', icon: '&#128660;', title: 'Perp Walk', hint: 'Fraud or inside information, too much heat, and no deal with prosecutors.', lockedHint: 'Enforcement has a long memory and a good camera.',
-      test: (c) => (c.S.f.fraud || c.S.f.insider || c.S.f.raid) && c.S.m.heat >= 70 && !c.S.f.cooperated && !c.S.f.fled,
+      test: (c) => (c.S.f.fraud || c.S.f.insider || c.S.f.raid) && c.S.m.heat >= 48 && !c.S.f.cooperated && !c.S.f.fled,
       headline: 'Federal Agents Arrest Holloway Stern Trader at Dawn',
       deck: 'Handcuffed in front of cameras as prosecutors move to seize accounts.',
       story: (c) => [
@@ -80,7 +80,7 @@
     },
     {
       id: 'depression', icon: '&#127786;', title: 'The Long Downturn', hint: 'Systemic stability collapsed. Everyone lost.', lockedHint: 'What happens when nobody catches the fall?',
-      test: (c) => c.S.m.stability <= 25,
+      test: (c) => c.S.m.stability <= 32,
       headline: 'Nation Enters Worst Downturn in Ninety Years',
       deck: 'Unemployment hits 14% as credit freezes and datacenters go dark.',
       story: (c) => [

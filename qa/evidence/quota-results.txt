@@ -1,0 +1,38 @@
+conservative hit=44.3% strikes=34 thresholdAt=48 maxStreak=9 fifthConsecutive=9 equity=$1,693,498 reaches61=false
+human        hit=59.0% strikes=25 thresholdAt=- maxStreak=8 fifthConsecutive=10 equity=$3,206,150 reaches61=true
+foresight    hit=73.8% strikes=16 thresholdAt=- maxStreak=3 fifthConsecutive=- equity=$11,665,476 reaches61=true
+[
+  {
+    "strategy": "conservative",
+    "hitRate": 0.4426229508196721,
+    "strikes": 34,
+    "threshold": 30,
+    "firedAt": 48,
+    "maxMissStreak": 9,
+    "fifthConsecutiveAt": 9,
+    "finalEquity": 1693498,
+    "reached61": false
+  },
+  {
+    "strategy": "human",
+    "hitRate": 0.5901639344262295,
+    "strikes": 25,
+    "threshold": 30,
+    "firedAt": null,
+    "maxMissStreak": 8,
+    "fifthConsecutiveAt": 10,
+    "finalEquity": 3206150,
+    "reached61": true
+  },
+  {
+    "strategy": "foresight",
+    "hitRate": 0.7377049180327869,
+    "strikes": 16,
+    "threshold": 30,
+    "firedAt": null,
+    "maxMissStreak": 3,
+    "fifthConsecutiveAt": null,
+    "finalEquity": 11665476,
+    "reached61": true
+  }
+]

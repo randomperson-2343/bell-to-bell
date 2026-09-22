@@ -2,7 +2,17 @@
 (function (B) {
   'use strict';
   let OID = 1;
+  const SL_MAX = 95;
+  const TP_MAX = 500;
   const err = (msg) => ({ ok: false, msg });
+
+  function bracketValues(slPct, tpPct) {
+    const sl = Number(slPct) || 0;
+    const tp = Number(tpPct) || 0;
+    if (sl < 0 || sl > SL_MAX) return err(`Stop-loss must be between 0% and ${SL_MAX}%`);
+    if (tp < 0 || tp > TP_MAX) return err(`Take-profit must be between 0% and ${TP_MAX}%`);
+    return { ok: true, sl, tp };
+  }
 
   class Broker {
     constructor(o) {
@@ -160,11 +170,15 @@
     attachBracket(sym, slPct, tpPct) {
       this.orders = this.orders.filter((o) => !(o.bracket && o.sym === sym));
       const p = this.pos[sym];
-      if (!p) return;
+      if (!p) return { ok: false, msg: 'No position in ' + sym };
+      // Defense in depth for saves, debug calls and programmatic callers.
+      const sl = B.clamp(Number(slPct) || 0, 0, SL_MAX);
+      const tp = B.clamp(Number(tpPct) || 0, 0, TP_MAX);
       const side = Math.sign(p.qty);
       const group = 'g' + (OID++);
-      if (slPct > 0) this.orders.push({ id: OID++, sym, qty: -p.qty, type: 'stop', price: +(p.avg * (1 - side * slPct / 100)).toFixed(2), bracket: true, group, label: 'STOP-LOSS' });
-      if (tpPct > 0) this.orders.push({ id: OID++, sym, qty: -p.qty, type: 'limit', price: +(p.avg * (1 + side * tpPct / 100)).toFixed(2), bracket: true, group, label: 'TAKE-PROFIT' });
+      if (sl > 0) this.orders.push({ id: OID++, sym, qty: -p.qty, type: 'stop', price: +Math.max(0.01, p.avg * (1 - side * sl / 100)).toFixed(2), bracket: true, group, label: 'STOP-LOSS' });
+      if (tp > 0) this.orders.push({ id: OID++, sym, qty: -p.qty, type: 'limit', price: +Math.max(0.01, p.avg * (1 + side * tp / 100)).toFixed(2), bracket: true, group, label: 'TAKE-PROFIT' });
+      return { ok: true, sl, tp, group };
     }
 
     processOrders() {
@@ -191,6 +205,7 @@
         this.cancelOrder(o.id);
         if (res.ok) {
           if (o.group) this.orders = this.orders.filter((x) => x.group !== o.group);
+          if (!o.bracket && o.protect && this.posQty(o.sym)) this.attachBracket(o.sym, o.protect.sl, o.protect.tp);
           done.push({ order: o, res });
         } else {
           done.push({ order: o, res, rejected: true });
@@ -395,6 +410,10 @@
       if (o.rules) Object.assign(this.rules, o.rules);
     }
   }
+
+  Broker.SL_MAX = SL_MAX;
+  Broker.TP_MAX = TP_MAX;
+  Broker.validateBracket = bracketValues;
 
   B.Broker = Broker;
 })(window.BTB);

@@ -58,7 +58,9 @@
         meters = '<h4>Story meters</h4><div class="dbg-meters">' +
           Object.entries(S.m).map(([k, v]) => row(k, v)).join('') +
           Object.entries(S.rel).map(([k, v]) => row(k, v)).join('') +
-          `</div><div>flags: ${Object.keys(S.f).filter((k) => S.f[k]).join(', ') || 'none'}</div><div>vote passes: ${B.StoryMode.votePasses(S)}</div><div>miss streak: ${S.missStreak}</div>`;
+          `</div><div>flags: ${Object.keys(S.f).filter((k) => S.f[k]).join(', ') || 'none'}</div><div>vote passes: ${B.StoryMode.votePasses(S)}</div>` +
+          `<div>quota ledger: ${(S.quotaLedger || []).length}</div><div>quotaStrikes: ${S.quotaStrikes || 0}</div>` +
+          `<div>missStreak: ${S.missStreak || 0}</div><div>strike limit: ${g.mode.strikeLimit || B.StoryMode.QUOTA_STRIKE_LIMIT}</div>`;
       } else if (g) {
         meters = `<div>regime: ${g.market.scen.regime}</div>`;
       }

@@ -78,6 +78,7 @@
       const out = JSON.parse(JSON.stringify(d));
       out.v = VERSION;
       if (out.kind !== 'story') return out;
+      const wasMidDay = !!out.inDay;
       // Map the shipped fifteen beats to the same beats in the expanded story.
       const map = [0, 3, 8, 12, 15, 18, 23, 26, 30, 33, 36, 39, 51, 55, 60];
       out.day = map[Math.max(0, Math.min(14, out.day || 0))];
@@ -95,6 +96,15 @@
         S.feedSkippedDays = S.feedSkippedDays || {};
         S.f = S.f || {};
         S.f.migratedPatch3 = true;
+        if (wasMidDay) S.f.v2RewoundToBell = true;
+      }
+      // V2 did not preserve enough pre-open state to replay its mid-session tape
+      // against the expanded calendar. Resume the mapped session at the bell and
+      // say so, instead of silently replaying the wrong story tape.
+      if (wasMidDay) {
+        out.inDay = false;
+        out.market = out.market || out.dayOpen;
+        out.migrationNotice = 'This older mid-session save was moved to the matching session opening bell. Your book and decisions were preserved; the intraday tape restarts.';
       }
       return out;
     },

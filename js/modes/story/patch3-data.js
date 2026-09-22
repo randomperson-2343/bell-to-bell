@@ -273,7 +273,10 @@
   const billNo = choices.c3.options.find((o) => o.id === 'no');
   if (billNo && billNo.after) billNo.after = billNo.after.map((x) => x.replace('Two months from now', 'Long after the vote'));
   const treasury = choices.c9.options.find((o) => o.id === 'treasury');
-  if (treasury && treasury.after) treasury.after = treasury.after.map((x) => x.replace('spent a month trading', 'spent the campaign trading'));
+  if (treasury) {
+    treasury.req = (S) => S.m.influence >= 34 && S.rel.venn >= 35;
+    if (treasury.after) treasury.after = treasury.after.map((x) => x.replace('spent a month trading', 'spent the campaign trading'));
+  }
 
   const refusedMarks = choices.c6.options.find((o) => o.id === 'refuse');
   if (refusedMarks) {

@@ -15,6 +15,10 @@
       document.querySelectorAll('.sizes button').forEach((b) => b.addEventListener('click', () => this.sizePct(+b.dataset.pct)));
       $('tk-buy').addEventListener('click', () => this.send(1));
       $('tk-sell').addEventListener('click', () => this.send(-1));
+      ['tk-qty', 'tk-price', 'tk-sl', 'tk-tp', 'op-n'].forEach((id) => {
+        const input = $(id);
+        if (input) input.addEventListener('focus', () => input.select());
+      });
       $('tk-close').addEventListener('click', () => B.UI.g && B.UI.g.closePos(B.UI.sel));
       $('tk-flat').addEventListener('click', () => B.UI.g && B.UI.g.flatten());
       document.querySelectorAll('.tk-tabs button').forEach((b) => b.addEventListener('click', () => {

@@ -75,15 +75,25 @@
     // ---- day lifecycle ----
     showBriefing() {
       const b = this.mode.briefing(this.day, this);
-      const open = () => B.Screens.briefing(this, b, () => this.enterOffice(b));
-      const phone = () => B.Cinematic.play('phone', { brief: b, day: this.day, game: this }, open);
+      if (B.Cinematic.startChain) B.Cinematic.startChain('preopen');
+      const open = () => {
+        if (B.Cinematic.endChain) B.Cinematic.endChain();
+        B.Screens.briefing(this, b, () => this.enterOffice(b));
+      };
+      const phone = () => this.mode.kind === 'story'
+        ? B.Cinematic.play('phone', { brief: b, day: this.day, game: this }, open)
+        : open();
       if (b.cinematic !== false) B.Cinematic.play('news', { brief: b, day: this.day, game: this }, phone);
       else open();
     }
 
     enterOffice(b) {
       B.Music.stop();
-      B.Cinematic.play('office', { brief: b, day: this.day, game: this }, () => this.startDay());
+      if (B.Cinematic.startChain) B.Cinematic.startChain('office');
+      B.Cinematic.play('office', { brief: b, day: this.day, game: this }, () => {
+        if (B.Cinematic.endChain) B.Cinematic.endChain();
+        this.startDay();
+      });
     }
 
     startDay() {
@@ -282,6 +292,8 @@
       o = o || {};
       const bad = this.act();
       if (bad) return this.reject(bad);
+      const protection = B.Broker.validateBracket(o.sl, o.tp);
+      if (!protection.ok) return this.reject(protection.msg);
       const b = this.broker;
       let q = Math.trunc(qty);
       if (!q) return this.reject('Enter a size');
@@ -300,13 +312,14 @@
         res = b.marketOrder(sym, q, { tag: ff ? 'FAT FINGER' : '' });
         if (res.ok) {
           B.SFX.fill(q);
-          if ((o.sl > 0 || o.tp > 0) && b.posQty(sym)) b.attachBracket(sym, o.sl, o.tp);
+          if ((protection.sl > 0 || protection.tp > 0) && b.posQty(sym)) b.attachBracket(sym, protection.sl, protection.tp);
           if (res.realized > 0 && Math.abs(res.realized) > b.dayStartEquity * 0.003) { this.stress.spike(-5); B.SFX.cash(); }
           if (res.realized < 0 && Math.abs(res.realized) > b.dayStartEquity * 0.01) this.stress.spike(4);
           if (this.mode.onTrade) this.mode.onTrade(this, sym, q);
         } else this.reject(res.msg);
       } else {
-        res = b.placeOrder(sym, q, o.type, o.price);
+        res = b.placeOrder(sym, q, o.type, o.price,
+          protection.sl > 0 || protection.tp > 0 ? { protect: { sl: protection.sl, tp: protection.tp } } : null);
         if (res.ok) { B.SFX.click(); B.UI.toast(`${o.type.toUpperCase()} ${q > 0 ? 'BUY' : 'SELL'} ${B.fmt.qty(Math.abs(q))} ${sym} @ ${B.fmt.price(o.price)} working`, ''); }
         else this.reject(res.msg);
       }
@@ -468,9 +481,15 @@
       };
       this.history.push({ day: this.day, pnl, equity: eq, quotaMet: report.quotaMet, index: m.bySym.INDX.last });
       const verdict = this.mode.onDayEnd(this, report) || {};
+      if (this.mode.kind === 'story' && this.mode.S) {
+        report.quotaStrikes = this.mode.S.quotaLedger ? this.mode.S.quotaLedger.length : (this.mode.S.quotaStrikes || 0);
+        report.quotaStrikeLimit = this.mode.strikeLimit || B.StoryMode.QUOTA_STRIKE_LIMIT;
+      }
       report.notes = verdict.notes || [];
       B.UI.dayEnd(this);
+      if (B.Cinematic.startChain) B.Cinematic.startChain('close');
       B.Cinematic.play('close', { report, game: this }, () => {
+        if (B.Cinematic.endChain) B.Cinematic.endChain();
         B.Music.play('close');
         B.Screens.eod(this, report, () => {
           if (verdict.ending) return this.finish(verdict.ending);
@@ -482,7 +501,13 @@
               this.showBriefing();
             };
             const weekend = this.mode.kind === 'story' && this.day % 5 === 4 && this.day < this.mode.lastDay;
-            if (weekend) B.Cinematic.play('weekend', { day: this.day, game: this }, advance);
+            if (weekend) {
+              if (B.Cinematic.startChain) B.Cinematic.startChain('weekend');
+              B.Cinematic.play('weekend', { day: this.day, game: this }, () => {
+                if (B.Cinematic.endChain) B.Cinematic.endChain();
+                advance();
+              });
+            }
             else advance();
           });
         });
@@ -495,6 +520,7 @@
       if (this.slot != null) B.Save.finish(this.slot, ending);
       else B.Save.recordEnding(ending.id);
       B.Music.stop();
+      if (B.UI.clearToasts) B.UI.clearToasts();
       B.Screens.ending(this, ending);
     }
 
@@ -566,7 +592,13 @@
     // Called at each bell. Silent; never steals a slot that isn't ours.
     autosave() {
       if (this.slot == null) return false;
-      return B.Save.write(this.slot, this.snapshot(), this.meta());
+      const ok = B.Save.write(this.slot, this.snapshot(), this.meta());
+      if (!ok && !this.autosaveWarned) {
+        this.autosaveWarned = true;
+        B.UI.toast('AUTOSAVE FAILED. Storage may be full. Pause and save before leaving.', 'bad big');
+      }
+      if (ok) this.autosaveWarned = false;
+      return ok;
     }
 
     restore(s) {

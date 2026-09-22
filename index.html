@@ -84,7 +84,7 @@
         <div class="page-head"><button class="btn ghost" data-back>&larr; Back</button><h2>How to Play</h2></div>
         <div class="howto">
           <h3>The goal</h3>
-          <p>Each trading day runs from the <b>opening bell (9:30)</b> to the <b>closing bell (4:00)</b>, which takes about three real minutes. Make as much money as you can. Your boss sets a <b>daily quota</b>. Every miss becomes a permanent career strike. Twelve strikes and you're done.</p>
+          <p>Each trading day runs from the <b>opening bell (9:30)</b> to the <b>closing bell (4:00)</b>, which takes about three real minutes. Make as much money as you can. Your boss sets a <b>daily quota</b>. Every miss becomes a permanent career strike. Thirty strikes and you're done.</p>
           <h3>Your desk</h3>
           <ul>
             <li>The <b>left monitor</b> is the trading terminal: watchlist, chart, order ticket, and your positions.</li>
@@ -151,7 +151,7 @@
 
             <!-- LEFT MONITOR: trading terminal -->
             <div class="monitor" id="mon-left">
-              <div class="bezel-top"><span class="led"></span>TRADE TERMINAL<span class="bezel-brand">HOLLOWAY STERN</span></div>
+              <div class="bezel-top"><span class="led"></span>TRADE TERMINAL<span class="bezel-brand">HOLLOWAY STERN</span><div id="toasts" aria-live="polite"></div></div>
               <div class="screen">
                 <div id="term-stats">
                   <div class="st"><span class="l">INDX</span><span class="v" id="tb-indx">&nbsp;</span></div>
@@ -160,6 +160,7 @@
                   <div class="st"><span class="l">EQUITY</span><span class="v" id="tb-equity">&nbsp;</span></div>
                   <div class="st"><span class="l">BUY PWR</span><span class="v" id="tb-bp">&nbsp;</span></div>
                   <div class="st meter"><span class="l">QUOTA <i id="tb-quota-amt"></i></span><span class="bar"><i id="tb-quota-bar"></i></span></div>
+                  <div class="st strike-hud" id="tb-strikes" hidden><span class="l">STRIKES</span><span class="v" id="tb-strikes-value">0/30</span><span class="strike-warning" id="tb-strikes-warning"></span></div>
                 </div>
 
                 <aside id="watch" class="panel">
@@ -197,8 +198,8 @@
                         <label for="tk-type">Type</label>
                         <select id="tk-type"><option value="market">Market</option><option value="limit">Limit</option><option value="stop">Stop</option></select>
                         <input id="tk-price" type="number" step="0.01" placeholder="price" disabled>
-                        <label for="tk-sl">SL%</label><input id="tk-sl" class="short" type="number" step="0.5" min="0" placeholder="off">
-                        <label for="tk-tp">TP%</label><input id="tk-tp" class="short" type="number" step="0.5" min="0" placeholder="off">
+                        <label for="tk-sl">SL%</label><input id="tk-sl" class="short" type="number" step="0.5" min="0" max="95" placeholder="0–95">
+                        <label for="tk-tp">TP%</label><input id="tk-tp" class="short" type="number" step="0.5" min="0" max="500" placeholder="0–500">
                         <span id="tk-est" class="muted"></span>
                       </div>
                       <div class="tk-row tk-actions">
@@ -262,6 +263,7 @@
             </div>
             <canvas id="story-art" aria-label="Story objects collected on the desk"></canvas>
             <div class="desk-spacer"></div>
+            <button class="desk-btn" id="btn-mute" title="Mute all audio"><span class="desk-label">Audio On</span></button>
             <button class="desk-btn" id="btn-focus" title="Hide the office frame"><span class="desk-label">Focus</span></button>
             <button class="desk-btn" id="btn-pause" title="Pause / Save (Esc)"><span class="desk-label">&#10074;&#10074; Menu</span></button>
           </footer>
@@ -288,7 +290,6 @@
     </div>
   </div>
   <div id="modal-layer"></div>
-  <div id="toasts" aria-live="polite"></div>
   <div id="debug-panel" hidden></div>
 
   <script src="js/core/util.js"></script>

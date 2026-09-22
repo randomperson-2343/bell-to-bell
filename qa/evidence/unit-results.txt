@@ -1,0 +1,55 @@
+  PASS  RNG is deterministic per seed
+  PASS  RNG state round-trips exactly
+  PASS  Long round trip realizes correct P&L
+  PASS  Short round trip profits when price falls
+  PASS  Flip from long to short keeps accounting straight
+  PASS  Buying power limits exposure to max leverage
+  PASS  Short-sale ban blocks new shorts but allows covering
+  PASS  Margin call then liquidation
+  PASS  Overnight margin force-sells excess at the close
+  PASS  Bracket stop-loss fires and cancels its take-profit
+  PASS  Bracket validation rejects impossible protection values
+  PASS  Programmatic bracket attachment clamps long and short triggers
+  PASS  Resting limit and stop fills reattach saved protection
+  PASS  Protection survives order reload and sizes to the filled position
+  PASS  Option pricing sanity (put-call parity, monotonic in strike)
+  PASS  Option buy, then cash settlement at expiry
+  PASS  Prices stay finite and positive across 300 random days
+  PASS  Daily index return tracks the scenario target
+  PASS  Circuit breaker trips on a crash day
+  PASS  Stress impairment escalates in readable stages
+  PASS  Panic resistance blocks chains but permits one catastrophe bypass
+  PASS  Stress state survives a save round trip
+  PASS  Single-stock volatility halt on a huge shock
+  PASS  Rumors appear before their news
+  PASS  A day replays identically from the same seed and scenario
+  PASS  A panic is short and the grounding sequence ends it early
+  PASS  Mid-day snapshot restores the exact same session
+  PASS  Snapshot between days restores day, history and book
+  PASS  Save slots: write, read, rename, finish, delete
+  PASS  Ending tally counts every finished run
+  PASS  Quota curve is regime-based across all 61 sessions
+  PASS  Patch 3 calendar and anomaly arithmetic is exact
+  PASS  Patch 3 market timeline preserves false hope then collapse
+  PASS  Pre-open feed snowballs and contracts in the final sessions
+  PASS  Cinematic Rhythm assigns a distinct high-resolution board to all 61 sessions
+  PASS  Version 2 story saves migrate to matching Patch 3 beats
+  PASS  Version 2 mid-session saves rewind honestly to the mapped bell
+  PASS  A trading day is three real minutes by default
+  PASS  Only about a third of tips actually pay
+  PASS  Story mode caps working tips at one per session
+  PASS  No real-world companies, people or events appear anywhere
+  PASS  Every story day builds a valid scenario and briefing
+  PASS  Every decision lands on a day that exists, and mid-session calls are wired up
+  PASS  Quota misses are cumulative, logged once, and terminate at the configured limit
+  PASS  Quota strike ledger rebuilds from legacy save history
+  PASS  Right Too Early requires meaningful repeated false-dawn exposure
+  PASS  Final decision priority is explicit and Nobody is not a meter fallback
+  PASS  Story graph: every chronological decision path resolves safely
+  PASS  All 22 ending gates are reachable without priority collisions
+  PASS  Stabilization vote can go both ways
+
+Story paths explored: 62694 
+Ending reach counts: {"exit":19296,"nobody":18711,"everything-rally":113,"revolving":686,"master":6561,"perp":2193,"grind":2170,"clawback":451,"ward":301,"fall-guy":229,"whistle":10410,"acquirer":78,"depression":238,"soft":672,"lost-decade":59,"cassandra":175,"replaced":175,"quiet":176}
+
+50/50 passed
