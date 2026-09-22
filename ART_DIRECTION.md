@@ -46,8 +46,13 @@ The visual tone is colourful but washed out. Every hue should feel filtered thro
 - Hollow rising candles, filled falling candles, arrows and position shapes for colour-independent market direction.
 - Clear feed-channel labels and lighter CRT treatment over dense information.
 - Cinematic letterboxing, foreground silhouettes, practical desk detail and environmental sound-only beats before music enters.
-- Persistent quota slips and a visibly fragmenting CASCADE stack on the desk as institutional stability falls.
-- Silkscreen restricted to display moments, with IBM Plex Mono carrying body copy, tables and financial data.
+- A denser 480x270 cinematic canvas with a distinct camera, location and visual signature for all 61 sessions.
+- A physical phone extraction between each news tableau and interactive pre-open notification feed.
+- Weekend interludes after Friday sessions that preserve calendar rhythm without adding story events.
+- Persistent quota slips, a twelve-strike career ledger and a visibly fragmenting CASCADE stack on the desk as institutional stability falls.
+- Pixelify Sans for display moments, IBM Plex Sans Condensed for interface copy and IBM Plex Mono for tables and financial data.
+- Pixel-styled scrollbars that keep every scrollable surface inside the game's visual language.
+- Trading music that fades between score and office ambience in stress-responsive phrases.
 
 ## Guardrails
 

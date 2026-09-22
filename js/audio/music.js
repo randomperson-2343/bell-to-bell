@@ -86,6 +86,8 @@
     intensity: 0,
     dayPos: 0,
     ducked: false,
+    presence: 1,
+    gateOpen: true,
     external: {},   // name -> url, for real audio dropped in later
     audioEl: null,
 
@@ -94,8 +96,7 @@
 
     setVolume(v) {
       this.vol = v;
-      const b = this.bus();
-      if (b) b.gain.value = this.enabled ? v * (this.ducked ? 0.35 : 1) : 0;
+      this.applyBus(0.08);
     },
 
     setEnabled(on) {
@@ -107,7 +108,21 @@
 
     duck(on) {
       this.ducked = !!on;
-      this.setVolume(this.vol);
+      this.applyBus(0.25);
+    },
+
+    applyBus(seconds) {
+      const b = this.bus();
+      const c = this.ctx();
+      if (!b || !c) return;
+      const target = this.enabled ? this.vol * this.presence * (this.ducked ? 0.35 : 1) : 0;
+      b.gain.cancelScheduledValues(c.currentTime);
+      b.gain.setTargetAtTime(Math.max(0.0001, target), c.currentTime, Math.max(0.01, (seconds || 0.1) / 3));
+    },
+
+    fadePresence(value, seconds) {
+      this.presence = B.clamp(value, 0, 1);
+      this.applyBus(seconds == null ? 2.8 : seconds);
     },
 
     // Swap the synthesized track for a real audio file, if one is ever supplied.
@@ -127,6 +142,10 @@
       this.track = t;
       this.step = 0;
       this.nextTime = c.currentTime + 0.05;
+      // Begin below the mix, then let the first trading bar breathe the score in.
+      this.gateOpen = name !== 'trading';
+      this.presence = name === 'trading' ? 0.05 : 1;
+      this.applyBus(name === 'trading' ? 1.8 : 0.15);
       this.timer = setInterval(() => this.schedule(), 25);
     },
 
@@ -143,6 +162,7 @@
       if (this.timer) { clearInterval(this.timer); this.timer = null; }
       if (this.audioEl) { try { this.audioEl.pause(); } catch (e) { /* already stopped */ } }
       this.track = null;
+      this.fadePresence(0, 0.35);
     },
 
     // Stress 0..1 and how far through the session we are 0..1.
@@ -160,10 +180,26 @@
       const bpm = t.bpm * (1 + this.intensity * 0.10 + this.dayPos * 0.04);
       const spb = 60 / bpm / 4; // sixteenth notes
       while (this.nextTime < c.currentTime + LOOKAHEAD) {
+        if (this.name === 'trading' && this.step % STEP === 0) this.updateTradingGate();
         this.playStep(this.step % STEP, this.nextTime, spb);
         this.step++;
         this.nextTime += spb;
       }
+    },
+
+    // The score breathes in phrases instead of looping wall-to-wall. Low stress
+    // leaves long stretches of office sound. Rising stress keeps the score in
+    // the room longer and shortens the silence before the next phrase.
+    updateTradingGate() {
+      const bar = Math.floor(this.step / STEP) % 16;
+      const activeBars = Math.round(6 + this.intensity * 6 + this.dayPos * 2);
+      let open = bar < activeBars;
+      // Critical stress fragments one bar out of four even while the cue is up.
+      if (this.intensity > 0.84 && bar % 4 === 3) open = false;
+      if (open === this.gateOpen) return;
+      this.gateOpen = open;
+      const floor = this.intensity > 0.72 ? 0.14 : 0.035;
+      this.fadePresence(open ? 1 : floor, open ? 2.2 : 3.6);
     },
 
     playStep(i, when, spb) {

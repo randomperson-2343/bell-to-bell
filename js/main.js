@@ -43,7 +43,9 @@
     skyline() {
       const cv = $('menu-bg');
       if (!cv || !B.Pixel) return;
-      const V = { w: 320, h: 180 };
+      // A 480x270 field gives the menu a finer pixel grain than the original
+      // 320x180 backdrop while keeping integer nearest-neighbour scaling.
+      const V = { w: 480, h: 270 };
       const { ctx } = B.Pixel.fit(cv, V.w, V.h);
       const X = B.Pixel, P = B.Pal;
       X.rect(ctx, 0, 0, V.w, V.h, P.ink);
@@ -53,28 +55,28 @@
       // the same city. It reads as systems, not a specific decade.
       ctx.save();
       ctx.globalAlpha = 0.55;
-      const nodes = [[22, 42], [74, 32], [126, 58], [178, 28], [231, 51], [292, 35]];
+      const nodes = [[24, 64], [82, 43], [139, 78], [198, 39], [254, 67], [316, 46], [376, 75], [444, 52]];
       for (let i = 0; i < nodes.length - 1; i++) {
         const a = nodes[i], b = nodes[i + 1];
         ctx.strokeStyle = i < 3 ? P.sky : P.violet;
         ctx.setLineDash([2, 3]);
         ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke();
         ctx.setLineDash([]);
-        X.rect(ctx, a[0] - 2, a[1] - 2, 5, 5, i < 3 ? P.sky : P.violet);
-        X.rect(ctx, a[0] - 1, a[1] - 1, 3, 3, P.ink);
+        X.rect(ctx, a[0] - 2, a[1] - 2, 4, 4, i < 4 ? P.sky : P.violet);
+        X.rect(ctx, a[0] - 1, a[1] - 1, 2, 2, P.ink);
       }
-      X.rect(ctx, 290, 33, 5, 5, P.crimson);
-      X.rect(ctx, 291, 34, 3, 3, P.ink);
+      X.rect(ctx, 442, 50, 5, 5, P.crimson);
+      X.rect(ctx, 443, 51, 3, 3, P.ink);
       ctx.restore();
       // two silhouetted layers for depth, kept low so the menu copy stays readable
       for (let layer = 0; layer < 2; layer++) {
         const base = layer ? V.h : V.h - 12;
         const col = layer ? P.ink : P.ink2;
         const lit = layer ? P.amberD : P.slate;
-        for (let i = 0; i < 17; i++) {
-          const bw = 13 + ((i * 23 + layer * 7) % 11);
-          const bh = (layer ? 16 : 12) + ((i * 37 + layer * 19) % (layer ? 34 : 26));
-          const bx = i * 20 - 6 + layer * 7;
+        for (let i = 0; i < 25; i++) {
+          const bw = 14 + ((i * 23 + layer * 7) % 14);
+          const bh = (layer ? 23 : 18) + ((i * 37 + layer * 19) % (layer ? 51 : 39));
+          const bx = i * 20 - 7 + layer * 8;
           X.rect(ctx, bx, base - bh, bw, bh, col);
           for (let wy = 4; wy < bh - 3; wy += 6) {
             for (let wx = 3; wx < bw - 3; wx += 5) {
@@ -84,9 +86,9 @@
         }
       }
       // The CASCADE mark begins aligned and slips as it falls toward the skyline.
-      for (let i = 0; i < 5; i++) {
-        const y = 76 + i * 7;
-        X.rect(ctx, 255 + i * 3, y, 36 - i * 3, 4, i < 2 ? P.amberD : i < 4 ? P.sky : P.crimsonD);
+      for (let i = 0; i < 6; i++) {
+        const y = 113 + i * 8;
+        X.rect(ctx, 384 + i * 3, y, 54 - i * 4, 4, i < 2 ? P.amberD : i < 4 ? P.sky : P.crimsonD);
       }
     },
 

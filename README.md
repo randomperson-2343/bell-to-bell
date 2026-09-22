@@ -5,7 +5,7 @@ A stressful present-day Wall Street simulator rendered in timeless 16-bit pixel 
 You sit at a desk on the 41st floor with two CRT monitors: the left one trades, the right one is the phone, the newswire and the rumour mill. A trading day takes about **three real minutes**.
 
 - **Career**: sixty-one trading sessions across thirteen calendar weeks. A compute bubble built on **CASCADE notes** — datacenter leases stapled to consumer loans and stamped AAA — comes apart while a conflict you only ever see on the tape constrains the power grid. Ten decisions reshape the market itself, change the rules you trade under, and send you to one of **22 endings**.
-- Every session begins with a skippable subway-phone feed. Twelve unmarked anomalies are hidden in public information; opening them changes what is possible on the final weekend.
+- Every session begins with its own skippable news tableau, followed by a physical phone reveal and the pre-open feed. Twelve unmarked anomalies are hidden in public information; opening them changes what is possible on the final weekend.
 - The story uses two false dawns: an eight-session rally that punishes correct shorts, then one violent relief session after the rescue passes before the worst selloff of the campaign.
 - **Endless**: random market regimes and crash days, with sliders for capital, volatility, leverage, fake rumours, crash odds, fees, margin strictness, stress and interruptions. You pick your own win and lose conditions, and each set of settings has its own local leaderboard.
 
@@ -23,7 +23,7 @@ No install and no build. Open `index.html` in any modern browser.
 - Two feeds carry news. The **Wire** is real news. **Chirp** is rumour.
 - **Phone tips are unreliable on purpose.** A tip resolves one of four ways: it pays, it's true but already in the price, it runs your way just long enough to get you to size up and then reverses, or it's simply false. Roughly one in three pays. Acting on every call is how you go broke.
 - **Stress 2.0** rises with losses, leverage, margin calls, ringing phones and a looming close. It escalates through visible Loaded, Tunnel and Critical impairment. Panic attacks now last under four real seconds at normal speed and an A/S/D grounding sequence ends them immediately. Recovery creates temporary resistance and a cooldown; one true market catastrophe can bypass it. Fat-finger risk is capped and can no longer add a zero.
-- **Desk quotas escalate every day.** The exact mandate, percentage of book and overnight increase are visible in the briefing, inbox and physical desk art.
+- **Desk quotas escalate every day.** A missed mandate adds one permanent career strike, logged once for that session. The twelfth strike ends the run. The exact mandate, percentage of book, overnight increase and strike count are visible in the briefing, inbox and physical desk art.
 - **Interruptions**: clients with orders to work, your boss calling to shout, tipsters, and your mother. Some decisions arrive as a timed phone call mid-session.
 
 ### Saving
@@ -46,9 +46,9 @@ A slot that reaches an ending becomes a read-only record and counts toward the e
 
 ## Look and sound
 
-- **16-bit art**, drawn procedurally: a locked 32-colour palette, a 4px design grid, 2px bevels, ordered dithering and a 5x7 bitmap font. The cinematic sets now use foreground silhouettes, practical desk details, harder compositions and visibly deteriorating CASCADE paperwork. IBM Plex Mono handles body copy and financial data while Silkscreen is reserved for display lettering.
-- **Cinematics** before the open, on the way into the office, at the closing bell and at each ending. They use longer silent holds, hard letterboxing and environmental SFX. Music stays out until the bell or destination screen. Every scene remains skippable, and Settings can cut them to one card or turn them off.
-- **Adaptive chiptune score**, synthesized with WebAudio: two pulse voices, a triangle bass and a noise channel. Trading music is deliberately sparse and stays underneath the tape; its layers and tempo tighten gently with stress and the close. `Music.useTrack(name, url)` swaps in a real audio file later without touching the game code.
+- **High-resolution pixel art**, drawn procedurally: a locked 32-colour palette, a denser 480x270 cinematic canvas, ordered dithering and bitmap-aligned typography. Pixelify Sans handles display and control lettering, IBM Plex Sans Condensed carries interface copy, and IBM Plex Mono remains reserved for financial data.
+- **Cinematics** before the open, on the way into the office, over each weekend, at the closing bell and at each ending. Every career session has a distinct storyboard signature. The news scene leads into a physical phone extraction before the interactive notification feed. Every scene remains skippable, and Settings can cut them to one card or turn them off.
+- **Adaptive chiptune score**, synthesized with WebAudio: two pulse voices, a triangle bass and a noise channel. Trading music breathes in and out in phrases, leaving longer office-sound gaps at low stress and staying present more often as stress and the close intensify. `Music.useTrack(name, url)` swaps in a real audio file later without touching the game code.
 - **Screen effects** (vignette, shake, chart jitter) can be set to Full, Reduced or Off.
 
 ## Project layout
@@ -91,6 +91,7 @@ Alongside the usual engine tests, the suite checks that:
 - the **false dawn and collapse arithmetic holds**: no rally gap above 0.4%, no rally session above 2.2%, then -9%, +5%, -4%, -7% and -11%;
 - **no real-world company, person or event** appears in any string the game can print, checked with word-boundary matching against a denylist;
 - the **pacing holds**: the quota curve rises every day, ordinary panic stays under four real seconds, a day is three real minutes, and tips pay about a third of the time.
+- the **quota ledger holds**: each missed mandate creates exactly one permanent strike, legacy saves can rebuild their ledger from history, and the run ends on strike twelve.
 
 **Debug overlay**: open `index.html?debug=1` for time acceleration, skip-to-close, day jumps, live story meters, forced margin calls and crashes, a save-and-restore-right-now button, and each cinematic on demand.
 

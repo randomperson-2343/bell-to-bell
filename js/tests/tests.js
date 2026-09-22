@@ -391,6 +391,18 @@
     assert(D[58].feed.length === 3 && D[60].feed.length === 3, 'Act IV feed contraction');
   });
 
+  test('Cinematic Rhythm assigns a distinct high-resolution board to all 61 sessions', () => {
+    assert(B.Rhythm && B.Rhythm.storyboards.length === 61, 'missing 61-board presentation map');
+    const signatures = new Set(B.Rhythm.storyboards.map((x) => x.signature));
+    assert(signatures.size === 61, `only ${signatures.size} distinct storyboard signatures`);
+    const news = B.Scenes.news({ day: 60, brief: { title: 'Orphan Monday', kicker: 'IV · RECKONING', feed: [] } });
+    const phone = B.Scenes.phone({ day: 60, brief: { feed: [{ source: 'WIRE', title: 'Before the bell' }] } });
+    const weekend = B.Scenes.weekend({ day: 54 });
+    assert(news.length >= 3 && news.every((beat) => beat.view.w === 480 && beat.view.h === 270), 'news boards are not high resolution');
+    assert(phone.length === 2 && phone.every((beat) => beat.view.w === 480), 'phone handoff is missing');
+    assert(weekend.length === 3 && weekend.every((beat) => beat.view.h === 270), 'weekend punctuation is missing');
+  });
+
   test('Version 2 story saves migrate to matching Patch 3 beats', () => {
     const old = { v: 2, kind: 'story', day: 13, mode: { S: { f: {}, choices: { c7:'whip', c8:'quiet' }, log: [{ day: 13, text:'x' }] } }, history: [{ day: 12 }] };
     const m = B.Save.migrateV2Snapshot(old);
@@ -546,6 +558,54 @@
     }
     assert(ids.length === 10, 'expected 10 decisions, found ' + ids.length);
     assert(ids.map((id) => D.CHOICES[id].day).join(',') === '9,13,19,28,34,36,37,54,57,59', 'decision chronology drifted');
+  });
+
+  test('Quota misses are cumulative, logged once, and terminate on strike twelve', () => {
+    const mode = B.StoryMode();
+    const S = mode.S;
+    const g = {
+      day: 0,
+      history: [],
+      indexStart: 500,
+      broker: { equity: () => 250000, posQty: () => 0, opts: [] },
+      market: { bySym: { INDX: { last: 500 } } }
+    };
+    const report = (day, quotaMet) => ({
+      day, date: `Session ${day + 1}`, pnl: quotaMet ? 2500 : -100,
+      equity: 250000, quota: 2000, quotaMet, earlyEnd: null
+    });
+    const close = (day, quotaMet) => {
+      g.day = day;
+      g.history.push({ day, pnl: quotaMet ? 2500 : -100, quotaMet });
+      return mode.onDayEnd(g, report(day, quotaMet));
+    };
+    for (let i = 0; i < 11; i++) {
+      const verdict = close(i * 2, false);
+      assert(!verdict.ending, `fired early on strike ${i + 1}`);
+      close(i * 2 + 1, true);
+      assert(S.quotaStrikes === i + 1, 'a met quota erased cumulative strikes');
+    }
+    // Reprocessing one closing report must not create a duplicate strike.
+    g.day = 20;
+    mode.onDayEnd(g, report(20, false));
+    assert(S.quotaStrikes === 11 && S.quotaLedger.length === 11, 'duplicate strike was logged');
+    const finalVerdict = close(22, false);
+    assert(S.quotaStrikes === 12, 'twelfth strike not recorded');
+    assert(finalVerdict.ending && finalVerdict.ending.id === 'fired', 'twelfth strike did not terminate the career');
+  });
+
+  test('Quota strike ledger rebuilds from legacy save history', () => {
+    const mode = B.StoryMode({ S: B.StoryMode.freshState(250000) });
+    mode.S.quotaLedger = [];
+    mode.S.quotaStrikes = 0;
+    mode.reconcileQuotaStrikes([
+      { day: 0, quotaMet: false, pnl: -10 },
+      { day: 1, quotaMet: true, pnl: 20 },
+      { day: 2, quotaMet: false, pnl: -30 },
+      { day: 2, quotaMet: false, pnl: -30 }
+    ]);
+    assert(mode.S.quotaStrikes === 2, 'legacy misses were not deduplicated by session');
+    assert(mode.S.quotaLedger[0].day === 0 && mode.S.quotaLedger[1].day === 2, 'ledger order is wrong');
   });
 
   test('Story graph: every chronological decision path resolves safely', () => {
