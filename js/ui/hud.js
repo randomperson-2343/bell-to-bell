@@ -178,7 +178,7 @@
       this.updateBadge();
       this.lastPx = {};
       document.body.classList.toggle('focus', !!B.Settings.get().focusMode);
-      $('wall-date').textContent = B.Calendar.dayInfo(g.day).label;
+      $('wall-date').textContent = g.mode.kind === 'story' ? B.Calendar.storyLabel(g.day) : B.Calendar.dayInfo(g.day).label;
       this.applyNarrativeSkin(g);
       B.Screens.show('game');
       this.select('INDX');
@@ -196,9 +196,10 @@
 
     dayStart(g) {
       const d = B.Calendar.dayInfo(g.day);
-      $('wall-date').textContent = d.label;
+      const label = g.mode.kind === 'story' ? B.Calendar.storyLabel(g.day) : d.label;
+      $('wall-date').textContent = label;
       this.applyNarrativeSkin(g);
-      const sep = { kind: 'sep', text: `— ${d.label} · OPENING BELL —` };
+      const sep = { kind: 'sep', text: `— ${label} · OPENING BELL —` };
       this.feed.wire.unshift(sep);
       this.feed.chirp.unshift(sep);
       if (g.quotaMeta && g.quota > 0) {

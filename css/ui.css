@@ -384,6 +384,23 @@ input.short { width: 60px; }
 .notes li::before { content: "\25B8"; position: absolute; left: 0; color: var(--c-amber); }
 .rules-list { font-family: var(--mono); font-size: 10px; background: var(--c-ink); border: 2px solid var(--c-slate); padding: 9px 11px; margin-top: 10px; line-height: 1.9; }
 
+/* ---- Pre-open phone feed ---- */
+.preopen-phone {
+  background: #101613; border: 3px solid; border-color: var(--c-slate2) var(--c-ink) var(--c-ink) var(--c-slate2);
+  box-shadow: inset 0 0 0 2px #07100d, 4px 4px 0 rgba(0,0,0,.35); margin: 0 auto 16px; max-width: 620px;
+}
+.preopen-top { display: flex; justify-content: space-between; gap: 12px; padding: 8px 10px; border-bottom: 2px solid var(--c-slate); color: var(--c-phosphor); font-family: var(--pixel); font-size: 10px; letter-spacing: .1em; }
+.preopen-top b { color: var(--c-amber); font-weight: 400; }
+.preopen-scroll { max-height: 235px; overflow-y: auto; padding: 4px; }
+.preopen-item { display: block; width: 100%; text-align: left; padding: 9px 10px; color: var(--c-putty2); background: transparent; border: 0; border-bottom: 1px solid var(--c-screen-d); border-left: 3px solid var(--c-sky); cursor: pointer; font-family: var(--mono); }
+.preopen-item.chirp { border-left-color: var(--c-violet); }
+.preopen-item.mail { border-left-color: var(--c-amber); }
+.preopen-item:hover, .preopen-item.opened { background: var(--c-screen-glow); }
+.preopen-item > span { display: block; color: var(--c-phosphor-d); font-size: 9px; letter-spacing: .08em; }
+.preopen-item > strong { display: block; color: var(--c-bone); font-size: 11px; margin-top: 3px; }
+.preopen-item > p { margin: 7px 0 0; color: var(--c-putty); font-size: 11px; line-height: 1.6; }
+.unpriced { display: inline-block; min-width: 90px; color: #731f2a; letter-spacing: .05em; overflow-wrap: anywhere; }
+
 /* ---- Newspaper ending ---- */
 .ending-scroll { position: absolute; inset: 0; overflow-y: auto; padding: 22px 16px; background: var(--c-ink); }
 .paper {

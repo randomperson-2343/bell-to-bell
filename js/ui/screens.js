@@ -107,7 +107,14 @@
     // ---- day briefing ----
     briefing(g, b, onGo) {
       const d = B.Calendar.dayInfo(g.day);
+      const dateLabel = g.mode.kind === 'story' && B.Calendar.storyLabel ? B.Calendar.storyLabel(g.day) : d.long;
       const rules = b.rules && b.rules.length ? `<div class="rules-list">${b.rules.map((r) => `<div>&#9656; ${r}</div>`).join('')}</div>` : '';
+      const feed = (b.feed || []).map((item, i) => `<button class="preopen-item ${B.esc(item.kind || 'wire')}" data-feed-item="${i}">
+        <span><b>${B.esc(item.source || 'THE WIRE')}</b>${item.locked ? ' · PAYWALLED' : ''}</span>
+        <strong>${B.esc(item.title || 'Before the bell')}</strong>
+        <p hidden>${B.esc(item.text || '')}</p>
+      </button>`).join('');
+      const phone = feed ? `<section class="preopen-phone"><div class="preopen-top"><span>PRE-OPEN FEED</span>${b.anomalyCount == null ? '' : `<b>ANOMALIES: ${b.anomalyCount}</b>`}</div><div class="preopen-scroll">${feed}</div></section>` : '';
       const stats = `<div class="stats">
         <div class="stat"><div class="l">Equity</div><div class="v">${F.money(g.broker.equity())}</div></div>
         <div class="stat quota-stat"><div class="l">${b.quotaMeta ? B.esc(b.quotaMeta.label) : 'Today\'s quota'}</div><div class="v">${b.quota > 0 ? F.money(b.quota) : 'none'}</div>${b.quotaMeta ? `<div class="quota-delta">${(b.quotaMeta.pct * 100).toFixed(2)}% of book${b.quotaMeta.raised ? ` · ↑ ${b.quotaMeta.raised}% overnight` : ''}</div>` : ''}</div>
@@ -115,16 +122,38 @@
       </div>`;
       const mandate = b.quotaMeta ? `<div class="quota-order"><span>DESK MANDATE</span><p>${B.esc(b.quotaMeta.memo)}</p></div>` : '';
       B.Music.play('brief');
-      this.modal({
-        kicker: `${b.kicker || ''} ${d.long}`,
+      const opened = new Set();
+      const el = this.modal({
+        kicker: `${b.kicker || ''} ${dateLabel}`,
         title: b.title,
-        body: stats + mandate + (b.html || '') + rules,
+        body: phone + stats + mandate + (b.html || '') + rules,
         wide: true,
         buttons: [
           { label: 'Menu', onClick: () => this.pauseFromBriefing(g, b, onGo), cls: 'ghost' },
-          { label: 'Ring the Opening Bell', cls: 'primary', onClick: () => { B.SFX.unlock(); onGo(); } }
+          ...(feed ? [{ label: 'Skip Feed', keep: true, onClick: () => {
+            if (!opened.size && g.mode.onFeedSkip) g.mode.onFeedSkip(g);
+            const scroll = el.querySelector('.preopen-scroll');
+            if (scroll) scroll.hidden = true;
+          }}] : []),
+          { label: 'Ring the Opening Bell', cls: 'primary', onClick: () => {
+            if (feed && !opened.size && g.mode.onFeedSkip) g.mode.onFeedSkip(g);
+            B.SFX.unlock(); onGo();
+          } }
         ]
       });
+      el.querySelectorAll('[data-feed-item]').forEach((node) => node.addEventListener('click', () => {
+        const i = +node.dataset.feedItem;
+        const item = b.feed[i];
+        const detail = node.querySelector('p');
+        if (detail) detail.hidden = !detail.hidden;
+        if (!opened.has(i)) {
+          opened.add(i);
+          node.classList.add('opened');
+          if (g.mode.onFeedOpen) g.mode.onFeedOpen(g, item);
+          const count = el.querySelector('.preopen-top b');
+          if (count && item.anomalyId) count.textContent = `ANOMALIES: ${g.mode.S.anomalies}`;
+        }
+      }));
     },
 
     pauseFromBriefing(g, b, onGo) {
@@ -202,7 +231,7 @@
 
     // ---- endings ----
     ending(g, ending) {
-      const track = ending.good === false || /wiped|fired|perp|depression/.test(ending.id) ? 'endingDark' : 'endingLight';
+      const track = ending.dark || ending.good === false || /wiped|fired|perp|depression/.test(ending.id) ? 'endingDark' : 'endingLight';
       const show = () => {
         B.Music.play(track);
         if (g.mode.kind === 'story') this.storyEnding(g, ending);
@@ -219,8 +248,10 @@
       document.querySelectorAll('.screen').forEach((s) => s.classList.remove('active'));
       const tally = B.Save.tally();
       const found = Object.keys(tally).length;
+      const wealthLabel = e.unpriced ? '<span id="unpriced-value" class="unpriced">$482,119.07</span>' : F.money(e.wealth);
+      const returnLabel = e.unpriced ? 'UNPRICED' : F.pct(e.wealth / g.startCapital - 1);
       scr.innerHTML = `<div class="ending-scroll"><article class="paper">
-        <div class="mast"><h1>The Daily Ledger</h1><div class="row"><span>${B.Calendar.dayInfo(Math.min(g.day + 1, 20)).long}</span><span>Final Edition</span><span>$2.00</span></div></div>
+        <div class="mast"><h1>The Daily Ledger</h1><div class="row"><span>${B.Calendar.storyLabel(g.day)}</span><span>Final Edition</span><span>$2.00</span></div></div>
         <div class="hl">${e.headline}</div>
         <div class="deck">${e.deck}</div>
         <div class="cols">
@@ -231,10 +262,10 @@
             <div class="box">
               <div><span>ENDING</span><b>${e.title}</b></div>
               <div><span>Reached</span><b>${tally[e.id] || 1}x</b></div>
-              <div><span>Final net worth</span><b>${F.money(e.wealth)}</b></div>
+              <div><span>Final net worth</span><b>${wealthLabel}</b></div>
               <div><span>Starting capital</span><span>${F.money(g.startCapital)}</span></div>
-              <div><span>Return</span><b>${F.pct(e.wealth / g.startCapital - 1)}</b></div>
-              <div><span>Index, month</span><span>${F.pct(e.indexMonth || 0)}</span></div>
+              <div><span>Return</span><b>${returnLabel}</b></div>
+              <div><span>Index, campaign</span><span>${F.pct(e.indexMonth || 0)}</span></div>
               <div><span>Days traded</span><span>${g.history.length}</span></div>
               <div><span>Endings found</span><span>${found} / ${B.StoryEndings.list.length}</span></div>
             </div>
@@ -247,11 +278,30 @@
         <button class="btn ghost" id="end-gallery">Endings</button>
       </div></div>`;
       $('app').appendChild(scr);
+      if (e.unpriced) this.animateUnpriced($('unpriced-value'));
       B.SFX.closeBell();
       const leave = () => { scr.remove(); B.UI.leaveGame(); };
       $('end-menu').addEventListener('click', leave);
       $('end-again').addEventListener('click', () => { scr.remove(); B.UI.g = null; B.Main.newStory(); });
       $('end-gallery').addEventListener('click', () => { scr.remove(); B.UI.g = null; B.UI.leaveGame(); this.showEndings(); });
+    },
+
+    animateUnpriced(el) {
+      if (!el) return;
+      const glyphs = '0123456789$€¥£,.;:#?';
+      let tick = 0;
+      const timer = setInterval(() => {
+        tick++;
+        if (!el.isConnected || tick >= 80) {
+          clearInterval(timer);
+          if (el.isConnected) el.textContent = 'UNPRICED';
+          return;
+        }
+        const len = Math.min(24, 10 + Math.floor(tick / 8));
+        let s = tick < 24 ? '$' : '';
+        for (let i = s.length; i < len; i++) s += glyphs[(tick * 7 + i * 11) % glyphs.length];
+        el.textContent = s;
+      }, 125);
     },
 
     endlessEnding(g, e) {

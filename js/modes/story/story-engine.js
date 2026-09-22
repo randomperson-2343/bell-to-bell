@@ -12,7 +12,8 @@
     return {
       m: { integrity: 50, heat: 10, influence: 20, firm: 60, stability: 60, anger: 20 },
       rel: { imani: 60, sana: 20, thorne: 30, kroll: 50, venn: 25, perry: 45, greta: 20 },
-      f: {}, choices: {}, log: [], pending: [], missStreak: 0, startCapital: capital, complianceWarned: false
+      f: {}, choices: {}, log: [], pending: [], missStreak: 0, startCapital: capital, complianceWarned: false,
+      anomalies: 0, openedAnomalies: {}, feedsSkipped: 0, feedOpenedDays: {}, feedSkippedDays: {}
     };
   }
 
@@ -29,6 +30,17 @@
   B.StoryMode = function (save) {
     const capital = 250000;
     const S = save ? save.S : freshState(capital);
+    S.m = Object.assign({ integrity: 50, heat: 10, influence: 20, firm: 60, stability: 60, anger: 20 }, S.m || {});
+    S.rel = Object.assign({ imani: 60, sana: 20, thorne: 30, kroll: 50, venn: 25, perry: 45, greta: 20 }, S.rel || {});
+    S.f = S.f || {};
+    S.choices = S.choices || {};
+    S.log = S.log || [];
+    S.pending = S.pending || [];
+    S.anomalies = S.anomalies || 0;
+    S.openedAnomalies = S.openedAnomalies || {};
+    S.feedsSkipped = S.feedsSkipped || 0;
+    S.feedOpenedDays = S.feedOpenedDays || {};
+    S.feedSkippedDays = S.feedSkippedDays || {};
 
     const mode = {
       kind: 'story',
@@ -44,7 +56,7 @@
       S,
 
       slotLabel(g) {
-        return `${D.actOf(g.day)} · Day ${g.day + 1}/${D.DAYS.length}`;
+        return `${D.actOf(g.day)} · W${D.weekOf(g.day)} ${D.dowOf(g.day)} · ${g.day + 1}/${D.DAYS.length}`;
       },
 
       briefing(d, g) {
@@ -59,8 +71,10 @@
         if (d === 0) rules.push('Tip: open How to Play from the pause menu (Esc) any time.');
         return {
           kicker: D.actOf(d) + ' ·',
-          title: `Day ${d + 1}: ${day.title}`,
+          title: `Session ${d + 1}: ${day.title}`,
           html: day.brief(S).filter(Boolean).map((p) => `<p>${p}</p>`).join(''),
+          feed: day.feed || [],
+          anomalyCount: d >= 15 ? S.anomalies : null,
           quota: this.quota(d, g),
           quotaMeta: qm,
           rules
@@ -69,11 +83,11 @@
 
       rules(d) {
         let lev = 4;
-        if (S.f.refusedDump && d >= 2 && d <= 3) lev = 3;
-        if (S.f.dereg && d >= 6) lev = 6;
-        if (S.f.regulation && d >= 6) lev = 3;
-        if (S.f.letFail && d >= 10) lev = Math.max(2, lev - 1);
-        const shortBan = S.f.tipShortBan && d >= 10 && d <= 12 ? D.FIN : [];
+        if (S.f.refusedDump && d >= 10 && d <= 14) lev = 3;
+        if (S.f.dereg && d >= 20) lev = 6;
+        if (S.f.regulation && d >= 20) lev = 3;
+        if (S.f.letFail && d >= 35) lev = Math.max(2, lev - 1);
+        const shortBan = (S.f.tipShortBan && d >= 35 && d <= 39) || d === 54 ? D.FIN : [];
         return { maxLev: lev, overnightLev: Math.max(1, lev / 2), shortBan };
       },
 
@@ -110,6 +124,19 @@
         return { label: labels[D.actIndex(d)], pct, previousPct: prev, raised, memo };
       },
 
+      stressCarry(d) { return d > 0 && d % 5 === 0 ? 0.08 : 0.15; },
+      onFeedOpen(g, item) {
+        S.feedOpenedDays[g.day] = true;
+        if (!item || !item.anomalyId || S.openedAnomalies[item.anomalyId]) return;
+        S.openedAnomalies[item.anomalyId] = true;
+        S.anomalies = Object.keys(S.openedAnomalies).length;
+      },
+      onFeedSkip(g) {
+        if (S.feedOpenedDays[g.day] || S.feedSkippedDays[g.day]) return;
+        S.feedSkippedDays[g.day] = true;
+        S.feedsSkipped++;
+      },
+
       calls(d) { return D.DAYS[d].calls ? D.DAYS[d].calls(S) : []; },
       inbox(d) { return D.DAYS[d].inbox ? D.DAYS[d].inbox(S) : []; },
       bossName() { return D.boss(S); },
@@ -119,8 +146,8 @@
         const b = g.broker;
         this.applyPending(g);
 
-        // Day 5: did you actually trade on Perry's downgrade tip?
-        if (g.day === 4 && S.f.insider && !S.f.insiderChecked) {
+        // Session 16: did you actually trade on Perry's downgrade tip?
+        if (g.day === 15 && S.f.insider && !S.f.insiderChecked) {
           S.f.insiderChecked = true;
           const shorted = CASCADE_NAMES.some((s) => b.posQty(s) < 0)
             || b.opts.some((o) => CASCADE_NAMES.indexOf(o.sym) >= 0 && o.type === 'P');
@@ -131,16 +158,16 @@
           }
         }
 
-        // Day 11: the pension fund you sold to has lawyers.
-        if (g.day === 10 && S.f.dumped && !S.f.riverbendPaid) {
+        // Session 40: the pension fund you sold to has lawyers.
+        if (g.day === 39 && S.f.dumped && !S.f.riverbendPaid) {
           S.f.riverbendPaid = true;
           b.cash -= 40000;
           D.adj(S, { heat: 15 });
           B.UI.toast('Legal: $40,000 deducted for your share of the Riverbend settlement.', 'bad');
         }
 
-        // Day 13: with limits raised and nobody watching, the firm automates the desk.
-        if (g.day === 12 && S.f.dereg && !S.f.regulation && !S.f.reported && !S.f.algoDesk) {
+        // Session 52: with limits raised and nobody watching, the firm automates the desk.
+        if (g.day === 51 && S.f.dereg && !S.f.regulation && !S.f.reported && !S.f.algoDesk) {
           S.f.algoDesk = true;
           g.inboxQueue.push({ t: 45, from: 'Desmond Kroll', text: 'FYI: risk has signed off on running flow through the automated stack next month. Cost line goes down. You\'ll like the bonus math.' });
         }
@@ -216,6 +243,14 @@
       onScript(g, id) {
         if (id === 'voteFail') { g.stress.spike(20); B.UI.shake(10); B.SFX.crash(); B.Music.cue('breaker'); }
         if (id === 'votePass') { g.stress.spike(-10); B.SFX.cash(); }
+        if (id === 'loop' || id === 'worstSession' || id === 'finalSession') { g.stress.spike(16); B.UI.shake(8); B.SFX.crash(); }
+        if (id === 'pullFlatten' && !S.f.pullCostApplied) {
+          S.f.pullCostApplied = true;
+          this.liquidate(g);
+          const target = capital * 0.10;
+          g.broker.cash -= Math.max(0, g.broker.equity() - target);
+          B.UI.toast('STACK OFFLINE. Risk flattened the book into the opening auction.', 'bad big');
+        }
       },
 
       onMissedCall(g, call) {
@@ -236,6 +271,14 @@
 
       onDayEnd(g, r) {
         const notes = [];
+        if (g.day === D.DAYS.length - 1 && !S.f.pulledPlug && ((S.anomalies || 0) < 8 || S.f.leftStack)) {
+          S.f.aiUncontained = true;
+        }
+        if (g.day === 25) {
+          S.f.shortBeforeD26 = CASCADE_NAMES.some((s) => g.broker.posQty(s) < 0)
+            || g.broker.opts.some((o) => CASCADE_NAMES.indexOf(o.sym) >= 0 && o.type === 'P');
+        }
+        if (g.day === 48 && S.f.shortBeforeD26 && r.equity < capital) S.f.rightTooEarly = true;
         if (r.quota > 0) {
           if (r.quotaMet) {
             S.missStreak = 0;
@@ -249,6 +292,11 @@
         }
         if (r.earlyEnd === 'wiped' || r.equity < capital * 0.1) return { notes, ending: this.buildEnding(g, 'wiped') };
         if (S.missStreak >= 3 || (!S.f.defected && S.rel.kroll <= 0)) return { notes, ending: this.buildEnding(g, 'fired') };
+        if (g.day % 5 === 4 && g.day < D.DAYS.length - 1) {
+          const bases = { integrity: 50, heat: 10, influence: 20, firm: 60, stability: 60, anger: 20 };
+          for (const k in bases) S.m[k] = B.clamp(S.m[k] + (bases[k] - S.m[k]) * 0.08, 0, 100);
+          notes.push('The closed market takes a little pressure out of every meter. Not enough.');
+        }
         if (S.m.heat >= 50) notes.push('Your heat with regulators is <b>high</b>.');
         if (g.day === D.DAYS.length - 1) return { notes, ending: this.buildEnding(g, 'final') };
         return { notes };
@@ -260,6 +308,7 @@
         if (!id) return cb();
         const c = D.CHOICES[id];
         const wealth = g.broker.equity();
+        if (c.req && !c.req(S, wealth)) return cb();
         const view = Object.assign({}, c, {
           options: c.options.filter((o) => !o.req || o.req(S, wealth)).map((o) => Object.assign({}, o, { req: null }))
         });
@@ -268,11 +317,10 @@
           opt.apply(S);
           S.choices[id] = optId;
           if (opt.headline) S.log.push({ day: d, text: opt.headline });
-          if (id === 'c7') S.f.billPassed = votePasses(S);
+          if (id === 'c8') S.f.billPassed = votePasses(S);
           B.Screens.aftermath(c.title, opt.after || [], () => {
             if (S.f.fled) {
               this.liquidate(g);
-              return cb(this.buildEnding(g, 'final'));
             }
             cb();
           });
@@ -288,13 +336,15 @@
       },
 
       buildEnding(g, reason) {
-        const ctx = { S, wealth: g.broker.equity(), start: capital, reason };
+        const ctx = { S, wealth: g.broker.equity(), start: capital, reason,
+          days: g.history.length, quotaMet: g.history.filter((h) => h.quotaMet).length };
         const e = B.StoryEndings.resolve(ctx);
         return {
           id: e.id, title: e.title, headline: e.headline, deck: e.deck,
           story: e.story(ctx), wealth: e.wealth(ctx),
-          dark: ['wiped', 'fired', 'perp', 'depression', 'replaced'].indexOf(e.id) >= 0,
-          timeline: S.log.map((l) => `<b>Day ${l.day + 1}:</b> ${l.text}`),
+          dark: !!e.dark || ['wiped', 'fired', 'perp', 'depression', 'replaced'].indexOf(e.id) >= 0,
+          unpriced: !!e.unpriced,
+          timeline: S.log.map((l) => `<b>W${D.weekOf(l.day)} ${D.dowOf(l.day)}:</b> ${l.text}`),
           indexMonth: g.market.bySym.INDX.last / (g.indexStart || 512.4) - 1
         };
       },

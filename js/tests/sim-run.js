@@ -36,7 +36,7 @@ function load() {
       closeModal() {},
       log: [] };
   `, ctx);
-  for (const f of ['js/modes/story/story-data.js', 'js/modes/story/endings.js', 'js/modes/story/story-engine.js', 'js/modes/endless/endless.js']) {
+  for (const f of ['js/modes/story/story-data.js', 'js/modes/story/patch3-data.js', 'js/modes/story/endings.js', 'js/modes/story/patch3-endings.js', 'js/modes/story/story-engine.js', 'js/modes/endless/endless.js']) {
     vm.runInContext(fs.readFileSync(path.join(root, f), 'utf8'), ctx, { filename: f });
   }
   return ctx.BTB;
@@ -49,6 +49,7 @@ function bot(B, g, rng, style) {
   if (a && a.kind === 'choice' && a.state === 'open') g.interrupts.resolveChoice(g.__policy[a.choiceId] || a.defaultOpt, false);
   for (const t of g.interrupts.tasks) if (!t.done && rng.next() < 0.2) g.interrupts.executeTask(t.id);
   if (g.act()) return;
+  if (style === 'flat') return;
   if (rng.next() < (style === 'yolo' ? 0.08 : 0.03)) {
     const syms = m.tickers.map((t) => t.sym);
     const sym = syms[Math.floor(rng.next() * syms.length)];
@@ -82,15 +83,23 @@ function play(B, mode, policy, style, seed) {
 }
 
 const POLICIES = {
-  whistle: { c1: 'leak', c2: 'warn', c3: 'no', c4: 'tell', c5: 'bail', c6: 'report', c7: 'whip', c8: 'public' },
-  depression: { c1: 'dump', c2: 'ignore', c3: 'yes', c4: 'join', c5: 'fail', c6: 'sign', c7: 'against', c8: 'quiet' },
-  soft: { c1: 'refuse', c2: 'warn', c3: 'no', c4: 'refuse', c5: 'bail', c6: 'refuse', c7: 'whip', c8: 'quiet' },
-  crook: { c1: 'dump', c2: 'trade', c3: 'yes', c4: 'join', c5: 'ban', c6: 'sign', c7: 'position', c8: 'flee' },
-  insider: { c1: 'dump', c2: 'trade', c3: 'yes', c4: 'join', c5: 'bail', c6: 'sign', c7: 'whip', c8: 'quiet' },
-  treasury: { c1: 'dump', c2: 'warn', c3: 'yes', c4: 'refuse', c5: 'bail', c6: 'refuse', c7: 'whip', c8: 'treasury' }
+  whistle: { c1:'leak', c2:'warn', c3:'no', c4:'tell', c5:'bail', c6:'report', c7:'expose', c8:'whip', c9:'public', c10:'pull' },
+  depression: { c1:'dump', c2:'ignore', c3:'yes', c4:'join', c5:'fail', c6:'sign', c7:'finance', c8:'against', c9:'quiet', c10:'leave' },
+  soft: { c1:'refuse', c2:'warn', c3:'no', c4:'refuse', c5:'bail', c6:'refuse', c7:'refuse', c8:'whip', c9:'quiet', c10:'pull' },
+  crook: { c1:'dump', c2:'trade', c3:'yes', c4:'join', c5:'ban', c6:'sign', c7:'finance', c8:'position', c9:'flee', c10:'leave' },
+  insider: { c1:'dump', c2:'trade', c3:'yes', c4:'join', c5:'bail', c6:'sign', c7:'finance', c8:'whip', c9:'quiet', c10:'leave' },
+  treasury: { c1:'dump', c2:'warn', c3:'yes', c4:'refuse', c5:'bail', c6:'refuse', c7:'refuse', c8:'whip', c9:'treasury', c10:'pull' }
 };
 
 let errors = 0;
+try {
+  const B = load();
+  const mode = B.StoryMode();
+  mode.quota = () => 0;
+  const r = play(B, mode, POLICIES.soft, 'flat', 'full-campaign-smoke');
+  console.log(`STORY ${'full-smoke'.padEnd(10)} ${'flat'.padEnd(7)} -> ${r.ending ? r.ending.title.padEnd(22) : 'NO ENDING'.padEnd(22)} days=${String(r.days).padStart(2)} equity=$${r.equity.toLocaleString()}`);
+  if (!r.ending || r.days !== 61) errors++;
+} catch (e) { errors++; console.log('STORY full-smoke flat THREW:', e.stack); }
 for (const [name, pol] of Object.entries(POLICIES)) {
   for (const style of ['careful', 'yolo']) {
     try {

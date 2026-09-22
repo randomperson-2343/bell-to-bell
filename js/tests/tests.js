@@ -351,12 +351,52 @@
   });
 
   // ---------- Pacing / balance ----------
-  test('Quota curve rises every day and starts near 0.8% of the book', () => {
+  test('Quota curve is regime-based across all 61 sessions', () => {
     const Q = B.StoryData.QUOTAS;
     assert(Q.length === B.StoryData.DAYS.length, 'one quota per day');
     assert(Q[0] >= 0.0075 && Q[0] <= 0.01, 'day 1 quota ' + Q[0]);
-    assert(Q[Q.length - 1] >= Q[0] * 4, 'quota should quadruple by the end');
-    for (let i = 1; i < Q.length; i++) assert(Q[i] > Q[i - 1], 'quota should rise at day ' + (i + 1));
+    assert(Q.length === 61, 'campaign must contain 61 sessions');
+    assert(Q[45] === Math.max(...Q), 'quota should peak after false-dawn weekend');
+    assert(Q[30] < Q[29] && Q[60] < Q[55], 'panic regimes should cut quota');
+    assert(Math.max(...Q) <= .03, 'quota curve should not extrapolate above 3%');
+  });
+
+  test('Patch 3 calendar and anomaly arithmetic is exact', () => {
+    assert(B.StoryData.DAYS.length === 61, '61 sessions');
+    assert(B.StoryData.weekOf(0) === 1 && B.StoryData.weekOf(60) === 13, 'thirteen calendar weeks');
+    assert(B.StoryData.dowOf(0) === 'Monday' && B.StoryData.dowOf(60) === 'Monday', 'orphan Monday');
+    assert(B.StoryData.ANOMALIES.length === 12, 'twelve anomalies');
+    assert(new Set(B.StoryData.ANOMALIES.map((x) => x[0])).size === 12, 'anomaly sessions unique');
+  });
+
+  test('Patch 3 market timeline preserves false hope then collapse', () => {
+    const S = B.StoryMode.freshState(250000);
+    S.f.billPassed = true;
+    const falseDawn = B.StoryData.DAYS.slice(41, 49).map((d) => d.scen(S).market);
+    const rally = falseDawn.reduce((n, x) => n + x.target, 0);
+    assert(rally >= .16 && rally <= .18, 'false dawn should compound to about 20%, got log sum ' + rally);
+    assert(falseDawn.every((x) => x.target <= .022 && x.gap <= .004), 'false dawn must grind, never gap');
+    const crash = B.StoryData.DAYS.slice(55, 60).map((d) => d.scen(S).market.target);
+    assert(crash.join(',') === '-0.09,0.05,-0.04,-0.07,-0.11', 'vote/crash sequence drifted: ' + crash.join(','));
+    S.f.pulledPlug = true;
+    const last = B.StoryData.DAYS[60].scen(S);
+    assert(last.market.gap === -.40, 'pull-the-plug opening must be -40%');
+    assert(last.events.some((e) => e.script === 'pullFlatten'), 'pull-the-plug liquidation event missing');
+  });
+
+  test('Pre-open feed snowballs and contracts in the final sessions', () => {
+    const D = B.StoryData.DAYS;
+    assert(D[0].feed.length === 4 && D[5].feed.length === 5 && D[10].feed.length === 6, 'Act I feed ramp');
+    assert(D[15].feed.length === 7 && D[21].feed.length === 8 && D[26].feed.length === 9, 'Act II feed ramp');
+    assert(D[58].feed.length === 3 && D[60].feed.length === 3, 'Act IV feed contraction');
+  });
+
+  test('Version 2 story saves migrate to matching Patch 3 beats', () => {
+    const old = { v: 2, kind: 'story', day: 13, mode: { S: { f: {}, choices: { c7:'whip', c8:'quiet' }, log: [{ day: 13, text:'x' }] } }, history: [{ day: 12 }] };
+    const m = B.Save.migrateV2Snapshot(old);
+    assert(m.v === 3 && m.day === 55, 'day 14 should map to session 56');
+    assert(m.mode.S.choices.c8 === 'whip' && m.mode.S.choices.c9 === 'quiet', 'choice ids migrated');
+    assert(m.history[0].day === 51 && m.mode.S.log[0].day === 55, 'history/log days migrated');
   });
 
   test('A trading day is three real minutes by default', () => {
@@ -504,31 +544,30 @@
         assert(c.text && c.speaker, id + ' needs a speaker and text');
       }
     }
-    assert(ids.length === 8, 'expected 8 decisions, found ' + ids.length);
+    assert(ids.length === 10, 'expected 10 decisions, found ' + ids.length);
+    assert(ids.map((id) => D.CHOICES[id].day).join(',') === '9,13,19,28,34,36,37,54,57,59', 'decision chronology drifted');
   });
 
-  test('Story graph: every ending is reachable through choices', () => {
-    const order = ['c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7', 'c8'];
+  test('Story graph: every chronological decision path resolves safely', () => {
+    const order = ['c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7', 'c8', 'c9', 'c10'];
     const reached = {};
     let paths = 0;
     const archetypes = [
-      { reason: 'final', wealth: 1.3, tradedTip: false },
-      { reason: 'final', wealth: 3.4, tradedTip: false },
-      { reason: 'final', wealth: 3.0, tradedTip: true },
-      { reason: 'final', wealth: 0.8, tradedTip: false },
-      { reason: 'wiped', wealth: 0.05, tradedTip: false },
-      { reason: 'fired', wealth: 0.9, tradedTip: false }
+      { reason: 'final', wealth: 1.3, tradedTip: false, anomalies: 12 },
+      { reason: 'final', wealth: 3.0, tradedTip: true, anomalies: 6 }
     ];
     function walk(S, i, arch) {
       if (i === order.length) {
         paths++;
-        const ctx = { S, wealth: arch.wealth * 250000, start: 250000, reason: arch.reason };
+        if (!S.f.pulledPlug && (S.anomalies < 8 || S.f.leftStack)) S.f.aiUncontained = true;
+        const ctx = { S, wealth: arch.wealth * 250000, start: 250000, reason: arch.reason, days: 61, quotaMet: 25 };
         const e = B.StoryEndings.resolve(ctx);
         assert(e, 'no ending resolved');
         reached[e.id] = (reached[e.id] || 0) + 1;
         return;
       }
       const c = D.CHOICES[order[i]];
+      if (c.req && !c.req(S, arch.wealth * 250000)) return walk(S, i + 1, arch);
       for (const o of c.options) {
         if (o.req && !o.req(S, arch.wealth * 250000)) continue;
         const S2 = clone(S);
@@ -536,15 +575,56 @@
         if (order[i] === 'c2' && o.id === 'trade' && arch.tradedTip) { S2.f.insiderTraded = true; D.adj(S2, { heat: 20 }); }
         // The firm automates the desk on the deregulated path (see story-engine onDayStart).
         if (order[i] === 'c6' && S2.f.dereg && !S2.f.regulation && !S2.f.reported) S2.f.algoDesk = true;
-        if (order[i] === 'c7') S2.f.billPassed = B.StoryMode.votePasses(S2);
+        if (order[i] === 'c8') S2.f.billPassed = B.StoryMode.votePasses(S2);
         walk(S2, i + 1, arch);
       }
     }
-    for (const a of archetypes) walk(B.StoryMode.freshState(250000), 0, a);
-    const missing = B.StoryEndings.list.map((e) => e.id).filter((id) => !reached[id]);
-    assert(!missing.length, 'unreachable endings: ' + missing.join(', '));
-    assert(paths > 1000, 'too few paths: ' + paths);
+    for (const a of archetypes) {
+      const S = B.StoryMode.freshState(250000);
+      S.anomalies = a.anomalies;
+      walk(S, 0, a);
+    }
+    assert(paths > 50000, 'too few paths: ' + paths);
     B.__storyReach = { reached, paths };
+  });
+
+  test('All 22 ending gates are reachable without priority collisions', () => {
+    function ctx(patch) {
+      const S = B.StoryMode.freshState(250000);
+      S.anomalies = 12;
+      const c = { S, wealth: 325000, start: 250000, reason: 'final', days: 61, quotaMet: 40 };
+      patch(c, S);
+      return c;
+    }
+    const cases = {
+      wiped: (c) => { c.reason = 'wiped'; c.wealth = 10000; },
+      fired: (c) => { c.reason = 'fired'; },
+      nobody: (c,S) => { S.f.aiUncontained = true; S.anomalies = 6; },
+      perp: (c,S) => { S.f.fraud = true; S.m.heat = 72; },
+      'fall-guy': (c,S) => { S.f.externalFraud = true; S.m.heat = 58; },
+      master: (c,S) => { S.f.fled = true; },
+      whistle: (c,S) => { S.m.integrity = 75; S.f.reported = true; },
+      cassandra: (c,S) => { S.m.integrity = 90; S.m.influence = 10; S.m.stability = 28; },
+      revolving: (c,S) => { S.f.treasury = true; },
+      acquirer: (c,S) => { S.f.letFail = true; S.m.firm = 80; S.m.influence = 45; },
+      ward: (c,S) => { S.f.bailout = true; S.m.stability = 42; S.m.firm = 30; },
+      clawback: (c,S) => { c.wealth = 550000; S.f.dumped = true; S.m.anger = 65; },
+      'right-early': (c,S) => { S.f.rightTooEarly = true; },
+      'lost-decade': (c,S) => { S.f.regulation = true; S.f.billPassed = false; S.m.stability = 40; },
+      fund: (c,S) => { c.wealth = 1125000; S.m.heat = 12; S.rel.imani = 70; },
+      'everything-rally': (c,S) => { c.wealth = 550000; S.f.bailout = true; S.f.billPassed = true; S.m.stability = 35; S.m.firm = 60; },
+      depression: (c,S) => { S.m.stability = 22; },
+      soft: (c,S) => { S.m.stability = 60; S.f.regulation = true; S.f.billPassed = true; },
+      quiet: (c,S) => { c.wealth = 800000; S.m.heat = 12; S.rel.imani = 40; },
+      replaced: (c,S) => { S.f.algoDesk = true; S.m.integrity = 50; },
+      exit: (c,S) => { S.f.pulledPlug = true; },
+      grind: () => {}
+    };
+    assert(Object.keys(cases).length === 22, 'fixture count');
+    for (const id in cases) {
+      const got = B.StoryEndings.resolve(ctx(cases[id]));
+      assert(got && got.id === id, `${id} resolves as ${got && got.id}`);
+    }
   });
 
   test('Stabilization vote can go both ways', () => {

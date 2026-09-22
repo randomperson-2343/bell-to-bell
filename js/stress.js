@@ -15,8 +15,8 @@
       this.catastropheReady = true; // one true-disaster cooldown bypass per day
     }
 
-    startDay() {
-      this.v *= 0.30;
+    startDay(carry) {
+      this.v *= carry == null ? 0.30 : B.clamp(carry, 0, 1);
       this.peak = this.v;
       this.cooldown = 0;
       this.resistance = Math.max(this.resistance * 0.35, 0);
