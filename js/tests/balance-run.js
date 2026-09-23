@@ -35,7 +35,7 @@ function simulate(name, cfg) {
   const m = new B.Market({ seed: mode.seed, volMult: 1 });
   const b = new B.Broker({ cash: mode.capital });
   b.attach(m);
-  let strikes = 0, hit = 0, firedAt = null, missStreak = 0, maxMissStreak = 0, backstopAt = null;
+  let weekDailyMiss = 0, forgiven = 0, strikes = 0, weekStrikes = 0, weekEq = 0, weekTarget = 0, hit = 0, firedAt = null, missStreak = 0, maxMissStreak = 0, backstopAt = null;
   const rows = [];
   for (let day = 0; day < B.StoryData.DAYS.length; day++) {
     const rules = mode.rules(day);
@@ -47,6 +47,14 @@ function simulate(name, cfg) {
     m.startDay(day, scen);
     b.startDay();
     const start = b.equity();
+    // Weekly quota mirrors story-engine openWeek(): sum of the week's daily
+    // percentages plus 15%, judged at the week's last session.
+    const ws = Math.floor(day / 5) * 5, we = Math.min(ws + 4, B.StoryData.DAYS.length - 1);
+    if (day === ws) {
+      weekEq = start;
+      let pct = 0; for (let d = ws; d <= we; d++) pct += B.StoryData.QUOTAS[d];
+      weekTarget = Math.round(Math.max(1500, start * pct * 1.15) / 50) * 50;
+    }
     const wrong = cfg.missEvery && day % cfg.missEvery === cfg.missEvery - 1;
     const direction = (scen.market && scen.market.target || 0) >= 0 ? 1 : -1;
     const side = wrong ? -direction : direction;
@@ -63,16 +71,22 @@ function simulate(name, cfg) {
     const pnl = b.equity() - start;
     const met = pnl >= quota;
     if (met) { hit++; missStreak = 0; } else { strikes++; missStreak++; }
+    if (day === ws) weekDailyMiss = 0;
+    if (!met) weekDailyMiss++;
+    if (day === we && we > ws) {
+      if (b.equity() - weekEq < weekTarget) { strikes++; weekStrikes++; }
+      else if (weekDailyMiss > 0) { strikes--; forgiven++; } // a made week wipes one missed day
+    }
     maxMissStreak = Math.max(maxMissStreak, missStreak);
     if (!backstopAt && missStreak >= 5) backstopAt = day + 1;
     if (!firedAt && strikes >= B.StoryMode.QUOTA_STRIKE_LIMIT) firedAt = day + 1;
     rows.push({ day: day + 1, pnl: Math.round(pnl), quota, met, strikes, equity: Math.round(b.equity()) });
   }
-  return { strategy: name, hitRate: hit / rows.length, strikes, threshold: B.StoryMode.QUOTA_STRIKE_LIMIT, firedAt, maxMissStreak, fifthConsecutiveAt: backstopAt, finalEquity: Math.round(b.equity()), reached61: !firedAt || firedAt >= 61, rows };
+  return { strategy: name, hitRate: hit / rows.length, strikes, weekStrikes, forgiven, threshold: B.StoryMode.QUOTA_STRIKE_LIMIT, firedAt, maxMissStreak, fifthConsecutiveAt: backstopAt, finalEquity: Math.round(b.equity()), reached61: !firedAt || firedAt >= 61, rows };
 }
 
 const results = Object.entries(styles).map(([name, cfg]) => simulate(name, cfg));
 for (const r of results) {
-  console.log(`${r.strategy.padEnd(12)} hit=${(r.hitRate * 100).toFixed(1)}% strikes=${String(r.strikes).padStart(2)} thresholdAt=${r.firedAt || '-'} maxStreak=${r.maxMissStreak} fifthConsecutive=${r.fifthConsecutiveAt || '-'} equity=$${r.finalEquity.toLocaleString()} reaches61=${r.reached61}`);
+  console.log(`${r.strategy.padEnd(12)} hit=${(r.hitRate * 100).toFixed(1)}% strikes=${String(r.strikes).padStart(2)} (weekly ${r.weekStrikes}, wiped ${r.forgiven}) thresholdAt=${r.firedAt || '-'} maxStreak=${r.maxMissStreak} fifthConsecutive=${r.fifthConsecutiveAt || '-'} equity=$${r.finalEquity.toLocaleString()} reaches61=${r.reached61}`);
 }
 console.log(JSON.stringify(results.map(({ rows, ...summary }) => summary), null, 2));

@@ -839,5 +839,48 @@
     assert(/2 posts/.test(recap) && /1 turned out to be fake/.test(recap) && /1 was right/.test(recap), 'end-of-day recap missing or wrong: ' + recap);
   });
 
+  test('Weekly quota: resets each Monday, a missed week is one career strike', () => {
+    const mode = B.StoryMode({ S: B.StoryMode.freshState(250000) });
+    const S = mode.S;
+    let eq = 250000;
+    const g = { day: 0, broker: { equity: () => eq, posQty: () => 0, opts: [], pos: {} }, market: { bySym: {} }, inboxQueue: [] };
+    const close = (day, pnl) => { g.day = day; eq += pnl; return mode.onDayEnd(g, { quota: 1, quotaMet: true, pnl, equity: eq, date: 'x' }); };
+    // Week 1: open Monday, clear the target by Friday.
+    g.day = 0; mode.openWeek(g);
+    const t1 = S.week.target;
+    const pct = B.StoryData.QUOTAS.slice(0, 5).reduce((a, b) => a + b, 0);
+    assert(Math.abs(t1 - 250000 * pct * 1.15) <= 50, 'week 1 target should be the week\'s daily quotas plus 15%, got ' + t1);
+    for (let d = 0; d < 4; d++) close(d, 1000);
+    const fri = close(4, t1);
+    assert(S.quotaStrikes === 0 && fri.notes.some((n) => /Weekly quota met/.test(n)), 'a cleared week must not strike');
+    // Week 2: resets from Friday's equity, and a losing week strikes once.
+    g.day = 5; mode.openWeek(g);
+    assert(S.week.w === 2 && S.week.startEq === eq, 'week 2 must reset from the new equity');
+    for (let d = 5; d < 9; d++) close(d, -100);
+    close(9, -100);
+    assert(S.quotaStrikes === 1 && S.quotaLedger[0].kind === 'week', 'a missed week must add exactly one strike');
+    mode.onDayEnd(g, { quota: 1, quotaMet: true, pnl: 0, equity: eq, date: 'x' });
+    assert(S.quotaStrikes === 1, 'reprocessing Friday must not double the weekly strike');
+    // A Friday daily miss and a weekly miss are two separate strikes, and survive a ledger rebuild.
+    g.day = 10; mode.openWeek(g);
+    for (let d = 10; d < 14; d++) close(d, 0);
+    g.day = 14; eq -= 5000;
+    mode.onDayEnd(g, { quota: 1000, quotaMet: false, pnl: -5000, equity: eq, date: 'x' });
+    assert(S.quotaStrikes === 3, 'Friday daily miss plus weekly miss should be two strikes, total ' + S.quotaStrikes);
+    mode.reconcileQuotaStrikes([]);
+    assert(S.quotaStrikes === 3, 'ledger rebuild merged a weekly strike into a daily one');
+    // Week 4: miss Monday, then make the week. The Monday strike is wiped and stays wiped.
+    g.day = 15; mode.openWeek(g);
+    const t4 = S.week.target;
+    g.day = 15; eq -= 100;
+    mode.onDayEnd(g, { quota: 1000, quotaMet: false, pnl: -100, equity: eq, date: 'x' });
+    assert(S.quotaStrikes === 4, 'Monday miss should strike');
+    for (let d = 16; d < 19; d++) close(d, 0);
+    const v4 = close(19, t4 + 500);
+    assert(S.quotaStrikes === 3 && v4.notes.some((n) => /wipes one missed day/.test(n)), 'a made week should wipe one missed day');
+    mode.reconcileQuotaStrikes([{ day: 15, quotaMet: false, pnl: -100 }]);
+    assert(S.quotaStrikes === 3, 'a wiped day came back after a ledger rebuild');
+  });
+
   B.Tests = { results, run: () => results };
 })(window.BTB);

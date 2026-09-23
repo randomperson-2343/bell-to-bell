@@ -559,6 +559,19 @@
         $('tb-quota-amt').textContent = 'none';
         $('tb-quota-bar').style.width = '0%';
       }
+      // Weekly quota: progress is everything made since the week opened.
+      const wq = g.mode.weekQuota ? g.mode.weekQuota(g, eq) : null;
+      const wk = $('tb-week');
+      if (wk) {
+        wk.hidden = !wq;
+        if (wq) {
+          $('tb-week-amt').textContent = F.money(wq.target);
+          const wp = B.clamp(wq.made / wq.target, 0, 1);
+          $('tb-week-bar').style.width = (wp * 100) + '%';
+          $('tb-week-bar').className = wp >= 1 ? 'met' : '';
+          wk.title = `Week ${wq.week}: ${F.money(wq.made, true)} of ${F.money(wq.target)} · ${wq.left} session${wq.left === 1 ? '' : 's'} left`;
+        }
+      }
       const strike = $('tb-strikes');
       if (g.mode.kind === 'story' && g.mode.S) {
         const count = g.mode.S.quotaLedger ? g.mode.S.quotaLedger.length : (g.mode.S.quotaStrikes || 0);

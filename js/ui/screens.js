@@ -154,6 +154,7 @@
         <div class="stat"><div class="l">Equity</div><div class="v">${F.money(g.broker.equity())}</div></div>
         <div class="stat quota-stat"><div class="l">${b.quotaMeta ? B.esc(b.quotaMeta.label) : 'Today\'s quota'}</div><div class="v">${b.quota > 0 ? F.money(b.quota) : 'none'}</div>${b.quotaMeta ? `<div class="quota-delta">${(b.quotaMeta.pct * 100).toFixed(2)}% of book${b.quotaMeta.raised ? ` · ↑ ${b.quotaMeta.raised}% overnight` : ''}</div>` : ''}</div>
         <div class="stat"><div class="l">Open positions</div><div class="v">${Object.keys(g.broker.pos).length + g.broker.opts.length}</div></div>
+        ${b.weekQuota ? `<div class="stat quota-stat week-stat"><div class="l">Weekly quota</div><div class="v">${F.money(b.weekQuota.target)}</div><div class="quota-delta">${F.money(b.weekQuota.made, true)} so far · ${b.weekQuota.left} session${b.weekQuota.left === 1 ? '' : 's'} left</div></div>` : ''}
         ${b.quotaStrikes ? `<div class="stat strike-stat"><div class="l">Career strikes</div><div class="v">${b.quotaStrikes.count} / ${b.quotaStrikes.limit}</div></div>` : ''}
       </div>`;
       const anomalyHelp = b.anomalyCount == null ? '' : '<p class="anomaly-help"><b>Anomalies</b> are unusual details hidden in pre-open items. Open a suspicious item to inspect it. Enough verified anomalies can unlock the final systems decision.</p>';

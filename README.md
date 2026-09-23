@@ -25,6 +25,7 @@ No install and no build. Open `index.html` in any modern browser.
 - **Phone tips are unreliable on purpose.** A tip resolves one of four ways: it pays, it's true but already in the price, it runs your way just long enough to get you to size up and then reverses, or it's simply false. Roughly one in three pays. Acting on every call is how you go broke.
 - **Stress 2.0** rises with losses, leverage, margin calls, ringing phones and a looming close. It escalates through visible Loaded, Tunnel and Critical impairment. Panic attacks now last under four real seconds at normal speed and an A/S/D grounding sequence ends them immediately. Recovery creates temporary resistance and a cooldown; one true market catastrophe can bypass it. Fat-finger risk is capped and can no longer add a zero.
 - **Desk quotas escalate by market regime.** A missed mandate adds one permanent career strike, logged once for that session. The thirtieth strike ends the run. The exact mandate, percentage of book, overnight increase and strike count are visible in the briefing, inbox, closing memo, HUD and debug overlay.
+- **Weekly quota** on top of the daily one, reset every Monday: the week has to clear the sum of its daily quotas plus 15%. A missed week is one more career strike; a made week wipes one missed day from that week. The orphan final Monday has no weekly quota.
 - **Interruptions**: clients with orders to work, your boss calling to shout, tipsters, and your mother. Some decisions arrive as a timed phone call mid-session.
 
 ### Saving
