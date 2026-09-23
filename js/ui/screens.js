@@ -258,14 +258,14 @@
           <div class="stat"><div class="l">Cash</div><div class="v ${F.cls(w.cash)}">${F.money(w.cash)}</div></div>
           <div class="stat"><div class="l">Card</div><div class="v ${w.card > 0 ? 'down' : ''}">${w.card > 0 ? F.money(-w.card) : '$0'}</div></div>
           <div class="stat"><div class="l">Rent owed</div><div class="v ${w.arrears > 0 ? 'down' : ''}">${F.money(w.arrears)}</div></div>
-          <div class="stat"><div class="l">Owed to desk</div><div class="v ${w.deficit > 0 ? 'amber' : ''}">${F.money(w.deficit)}</div></div>
+          <div class="stat"><div class="l">Unearned draw</div><div class="v ${w.deficit > 0 ? 'amber' : ''}">${F.money(w.deficit)}</div></div>
           <div class="stat"><div class="l">Net worth</div><div class="v ${F.cls(v.worth)}">${F.money(v.worth)}</div></div>
         </div>
         <p>You live in the <b>${T.name}</b>: ${F.money(T.rent)} a week. ${T.note}</p>
-        <p class="muted">Moving up costs two weeks of the new rent up front. Moving down is free. Better sleep means less stress carried into the morning.</p>`;
+        <p class="muted">Your draw pays about ${F.money(v.draw)} a week after tax. Moving up costs two weeks of the new rent up front; moving down is free. A better home means less stress in the morning and calmer hands at the desk. Unearned draw is repaid only out of future bonus.</p>`;
       const after = `<div class="choice-list">
-        <button class="choice-btn" data-tier=""><b>Stay put</b><span>${T.name} · ${F.money(T.rent)}/week</span></button>
-        ${opts.map((o) => `<button class="choice-btn" data-tier="${o.i}" ${o.afford ? '' : 'disabled'}><b>${o.i < (w.tier | 0) ? 'Move down' : 'Move up'}: ${o.name}</b><span>${F.money(o.rent)}/week${o.cost ? ` · ${F.money(o.cost)} to move in` : ''}${o.afford ? '' : ' · you cannot afford it'} · ${o.note}</span></button>`).join('')}
+        <button class="choice-btn" data-tier=""><b>Stay put</b><span>${T.name} · ${F.money(T.rent)} rent · ${F.money(v.weekly)}/week all in</span></button>
+        ${opts.map((o) => `<button class="choice-btn" data-tier="${o.i}" ${o.afford ? '' : 'disabled'}><b>${o.i < (w.tier | 0) ? 'Move down' : 'Move up'}: ${o.name}</b><span>${F.money(o.rent)} rent · ${F.money(o.weekly)}/week all in${o.cost ? ` · ${F.money(o.cost)} to move in` : ''}${o.afford ? '' : ' · you cannot afford it'} · ${o.note}</span></button>`).join('')}
       </div>`;
       const el = this.modal({ kicker: 'SUNDAY · YOUR MONEY', title: 'The Ledger', body, after, wide: true });
       el.querySelectorAll('.choice-btn').forEach((btn) => btn.addEventListener('click', () => {

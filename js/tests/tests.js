@@ -986,5 +986,43 @@
     assert(legacy.S.wallet && legacy.S.wallet.cash === B.Economy.P.startCash, 'a pre-economy save did not get a fresh wallet');
   });
 
+  test('Risk desk edge cases: flips open risk, fat fingers and sharp rumours do not breach, options can chase', () => {
+    const E = B.Economy;
+    const m = new B.Market({ seed: 'econ-edge' });
+    const b = new B.Broker({ cash: 250000 }); b.attach(m);
+    m.startDay(0, { regime: 'chop' }); b.startDay();
+    m.step(1);
+    b.marketOrder('BSTN', 100, {});
+    const flip = b.marketOrder('BSTN', -200, {});
+    assert(flip.ok && b.trades[b.trades.length - 1].open, 'flipping through zero should count as opening risk');
+    const hype = (src) => [
+      { t: 100, hype: true, src, impacts: [{ scope: 'ticker', id: 'HLST', pct: 0.01 }] },
+      { t: 110, hype: true, src, impacts: [{ scope: 'ticker', id: 'HLST', pct: -0.01 }] }];
+    const chase = [{ t: 101, sym: 'HLST', qty: 10, open: true }];
+    assert(!E.review({ risk: econRisk(), start: 250000, trades: chase, events: hype('@MacroMaven') }).breaches.length, 'a sharp account is news, not hype');
+    assert(E.review({ risk: econRisk(), start: 250000, trades: chase, events: hype('@CallsOnlyCarl') }).breaches.length === 1, 'a hype account post should be chaseable');
+    const call = [{ t: 101, sym: 'HLST 20C', und: 'HLST', dir: 1, qty: 2, opt: true, open: true }];
+    assert(E.review({ risk: econRisk(), start: 250000, trades: call, events: hype('@CallsOnlyCarl') }).breaches.length === 1, 'chasing with calls should count');
+    const ff = [{ t: 250, sym: 'BSTN', qty: 300, open: true, tag: 'FAT FINGER' }];
+    assert(!E.review({ risk: econRisk({ breachT: 200, flatT: 201 }), start: 250000, trades: ff, events: [] }).breaches.length, 'a fat finger is not a choice');
+    const resting = [{ t: 250, placed: 20, sym: 'BSTN', qty: 100, open: true, tag: 'LIMIT' }];
+    assert(!E.review({ risk: econRisk({ breachT: 200, flatT: 201 }), start: 250000, trades: resting, events: [] }).breaches.length, 'a resting order placed before the limit is not revenge');
+  });
+
+  test('Card is paid down from spare cash; the lone final Monday bills one fifth of a week', () => {
+    const E = B.Economy, P = E.P;
+    const w = E.fresh(); w.peakEq = 250000; w.card = 1200; w.cash = 400;
+    E.settle(w, { equity: 300000, capital: 250000, weekMade: true, breaches: [], sessions: 5 });
+    assert(w.card === 0 && w.cash >= P.cardBuffer, 'spare cash should clear the card: card ' + w.card + ' cash ' + w.cash);
+    const w2 = E.fresh(); w2.peakEq = 250000; w2.cash = 10000;
+    E.settle(w2, { equity: 250000, capital: 250000, weekMade: true, breaches: [], sessions: 1 });
+    const draw1 = Math.round(P.drawPerSession * (1 - P.taxRate));
+    const bills1 = Math.round((P.living + P.loan + P.mom) / 5) + Math.round(E.TIERS[E.DEFAULT_TIER].rent / 5);
+    assert(w2.cash === 10000 + draw1 - bills1, `final Monday should bill a fifth of a week: ${w2.cash}`);
+    const w3 = E.fresh(); w3.peakEq = 250000;
+    const jackpot = E.settle(w3, { equity: 5000000, capital: 250000, weekMade: true, breaches: [], sessions: 1 });
+    assert(jackpot.bonus <= 5000000 * P.bonusCap / 5 * (1 + P.cleanKicker) + 1, 'one session cannot pay out a season');
+  });
+
   B.Tests = { results, run: () => results };
 })(window.BTB);

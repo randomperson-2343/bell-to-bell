@@ -99,8 +99,8 @@
       // pop is one shock and the fade is an opposite shock 8 to 13 minutes on.
       const fadeAt = t + 3 + Math.round(rng.range(5, 10));
       const overshoot = rng.chance(1 / 3) ? rng.range(1.15, 1.4) : 1;
-      add.push({ t: t, hype: true, impacts: [{ scope: 'ticker', id: sym, pct: dir * size, over: 0.3 }] });
-      add.push({ t: fadeAt, hype: true, impacts: [{ scope: 'ticker', id: sym, pct: -dir * size * overshoot, over: 0.2 }] });
+      add.push({ t: t, hype: true, src: handle, impacts: [{ scope: 'ticker', id: sym, pct: dir * size, over: 0.3 }] });
+      add.push({ t: fadeAt, hype: true, src: handle, impacts: [{ scope: 'ticker', id: sym, pct: -dir * size * overshoot, over: 0.2 }] });
     };
     for (const e of events) {
       if (e.kind === 'chirp' && e.src) make(e.t, e.src, e.text, 1);

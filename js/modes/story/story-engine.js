@@ -172,6 +172,9 @@
 
       stressCarry(d) { return (d > 0 && d % 5 === 0 ? 0.08 : 0.15) * E.tier(W$).carry; },
 
+      calmMult() { return E.tier(W$).calm || 1; },
+      onCouch() { return (W$.tier | 0) === 0; },
+
       // What home does to you before the bell: where you sleep, and whatever
       // the landlord did last week.
       morningStress() {
@@ -210,6 +213,7 @@
         let note = null;
         if (item.fake) R.fakes = (R.fakes || 0) + 1;
         else if (item.truth) R.trues = (R.trues || 0) + 1;
+        if (B.Sqwak && B.Sqwak.account(item.src).followers >= B.Sqwak.HYPE_MIN_FOLLOWERS && B.Sqwak.tickersIn(item.text).length) R.moved = (R.moved || 0) + 1;
         if (item.fake) {
           const add = Math.min(3, 9 - R.heat);
           if (add > 0) { S.m.heat = B.clamp(S.m.heat + add, 0, 100); R.heat += add; }
@@ -289,6 +293,7 @@
         if (g.day === 39 && S.f.dumped && !S.f.riverbendPaid) {
           S.f.riverbendPaid = true;
           b.cash -= 40000;
+          if (b.dayRisk) { b.dayRisk.adj = (b.dayRisk.adj || 0) - 40000; b.dayRisk.trough -= 40000; }
           D.adj(S, { heat: 15 });
           B.UI.toast('Legal: $40,000 deducted for your share of the Riverbend settlement.', 'bad');
         }
@@ -375,7 +380,10 @@
           S.f.pullCostApplied = true;
           this.liquidate(g);
           const target = capital * 0.10;
-          g.broker.cash -= Math.max(0, g.broker.equity() - target);
+          const cut = Math.max(0, g.broker.equity() - target);
+          g.broker.cash -= cut;
+          const dr = g.broker.dayRisk;
+          if (dr) { dr.adj = (dr.adj || 0) - cut; dr.trough = Math.min(dr.trough, g.broker.equity()); }
           B.UI.toast('STACK OFFLINE. Risk flattened the book into the opening auction.', 'bad big');
         }
       },
@@ -405,7 +413,9 @@
           const parts = [`You resqwaked ${n} post${n === 1 ? '' : 's'} today.`];
           if (f) parts.push(`<b>${f} turned out to be fake.</b> Compliance noticed.`);
           if (t) parts.push(`${t} ${t === 1 ? 'was' : 'were'} right, and people saw you share ${t === 1 ? 'it' : 'them'} first.`);
-          if (!f && !t) parts.push('None of them moved anything.');
+          const mv = R.moved || 0;
+          if (mv) parts.push(`${mv === n ? (n === 1 ? 'It' : 'All of them') : mv} moved a stock for a few minutes, true or not.`);
+          if (!f && !t && !mv) parts.push('None of them moved anything.');
           notes.push(`Sqwak: ${parts.join(' ')}`);
         }
         if (g.day === D.DAYS.length - 1 && !S.f.pulledPlug && ((S.anomalies || 0) < 8 || S.f.leftStack)) {
@@ -496,7 +506,7 @@
         const out = [];
         const b = g.broker;
         const rv = E.review({
-          risk: b.dayRisk, start: r.start, trades: b.dayTrades ? b.dayTrades() : [],
+          risk: b.dayRisk, start: (r.start || 0) + ((b.dayRisk && b.dayRisk.adj) || 0), trades: b.dayTrades ? b.dayTrades() : [],
           forced: r.eod && r.eod.forced, maxLev: b.rules && b.rules.maxLev,
           closeLev: b.leverage && Number.isFinite(r.equity) && r.equity > 0 ? b.stockGross() / r.equity : 0,
           events: g.market && g.market.events
@@ -535,7 +545,8 @@
       // Sunday: the one weekly money decision. Where you live.
       weekendLedger(g, cb) {
         if (!B.Screens.ledger) return cb();
-        B.Screens.ledger({ wallet: W$, options: E.moveOptions(W$), tiers: E.TIERS, worth: E.netWorth(W$) }, (i) => {
+        B.Screens.ledger({ wallet: W$, options: E.moveOptions(W$), tiers: E.TIERS, worth: E.netWorth(W$), weekly: E.weekly(E.tier(W$)),
+          draw: Math.round(E.P.drawPerSession * 5 * (1 - E.P.taxRate)) }, (i) => {
           if (i != null) E.move(W$, i);
           cb();
         });
@@ -577,14 +588,32 @@
       buildEnding(g, reason) {
         const ctx = { S, wealth: g.broker.equity(), start: capital, reason,
           days: g.history.length, quotaMet: g.history.filter((h) => h.quotaMet).length,
-          personal: { worth: E.netWorth(W$), band: E.band(W$), home: E.tier(W$).name, evictions: W$.evictions } };
+          personal: { worth: E.netWorth(W$), band: E.band(W$), home: E.tier(W$).name, couch: (W$.tier | 0) === 0, evictions: W$.evictions,
+            breachDays: Object.keys(W$.days).filter((k) => W$.days[k].length).length } };
         const e = B.StoryEndings.resolve(ctx);
         const P = ctx.personal;
-        const epilogue = P.band === 'broke'
-          ? `Personally, you walked away owing ${B.fmt.money(-P.worth)}. The book was never yours; the debt is.${P.evictions ? ' You still sleep on your mother\'s couch.' : ''}`
-          : P.band === 'rich'
-            ? `Personally, you walked away with ${B.fmt.money(P.worth)} of your own and a key to the ${P.home.toLowerCase()}. The desk paid for discipline, and you gave it some.`
-            : `Personally, you walked away with ${B.fmt.money(P.worth)}. Enough for a month or two in the ${P.home.toLowerCase()}. Not enough to stop.`;
+        const home = P.couch ? "a spot on your mother's couch" : `the ${P.home}`;
+        const clean = P.breachDays <= 5;
+        const money = B.fmt.money(Math.abs(P.worth));
+        // Endings where the money is not the point, or not yours to keep.
+        const special = {
+          perp: `The seizure order covered your personal accounts too. ${money} of your own went with the rest.`,
+          clawback: `The clawback reached past the firm: your deferred pay and ${money} of your own are frozen pending review.`,
+          'fall-guy': `Your lawyer's retainer took ${money} of your own before the first hearing.`,
+          fired: P.worth < 0 ? `Security walked you out owing ${money}, with rent due Friday.` : `Security walked you out with ${money} of your own and no reference.`,
+          wiped: P.worth < 0 ? `The book is gone, and so is your credit: you owe ${money}.` : `The book is gone. You still have ${money} of your own, and nobody who will hire you.`,
+          exit: `The firm's money went into the gap. ${P.worth >= 0 ? `Yours, ${money}, did not. It is enough to disappear for a while.` : `You owe ${money}. You sleep anyway.`}`,
+          nobody: `Your own ${money} sits in an account no human will ever look at again.`,
+          master: `You left with the book and ${money} of your own. Neither will spend the way it used to.`
+        };
+        const epilogue = special[e.id] ? `Personally: ${special[e.id]}`
+          : P.band === 'broke'
+            ? `Personally, you walked away owing ${money}. The book was never yours; the debt is.${P.couch ? " You still sleep on your mother's couch." : ''}`
+            : P.band === 'rich'
+              ? `Personally, you walked away with ${money} of your own and ${home}. ${clean ? 'The desk paid for discipline, and you gave it some.' : `The risk desk logged breaches on ${P.breachDays} sessions. The money came anyway. It usually does, until it doesn't.`}`
+              : P.worth < 5000
+                ? `Personally, you walked away with ${money} and ${home}. Not enough for next month.`
+                : `Personally, you walked away with ${money} and ${home}. Enough for a month or two. Not enough to stop.`;
         return {
           id: e.id, title: e.title, headline: e.headline, deck: e.deck,
           story: e.story(ctx).concat(epilogue), wealth: e.wealth(ctx), personal: P,

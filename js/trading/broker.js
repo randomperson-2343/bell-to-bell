@@ -117,12 +117,14 @@
         if (newGross / this.rules.maxLev > this.netLiq() + 1e-6) return err('Insufficient buying power');
       }
       const fill = this.fill(sym, qty, price, o.tag);
+      if (o.placed != null) fill.placed = o.placed;
       return { ok: true, price, qty, realized: fill.realized };
     }
 
     fill(sym, qty, price, tag) {
       const p = this.pos[sym] || (this.pos[sym] = { qty: 0, avg: 0, realized: 0 });
-      const opens = Math.abs(p.qty + qty) > Math.abs(p.qty);
+      // Opening risk: growing the position, or flipping through zero.
+      const opens = Math.abs(p.qty + qty) > Math.abs(p.qty) || (p.qty !== 0 && p.qty + qty !== 0 && Math.sign(p.qty + qty) !== Math.sign(p.qty));
       const comm = this.commission(qty);
       this.cash -= qty * price + comm;
       this.fees += comm;
@@ -161,7 +163,7 @@
       if (cur + qty < 0 && cur + qty < cur && this.rules.shortBan.includes(tk.sector)) {
         return err('Short-sale BAN on ' + B.SECTORS[tk.sector].name.toLowerCase());
       }
-      const o = Object.assign({ id: OID++, sym, qty, type, price }, extra || {});
+      const o = Object.assign({ id: OID++, sym, qty, type, price, placed: this.market.t }, extra || {});
       this.orders.push(o);
       return { ok: true, order: o };
     }
@@ -203,7 +205,7 @@
         if (o.type === 'limit') trig = buy ? q.ask <= o.price : q.bid >= o.price;
         else trig = buy ? q.ask >= o.price : q.bid <= o.price;
         if (!trig) continue;
-        const res = this.marketOrder(o.sym, qty, { tag: o.label || (o.type === 'limit' ? 'LIMIT' : 'STOP'), limitPx: o.type === 'limit' ? o.price : null, forced: !!o.bracket });
+        const res = this.marketOrder(o.sym, qty, { tag: o.label || (o.type === 'limit' ? 'LIMIT' : 'STOP'), limitPx: o.type === 'limit' ? o.price : null, forced: !!o.bracket, placed: o.placed });
         this.cancelOrder(o.id);
         if (res.ok) {
           if (o.group) this.orders = this.orders.filter((x) => x.group !== o.group);
@@ -252,7 +254,7 @@
         o = { id: OID++, sym, type, strike, expiry, qty: n, avg: q.ask };
         this.opts.push(o);
       }
-      const tr = { t: this.market.t, day: this.market.day, sym: B.Options.label(o), qty: n, price: q.ask, realized: -comm, tag: 'OPT BUY', opt: true, open: true };
+      const tr = { t: this.market.t, day: this.market.day, sym: B.Options.label(o), qty: n, price: q.ask, realized: -comm, tag: 'OPT BUY', opt: true, open: true, und: sym, dir: type === 'C' ? 1 : -1 };
       this.trades.push(tr);
       B.bus.emit('fill', tr);
       return { ok: true, price: q.ask };
@@ -336,7 +338,9 @@
       if (!r) return;
       const eq = this.equity();
       if (eq < r.trough) r.trough = eq;
-      if (r.breachT == null && lossLimit > 0 && eq <= this.dayStartEquity * (1 - lossLimit)) r.breachT = t;
+      // Story cash events (fines, forced unwinds) move the baseline, not the limit.
+      const base = this.dayStartEquity + (r.adj || 0);
+      if (r.breachT == null && lossLimit > 0 && eq <= base * (1 - lossLimit)) r.breachT = t;
       if (r.breachT != null && r.flatT == null && this.isFlat()) r.flatT = t;
       const lev = this.leverage();
       if (lev < 99 && lev > r.peakLev) r.peakLev = lev;
