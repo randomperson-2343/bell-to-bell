@@ -228,6 +228,11 @@ body.focus #desk-top { padding: 4px; gap: 4px; }
 body.focus .monitor { border-width: 2px; box-shadow: none; padding: 2px 2px 0; }
 body.focus .bezel-top,
 body.focus .bezel-bottom { display: none; }
+#focus-bar { display: none; }
+body.focus #focus-bar {
+  display: flex; gap: 6px; position: fixed; right: 8px; bottom: 8px; z-index: 45;
+}
+body.focus #focus-bar .desk-btn { min-height: 36px; box-shadow: 2px 2px 0 rgba(0, 0, 0, .35); }
 
 /* ---------- responsive ---------- */
 @media (max-width: 1240px) {
@@ -256,6 +261,12 @@ body.focus .bezel-bottom { display: none; }
   #mon-left .screen { height: 74vh; }
   #mon-right .screen { height: 46vh; }
   #desk { position: sticky; bottom: 0; z-index: 25; }
+  /* Phones: the comms monitor is where the news is, so it gets a real share
+     of the screen instead of whatever the terminal leaves over. */
+  #desk-top { grid-template-rows: auto auto; padding-bottom: 8px; }
+  #mon-right { min-height: 60vh; flex: none; }
+  #mon-right .screen { height: auto; flex: 1 0 auto; min-height: 56vh; }
+  #mon-right #feed-list { min-height: 34vh; }
 }
 @media (max-width: 560px) {
   #mon-left .screen {
