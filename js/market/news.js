@@ -142,7 +142,7 @@
       const nf = Math.round((cfg.fakeShare || 0) * n * 1.4);
       for (let i = 0; i < nf; i++) {
         const tk = rng.pick(tradable);
-        out.push({ t: Math.round(rng.range(5, 385)), kind: 'chirp', text: fill(rng.pick(FAKE), tk), src: this.handle(rng, 'hype') });
+        out.push({ t: Math.round(rng.range(5, 385)), kind: 'chirp', text: fill(rng.pick(FAKE), tk), src: this.handle(rng, 'hype'), fake: true });
       }
       // Flavor chatter.
       const nn = rng.int(3, 6);

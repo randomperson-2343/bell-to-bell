@@ -175,6 +175,37 @@
         S.openedAnomalies[item.anomalyId] = true;
         S.anomalies = Object.keys(S.openedAnomalies).length;
       },
+      // Resqwak consequences. Amplifying a rumour that never comes true costs
+      // heat; amplifying one that does builds a little influence; touting a
+      // stock you hold draws Compliance. Per-session caps stop farming.
+      onResqwak(g, item) {
+        const day = g.day;
+        if (!S.resqwak || S.resqwak.day !== day) S.resqwak = { day, heat: 0, influence: 0, warned: false, count: 0 };
+        const R = S.resqwak;
+        R.count++;
+        S.resqwakTotal = (S.resqwakTotal || 0) + 1;
+        let note = null;
+        if (item.fake) {
+          const add = Math.min(3, 9 - R.heat);
+          if (add > 0) { S.m.heat = B.clamp(S.m.heat + add, 0, 100); R.heat += add; }
+          S.rumorsSpread = (S.rumorsSpread || 0) + 1;
+        } else if (item.truth && R.influence < 3) {
+          S.m.influence = B.clamp(S.m.influence + 1, 0, 100);
+          R.influence++;
+        }
+        const syms = B.Sqwak ? B.Sqwak.tickersIn(item.text) : [];
+        const held = syms.find((sym) => g.broker && g.broker.posQty(sym) !== 0);
+        if (held) {
+          const add = Math.min(2, 9 - R.heat);
+          if (add > 0) { S.m.heat = B.clamp(S.m.heat + add, 0, 100); R.heat += add; }
+          if (!R.warned) {
+            R.warned = true;
+            note = `Compliance: you publicly promoted $${held} while holding it.`;
+            if (B.UI && B.UI.inbox) B.UI.inbox({ from: 'Compliance', text: `You resqwaked a post about $${held} while holding a position in it. Public promotion of your own positions is logged and reviewed.`, toast: false });
+          }
+        }
+        return note;
+      },
       onFeedSkip(g) {
         if (S.feedOpenedDays[g.day] || S.feedSkippedDays[g.day]) return;
         S.feedSkippedDays[g.day] = true;

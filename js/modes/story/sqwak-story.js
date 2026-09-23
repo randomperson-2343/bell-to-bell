@@ -13,14 +13,15 @@
   'use strict';
   const D = B.StoryData;
 
-  // [minute after the open, handle, text]
+  // [minute after the open, handle, text, 'fake'?]  A post marked 'fake' is a
+  // rumour that never comes true; resqwaking it costs heat.
   const INTRADAY = [
     /* D1  First Day */ [[20,'@ScalingLawSteve','LATTICE-9 drops this morning. loading $CRVS calls before the rest of you wake up'],[95,'@GPUgoblin','every datacenter on earth just got a new reason to exist'],[180,'@TheTapeReader','$FRLN volume creeping up with zero news. somebody knows something'],[300,'@PitBoss41','first day kids: the bell at 4 is not a suggestion. neither is your stop']],
     /* D2  Dead Air */ [[60,'@HedgeHog88','nothing is happening and I am still refreshing'],[140,'@TendiesTomorrow','no news means no reason to sell. $HALO calls, obviously'],[250,'@FloorTalk','Desks describe today\'s tape as "quiet, green, and slightly insulting."']],
     /* D3  Release Notes */ [[45,'@PromptAndPray','LATTICE-9 release notes are 212 pages. nobody has read past page 3 and nobody will'],[130,'@Quant_Kween','The eval section of the $CRVS notes lists "treasury and liquidity operations." Why does a model need that? Bullish, apparently.'],[220,'@DeepValueDane','capex forecasts up again. somebody has to pay for the concrete'],[320,'@CallsOnlyCarl','$VYRN is the cheapest chip name on the board. loading']],
     /* D4  Demand Is Real */ [[10,'@CallsOnlyCarl','$THSI gap up on earnings. told you. demand is REAL. calls rip'],[120,'@BearCaveBets','ask who Thorncrest\'s customers are. then ask who funds the customers'],[200,'@MacroMaven','Silicon is now a third of index earnings growth. Concentration is a feature until it is not.'],[340,'@DiamondHandsDiane','holding $THSI through the weekend. conviction is a strategy']],
     /* D5  Ninety Billion */ [[30,'@TendiesTomorrow','$HALO at ninety billion with no revenue means the market sees something you dont. buying'],[150,'@SanaFerreira','Halcyon raised at $90B. I asked for revenue figures. The press office sent a mission statement.'],[260,'@FlopsPerDollar','ninety billion dollars and the product is a waitlist'],[350,'@PitBoss41','end of week one. up means lucky, down means early. same thing']],
-    /* D6  The Rumor */ [[60,'@TheTapeReader','$RDGW calls lighting up out of nowhere this morning'],[125,'@DiamondHandsDiane','RIDGEWAY BUYOUT?? $RDGW loaded. screenshot this'],[160,'@FloorTalk','The Ridgeway denial is on the Wire. The buyout post still has more likes than the denial has views.'],[240,'@PromptAndPray','the lie got 18K likes. the correction got a press release']],
+    /* D6  The Rumor */ [[60,'@TheTapeReader','$RDGW calls lighting up out of nowhere this morning'],[125,'@DiamondHandsDiane','RIDGEWAY BUYOUT?? $RDGW loaded. screenshot this','fake'],[160,'@FloorTalk','The Ridgeway denial is on the Wire. The buyout post still has more likes than the denial has views.'],[240,'@PromptAndPray','the lie got 18K likes. the correction got a press release']],
     /* D7  The Auditor */ [[70,'@DeepValueDane','$FRLN auditor resigned and the stock is UP. i have seen this movie and it is not a comedy'],[160,'@CallsOnlyCarl','auditors quit all the time. $FRLN is cheap here. buying the fear'],[280,'@BondVigilante','An auditor resignation is the loudest quiet event in finance.']],
     /* D8  Higher Floor */ [[50,'@HedgeHog88','quota went up on a day with no news. my boss thinks volatility is a vending machine'],[180,'@GPUgoblin','compute demand cannot go down. i will keep saying it until it is true'],[300,'@MacroMaven','Breadth is thinning. Fewer names carry the index higher every week.']],
     /* D9  Fourteen Billion */ [[40,'@FloorTalk','Holloway Stern prices a record $14B CASCADE deal. Somebody rang a ship\'s bell on the sales floor.'],[130,'@TendiesTomorrow','$HLST just printed the biggest deal ever. banks are the new chip stocks. loading'],[230,'@BearCaveBets','fourteen billion of datacenter leases stapled to car loans. AAA. sure.'],[330,'@SanaFerreira','Question nobody at the CASCADE launch would answer: what happens to the lease payments if the loans underneath stop paying?']],
@@ -265,7 +266,7 @@
     // Interleave so the phone reads like a feed, not a list of one kind.
     day.feed = keep.slice(0, 1).concat(add.slice(0, 2), keep.slice(1), add.slice(2));
 
-    const posts = (INTRADAY[d] || []).map((p) => D.chirp(p[0], p[2], p[1]));
+    const posts = (INTRADAY[d] || []).map((p) => Object.assign(D.chirp(p[0], p[2], p[1]), p[3] === 'fake' ? { fake: true } : {}));
     const scen = day.scen;
     day.scen = (S) => {
       const sc = scen(S);

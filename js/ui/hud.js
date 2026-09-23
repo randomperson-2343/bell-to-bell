@@ -44,6 +44,8 @@
       }));
       // Sqwak: tapping a $TICKER in a post or the trending strip jumps the chart.
       onPress($('feed-list'), (e) => {
+        const rq = e.target.closest('[data-rq]');
+        if (rq) { e.preventDefault(); this.resqwak(rq.dataset.rq); return; }
         const tag = e.target.closest('[data-sym]');
         if (tag) this.select(tag.dataset.sym);
       });
@@ -254,6 +256,13 @@
     addNews(e) {
       const kind = e.kind === 'chirp' ? 'chirp' : 'wire';
       const item = { kind, text: e.text, src: e.src || (kind === 'chirp' ? '@anon' : 'NEWSWIRE'), t: e.t, big: e.big };
+      if (kind === 'chirp') {
+        // Stable id so a resqwak survives save and restore; truth flags stay
+        // hidden from the player and only matter to the story engine.
+        item.id = (B.hashSeed(`${e.t}|${item.src}|${e.text}`) >>> 0).toString(36);
+        if (e.fake) item.fake = true;
+        if (e.truth) item.truth = true;
+      }
       this.feed[kind].unshift(item);
       if (this.feed[kind].length > 120) this.feed[kind].pop();
       if (kind === 'wire') B.SFX.news();
@@ -314,7 +323,21 @@
       return `<div class="news chirp sq-post"><span class="sq-av" style="--av:var(--c-${a.col})">${B.esc(B.Sqwak.initials(a))}</span>
         <div class="sq-body"><div class="sq-who"><b>${B.esc(a.name)}</b>${big ? '<i class="sq-v" title="1M+ followers">&#10004;</i>' : ''}<span>${B.esc(a.handle)} · ${B.Calendar.fmtTime(n.t || 0)}</span></div>
         <div class="txt">${this.sqwakText(n.text)}</div>
-        <div class="sq-stats"><span>&#9633; ${k(m.replies)}</span><span>&#8644; ${k(m.resqwaks)}</span><span>&#9825; ${k(m.likes)}</span></div></div></div>`;
+        <div class="sq-stats"><span>&#9633; ${k(m.replies)}</span>${n.id ? `<button class="sq-rq${n.rq ? ' on' : ''}" data-rq="${n.id}" ${n.rq ? 'disabled aria-pressed="true"' : ''} title="${n.rq ? 'You resqwaked this. It cannot be taken back.' : 'Resqwak: share this with your followers'}">&#8644; ${k(m.resqwaks + (n.rq ? 1 : 0))}${n.rq ? ' resqwaked' : ''}</button>` : `<span>&#8644; ${k(m.resqwaks)}</span>`}<span>&#9825; ${k(m.likes)}</span></div></div></div>`;
+    },
+
+    // Resqwak: amplify a post under your own name. There is no undo, because
+    // the internet does not have one either. Consequences live in the mode.
+    resqwak(id) {
+      const g = this.g;
+      if (!g) return;
+      const item = this.feed.chirp.find((n) => n.id === id);
+      if (!item || item.rq) return;
+      item.rq = true;
+      B.SFX.click();
+      const note = g.mode.onResqwak ? g.mode.onResqwak(g, item) : null;
+      this.toast(note || `Resqwaked ${item.src}.`, note ? 'warn' : '');
+      this.renderFeed();
     },
 
     // The three tickers Sqwak is loudest about in the last 30 game-minutes.

@@ -814,5 +814,24 @@
     });
   });
 
+  test('Resqwak: false rumours cost heat, true ones build influence, touting draws Compliance', () => {
+    const m = B.StoryMode();
+    const S = m.S;
+    const pos = {};
+    const g = { day: 5, broker: { posQty: (sym) => pos[sym] || 0 } };
+    const h0 = S.m.heat, i0 = S.m.influence;
+    m.onResqwak(g, { text: 'BREAKING?? $RDGW buyout', src: '@CallsOnlyCarl', fake: true });
+    assert(S.m.heat === h0 + 3, 'false rumour should add 3 heat, got ' + (S.m.heat - h0));
+    for (let i = 0; i < 5; i++) m.onResqwak(g, { text: 'fake again $RDGW', src: '@CallsOnlyCarl', fake: true });
+    assert(S.m.heat === h0 + 9, 'heat from resqwaks must cap at 9 per session, got ' + (S.m.heat - h0));
+    for (let i = 0; i < 5; i++) m.onResqwak(g, { text: 'hearing something on $CRVS', src: '@MacroMaven', truth: true });
+    assert(S.m.influence === i0 + 3, 'influence from true rumours must cap at 3 per session');
+    const g2 = { day: 6, broker: { posQty: (sym) => (sym === 'HLST' ? 100 : 0) } };
+    const h1 = S.m.heat;
+    const note = m.onResqwak(g2, { text: 'loading $HLST calls', src: '@TendiesTomorrow' });
+    assert(S.m.heat === h1 + 2 && /Compliance/.test(note || ''), 'touting a held stock should add heat and warn once');
+    assert(m.onResqwak(g2, { text: 'more $HLST', src: '@TendiesTomorrow' }) === null, 'Compliance warns only once per session');
+  });
+
   B.Tests = { results, run: () => results };
 })(window.BTB);

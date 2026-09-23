@@ -143,7 +143,7 @@
 
   const specialEvents = {
     0: [D.ev(40,'Corvus ships LATTICE-9; compute shares surge',[['ticker','CRVS',.055,.4],['sector','chip',.02]]), D.ev(330,'Fairline delays its quarterly filing',[['ticker','FRLN',-.05,.3]])],
-    5: [D.chirp(115,'BREAKING?? $RDGW buyout at a forty percent premium. source: my uncle','@CallsOnlyCarl'), D.ev(150,'Ridgeway denies it is in takeover talks',[['ticker','RDGW',-.012]])],
+    5: [Object.assign(D.chirp(115,'BREAKING?? $RDGW buyout at a forty percent premium. source: my uncle','@CallsOnlyCarl'), { fake: true }), D.ev(150,'Ridgeway denies it is in takeover talks',[['ticker','RDGW',-.012]])],
     9: [D.ev(235,'Consumer delinquencies print 6.4%; CASCADE vintage remains AAA',[['sector','lender',-.035,.3],['sector','bank',-.012]])],
     11:[D.ev(190,'Fairline files for bankruptcy protection',[['ticker','FRLN',-.35,.2],['sector','lender',-.035]])],
     13:[D.ev(310,'Fairline chief executive sold 40% of his stake before the filing',[['ticker','FRLN',-.07,.3]])],

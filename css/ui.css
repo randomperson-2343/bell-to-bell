@@ -519,3 +519,6 @@ input.short { width: 60px; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
 }
+.sq-rq { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
+.sq-rq:hover:not(:disabled) { color: var(--c-jade); }
+.sq-rq.on { color: var(--c-jade); cursor: default; }

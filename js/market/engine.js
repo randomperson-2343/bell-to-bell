@@ -186,12 +186,12 @@
       for (const e of this.events) {
         if (e.rumor && !e.rumorFired && t1 >= e.t - e.rumor.lead) {
           e.rumorFired = true;
-          out.push({ type: 'news', kind: 'chirp', text: e.rumor.text, src: e.rumor.src, t: t1 });
+          out.push({ type: 'news', kind: 'chirp', text: e.rumor.text, src: e.rumor.src, t: t1, truth: true });
         }
         if (!e.fired && t1 >= e.t) {
           e.fired = true;
           this.applyEvent(e, t1);
-          if (e.text) out.push({ type: 'news', kind: e.kind || 'wire', text: e.text, src: e.src, t: t1, big: !!e.big, tone: e.tone });
+          if (e.text) out.push({ type: 'news', kind: e.kind || 'wire', text: e.text, src: e.src, t: t1, big: !!e.big, tone: e.tone, fake: !!e.fake });
           if (e.script) out.push({ type: 'script', id: e.script, t: t1 });
         }
       }
