@@ -885,7 +885,7 @@
 
 
   // ---- Personal economy ----
-  const econRisk = (o) => Object.assign({ trough: 250000, breachT: null, mc: 0, liq: 0, peakLev: 0 }, o);
+  const econRisk = (o) => Object.assign({ trough: 250000, breachT: null, flatT: null, mc: 0, liq: 0, peakLev: 0 }, o);
 
   test('Risk desk review: a clean day is clean', () => {
     const E = B.Economy;
@@ -894,7 +894,7 @@
     assert(/clean/.test(E.reviewNote(rv)), 'clean note missing');
   });
 
-  test('Risk desk review flags revenge trading, margin, leverage, overnight and hype chasing', () => {
+  test('Risk desk review flags loss limit, revenge, margin, size, overnight and hype chasing', () => {
     const E = B.Economy;
     const events = [
       { t: 100, hype: true, impacts: [{ scope: 'ticker', id: 'HLST', pct: 0.01 }] },
@@ -904,14 +904,18 @@
       { t: 50, sym: 'BSTN', qty: 100, open: true },
       { t: 205, sym: 'BSTN', qty: -100, tag: '' },
       { t: 210, sym: 'FRLN', qty: 100, open: true },
-      { t: 104, sym: 'HLST', qty: 50, open: true },
+      { t: 102, sym: 'HLST', qty: 50, open: true },
       { t: 300, sym: 'FRLN', qty: -100, tag: 'STOP-LOSS', open: true }
     ];
     const rv = E.review({ risk: econRisk({ breachT: 200, trough: 238000, mc: 1, peakLev: 3.8 }), start: 250000, maxLev: 4, trades, forced: ['AMVL'], events });
     const ids = rv.breaches.map((b) => b.id).sort().join(',');
-    assert(ids === 'blowthrough,hype,leverage,margin,overnight,revenge', 'wrong breaches: ' + ids);
-    const closingOnly = E.review({ risk: econRisk({ breachT: 200, trough: 246000 }), start: 250000, maxLev: 4, trades: [{ t: 220, sym: 'BSTN', qty: -100 }], events: [] });
-    assert(closingOnly.breaches.length === 0 && closingOnly.hitLimit, 'cutting risk after the loss limit is discipline, not a breach');
+    assert(ids === 'hype,loss,margin,overnight,revenge,size', 'wrong breaches: ' + ids);
+    const closingOnly = E.review({ risk: econRisk({ breachT: 200, flatT: 203, trough: 242000 }), start: 250000, maxLev: 4, trades: [{ t: 202, sym: 'BSTN', qty: -100 }], events: [] });
+    assert(closingOnly.breaches.length === 0 && closingOnly.hitLimit, 'getting flat after the loss limit is discipline, not a breach');
+    const lateHype = E.review({ risk: econRisk(), start: 250000, maxLev: 4, trades: [{ t: 106, sym: 'HLST', qty: 50, open: true }], events });
+    assert(!lateHype.breaches.length, 'a trade long after the hype post is not chasing it');
+    const heavy = E.review({ risk: econRisk(), start: 250000, maxLev: 4, trades: [], closeLev: 1.6 });
+    assert(heavy.breaches.length === 1 && heavy.breaches[0].id === 'overnight', 'carrying over 1x overnight should breach');
     const liq = E.review({ risk: econRisk({ mc: 1, liq: 1 }), start: 250000, trades: [] });
     assert(liq.breaches.length === 1 && liq.breaches[0].zero, 'a liquidation should zero the bonus');
   });
@@ -924,6 +928,7 @@
     assert(w.deficit === P.drawPerSession * 5, 'unearned draw not recorded as owed');
     const big = E.settle(w, { equity: 300000, capital: 250000, weekMade: true, breaches: [], sessions: 5 });
     const expectBonus = Math.round(50000 * P.bonusMade * (1 + P.cleanKicker));
+    assert(E.multiplier([{ id: 'size' }], [{ id: 'size' }, { id: 'hype' }], 5) === 1 - 2 * P.breachCut, 'breach kinds over two weeks miscounted');
     assert(big.bonus === expectBonus, `bonus ${big.bonus} != ${expectBonus}`);
     const gross = big.draw + (expectBonus - big.draw) - P.drawPerSession * 5;
     assert(big.net === Math.round(gross * (1 - P.taxRate)), 'deficit was not repaid out of the bonus');
@@ -939,9 +944,12 @@
       const w = E.fresh(); w.peakEq = 250000;
       return E.settle(w, { equity: 290000, capital: 250000, weekMade: true, breaches, sessions: 5 }).net;
     };
-    const clean = run([]), two = run([{ id: 'revenge' }, { id: 'hype' }]), liq = run([{ id: 'liquidated', zero: true }]);
-    assert(clean > two && two > liq, `clean ${clean} > two breaches ${two} > liquidated ${liq}`);
-    assert(liq === Math.round(E.P.drawPerSession * 5 * (1 - E.P.taxRate)), 'a liquidation week should pay the bare draw');
+    const clean = run([]), two = run([{ id: 'revenge' }, { id: 'hype' }]), liq = run([{ id: 'margin', zero: true }]);
+    assert(clean > two && two > liq, `clean ${clean} > two breaches ${two} > margin call ${liq}`);
+    assert(liq === Math.round(E.P.drawPerSession * 5 * (1 - E.P.taxRate)), 'a margin-call week should pay the bare draw');
+    const P = E.P;
+    assert(P.drawPerSession * 5 * (1 - P.taxRate) >= E.TIERS[E.DEFAULT_TIER].rent, 'the draw should cover the default rent');
+    assert(P.drawPerSession * 5 * (1 - P.taxRate) < E.TIERS[E.DEFAULT_TIER].rent + P.living + P.loan + P.mom, 'the draw should not cover the whole week');
   });
 
   test('A trader who never makes money slides into eviction, never a game over', () => {

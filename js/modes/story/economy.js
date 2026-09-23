@@ -12,35 +12,39 @@
 
   const P = {
     startCash: 1500,
-    cardLimit: 1000,
+    cardLimit: 1500,
     cardApr: 0.22,
-    drawPerSession: 300,
+    drawPerSession: 260,    // $1,300 a week: covers rent, not life
     taxRate: 0.35,
     bonusMade: 0.25,        // share of new career P&L highs when the week's quota was made
-    bonusMissed: 0.05,      // ... when it was missed
-    drawdown: 0.05,         // below this far off peak book equity, the bonus rate halves
-    breachCut: 0.25,        // each risk breach cuts that week's bonus by this share
-    cleanKicker: 0.10,      // a week with no breaches adds this share
-    lossLimit: 0.02,        // daily loss limit, share of the day's opening book
-    blowThrough: 2,         // the day's low beyond this many loss limits is its own breach
-    levCap: 0.9,            // carrying more than this share of max leverage is a breach
-    lateFee: 50,
-    living: 350,            // food, transit, phone, utilities: every week
-    loan: 120,              // student loan: every week
+    bonusMissed: 0.10,      // ... when it was missed
+    drawdown: 0.05,         // a week that fell this far off peak book equity halves the rate
+    breachCut: 0.15,        // each KIND of rule broken this week or last cuts the bonus this much
+    cleanKicker: 0.25,      // a clean week (3+ sessions) pays x1.25
+    lossLimit: 0.03,        // daily loss limit, share of the day's opening book. At 2%,
+                            // stopping there got disciplined traders fired on quota.
+    flatWithin: 5,          // minutes to get flat after touching the limit
+    levCap: 3,              // gross leverage above this (or 90% of a lower limit) is a breach
+    overnightLev: 1,        // gross exposure above 1x equity carried past the close
+    hypeWindow: 3,          // minutes after a hype post that count as chasing it
+    lateFee: 100,
+    living: 300,            // food, transit, phone, utilities: every week
+    loan: 150,              // student loan: every week
     mom: 100                // what you send home: every week
   };
 
   // Where you live. Rent is weekly. `carry` scales how much stress follows you
   // into the next morning; `floor` is the stress you wake up with.
   const TIERS = [
-    { id: 'couch', name: "Mom's couch", rent: 0, carry: 1.3, floor: 12, note: 'No rent. No sleep. Mom asks about work every night.' },
-    { id: 'share', name: 'Queens share', rent: 550, carry: 1.1, floor: 6, note: 'Three roommates and a 70-minute commute.' },
-    { id: 'studio', name: 'Midtown studio', rent: 850, carry: 1, floor: 3, note: 'A radiator that knocks and a window onto an airshaft.' },
-    { id: 'doorman', name: 'Doorman one-bedroom', rent: 1200, carry: 0.8, floor: 0, note: 'Quiet. A door between you and the screens.' },
-    { id: 'tower', name: 'High-rise with a view', rent: 1600, carry: 0.6, floor: 0, note: 'Floor-to-ceiling glass over the river. You sleep.' }
+    { id: 'couch', name: "Mom's couch", rent: 0, carry: 1.3, floor: 12, forced: true, note: 'No rent. No sleep. Mom asks about work every night.' },
+    { id: 'share', name: 'Queens share', rent: 400, carry: 1.1, floor: 6, note: 'Three roommates and a 70-minute commute.' },
+    { id: 'studio', name: 'Midtown studio', rent: 750, carry: 1, floor: 3, note: 'A radiator that knocks and a window onto an airshaft.' },
+    { id: 'onebed', name: 'Downtown one-bedroom', rent: 1600, carry: 0.85, floor: 0, note: 'Quiet. A door between you and the screens.' },
+    { id: 'loft', name: 'Riverside loft', rent: 3500, carry: 0.7, floor: 0, note: 'Brick, steel and a view of the bridges. People ask what you do.' },
+    { id: 'penthouse', name: 'Penthouse over the park', rent: 8000, carry: 0.55, floor: 0, note: 'Floor-to-ceiling glass forty floors up. You sleep like the money is real.' }
   ];
   const DEFAULT_TIER = 2;
-  const EVICT_STAGES = ['', 'Rent is late. A $50 fee is added and your landlord calls twice before the open.',
+  const EVICT_STAGES = ['', 'Rent is late. A $100 fee is added.', 'Rent is still late. Your landlord calls twice before the open.',
     'An eviction notice is taped to your door.', 'Evicted. Your things go into your mother\'s garage.'];
 
   const tier = (w) => TIERS[B.clamp(w.tier | 0, 0, TIERS.length - 1)];
@@ -77,6 +81,7 @@
   const FORCED = ['LIQUIDATION', 'OVERNIGHT MARGIN', 'WIPED OUT', 'STOP-LOSS', 'TAKE-PROFIT', 'EXPIRED', 'LIQUIDATED'];
 
   // The risk desk's read of one session. Pure: same inputs, same verdict.
+  // Each breach has a kind; a week is cut per kind, not per incident.
   function review(input) {
     const risk = input.risk || {};
     const start = Math.max(1, input.start || 0);
@@ -84,20 +89,38 @@
     const out = [];
     const limit = P.lossLimit * start;
     if (risk.breachT != null) {
+      const slow = risk.flatT == null || risk.flatT - risk.breachT > P.flatWithin;
+      if (slow) out.push({ id: 'loss', text: `Hit the ${B.fmt.money(-limit)} loss limit and stayed in the market (low ${B.fmt.money(risk.trough - start)})` });
       const after = trades.filter((t) => t.open && t.t > risk.breachT).length;
-      if (after) out.push({ id: 'revenge', text: `Kept opening trades after hitting the daily loss limit (${after} after ${B.fmt.money(-limit)})` });
-      if (start - risk.trough > limit * P.blowThrough) out.push({ id: 'blowthrough', text: `Blew through the loss limit: the day's low was ${B.fmt.money(risk.trough - start)}` });
+      if (after) out.push({ id: 'revenge', text: `Opened ${after} new trade${after === 1 ? '' : 's'} after hitting the loss limit` });
     }
-    if (risk.liq) out.push({ id: 'liquidated', text: 'Margin call went unanswered. Risk liquidated the book.', zero: true });
-    else if (risk.mc) out.push({ id: 'margin', text: 'Took a margin call' });
-    if (input.maxLev && risk.peakLev > input.maxLev * P.levCap) out.push({ id: 'leverage', text: `Ran ${risk.peakLev.toFixed(1)}x of a ${input.maxLev}x limit` });
-    if (input.forced && input.forced.length) out.push({ id: 'overnight', text: `Held too much overnight. Force-sold ${input.forced.join(', ')} at the close.` });
+    if (risk.liq) out.push({ id: 'margin', text: 'Margin call went unanswered. Risk liquidated the book.', zero: true });
+    else if (risk.mc) out.push({ id: 'margin', text: 'Took a margin call.', zero: true });
+    const cap = Math.min(P.levCap, (input.maxLev || 4) * 0.9);
+    if (risk.peakLev > cap) out.push({ id: 'size', text: `Ran ${risk.peakLev.toFixed(1)}x leverage against a ${cap.toFixed(1)}x desk cap` });
+    if ((input.forced && input.forced.length) || input.closeLev > P.overnightLev) {
+      out.push({ id: 'overnight', text: input.forced && input.forced.length
+        ? `Held too much overnight. Force-sold ${input.forced.join(', ')} at the close.`
+        : `Carried ${input.closeLev.toFixed(1)}x exposure overnight against a ${P.overnightLev}x cap` });
+    }
     const chased = [];
     for (const h of hypeWindows(input.events)) {
-      if (trades.some((t) => t.open && !t.opt && t.sym === h.sym && t.t >= h.start && t.t <= h.end && Math.sign(t.qty) === h.dir)) chased.push(h.sym);
+      if (trades.some((t) => t.open && !t.opt && t.sym === h.sym && t.t >= h.start && t.t <= h.start + P.hypeWindow && Math.sign(t.qty) === h.dir)) chased.push(h.sym);
     }
     if (chased.length) out.push({ id: 'hype', text: `Chased Sqwak hype in ${chased.filter((s, i) => chased.indexOf(s) === i).join(', ')}` });
     return { breaches: out, hitLimit: risk.breachT != null };
+  }
+
+  // Distinct breach kinds in a list of day records.
+  const kinds = (list) => (list || []).reduce((acc, b) => (acc.indexOf(b.id) < 0 ? acc.concat(b.id) : acc), []);
+
+  // Bonus multiplier: zero after a margin event this week; otherwise -15% per
+  // kind broken this week or last; x1.25 for a clean week of 3+ sessions.
+  function multiplier(thisWeek, lastWeek, sessions) {
+    if ((thisWeek || []).some((b) => b.zero)) return 0;
+    const n = kinds((thisWeek || []).concat(lastWeek || [])).length;
+    if (!n && sessions >= 3) return 1 + P.cleanKicker;
+    return Math.max(0, 1 - n * P.breachCut);
   }
 
   function reviewNote(rv) {
@@ -106,15 +129,16 @@
         ? '<b>Risk desk review:</b> hit the daily loss limit and stopped. That is the job. No breaches.'
         : '<b>Risk desk review:</b> clean. No breaches.';
     }
-    const items = rv.breaches.map((b) => b.zero ? `${b.text} <b>No bonus this week.</b>` : `${b.text}: <b>-${Math.round(P.breachCut * 100)}% bonus</b>`);
+    const items = rv.breaches.map((b) => b.zero ? `${b.text} <b>No bonus this week.</b>` : `${b.text}: <b>-${Math.round(P.breachCut * 100)}% bonus this week and next</b>`);
     return `<b>Risk desk review:</b> ${items.join('; ')}.`;
   }
 
   // Pay bills in order from cash, then the card. What neither covers is
   // unpaid; rent unpaid becomes arrears.
-  function spend(w, amount) {
+  function spend(w, amount, cashOnly) {
     const fromCash = Math.min(Math.max(0, w.cash), amount);
     w.cash -= fromCash;
+    if (cashOnly) return amount - fromCash;
     const room = Math.max(0, P.cardLimit - w.card);
     const fromCard = Math.min(room, amount - fromCash);
     w.card += fromCard;
@@ -129,12 +153,11 @@
     w.peakEq = Math.max(w.peakEq, o.equity);
     const newHigh = Math.max(0, careerPnl - w.hwm);
     let rate = o.weekMade ? P.bonusMade : P.bonusMissed;
-    const dd = o.equity < w.peakEq * (1 - P.drawdown);
+    const dd = !!o.drawdown || o.equity < w.peakEq * (1 - P.drawdown);
     if (dd) rate /= 2;
     const breaches = o.breaches || [];
-    let mult = 1;
-    if (breaches.some((b) => b.zero)) mult = 0;
-    else mult = Math.max(0, 1 - breaches.length * P.breachCut + (breaches.length === 0 ? P.cleanKicker : 0));
+    const mult = multiplier(breaches, o.lastBreaches, o.sessions);
+    const nk = kinds(breaches.concat(o.lastBreaches || [])).length;
     const bonus = round(newHigh * rate * mult);
     if (careerPnl > w.hwm) w.hwm = careerPnl;
     const draw = P.drawPerSession * o.sessions;
@@ -152,7 +175,7 @@
     w.paidTotal += net;
     const how = bonus > draw ? `bonus ${B.fmt.money(bonus)}` : `draw ${B.fmt.money(draw)}${bonus ? ` (bonus ${B.fmt.money(bonus)} did not beat it)` : ''}`;
     const whyRate = `${Math.round(rate * 100)}% of new highs${o.weekMade ? '' : ' (weekly quota missed)'}${dd ? ', halved for drawdown' : ''}`;
-    const cuts = mult === 0 ? ', zeroed by a liquidation' : breaches.length ? `, cut ${Math.round(breaches.length * P.breachCut * 100)}% for ${breaches.length} breach${breaches.length === 1 ? '' : 'es'}` : `, +${Math.round(P.cleanKicker * 100)}% for a clean week`;
+    const cuts = mult === 0 ? ', zeroed by a margin call' : nk ? `, cut ${Math.round(Math.min(1, nk * P.breachCut) * 100)}% for ${nk} kind${nk === 1 ? '' : 's'} of breach this week and last` : mult > 1 ? `, x${1 + P.cleanKicker} for a clean week` : '';
     lines.push(`<b>Payslip:</b> ${how}. Bonus rate ${whyRate}${cuts}. After ${Math.round(P.taxRate * 100)}% tax: <b>${B.fmt.money(net, true)}</b>.${w.deficit > 0 ? ` You owe the desk ${B.fmt.money(w.deficit)} of unearned draw.` : ''}`);
 
     // Card interest first, then fixed bills, then rent.
@@ -161,7 +184,7 @@
     const fixed = P.living + P.loan + P.mom;
     const unpaid = spend(w, fixed);
     const rentDue = T.rent + w.arrears;
-    const rentUnpaid = spend(w, rentDue);
+    const rentUnpaid = spend(w, rentDue, true);
     if (unpaid > 0) {
       // Bills you cannot cover go to collections on the card, over the limit.
       w.card += unpaid;
@@ -178,7 +201,7 @@
     if (w.lateWeeks > 0) {
       const stage = Math.min(w.lateWeeks, EVICT_STAGES.length - 1);
       lines.push(`<b>${EVICT_STAGES[stage]}</b> Rent owed: ${B.fmt.money(w.arrears)}.`);
-      stress = [0, 6, 12, 16][stage];
+      stress = [0, 4, 8, 12, 16][stage];
       if (stage >= EVICT_STAGES.length - 1) {
         w.card += w.arrears;
         w.arrears = 0;
@@ -205,16 +228,16 @@
     return TIERS.map((t, i) => {
       const cost = i > cur ? t.rent * 2 : 0;
       return { i, id: t.id, name: t.name, rent: t.rent, note: t.note, cost, current: i === cur, afford: i === cur || w.cash >= cost };
-    });
+    }).filter((o) => !TIERS[o.i].forced || o.current);
   }
 
   function move(w, i) {
-    const opt = moveOptions(w)[i];
+    const opt = moveOptions(w).find((o) => o.i === i);
     if (!opt || opt.current || !opt.afford) return false;
     w.cash -= opt.cost;
     w.tier = i;
     return true;
   }
 
-  B.Economy = { P, TIERS, EVICT_STAGES, DEFAULT_TIER, fresh, ensure, review, reviewNote, hypeWindows, settle, netWorth, band, tier, moveOptions, move };
+  B.Economy = { P, TIERS, EVICT_STAGES, multiplier, kinds, DEFAULT_TIER, fresh, ensure, review, reviewNote, hypeWindows, settle, netWorth, band, tier, moveOptions, move };
 })(window.BTB);

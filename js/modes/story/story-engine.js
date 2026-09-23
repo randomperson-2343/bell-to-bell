@@ -498,9 +498,16 @@
         const rv = E.review({
           risk: b.dayRisk, start: r.start, trades: b.dayTrades ? b.dayTrades() : [],
           forced: r.eod && r.eod.forced, maxLev: b.rules && b.rules.maxLev,
+          closeLev: b.leverage && Number.isFinite(r.equity) && r.equity > 0 ? b.stockGross() / r.equity : 0,
           events: g.market && g.market.events
         });
         W$.days[g.day] = rv.breaches.map((x) => ({ id: x.id, zero: !!x.zero }));
+        // Drawdown is measured against the running peak of the book, intraday.
+        if (Number.isFinite(r.equity)) {
+          const low = b.dayRisk ? b.dayRisk.trough : r.equity;
+          if (low < W$.peakEq * (1 - E.P.drawdown)) (W$.ddDays = W$.ddDays || {})[g.day] = true;
+          W$.peakEq = Math.max(W$.peakEq, r.equity, b.dayPeak || 0);
+        }
         r.riskReview = rv;
         out.push(E.reviewNote(rv));
         const last = g.day === D.DAYS.length - 1;
@@ -508,12 +515,17 @@
         const wk = D.weekOf(g.day);
         if (W$.weeks[wk] || !Number.isFinite(r.equity)) return out;
         const first = (wk - 1) * 5;
-        const breaches = [];
-        for (let d = first; d <= g.day; d++) for (const x of W$.days[d] || []) breaches.push(x);
+        const breaches = [], lastBreaches = [];
+        let drawdown = false;
+        for (let d = first; d <= g.day; d++) {
+          for (const x of W$.days[d] || []) breaches.push(x);
+          if (W$.ddDays && W$.ddDays[d]) drawdown = true;
+        }
+        for (let d = Math.max(0, first - 5); d < first; d++) for (const x of W$.days[d] || []) lastBreaches.push({ id: x.id });
         const weekMade = last && g.day % 5 === 0
           ? !!r.quotaMet
           : !S.quotaLedger.some((e) => e.kind === 'week' && e.week === wk);
-        const res = E.settle(W$, { equity: r.equity, capital, weekMade, breaches, sessions: g.day - first + 1 });
+        const res = E.settle(W$, { equity: r.equity, capital, weekMade, breaches, lastBreaches, drawdown, sessions: g.day - first + 1 });
         W$.weeks[wk] = { net: res.net, bonus: res.bonus, draw: res.draw };
         W$.stressNext = (W$.stressNext || 0) + res.stress;
         r.payslip = res;

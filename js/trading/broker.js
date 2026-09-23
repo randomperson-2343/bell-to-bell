@@ -326,7 +326,7 @@
       this.dayTradeStart = this.trades.length;
       this.dayFeesStart = this.fees;
       this.mc = null;
-      this.dayRisk = { trough: this.dayStartEquity, breachT: null, mc: 0, liq: 0, peakLev: 0 };
+      this.dayRisk = { trough: this.dayStartEquity, breachT: null, flatT: null, mc: 0, liq: 0, peakLev: 0 };
     }
 
     // Intraday risk tape for the risk desk review: the day's low, the minute
@@ -337,6 +337,7 @@
       const eq = this.equity();
       if (eq < r.trough) r.trough = eq;
       if (r.breachT == null && lossLimit > 0 && eq <= this.dayStartEquity * (1 - lossLimit)) r.breachT = t;
+      if (r.breachT != null && r.flatT == null && this.isFlat()) r.flatT = t;
       const lev = this.leverage();
       if (lev < 99 && lev > r.peakLev) r.peakLev = lev;
     }

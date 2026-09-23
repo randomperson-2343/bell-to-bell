@@ -26,6 +26,8 @@ No install and no build. Open `index.html` in any modern browser.
 - **Stress 2.0** rises with losses, leverage, margin calls, ringing phones and a looming close. It escalates through visible Loaded, Tunnel and Critical impairment. Panic attacks now last under four real seconds at normal speed and an A/S/D grounding sequence ends them immediately. Recovery creates temporary resistance and a cooldown; one true market catastrophe can bypass it. Fat-finger risk is capped and can no longer add a zero.
 - **Desk quotas escalate by market regime.** A missed mandate adds one permanent career strike, logged once for that session. The thirtieth strike ends the run. The exact mandate, percentage of book, overnight increase and strike count are visible in the briefing, inbox, closing memo, HUD and debug overlay.
 - **Weekly quota** on top of the daily one, reset every Monday: the week has to clear the sum of its daily quotas plus 15%. A missed week is one more career strike; a made week wipes one missed day from that week. The orphan final Monday has no weekly quota.
+- **Your own money.** The $250k book is the firm's. You are paid every Friday: a $1,300 weekly draw against a bonus of 25% of new career P&L highs (10% if the weekly quota was missed, halved after a 5% drawdown). You get the bigger of the two, never both, and a draw you did not earn is repaid out of future bonus. Rent, living costs, a student loan and money home come out the same day. Rent is cash only; unpaid rent runs late fee, landlord calls, eviction notice, then your mother's couch. Being broke is never a game over, but where you sleep sets how much stress you wake up with. On Sundays the Ledger lets you move, from a Queens share up to a penthouse over the park.
+- **The risk desk grades discipline, not just profit.** Every closing memo carries a risk desk review. Breaches: staying in the market after the 3% daily loss limit, opening new trades after it, taking a margin call (no bonus that week), running more than 3x leverage, carrying over 1x overnight or getting force-sold, and chasing Sqwak hype within three minutes of the post. Each kind of breach cuts the bonus 15% this week and next; a clean week pays x1.25. A reckless trader can grow a bigger book and still take home less.
 - **Interruptions**: clients with orders to work, your boss calling to shout, tipsters, and your mother. Some decisions arrive as a timed phone call mid-session.
 
 ### Saving
@@ -84,6 +86,7 @@ js/tests/               test suite + headless runners
   node js/tests/node-run.js              # unit tests, save round-trips, content lint, story graph
   node js/tests/sim-run.js               # full headless Career + Endless runs with bot traders
   node js/tests/balance-run.js           # deterministic quota calibration
+  node js/tests/economy-run.js           # bot careers: discipline must out-earn recklessness
   node js/tests/reachability-run.js      # chronological all-ending reachability
   node js/tests/render-run.js            # native canvas hashes and frame evidence
   node js/tests/browser-run.js           # Chromium viewport, mobile and flow checks
