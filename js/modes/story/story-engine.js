@@ -88,13 +88,15 @@
         if (S.m.heat >= 50) rules.push('Compliance is watching you. Examiners may visit your desk.');
         const remaining = QUOTA_STRIKE_LIMIT - S.quotaStrikes;
         if (S.quotaStrikes > 0) rules.push(`Career quota strikes: ${S.quotaStrikes}/${QUOTA_STRIKE_LIMIT}`);
-        if (!S.f.defected) {
+        // The first sessions introduce the desk's systems one at a time:
+        // Kroll from session 2, your money and the risk desk from session 3.
+        if (!S.f.defected && (d >= 1 || this.bossMood().warn)) {
           const mood = this.bossMood();
           rules.push(`${mood.warn ? '<b>' : ''}${D.boss(S)}: ${mood.label} (${mood.value}/100).${mood.warn ? ' At zero he fires you.</b>' : ''} Answering his calls and working client orders keeps him on side.`);
         }
         const T = E.tier(W$);
-        rules.push(`Your money: ${B.fmt.money(W$.cash)} cash${W$.card > 0 ? `, ${B.fmt.money(-W$.card)} on the card` : ''}. ${T.name}${T.rent ? `, ${B.fmt.money(T.rent)} rent due Friday` : ''}.${W$.arrears > 0 ? ` <b>${B.fmt.money(W$.arrears)} rent overdue.</b>` : ''}`);
-        rules.push(`Risk desk: daily loss limit ${B.fmt.money(-E.P.lossLimit * (g && g.broker ? g.broker.equity() : capital))}. Hit it and get flat within ${E.P.flatWithin} minutes, and a missed quota that day is excused. Each kind of breach cuts your bonus ${Math.round(E.P.breachCut * 100)}% this week and next.`);
+        if (d >= 2) rules.push(`Your money: ${B.fmt.money(W$.cash)} cash${W$.card > 0 ? `, ${B.fmt.money(-W$.card)} on the card` : ''}. ${T.name}${T.rent ? `, ${B.fmt.money(T.rent)} rent due Friday` : ''}.${W$.arrears > 0 ? ` <b>${B.fmt.money(W$.arrears)} rent overdue.</b>` : ''}`);
+        if (d >= 2) rules.push(`Risk desk: daily loss limit ${B.fmt.money(-E.P.lossLimit * (g && g.broker ? g.broker.equity() : capital))}. Hit it and get flat within ${E.P.flatWithin} minutes, and a missed quota that day is excused. Each kind of breach cuts your bonus ${Math.round(E.P.breachCut * 100)}% this week and next.`);
         if (remaining === 1) rules.push('FINAL WARNING: one more missed quota ends this career.');
         else if (remaining === 2) rules.push('WARNING: two missed quotas remain before termination.');
         if (S.f.v2RewoundToBell) rules.push('SAVE MIGRATION: this V2 mid-session save was rewound to the matching opening bell; book and decisions were preserved.');
@@ -360,6 +362,7 @@
       },
 
       onTick(g, t) {
+        if (B.Mentor && g.day <= B.Mentor.LAST_DAY) B.Mentor.tick(g, t, S);
         if (this.auditAt != null && t >= this.auditAt && !g.lock) {
           this.auditAt = null;
           g.setLock(30, 'Examiners at your desk. Account frozen.', 'audit');

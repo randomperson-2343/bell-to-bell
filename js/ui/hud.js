@@ -235,7 +235,10 @@
       this.feed.wire.unshift(sep);
       this.feed.chirp.unshift(sep);
       if (g.quotaMeta && g.quota > 0) {
-        this.feed.inbox.unshift({ kind: 'inbox', text: g.quotaMeta.memo, src: g.mode.bossName ? g.mode.bossName() : 'Desk Management', t: 0 });
+        const src = g.mode.bossName ? g.mode.bossName() : 'Desk Management';
+        // The memo is signed for the briefing; the inbox already shows the sender.
+        const text = g.quotaMeta.memo.indexOf(src + ': ') === 0 ? g.quotaMeta.memo.slice(src.length + 2) : g.quotaMeta.memo;
+        this.feed.inbox.unshift({ kind: 'inbox', text, src, t: 0 });
         this.unread++;
         this.updateBadge();
       }

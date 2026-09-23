@@ -537,6 +537,7 @@
     if (B.SqwakStory) { push(B.SqwakStory.INTRADAY); push(B.SqwakStory.PREOPEN); push(B.SqwakStory.POOLS); push(B.SqwakStory.BREAKING); }
     push(B.News.NOISE);
     if (B.Economy) { push(B.Economy.TIERS.map((t) => [t.name, t.note])); push(B.Economy.EVICT_STAGES); }
+    if (B.Mentor) push(B.Mentor.LINES.map((l) => l[3]));
     if (B.Life) {
       const LS = B.StoryMode.freshState(250000);
       for (const f of [{}, { insider: true }, { perryFiled: true }, { dumped: true }]) {
@@ -1096,6 +1097,26 @@
     const k0 = S.rel.kroll; mode.applyLife('advance', 'take');
     assert(W.deficit > 8000 && S.rel.kroll > k0, 'the advance is owed back out of bonus and pleases Kroll');
     assert(B.Life.LIFE.every((b) => !Object.keys(B.StoryData.CHOICES).some((k) => B.StoryData.CHOICES[k].day === b.day)), 'life beats should not share a day with a desk decision');
+  });
+
+  test('Imani talks in the first three sessions only, once per line, and reacts to what you do', () => {
+    const said = [];
+    const saveInbox = B.UI && B.UI.inbox;
+    B.UI = B.UI || {};
+    B.UI.inbox = (m) => said.push(m.text);
+    const b = { pos: {}, orders: [], opts: [], dayStartEquity: 250000, equity: () => 250000, isFlat() { return !Object.keys(this.pos).length; }, dayTrades: () => [] };
+    const g = { day: 0, broker: b, market: { events: [] }, quota: 2000, interrupts: { ringing: false } };
+    const S = {};
+    for (let t = 0; t <= 40; t++) B.Mentor.tick(g, t, S);
+    assert(said.length === 2 && /Welcome/.test(said[0]) && /Still flat/.test(said[1]), 'a flat first morning should get a hello and one nudge: ' + JSON.stringify(said));
+    for (let t = 0; t <= 40; t++) B.Mentor.tick(g, t, S);
+    assert(said.length === 2, 'lines must not repeat within a session');
+    b.pos.INDX = { qty: 100, avg: 500 };
+    B.Mentor.tick(g, 50, S);
+    assert(/SL%/.test(said[2]), 'an unprotected position should get the stop-loss line');
+    g.day = 3; B.Mentor.tick(g, 60, S);
+    assert(said.length === 3, 'Imani goes quiet after session 3');
+    B.UI.inbox = saveInbox;
   });
 
   B.Tests = { results, run: () => results };
