@@ -267,7 +267,8 @@
       if (bad && !(forced && bad === this.rules.locked)) return err(bad);
       n = Math.min(o.qty, Math.trunc(n || o.qty));
       const q = B.Options.quote(this.market, o.sym, o.type, o.strike, o.expiry);
-      const comm = 0.65 * n * this.feeMult;
+      // Worthless contracts are abandoned, not sold: no commission on a zero bid.
+      const comm = q.bid > 0 ? 0.65 * n * this.feeMult : 0;
       this.cash += n * 100 * q.bid - comm;
       this.fees += comm;
       const realized = (q.bid - o.avg) * n * 100 - comm;

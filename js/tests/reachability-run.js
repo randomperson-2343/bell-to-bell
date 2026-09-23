@@ -24,19 +24,21 @@ const B=ctx.BTB, D=B.StoryData;
 const ORDER=Object.keys(D.CHOICES).sort((a,b)=>D.CHOICES[a].day-D.CHOICES[b].day);
 const clone=(o)=>JSON.parse(JSON.stringify(o));
 
+// A bear who holds through the false-dawn rally (sessions 42-49) loses about 7%.
+const eqOf=(day,arch)=>arch.bearish&&day>=41&&day<=48?arch.wealth*0.93:arch.wealth;
 function game(mode, arch, day) {
   const bearish = arch.bearish && (day === 25 || (day >= 41 && day <= 48));
   const px = {}; for (const t of B.TICKERS) px[t.sym] = { last:t.price || 100 };
   return {
     day, history:Array.from({length:day},(_,i)=>({day:i,quotaMet:true})), indexStart:512.4, inboxQueue:[], lock:null,
     market:{bySym:px},
-    broker:{ cash:0, pos:{}, orders:[], opts:bearish?[{sym:'BSTN',type:'P',qty:4}]:[], equity:()=>arch.wealth,
+    broker:{ cash:0, pos:{}, orders:[], opts:bearish?[{sym:'BSTN',type:'P',qty:4}]:[], equity:()=>eqOf(day,arch),
       posQty:(sym)=>bearish && sym==='BSTN'?-Math.max(1,Math.round(arch.wealth*.14/px.BSTN.last)):0,
       marketOrder:()=>({ok:true}), fill:()=>({realized:0}) },
     setLock:()=>{}, stress:{spike:()=>{}}
   };
 }
-function report(day,arch){return {day,date:`Session ${day+1}`,pnl:0,equity:arch.wealth,start:arch.wealth,quota:0,quotaMet:true,earlyEnd:null};}
+function report(day,arch){return {day,date:`Session ${day+1}`,pnl:0,equity:eqOf(day,arch),start:eqOf(day,arch),quota:0,quotaMet:true,earlyEnd:null};}
 
 function advance(state, from, to, arch) {
   const mode=B.StoryMode({S:state});

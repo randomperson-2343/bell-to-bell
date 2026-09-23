@@ -438,9 +438,16 @@
           if (held) { S.falseDawnBear.hits++; S.falseDawnBear.gaps = 0; }
           else { S.falseDawnBear.gaps++; S.falseDawnBear.maxGap = Math.max(S.falseDawnBear.maxGap, S.falseDawnBear.gaps); }
         }
+        if (g.day === 40) {
+          S.falseDawnBear = S.falseDawnBear || { boundary: false, hits: 0, gaps: 0, maxGap: 0, samples: [] };
+          S.falseDawnBear.rallyStart = r.equity;
+        }
         if (g.day === 48) {
+          // The rally has to hurt: holding the bear case through it must have
+          // cost at least 5% of the book since the rally began.
           const x = S.falseDawnBear;
-          S.f.rightTooEarly = !!(x && x.boundary && x.hits >= 6 && x.maxGap <= 2 && r.equity < capital);
+          const hurt = x && (x.rallyStart ? r.equity <= x.rallyStart * 0.95 : r.equity < capital);
+          S.f.rightTooEarly = !!(x && x.boundary && x.hits >= 6 && x.maxGap <= 2 && hurt);
         }
         const rv = this.riskReview(g, r);
         // Stopping cleanly at the loss limit is the job. The risk desk excuses
@@ -603,8 +610,10 @@
           if (opt.headline) S.log.push({ day: d, text: opt.headline });
           if (id === 'c8') S.f.billPassed = votePasses(S);
           B.Screens.aftermath(c.title, opt.after || [], () => {
+            // Taking the plane ends the career on the spot.
             if (S.f.fled) {
               this.liquidate(g);
+              return cb(this.buildEnding(g, 'final'));
             }
             cb();
           });

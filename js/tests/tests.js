@@ -1039,5 +1039,23 @@
     assert(stayed.strikes === 1, 'staying in past the limit should still strike');
   });
 
+  test('Taking the plane ends the career; worthless options are abandoned without commission', () => {
+    const mode = B.StoryMode(), S = mode.S;
+    S.f.fled = true;
+    const b = { pos: {}, opts: [], orders: [], cash: 500000, equity: () => 500000, fill: () => ({}) };
+    let got = null;
+    mode.afterDay({ day: 57, broker: b, market: { bySym: { INDX: { last: 500 } } }, history: [], indexStart: 500 }, (ending) => { got = ending; });
+    assert(!got, 'no decision that day should mean no ending yet');
+    const c9 = Object.keys(B.StoryData.CHOICES).find((k) => B.StoryData.CHOICES[k].options.some((o) => /flee|plane/i.test(o.id + ' ' + o.label)));
+    assert(c9, 'the plane option exists');
+    const m = new B.Market({ seed: 'abandon' });
+    const br = new B.Broker({ cash: 100000 }); br.attach(m);
+    m.startDay(0, { regime: 'chop' }); br.startDay(); m.step(1);
+    br.opts.push({ id: 999, sym: 'BSTN', type: 'C', strike: 99999, expiry: 1, qty: 1000, avg: 0.05 });
+    const cash0 = br.cash;
+    br.sellOption(999, 1000, true);
+    assert(br.cash >= cash0, 'selling worthless contracts should not cost commission: ' + (br.cash - cash0));
+  });
+
   B.Tests = { results, run: () => results };
 })(window.BTB);

@@ -155,10 +155,10 @@
     test:(c)=>!!c.S.f.bailout && !!c.S.f.billPassed && c.S.m.stability >= 45 && c.S.m.stability <= 55 && c.wealth >= c.start * 2 && !c.S.f.leftStack,
     headline:'Markets Triple as Recovery Passes Households By', deck:'Liquidity restores every asset price except the price of ordinary life.',
     story:(c)=>[
-      `The account finished at ${B.fmt.compact(c.wealth * 2)} after emergency liquidity lifted every security the trader could still buy.`,
+      `The account finished at ${B.fmt.compact(c.wealth)} after emergency liquidity lifted every security the trader could still buy.`,
       'Employment did not recover with the index. Wages did not follow the portfolio. Empty datacenters changed owners and rose in value.',
       'The ending looked like a win on every screen inside the building.'
-    ], wealth:(c)=>c.wealth * 2
+    ], wealth:(c)=>c.wealth
   };
 
   // Specific decision consequences precede broad state-based outcomes.
@@ -167,7 +167,7 @@
   // broad systemic outcomes and the survival fallback.
   const LIST = [
     by('wiped'), by('fired'), nobody, by('master'), by('whistle'), by('revolving'),
-    by('perp'), fallGuy, cassandra, acquirer, ward, clawback, rightEarly, fund,
+    by('perp'), fallGuy, cassandra, acquirer, ward, clawback, fund, rightEarly,
     everything, lost, by('soft'), by('quiet'), by('replaced'), by('depression'), exit, by('grind')
   ];
   const priority = [
