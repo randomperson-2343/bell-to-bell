@@ -117,7 +117,90 @@
     return R.placeFrame(ctx, B.Rhythm.storyboard(day), title, true);
   }
 
-  B.Storyboard = { SHEET, row, lit, actTurns };
+  // ---- Weekends: home, by rent tier, with the week's story on top ----
+  // Tier ids from js/modes/story/economy.js, cheapest first.
+  const HOMES = {
+    couch: { wall: P.putty, wall2: P.putty2, floor: P.carpet, win: 0.22, view: 'suburb' },
+    share: { wall: P.slate, wall2: P.slate2, floor: P.carpetD, win: 0.26, view: 'wall' },
+    studio: { wall: P.putty, wall2: P.plastic2, floor: P.deskD, win: 0.28, view: 'shaft' },
+    onebed: { wall: P.plastic2, wall2: P.bone, floor: P.desk, win: 0.40, view: 'city' },
+    loft: { wall: P.deskD, wall2: P.desk, floor: P.desk2, win: 0.58, view: 'bridges' },
+    penthouse: { wall: P.bone, wall2: P.white, floor: P.desk2, win: 0.86, view: 'park' }
+  };
+  // The weekends the story cares about: Friday's day index -> caption.
+  const WEEKENDS = {
+    9: 'THE BONUS EMAIL SITS UNREAD ALL WEEKEND.',
+    19: 'THE BILL IS ON EVERY CHANNEL. NOBODY HAS READ IT.',
+    34: 'RESCUE WEEKEND. THE LIGHTS AT TREASURY NEVER GO OFF.',
+    44: 'KROLL PAID FOR DINNER. IT IS OVER, HE SAYS.',
+    49: 'THE TOP. NOBODY RINGS A BELL AT THE TOP.',
+    54: 'FOUR VOTES SHORT. THE PHONES RING ALL NIGHT.',
+    59: '3:17 AM. THE MACHINES ARE STILL TRADING.'
+  };
+  function wallet(o) { const g = o && o.game; return g && g.mode && g.mode.S && g.mode.S.wallet; }
+  function homeOf(w) {
+    const E = B.Economy;
+    const t = w && E ? E.tier(w) : { id: 'studio', name: 'Midtown studio' };
+    return { id: t.id, name: t.name, look: HOMES[t.id] || HOMES.studio };
+  }
+  function apartmentShot(ctx, day, home, night, w) {
+    const L = home.look, week = Math.floor(day / 5) + 1;
+    X.rect(ctx, 0, 0, V.w, V.h, P.ink);
+    X.gradient(ctx, 0, 0, V.w, 250, night ? L.wall : L.wall2, night ? P.ink2 : L.wall, 10);
+    X.rect(ctx, 0, 250, V.w, 110, L.floor);
+    // The window grows with the rent. What is outside it changes too.
+    const ww = Math.round(V.w * L.win), wx = V.w - ww - 36, wy = 40, wh = L.win > 0.8 ? 200 : 150;
+    X.inset(ctx, wx, wy, ww, wh, P.slate, P.ink2, P.ink);
+    ctx.save(); ctx.beginPath(); ctx.rect(wx + 3, wy + 3, ww - 6, wh - 6); ctx.clip();
+    X.gradient(ctx, wx, wy, ww, wh, night ? P.ink2 : P.sky, night ? P.ink : P.slate2, 8);
+    if (L.view === 'shaft' || L.view === 'wall') {
+      X.rect(ctx, wx, wy, ww, wh, L.view === 'shaft' ? P.deskD : P.slate);
+      for (let yy = wy; yy < wy + wh; yy += 8) for (let xx = wx + ((yy / 8) % 2) * 8; xx < wx + ww; xx += 16) X.rect(ctx, xx, yy, 15, 1, P.ink2);
+    } else {
+      const lights = night ? lit(day) : 0;
+      const n = Math.ceil(ww / 22);
+      for (let i = 0; i < n; i++) {
+        const bw = 12 + ((i * 17 + week) % 12), bh = (L.view === 'suburb' ? 18 : 40) + ((i * 41 + week * 7) % (L.view === 'suburb' ? 24 : 110));
+        const bx = wx + i * 22, by = wy + wh - bh;
+        X.rect(ctx, bx, by, bw, bh, i % 3 ? P.ink2 : P.slate);
+        for (let yy = 5; yy < bh - 4; yy += 9) for (let xx = 3; xx < bw - 3; xx += 6) if (((i * 13 + xx + yy + week) % 100) / 100 < lights) X.rect(ctx, bx + xx, by + yy, 2, 2, P.amber);
+      }
+      if (L.view === 'bridges') { X.rect(ctx, wx, wy + wh - 48, ww, 3, P.grey); for (let i = 0; i < 6; i++) X.rect(ctx, wx + 20 + i * (ww / 6), wy + wh - 72, 3, 26, P.grey); }
+      if (L.view === 'park') X.rect(ctx, wx, wy + wh - 30, ww, 30, P.jadeD);
+    }
+    ctx.restore();
+    // Furniture: the couch you sleep on, or the bed you paid for.
+    if (home.id === 'couch') { X.plate(ctx, 40, 212, 250, 52, P.violet, P.sky, P.slate); X.rect(ctx, 60, 204, 120, 12, P.bone); }
+    else if (home.id === 'share') { X.rect(ctx, 30, 236, 200, 24, P.bone); X.rect(ctx, 30, 256, 200, 6, P.deskD); X.plate(ctx, 250, 150, 70, 110, P.plasticD, P.plastic, P.ink2); }
+    else { X.plate(ctx, 40, 214, 230, 48, P.slate, P.slate2, P.ink); if (L.win > 0.5) X.plate(ctx, 300, 226, 90, 30, P.deskD, P.desk2, P.ink); }
+    if (home.id === 'studio') for (let i = 0; i < 6; i++) X.rect(ctx, 48 + i * 10, 150, 6, 50, P.plasticD);
+    // The week number on a paper calendar, and the phone that never stops.
+    X.plate(ctx, 40, 70, 64, 72, P.bone, P.white, P.plasticD);
+    X.rect(ctx, 40, 70, 64, 14, P.crimsonD);
+    big(ctx, String(week), 72, 96, P.ink, 3, 'center');
+    X.plate(ctx, 150, 244, 30, 16, P.ink2, P.slate2, P.ink);
+    X.rect(ctx, 154, 247, 22, 10, night ? P.screenGlow : P.screen);
+    // Money trouble shows up at the door.
+    if (w && w.lateWeeks > 0) for (let i = 0; i < Math.min(5, w.lateWeeks * 2); i++) X.plate(ctx, 480 - i * 18, 300 + (i % 2) * 6, 34, 22, P.bone, P.white, P.plasticD);
+    if (w && w.lateWeeks >= 3) { X.plate(ctx, 10, 150, 22, 30, P.bone, P.white, P.crimsonD); X.rect(ctx, 14, 156, 14, 3, P.crimson); }
+    if (night) { ctx.save(); ctx.globalAlpha = 0.28; X.rect(ctx, 0, 0, V.w, V.h, P.ink); ctx.restore(); }
+    X.scanlines(ctx, 0, 0, V.w, V.h, P.ink, 0.05);
+  }
+
+  B.Scenes.weekend = function (o) {
+    const day = o.day || 0, week = Math.floor(day / 5) + 1, w = wallet(o), home = homeOf(w);
+    const story = WEEKENDS[day];
+    const key = `${week}:${home.id}:${w ? Math.min(3, w.lateWeeks | 0) : 0}`;
+    const sat = w && w.weeks && w.weeks[week] ? `WEEK ${week} · ${home.name.toUpperCase()} · PAYSLIP ${B.fmt.money(w.weeks[week].net, true)}` : `WEEK ${week} · SATURDAY · ${home.name.toUpperCase()}`;
+    const beats = [
+      R.beat('weekend', `${key}:sat`, 1.7, (c) => apartmentShot(c, day, home, false, w), sat, { sfx: 'apartment', transition: 'fade', informative: !story }),
+      R.beat('weekend', `${key}:sun`, 1.8, (c) => apartmentShot(c, day, home, true, w), story || 'SUNDAY NIGHT. THE ALARM IS SET FOR 5:58.', { sfx: 'apartment', informative: !!story })
+    ];
+    if (day === 59) beats.push(R.beat('weekend', `${key}:317`, 1.6, (c) => at2x(c, (cc) => SH.tradingFloor(cc, 0.4, false, 60)), 'THE FLOOR IS DARK. THE RACKS ARE NOT.', {}));
+    return beats;
+  };
+
+  B.Storyboard = { SHEET, row, lit, actTurns, HOMES, WEEKENDS };
 
   B.Scenes.news = function (o) {
     const day = o.day || 0, r = row(day), n = WEIGHTS[r.weight] || 2;
