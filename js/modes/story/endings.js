@@ -22,7 +22,10 @@
       test: (c) => c.reason === 'fired',
       headline: 'Another Trader Shown the Door',
       deck: 'Firm cites "persistent underperformance" as the crisis claims another desk.',
-      story: () => [
+      story: (c) => c.firedBy === 'boss' ? [
+        '"It was never about the numbers," the head of trading said, in a memo the Ledger obtained. "It was about whether I could trust the seat." The trader\'s final day ended with a thirty-second meeting, a box, and an escort to the elevator.',
+        'Colleagues describe a desk that stopped answering its own phone. The trader is reportedly "exploring opportunities," which sources describe as "applying to jobs that are being advertised as AI-assisted."'
+      ] : [
         '"We pay for results," the head of trading said, in a memo the Ledger obtained. The trader\'s final day ended with a thirty-second meeting and a severance package worth two weeks\' pay.',
         'The trader is reportedly "exploring opportunities," which sources describe as "applying to jobs that are being advertised as AI-assisted."'
       ],

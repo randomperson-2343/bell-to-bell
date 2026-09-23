@@ -41,7 +41,7 @@ const assert = (value, message) => { if (!value) throw new Error(message); };
       const c=cv.getContext('2d');beat.draw(c,v,1,opts||{});return hashCanvas(cv);
     };
     const newsHashes=[];
-    for(let day=0;day<61;day++){const o={day,brief:{title:'SESSION '+(day+1),feed:[]}};newsHashes.push(render(BTB.Scenes.news(o)[1],o));}
+    for(let day=0;day<61;day++){const o={day,brief:{title:'SESSION '+(day+1),feed:[]}};const bs=BTB.Scenes.news(o);newsHashes.push(render(bs.find((b)=>b.informative)||bs[bs.length-1],o));}
     out.newsUnique=new Set(newsHashes).size;
     const endingHashes=[];
     for(const id of BTB.Rhythm.endingIds){const o={id,title:id,deck:'ENDING '+id,dark:false};endingHashes.push(render(BTB.Scenes.ending(o)[1],o));}
@@ -69,7 +69,7 @@ const assert = (value, message) => { if (!value) throw new Error(message); };
     BTB.Cinematic.play('news',{day:1,brief:{title:'X',feed:[]}},()=>BTB.Cinematic.play('phone',{day:1,brief:{feed:[]}},()=>{chainDone=true;}));
     BTB.Cinematic.skipAll(); out.skipChain=chainDone; BTB.Cinematic.endChain();
     const start=performance.now();
-    for(let day=0;day<61;day++){const o={day,brief:{title:'SESSION '+day,feed:[]}};const beat=BTB.Scenes.news(o)[1];BTB.Cinematic.opts=o;BTB.Cinematic.cachedFrame(beat,beat.view);}
+    for(let day=0;day<61;day++){const o={day,brief:{title:'SESSION '+day,feed:[]}};const bs=BTB.Scenes.news(o),beat=bs.find((b)=>b.informative)||bs[bs.length-1];BTB.Cinematic.opts=o;BTB.Cinematic.cachedFrame(beat,beat.view);}
     out.cacheMs=performance.now()-start;out.cacheEntries=BTB.Cinematic.frameCache.size;
     return out;
   });

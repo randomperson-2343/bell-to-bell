@@ -117,11 +117,14 @@
         if (newGross / this.rules.maxLev > this.netLiq() + 1e-6) return err('Insufficient buying power');
       }
       const fill = this.fill(sym, qty, price, o.tag);
+      if (o.placed != null) fill.placed = o.placed;
       return { ok: true, price, qty, realized: fill.realized };
     }
 
     fill(sym, qty, price, tag) {
       const p = this.pos[sym] || (this.pos[sym] = { qty: 0, avg: 0, realized: 0 });
+      // Opening risk: growing the position, or flipping through zero.
+      const opens = Math.abs(p.qty + qty) > Math.abs(p.qty) || (p.qty !== 0 && p.qty + qty !== 0 && Math.sign(p.qty + qty) !== Math.sign(p.qty));
       const comm = this.commission(qty);
       this.cash -= qty * price + comm;
       this.fees += comm;
@@ -140,6 +143,7 @@
       }
       realized -= comm;
       const tr = { t: this.market.t, day: this.market.day, sym, qty, price, realized, tag: tag || '' };
+      if (opens) tr.open = true;
       this.trades.push(tr);
       if (p.qty === 0) {
         delete this.pos[sym];
@@ -159,7 +163,7 @@
       if (cur + qty < 0 && cur + qty < cur && this.rules.shortBan.includes(tk.sector)) {
         return err('Short-sale BAN on ' + B.SECTORS[tk.sector].name.toLowerCase());
       }
-      const o = Object.assign({ id: OID++, sym, qty, type, price }, extra || {});
+      const o = Object.assign({ id: OID++, sym, qty, type, price, placed: this.market.t }, extra || {});
       this.orders.push(o);
       return { ok: true, order: o };
     }
@@ -201,7 +205,7 @@
         if (o.type === 'limit') trig = buy ? q.ask <= o.price : q.bid >= o.price;
         else trig = buy ? q.ask >= o.price : q.bid <= o.price;
         if (!trig) continue;
-        const res = this.marketOrder(o.sym, qty, { tag: o.label || (o.type === 'limit' ? 'LIMIT' : 'STOP'), limitPx: o.type === 'limit' ? o.price : null, forced: !!o.bracket });
+        const res = this.marketOrder(o.sym, qty, { tag: o.label || (o.type === 'limit' ? 'LIMIT' : 'STOP'), limitPx: o.type === 'limit' ? o.price : null, forced: !!o.bracket, placed: o.placed });
         this.cancelOrder(o.id);
         if (res.ok) {
           if (o.group) this.orders = this.orders.filter((x) => x.group !== o.group);
@@ -226,7 +230,9 @@
       const results = [];
       for (const s of Object.keys(this.pos)) results.push(this.marketOrder(s, -this.pos[s].qty, { tag: tag || 'FLATTEN', forced }));
       for (const o of this.opts.slice()) results.push(this.sellOption(o.id, o.qty, forced));
-      this.orders = [];
+      // Working orders go; stops and targets stay on anything that could not
+      // be closed (a halted name keeps its protection).
+      this.orders = this.orders.filter((o) => o.bracket && this.pos[o.sym]);
       return results;
     }
 
@@ -250,7 +256,7 @@
         o = { id: OID++, sym, type, strike, expiry, qty: n, avg: q.ask };
         this.opts.push(o);
       }
-      const tr = { t: this.market.t, day: this.market.day, sym: B.Options.label(o), qty: n, price: q.ask, realized: -comm, tag: 'OPT BUY', opt: true };
+      const tr = { t: this.market.t, day: this.market.day, sym: B.Options.label(o), qty: n, price: q.ask, realized: -comm, tag: 'OPT BUY', opt: true, open: true, und: sym, dir: type === 'C' ? 1 : -1 };
       this.trades.push(tr);
       B.bus.emit('fill', tr);
       return { ok: true, price: q.ask };
@@ -263,7 +269,8 @@
       if (bad && !(forced && bad === this.rules.locked)) return err(bad);
       n = Math.min(o.qty, Math.trunc(n || o.qty));
       const q = B.Options.quote(this.market, o.sym, o.type, o.strike, o.expiry);
-      const comm = 0.65 * n * this.feeMult;
+      // Worthless contracts are abandoned, not sold: no commission on a zero bid.
+      const comm = q.bid > 0 ? 0.65 * n * this.feeMult : 0;
       this.cash += n * 100 * q.bid - comm;
       this.fees += comm;
       const realized = (q.bid - o.avg) * n * 100 - comm;
@@ -288,10 +295,12 @@
       if (this.stockGross() > 0 && this.netLiq() < this.maintenance()) {
         if (!this.mc) {
           this.mc = { start: t, deadline: t + 30 };
+          if (this.dayRisk) this.dayRisk.mc++;
           ev.push({ type: 'mc' });
         } else if (t >= this.mc.deadline) {
           if (this.liquidateForMargin()) {
             this.mc = null;
+            if (this.dayRisk) this.dayRisk.liq++;
             ev.push({ type: 'liq' });
           }
         }
@@ -322,6 +331,22 @@
       this.dayTradeStart = this.trades.length;
       this.dayFeesStart = this.fees;
       this.mc = null;
+      this.dayRisk = { trough: this.dayStartEquity, breachT: null, flatT: null, mc: 0, liq: 0, peakLev: 0 };
+    }
+
+    // Intraday risk tape for the risk desk review: the day's low, the minute
+    // the daily loss limit was first hit, and the most leverage carried.
+    trackRisk(t, lossLimit) {
+      const r = this.dayRisk;
+      if (!r) return;
+      const eq = this.equity();
+      if (eq < r.trough) r.trough = eq;
+      // Story cash events (fines, forced unwinds) move the baseline, not the limit.
+      const base = this.dayStartEquity + (r.adj || 0);
+      if (r.breachT == null && lossLimit > 0 && eq <= base * (1 - lossLimit)) r.breachT = t;
+      if (r.breachT != null && r.flatT == null && this.isFlat()) r.flatT = t;
+      const lev = this.leverage();
+      if (lev < 99 && lev > r.peakLev) r.peakLev = lev;
     }
 
     // Close-of-day bookkeeping. Market must already be closed.
@@ -389,6 +414,7 @@
         dayTradeStart: this.dayTradeStart || 0,
         dayFeesStart: this.dayFeesStart || 0,
         mc: this.mc,
+        dayRisk: this.dayRisk || null,
         rules: { maxLev: this.rules.maxLev, overnightLev: this.rules.overnightLev, shortBan: this.rules.shortBan, locked: this.rules.locked }
       });
     }
@@ -407,6 +433,7 @@
       this.dayTradeStart = o.dayTradeStart || 0;
       this.dayFeesStart = o.dayFeesStart || 0;
       this.mc = o.mc || null;
+      this.dayRisk = o.dayRisk || { trough: o.dayStartEquity, breachT: null, mc: 0, liq: 0, peakLev: 0 };
       if (o.rules) Object.assign(this.rules, o.rules);
     }
   }

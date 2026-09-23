@@ -109,6 +109,7 @@
       for (const tk of m.tickers) this.dayOpen.px[tk.sym] = tk.prevClose;
       b.startDay();
       this.stress.startDay(this.mode.stressCarry ? this.mode.stressCarry(this.day) : undefined);
+      if (this.mode.morningStress) this.stress.spike(this.mode.morningStress(this.day));
       this.lock = null;
       this.warned = {};
       this.earlyEnd = null;
@@ -173,6 +174,7 @@
       for (const e of b.checkMargin(m.t)) this.onMargin(e);
       const eq = b.equity();
       if (eq > b.dayPeak) b.dayPeak = eq;
+      b.trackRisk(m.t, this.mode.lossLimit || 0);
       if (this.lock && m.t >= this.lock.until) this.unlock(false);
       while (this.inboxQueue.length && this.inboxQueue[0].t <= m.t) B.UI.inbox(this.inboxQueue.shift());
       this.interrupts.update(m.t);
@@ -502,6 +504,13 @@
             };
             const weekend = this.mode.kind === 'story' && this.day % 5 === 4 && this.day < this.mode.lastDay;
             if (weekend) {
+              if (this.mode.weekendLedger) return this.mode.weekendLedger(this, () => {
+                if (B.Cinematic.startChain) B.Cinematic.startChain('weekend');
+                B.Cinematic.play('weekend', { day: this.day, game: this }, () => {
+                  if (B.Cinematic.endChain) B.Cinematic.endChain();
+                  advance();
+                });
+              });
               if (B.Cinematic.startChain) B.Cinematic.startChain('weekend');
               B.Cinematic.play('weekend', { day: this.day, game: this }, () => {
                 if (B.Cinematic.endChain) B.Cinematic.endChain();

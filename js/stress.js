@@ -51,7 +51,7 @@
       p += Math.min(28, Math.abs(m.indexMove(5)) * 720);
       if (m.halt) p += 5;
 
-      const calm = b.isFlat() ? 4.0 : (pnl >= g.quota && g.quota > 0 ? 2.2 : 1.35);
+      const calm = (b.isFlat() ? 4.0 : (pnl >= g.quota && g.quota > 0 ? 2.2 : 1.35)) * (g.mode && g.mode.calmMult ? g.mode.calmMult() : 1);
       this.v = B.clamp(this.v + (p * 0.105 * this.rate - calm) * dt, 0, 100);
       this.cooldown = Math.max(0, this.cooldown - dt);
       this.resistance = Math.max(0, this.resistance - dt / 210);

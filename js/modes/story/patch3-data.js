@@ -298,6 +298,19 @@
     });
   });
 
+  // Your boss's patience is the one relationship that can end the career, so
+  // a single decision can dent it but not zero it: losses to Kroll are halved.
+  Object.keys(choices).forEach((id) => {
+    choices[id].options.forEach((opt) => {
+      const apply = opt.apply;
+      opt.apply = (S) => {
+        const k0 = S.rel.kroll;
+        apply(S);
+        if (S.rel.kroll < k0) S.rel.kroll = B.clamp(k0 + (S.rel.kroll - k0) * 0.5, 0, 100);
+      };
+    });
+  });
+
   // The ten decision labels are UI truth. Legacy ids only remain in comments and
   // migration code, never in player-facing copy.
   Object.keys(choices).forEach((id, i) => {

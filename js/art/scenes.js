@@ -406,7 +406,7 @@
         X.rect(ctx, x + 2, 84, 5, 7, i % 2 ? P.desk2 : P.deskD);
       }
       X.rect(ctx, 0, 113, V.w, 25, P.ink2);
-      X.text(ctx, 'WITHDRAWAL QUEUE · MERCER STREET', 160, 120, P.white, { align: 'center' });
+      X.text(ctx, 'WITHDRAWAL QUEUE · THIRD STREET', 160, 120, P.white, { align: 'center' });
     } else if (day === 11) {
       // Regulatory preservation sweep: cartons, badges and locked terminals.
       for (let i = 0; i < 6; i++) {
@@ -670,4 +670,6 @@
   };
 
   B.Scenes = Scenes;
+  // The hand-drawn 320x180 set pieces, for the storyboard layer to reuse at 2x.
+  B.Shots = { V, apartment, tvSet, elevator, tradingFloor, deskCloseup, bellScene, endingShot, briefingTableau, endingDetail };
 })(window.BTB);

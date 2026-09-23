@@ -103,6 +103,7 @@
         if (tk.candles.length) tk.prevCandles = tk.candles;
         tk.candles = [];
         tk.haltUntil = -1;
+        tk.newsUntil = -1;
         tk.luldCool = 0;
         tk.resumed = false;
         if (tk.sector === 'fear') continue;
