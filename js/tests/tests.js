@@ -1057,5 +1057,21 @@
     assert(br.cash >= cash0, 'selling worthless contracts should not cost commission: ' + (br.cash - cash0));
   });
 
+  test('Flatten keeps stop-losses on a position it could not close', () => {
+    const m = new B.Market({ seed: 'flatten-halt' });
+    const b = new B.Broker({ cash: 250000 }); b.attach(m);
+    m.startDay(0, { regime: 'chop' }); b.startDay(); m.step(1);
+    b.marketOrder('BSTN', 100, {});
+    b.marketOrder('HLST', 100, {});
+    b.attachBracket('BSTN', 5, 10);
+    b.attachBracket('HLST', 5, 10);
+    b.placeOrder('CRVS', 10, 'limit', 1, {});
+    m.bySym.HLST.haltUntil = m.t + 30;
+    b.flattenAll();
+    assert(!b.pos.BSTN && b.pos.HLST, 'the halted name should stay open');
+    assert(b.orders.filter((o) => o.bracket && o.sym === 'HLST').length === 2, 'the halted position lost its stop and target');
+    assert(!b.orders.some((o) => !o.bracket), 'working orders should be cancelled');
+  });
+
   B.Tests = { results, run: () => results };
 })(window.BTB);

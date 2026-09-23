@@ -161,7 +161,11 @@
       if (e.key === 'Escape') { e.preventDefault(); if (typing) document.activeElement.blur(); else g.togglePause(); return; }
       if (g.lock && g.lock.kind === 'panic') {
         const k = e.key.toLowerCase();
-        if (['a', 's', 'd'].includes(k)) { e.preventDefault(); g.panicInput(k); }
+        if (['a', 's', 'd'].includes(k)) {
+          e.preventDefault();
+          g.panicInput(k);
+          if (!g.lock) this.groundedAt = performance.now();
+        }
         return;
       }
       if (typing && e.key !== 'Enter') return;
@@ -169,6 +173,10 @@
       B.SFX.unlock();
       const k = e.key.toLowerCase();
       if (typing && e.key === 'Enter') { document.activeElement.blur(); return; }
+      // Holding a key must not machine-gun orders, and the grounding keys
+      // (A S D) must not spill into Answer or Sell right after a panic ends.
+      if (e.repeat && 'bscxa'.indexOf(k) >= 0) { e.preventDefault(); return; }
+      if (this.groundedAt && performance.now() - this.groundedAt < 800 && 'asd'.indexOf(k) >= 0) { e.preventDefault(); return; }
       if (k === 'b') { e.preventDefault(); B.Ticket.send(1); }
       else if (k === 's') { e.preventDefault(); B.Ticket.send(-1); }
       else if (k === 'c') { e.preventDefault(); g.closePos(this.sel); }

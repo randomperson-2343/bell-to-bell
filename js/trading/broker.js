@@ -230,7 +230,9 @@
       const results = [];
       for (const s of Object.keys(this.pos)) results.push(this.marketOrder(s, -this.pos[s].qty, { tag: tag || 'FLATTEN', forced }));
       for (const o of this.opts.slice()) results.push(this.sellOption(o.id, o.qty, forced));
-      this.orders = [];
+      // Working orders go; stops and targets stay on anything that could not
+      // be closed (a halted name keeps its protection).
+      this.orders = this.orders.filter((o) => o.bracket && this.pos[o.sym]);
       return results;
     }
 
