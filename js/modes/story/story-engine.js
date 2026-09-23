@@ -586,15 +586,40 @@
       // Sunday: the one weekly money decision. Where you live.
       weekendLedger(g, cb) {
         if (!B.Screens.ledger) return cb();
-        B.Screens.ledger({ wallet: W$, options: E.moveOptions(W$), tiers: E.TIERS, worth: E.netWorth(W$), weekly: E.weekly(E.tier(W$)),
+        B.Screens.ledger({ wallet: W$, options: E.moveOptions(W$), tiers: E.TIERS, worth: E.netWorth(W$), weekly: E.weekly(E.tier(W$), W$),
           draw: Math.round(E.P.drawPerSession * 5 * (1 - E.P.taxRate)) }, (i) => {
           if (i != null) E.move(W$, i);
           cb();
         });
       },
 
+      // Apply one life beat's option to the story state and the wallet, once.
+      applyLife(id, optId) {
+        const beat = B.Life && B.Life.byId(id);
+        if (!beat || (W$.life && W$.life[id])) return null;
+        const opt = beat.options.find((o) => o.id === optId) || beat.options[beat.options.length - 1];
+        const after = opt.apply(S, W$, E) || [];
+        (W$.life = W$.life || {})[id] = opt.id;
+        S.log.push({ day: beat.day, text: `${beat.title}: ${opt.label}` });
+        return { beat, opt, after };
+      },
+
+      // After the desk's decision (if any), the day's personal-money beat.
+      lifeBeat(g, cb) {
+        const beat = B.Life && B.Life.byDay(g.day);
+        if (!beat || (W$.life && W$.life[beat.id]) || !B.Screens.choice) return cb();
+        const view = { speaker: beat.speaker, role: beat.role, kicker: beat.kicker, title: beat.title, text: beat.text(S, W$),
+          options: beat.options.map((o) => ({ id: o.id, label: o.label, hint: o.hint })) };
+        B.Screens.choice(view, S, (optId) => {
+          const res = this.applyLife(beat.id, optId);
+          B.Screens.aftermath(beat.title, (res && res.after) || [], () => cb());
+        });
+      },
+
       afterDay(g, cb) {
         const d = g.day;
+        const done = cb;
+        cb = (ending) => (ending ? done(ending) : this.lifeBeat(g, done));
         const id = Object.keys(D.CHOICES).find((k) => D.CHOICES[k].day === d && !D.CHOICES[k].mid);
         if (!id) return cb();
         const c = D.CHOICES[id];
@@ -649,7 +674,12 @@
           nobody: `Your own ${money} sits in an account no human will ever look at again.`,
           master: `You left with the book and ${money} of your own. Neither will spend the way it used to.`
         };
-        const epilogue = special[e.id] ? `Personally: ${special[e.id]}`
+        const extras = [];
+        if (W$.perryLoan) extras.push(S.m.stability >= 45 ? 'Perry paid back the six thousand in March, with a note.' : 'Perry never paid back the six thousand. You never asked.');
+        if (W$.dadUnpaid) extras.push("Your father's surgery bill went to collections. Your mother never mentioned it again.");
+        if (W$.momExtra) extras.push('The money home still goes out every Friday.');
+        const tail = extras.length ? ' ' + extras.join(' ') : '';
+        const epilogue0 = special[e.id] ? `Personally: ${special[e.id]}`
           : P.band === 'broke'
             ? `Personally, you walked away owing ${money}. The book was never yours; the debt is.${P.couch ? " You still sleep on your mother's couch." : ''}`
             : P.band === 'rich'
@@ -657,6 +687,7 @@
               : P.worth < 5000
                 ? `Personally, you walked away with ${money} and ${home}. Not enough for next month.`
                 : `Personally, you walked away with ${money} and ${home}. Enough for a month or two. Not enough to stop.`;
+        const epilogue = epilogue0 + tail;
         return {
           id: e.id, title: e.title, headline: e.headline,
           deck: firedBy === 'boss' && e.id === 'fired' ? 'Firm cites "a breakdown of trust" as the crisis claims another desk.' : e.deck,

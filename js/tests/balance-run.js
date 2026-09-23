@@ -21,7 +21,7 @@ vm.runInContext(`
   B.Settings = { get: () => ({ storyDayLength: 180 }), set: () => {} };
   B.UI = new Proxy({}, { get: () => () => {} });
 `, ctx);
-['js/modes/story/story-data.js', 'js/modes/story/patch3-data.js', 'js/modes/story/sqwak-story.js', 'js/modes/story/endings.js', 'js/modes/story/patch3-endings.js', 'js/modes/story/economy.js', 'js/modes/story/story-engine.js'].forEach(run);
+['js/modes/story/story-data.js', 'js/modes/story/patch3-data.js', 'js/modes/story/sqwak-story.js', 'js/modes/story/endings.js', 'js/modes/story/patch3-endings.js', 'js/modes/story/economy.js', 'js/modes/story/life.js', 'js/modes/story/story-engine.js'].forEach(run);
 
 const B = ctx.BTB;
 const styles = {

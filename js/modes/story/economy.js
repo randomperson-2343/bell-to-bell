@@ -156,6 +156,14 @@
     return amount - fromCash - fromCard;
   }
 
+  // A one-off personal cost: cash first, then the card; past the limit it
+  // goes to collections on the card anyway. Returns what was charged.
+  function charge(w, amount) {
+    const left = spend(w, amount);
+    if (left > 0) w.card += left;
+    return amount;
+  }
+
   // Friday settlement for week `wk` (or the lone final Monday).
   function settle(w, o) {
     const lines = [];
@@ -196,9 +204,11 @@
     if (interest > 0) w.card += interest;
     // Bills scale with the days in the week: the lone final Monday is one fifth.
     const part = o.sessions / 5;
-    const fixed = round((P.living + P.loan + P.mom) * part);
+    const momWeek = P.mom + (w.momExtra || 0);
+    const fixed = round((P.living + P.loan + momWeek) * part);
     const unpaid = spend(w, fixed);
-    const rentDue = round(T.rent * part) + w.arrears;
+    const rent = round(T.rent * (w.rentMult || 1));
+    const rentDue = round(rent * part) + w.arrears;
     const rentUnpaid = spend(w, rentDue, true);
     if (unpaid > 0) {
       // Bills you cannot cover go to collections on the card, over the limit.
@@ -218,7 +228,15 @@
       w.card -= paid;
       w.cash -= paid;
     }
-    lines.push(`<b>Bills:</b> ${T.name} rent ${B.fmt.money(round(T.rent * part))}, living ${B.fmt.money(P.living * part)}, student loan ${B.fmt.money(P.loan * part)}, home to Mom ${B.fmt.money(P.mom * part)}${interest ? `, card interest ${B.fmt.money(interest)}` : ''}${paid ? `. Paid ${B.fmt.money(paid)} off the card` : ''}.`);
+    // Payment plans from the story (a surgery bill, say) come due weekly.
+    const planLines = [];
+    for (const pl of w.plans || []) {
+      if (!(pl.left > 0)) continue;
+      charge(w, pl.amt);
+      pl.left--;
+      planLines.push(`${pl.label} ${B.fmt.money(pl.amt)}${pl.left ? ` (${pl.left} left)` : ' (last one)'}`);
+    }
+    lines.push(`<b>Bills:</b> ${T.name} rent ${B.fmt.money(round(rent * part))}, living ${B.fmt.money(P.living * part)}, student loan ${B.fmt.money(P.loan * part)}, home to Mom ${B.fmt.money(momWeek * part)}${planLines.length ? ', ' + planLines.join(', ') : ''}${interest ? `, card interest ${B.fmt.money(interest)}` : ''}${paid ? `. Paid ${B.fmt.money(paid)} off the card` : ''}.`);
     let stress = 0;
     if (w.lateWeeks > 0) {
       const stage = Math.min(w.lateWeeks, EVICT_STAGES.length - 1);
@@ -240,7 +258,7 @@
   function netWorth(w) { return round(w.cash - w.card - w.arrears); }
 
   // All-in weekly cost of living somewhere.
-  const weekly = (t) => t.rent + P.living + P.loan + P.mom;
+  const weekly = (t, w) => round(t.rent * ((w && w.rentMult) || 1)) + P.living + P.loan + P.mom + ((w && w.momExtra) || 0);
 
   function band(w) {
     const n = netWorth(w);
@@ -253,7 +271,7 @@
     const cur = w.tier | 0;
     return TIERS.map((t, i) => {
       const cost = i > cur ? t.rent * 2 : 0;
-      return { i, id: t.id, name: t.name, rent: t.rent, weekly: weekly(t), note: t.note, cost, current: i === cur, afford: i === cur || w.cash >= cost };
+      return { i, id: t.id, name: t.name, rent: t.rent, weekly: weekly(t, w), note: t.note, cost, current: i === cur, afford: i === cur || w.cash >= cost };
     }).filter((o) => !TIERS[o.i].forced || o.current);
   }
 
@@ -265,5 +283,5 @@
     return true;
   }
 
-  B.Economy = { P, weekly, TIERS, EVICT_STAGES, multiplier, kinds, DEFAULT_TIER, fresh, ensure, review, reviewNote, hypeWindows, settle, netWorth, band, tier, moveOptions, move };
+  B.Economy = { P, weekly, charge, TIERS, EVICT_STAGES, multiplier, kinds, DEFAULT_TIER, fresh, ensure, review, reviewNote, hypeWindows, settle, netWorth, band, tier, moveOptions, move };
 })(window.BTB);

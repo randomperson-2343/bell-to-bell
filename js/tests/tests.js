@@ -537,6 +537,13 @@
     if (B.SqwakStory) { push(B.SqwakStory.INTRADAY); push(B.SqwakStory.PREOPEN); push(B.SqwakStory.POOLS); push(B.SqwakStory.BREAKING); }
     push(B.News.NOISE);
     if (B.Economy) { push(B.Economy.TIERS.map((t) => [t.name, t.note])); push(B.Economy.EVICT_STAGES); }
+    if (B.Life) {
+      const LS = B.StoryMode.freshState(250000);
+      for (const f of [{}, { insider: true }, { perryFiled: true }, { dumped: true }]) {
+        const S2 = Object.assign({}, LS, { f });
+        for (const b of B.Life.LIFE) push([b.speaker, b.role, b.title, b.text(S2, {}), b.options.map((o) => [o.label, o.hint, o.apply(JSON.parse(JSON.stringify(S2)), B.Economy.fresh(), B.Economy)])]);
+      }
+    }
     push(B.News.TEMPLATES);
 
     const D = B.StoryData;
@@ -1071,6 +1078,24 @@
     assert(!b.pos.BSTN && b.pos.HLST, 'the halted name should stay open');
     assert(b.orders.filter((o) => o.bracket && o.sym === 'HLST').length === 2, 'the halted position lost its stop and target');
     assert(!b.orders.some((o) => !o.bracket), 'working orders should be cancelled');
+  });
+
+  test('Life beats: fire once, cost your own money, and bill payment plans weekly', () => {
+    const mode = B.StoryMode(), S = mode.S, W = S.wallet, E = B.Economy;
+    W.cash = 20000; W.card = 0;
+    const r1 = mode.applyLife('dadBill', 'plan');
+    assert(r1 && W.cash === 12900 && W.card === 0, 'half the bill should come out of cash: ' + W.cash);
+    assert(mode.applyLife('dadBill', 'pay') === null, 'a life beat must not fire twice');
+    W.peakEq = 250000; W.cash = 20000; W.card = 0;
+    E.settle(W, { equity: 250000, capital: 250000, weekMade: false, breaches: [], sessions: 5 });
+    assert(W.plans[0].left === 5, 'the plan should take one payment a week');
+    mode.applyLife('pension', 'monthly');
+    assert(E.weekly(E.tier(W), W) === E.weekly(E.tier(W)) + 290, 'weekly support should raise the week');
+    mode.applyLife('rentHike', 'accept');
+    assert(Math.abs(W.rentMult - 1.09) < 1e-9, 'accepting the hike should raise rent 9%');
+    const k0 = S.rel.kroll; mode.applyLife('advance', 'take');
+    assert(W.deficit > 8000 && S.rel.kroll > k0, 'the advance is owed back out of bonus and pleases Kroll');
+    assert(B.Life.LIFE.every((b) => !Object.keys(B.StoryData.CHOICES).some((k) => B.StoryData.CHOICES[k].day === b.day)), 'life beats should not share a day with a desk decision');
   });
 
   B.Tests = { results, run: () => results };

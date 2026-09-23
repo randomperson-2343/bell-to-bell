@@ -36,7 +36,7 @@ function load() {
       closeModal() {},
       log: [] };
   `, ctx);
-  for (const f of ['js/modes/story/story-data.js', 'js/modes/story/patch3-data.js', 'js/modes/story/sqwak-story.js', 'js/modes/story/endings.js', 'js/modes/story/patch3-endings.js', 'js/modes/story/economy.js', 'js/modes/story/story-engine.js', 'js/modes/endless/endless.js']) {
+  for (const f of ['js/modes/story/story-data.js', 'js/modes/story/patch3-data.js', 'js/modes/story/sqwak-story.js', 'js/modes/story/endings.js', 'js/modes/story/patch3-endings.js', 'js/modes/story/economy.js', 'js/modes/story/life.js', 'js/modes/story/story-engine.js', 'js/modes/endless/endless.js']) {
     vm.runInContext(fs.readFileSync(path.join(root, f), 'utf8'), ctx, { filename: f });
   }
   return ctx.BTB;

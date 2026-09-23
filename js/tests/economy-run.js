@@ -19,7 +19,7 @@ function load() {
     'js/market/tickers.js', 'js/market/engine.js', 'js/market/news.js', 'js/market/sqwak.js', 'js/trading/options.js', 'js/trading/broker.js'].forEach(run);
   vm.runInContext('const B = window.BTB; B.Settings = { get: () => ({ storyDayLength: 180 }), set: () => {} }; B.UI = new Proxy({}, { get: () => () => {} }); B.Screens = {};', ctx);
   ['js/modes/story/story-data.js', 'js/modes/story/patch3-data.js', 'js/modes/story/sqwak-story.js', 'js/modes/story/endings.js',
-    'js/modes/story/patch3-endings.js', 'js/modes/story/economy.js', 'js/modes/story/story-engine.js'].forEach(run);
+    'js/modes/story/patch3-endings.js', 'js/modes/story/economy.js', 'js/modes/story/life.js', 'js/modes/story/story-engine.js'].forEach(run);
   return ctx.BTB;
 }
 const B = load();
