@@ -261,7 +261,7 @@
     {
       title: 'Run on Ridgeway',
       brief: (S) => {
-        const p = ['Ridgeway Trust could not fund itself this morning. Its counterparties want collateral it does not have. There is a camera crew outside a branch on Mercer Street filming a queue that does not need to exist.'];
+        const p = ['Ridgeway Trust could not fund itself this morning. Its counterparties want collateral it does not have. There is a camera crew outside a branch on Third filming a queue that does not need to exist.'];
         if (S.f.raid) p.push('Your name is on a chat log with four other desks. So far nobody has asked about it.');
         if (S.f.toldRidgeway) p.push('Ridgeway\'s desk head left you a voicemail at 5 AM. He just says "thank you," twice, and hangs up.');
         return p;

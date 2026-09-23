@@ -241,6 +241,8 @@
   }
   B.Rhythm = {
     view:V, storyboards:STORYBOARDS, endingIds:ENDING_IDS,
+    // Drawing helpers for js/art/storyboard.js.
+    placeFrame, phoneFrame, officeFrame, closeFrame, weekendFrame, skyline, text, colors, clean, chart, person, marketDown, beat,
     phoneRowCount(feed){return Math.min(4,(feed||[]).length);},
     storyboard(day){return STORYBOARDS[day]||board(day);},
     frameMap(day){const sb=this.storyboard(day);return [

@@ -21,7 +21,7 @@ const run = (f) => vm.runInContext(fs.readFileSync(path.join(root, f), 'utf8'), 
 
 [
   'js/core/util.js', 'js/core/rng.js', 'js/core/events.js', 'js/core/storage.js', 'js/core/save.js', 'js/core/clock.js',
-  'js/art/palette.js', 'js/art/pixel.js', 'js/art/scenes.js', 'js/art/rhythm.js',
+  'js/art/palette.js', 'js/art/pixel.js', 'js/art/scenes.js', 'js/art/rhythm.js', 'js/art/storyboard.js',
   'js/market/tickers.js', 'js/market/engine.js', 'js/market/news.js', 'js/market/sqwak.js',
   'js/trading/options.js', 'js/trading/broker.js', 'js/stress.js',
   'js/audio/sfx.js', 'js/audio/music.js', 'js/interrupts.js', 'js/game.js'
