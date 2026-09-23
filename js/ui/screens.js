@@ -298,7 +298,8 @@
 
     // ---- endings ----
     ending(g, ending) {
-      const track = ending.dark || ending.good === false || /wiped|fired|perp|depression/.test(ending.id) ? 'endingDark' : 'endingLight';
+      const dark = !!ending.dark || ending.good === false || /^(wiped|fired|perp|depression|replaced)$/.test(ending.id);
+      const track = dark ? 'endingDark' : 'endingLight';
       const show = () => {
         if (B.Cinematic.endChain) B.Cinematic.endChain();
         B.Music.play(track);
@@ -306,7 +307,7 @@
         else this.endlessEnding(g, ending);
       };
       if (B.Cinematic.startChain) B.Cinematic.startChain('ending');
-      B.Cinematic.play('ending', { id: ending.id, title: ending.title, deck: ending.deck, dark: !!ending.dark || ending.good === false }, show);
+      B.Cinematic.play('ending', { id: ending.id, title: ending.title, deck: ending.deck, dark }, show);
     },
 
     storyEnding(g, e) {

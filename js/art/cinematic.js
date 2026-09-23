@@ -131,7 +131,8 @@
         const pad = Math.round(12 * unit);
         const width = view.w - pad * 2, x = pad, height = Math.round(32 * unit), y = view.h - height - Math.round(8 * unit);
         X.box(ctx, x, y, width, height);
-        const lines = X.wrap(beat.line, width - Math.round(16 * unit)).slice(0, 2);
+        // Captions scale with the canvas so a 640-wide storyboard reads like the 320 one.
+        const lines = X.wrap(beat.line, (width - Math.round(16 * unit)) / unit).slice(0, 2);
         const total = lines.join(' ').length;
         const delay = beat.captionDelay == null ? 0.22 : beat.captionDelay;
         const shown = Math.ceil(total * B.clamp((this.t - delay) / Math.min(1.15, beat.dur * 0.55), 0, 1));
@@ -139,7 +140,11 @@
         lines.forEach((line, row) => {
           const take = B.clamp(shown - used, 0, line.length);
           used += line.length;
-          if (take > 0) X.text(ctx, line.slice(0, take), x + Math.round(8 * unit), y + Math.round(8 * unit) + row * Math.round(10 * unit), P.bone);
+          if (take > 0) {
+            ctx.save(); ctx.scale(unit, unit);
+            X.text(ctx, line.slice(0, take), Math.round((x + 8 * unit) / unit), Math.round((y + 8 * unit) / unit) + row * 10, P.bone);
+            ctx.restore();
+          }
         });
       }
       if (beat.transition === 'fade') {
