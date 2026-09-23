@@ -42,6 +42,11 @@
         if (this.feedTab === 'inbox') { this.unread = 0; this.updateBadge(); }
         this.renderFeed();
       }));
+      // Sqwak: tapping a $TICKER in a post or the trending strip jumps the chart.
+      onPress($('feed-list'), (e) => {
+        const tag = e.target.closest('[data-sym]');
+        if (tag) this.select(tag.dataset.sym);
+      });
       document.querySelectorAll('.bt-tabs button').forEach((b) => b.addEventListener('click', () => {
         this.btTab = b.dataset.bt;
         document.querySelectorAll('.bt-tabs button').forEach((x) => x.classList.toggle('on', x === b));
@@ -285,12 +290,55 @@
 
     renderFeed() {
       const list = this.feed[this.feedTab];
-      if (!list.length) { $('feed-list').innerHTML = '<div class="empty">Nothing yet.</div>'; return; }
-      $('feed-list').innerHTML = list.slice(0, 80).map((n) => {
+      const head = this.feedTab === 'chirp' ? this.sqwakTrending() : '';
+      if (!list.length) { $('feed-list').innerHTML = head + '<div class="empty">Nothing yet.</div>'; return; }
+      $('feed-list').innerHTML = head + list.slice(0, 80).map((n) => {
         if (n.kind === 'sep') return `<div class="news sep">${B.esc(n.text)}</div>`;
-        const channel = n.kind === 'wire' ? 'WIRE' : n.kind === 'chirp' ? 'SOCIAL' : 'DIRECT';
+        if (n.kind === 'chirp' && B.Sqwak) return this.sqwakCard(n);
+        const channel = n.kind === 'wire' ? 'WIRE' : 'DIRECT';
         return `<div class="news ${n.kind}${n.big ? ' big' : ''}"><div class="meta"><span class="channel">${channel}</span><span>${B.Calendar.fmtTime(n.t || 0)}</span><span class="src">${B.esc(n.src)}</span></div><div class="txt">${B.esc(n.text)}</div></div>`;
       }).join('');
+    },
+
+    // ---- Sqwak ----
+    sqwakText(text) {
+      return B.esc(text).replace(/\$([A-Z]{2,5})/g, (m, sym) =>
+        B.TICKERS.some((t) => t.sym === sym) ? `<button class="sq-tag" data-sym="${sym}">$${sym}</button>` : m);
+    },
+
+    sqwakCard(n) {
+      const a = B.Sqwak.account(n.src);
+      const m = B.Sqwak.metrics(n);
+      const k = (v) => (v >= 10000 ? Math.round(v / 1000) + 'K' : v >= 1000 ? (v / 1000).toFixed(1) + 'K' : String(v));
+      const big = a.followers >= B.Sqwak.HYPE_MIN_FOLLOWERS;
+      return `<div class="news chirp sq-post"><span class="sq-av" style="--av:var(--c-${a.col})">${B.esc(B.Sqwak.initials(a))}</span>
+        <div class="sq-body"><div class="sq-who"><b>${B.esc(a.name)}</b>${big ? '<i class="sq-v" title="1M+ followers">&#10004;</i>' : ''}<span>${B.esc(a.handle)} · ${B.Calendar.fmtTime(n.t || 0)}</span></div>
+        <div class="txt">${this.sqwakText(n.text)}</div>
+        <div class="sq-stats"><span>&#9633; ${k(m.replies)}</span><span>&#8644; ${k(m.resqwaks)}</span><span>&#9825; ${k(m.likes)}</span></div></div></div>`;
+    },
+
+    // The three tickers Sqwak is loudest about in the last 30 game-minutes.
+    // The arrow is Sqwak's mood, not the truth.
+    sqwakTrending() {
+      if (!B.Sqwak) return '';
+      const now = this.g && this.g.market ? this.g.market.t : 0;
+      const tally = {};
+      for (const n of this.feed.chirp) {
+        if (n.kind !== 'chirp' || (n.t || 0) < now - 30) continue;
+        const mood = B.Sqwak.sentiment(n.text);
+        for (const sym of B.Sqwak.tickersIn(n.text)) {
+          if (!B.TICKERS.some((t) => t.sym === sym)) continue;
+          const r = tally[sym] || (tally[sym] = { n: 0, mood: 0 });
+          r.n++; r.mood += mood;
+        }
+      }
+      const top = Object.keys(tally).sort((x, y) => tally[y].n - tally[x].n).slice(0, 3);
+      const chips = top.map((sym) => {
+        const md = tally[sym].mood;
+        const cls = md > 0 ? 'up' : md < 0 ? 'down' : '';
+        return `<button class="sq-trend ${cls}" data-sym="${sym}">$${sym} <i>${md > 0 ? '&#9650;' : md < 0 ? '&#9660;' : '&#9670;'}</i></button>`;
+      }).join('');
+      return `<div class="sq-trending"><span class="sq-logo">sqwak</span><span class="sq-label">TRENDING</span>${chips || '<span class="sq-quiet">quiet</span>'}</div>`;
     },
 
     // ---- phone ----

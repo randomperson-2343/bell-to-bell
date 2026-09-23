@@ -12,7 +12,7 @@ vm.createContext(ctx);
 const load = (f) => vm.runInContext(fs.readFileSync(path.join(root, f), 'utf8'), ctx, { filename: f });
 [
   'js/core/util.js','js/core/rng.js','js/core/events.js','js/core/storage.js','js/core/save.js','js/core/clock.js',
-  'js/market/tickers.js','js/market/engine.js','js/market/news.js','js/trading/options.js','js/trading/broker.js'
+  'js/market/tickers.js','js/market/engine.js','js/market/news.js','js/market/sqwak.js','js/trading/options.js','js/trading/broker.js'
 ].forEach(load);
 vm.runInContext(`
   const B=window.BTB;

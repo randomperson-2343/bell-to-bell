@@ -283,6 +283,26 @@ input.short { width: 60px; }
 .news.big { background: rgba(194, 73, 90, 0.12); border-left: 3px solid var(--c-crimson); }
 .news.big .txt { font-weight: 700; }
 .news.sep { text-align: center; color: var(--c-phosphor-d); font-size: 9px; padding: 6px; animation: none; letter-spacing: .1em; }
+/* Sqwak: social posts on the comms monitor */
+.sq-trending { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; padding: 6px 10px; border-bottom: 1px solid var(--c-slate); background: var(--c-screen-d); position: sticky; top: 0; z-index: 1; }
+.sq-logo { font-family: var(--pixel); font-weight: 700; font-size: 13px; color: var(--c-bone); letter-spacing: .02em; }
+.sq-label { font-family: var(--pixel); font-size: 8px; letter-spacing: .1em; color: var(--c-grey); margin-right: 2px; }
+.sq-quiet { font-family: var(--mono); font-size: 10px; color: var(--c-grey); }
+.sq-trend { font-family: var(--mono); font-size: 10px; color: var(--c-bone); background: var(--c-screen-glow); border: 1px solid var(--c-slate2); padding: 1px 6px; cursor: pointer; }
+.sq-trend i { font-style: normal; color: var(--c-grey2); }
+.sq-trend.up i { color: var(--up); }
+.sq-trend.down i { color: var(--down); }
+.sq-trend:hover, .sq-tag:hover { border-color: var(--c-sky); }
+.news.sq-post { display: flex; gap: 8px; align-items: flex-start; }
+.sq-av { flex: none; width: 24px; height: 24px; display: grid; place-items: center; border: 2px solid var(--av, var(--c-grey2)); color: var(--av, var(--c-grey2)); background: var(--c-screen-d); font-family: var(--pixel); font-size: 8px; letter-spacing: 0; }
+.sq-body { min-width: 0; flex: 1; }
+.sq-who { display: flex; gap: 5px; align-items: baseline; flex-wrap: wrap; font-family: var(--ui); font-size: 11px; line-height: 1.3; }
+.sq-who b { color: var(--c-bone); font-weight: 600; }
+.sq-who span { color: var(--c-grey); font-family: var(--mono); font-size: 9px; }
+.sq-v { font-style: normal; color: var(--c-sky); font-size: 9px; }
+.sq-post .txt { overflow-wrap: anywhere; }
+.sq-tag { font: inherit; color: var(--c-sky); background: none; border: 0; border-bottom: 1px dotted var(--c-sky); padding: 0; cursor: pointer; }
+.sq-stats { display: flex; gap: 14px; margin-top: 3px; font-family: var(--mono); font-size: 9px; color: var(--c-grey); font-variant-numeric: tabular-nums; }
 .badge { display: inline-block; min-width: 15px; padding: 0 4px; background: var(--c-crimson); color: var(--c-white); font-size: 9px; font-weight: 700; margin-left: 3px; }
 .badge.dim { background: var(--c-slate2); }
 

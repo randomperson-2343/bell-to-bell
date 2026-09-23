@@ -41,7 +41,7 @@
       brief: () => [
         'Holloway Stern, 41st floor. Your badge photo is still warm. <b>Desmond Kroll</b>, Head of Trading, has given you a <b>$250,000</b> book and one rule: <i>make money every single day.</i>',
         'The market is at a record. Corvus Intelligence ships a new model tonight and every company that owns a datacenter has tripled. The firm sells <b>CASCADE notes</b> by the billion: datacenter lease payments and consumer loans, bundled together and stamped AAA by <b>Meridian Ratings</b>.',
-        '<b>Imani Rhodes</b>, the desk\'s senior trader, slides a coffee across. "Watch the Wire. Chirp is mostly idiots, but idiots move prices. And never, ever hold more than you can stomach overnight."'
+        '<b>Imani Rhodes</b>, the desk\'s senior trader, slides a coffee across. "Watch the Wire. Sqwak is mostly idiots, but idiots move prices. And never, ever hold more than you can stomach overnight."'
       ],
       scen: () => ({
         regime: 'melt', market: { gap: 0.002, target: 0.006 }, sectors: { ai: { target: 0.012 }, chip: { target: 0.009 } },
@@ -77,7 +77,7 @@
           ev(300, 'Central bank minutes: officials see "no urgency" to raise rates', [['market', '', 0.005, 0.5]], { rumor: R(10, 'minutes leaking dovish. risk ON', '@MacroMaven') })
         ]
       }),
-      inbox: () => [{ t: 122, from: 'Imani Rhodes', text: 'That Ridgeway buyout "rumor" on Chirp? Classic bait. Wait for the Wire.' }]
+      inbox: () => [{ t: 122, from: 'Imani Rhodes', text: 'That Ridgeway buyout "rumor" on Sqwak? Classic bait. Wait for the Wire.' }]
     },
 
     // ---- Day 3 ----

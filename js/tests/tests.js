@@ -533,6 +533,7 @@
     Object.keys(B.SECTORS).forEach((k) => push(B.SECTORS[k].name));
     Object.keys(B.REGIMES).forEach((k) => push(B.REGIMES[k].name));
     push(B.News.HANDLES);
+    if (B.Sqwak) Object.keys(B.Sqwak.ACCOUNTS).forEach((h) => push([h, B.Sqwak.ACCOUNTS[h].name]));
     push(B.News.NOISE);
     push(B.News.TEMPLATES);
 
@@ -772,6 +773,30 @@
     const b2 = clone(S); b2.m.stability = 15; b2.f.whippedAgainst = true; b2.m.anger = 60;
     assert(B.StoryMode.votePasses(a) === true, 'should pass');
     assert(B.StoryMode.votePasses(b2) === false, 'should fail');
+  });
+
+  // ---------- Sqwak ----------
+  test('Sqwak hype: only 1M+ accounts move prices, and every pop fades', () => {
+    const evs = [
+      { t: 100, kind: 'chirp', text: 'loading calls on $CRVS', src: '@CallsOnlyCarl' },
+      { t: 120, kind: 'chirp', text: 'loading calls on $CRVS', src: '@HedgeHog88' },
+      { t: 140, kind: 'chirp', text: 'no ticker here, just vibes. buying', src: '@CallsOnlyCarl' }
+    ];
+    const out = B.Sqwak.hype(evs, 'test');
+    const h = out.filter((e) => e.hype);
+    assert(h.length === 2, 'expected one pop and one fade, got ' + h.length);
+    const pop = h[0].impacts[0], fade = h[1].impacts[0];
+    assert(pop.id === 'CRVS' && pop.pct > 0.005 && pop.pct < 0.021, 'pop size out of range: ' + pop.pct);
+    assert(fade.pct < 0 && -fade.pct >= pop.pct * 0.99, 'fade must give back the whole pop');
+    assert(h[1].t - h[0].t >= 8 && h[1].t - h[0].t <= 13, 'fade timing out of range');
+    assert(B.Sqwak.hype(evs, 'test', 0).length === evs.length, 'strength 0 must switch hype off');
+  });
+
+  test('Sqwak hype and engagement are deterministic for save replay', () => {
+    const m = B.StoryMode();
+    for (const d of [5, 30, 55]) assert(JSON.stringify(m.scenario(d).events) === JSON.stringify(m.scenario(d).events), 'session ' + (d + 1) + ' differs between builds');
+    const post = { t: 115, text: 'BREAKING?? $RDGW buyout', src: '@CallsOnlyCarl' };
+    assert(JSON.stringify(B.Sqwak.metrics(post)) === JSON.stringify(B.Sqwak.metrics(post)), 'metrics changed between calls');
   });
 
   B.Tests = { results, run: () => results };

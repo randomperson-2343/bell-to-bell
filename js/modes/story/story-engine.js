@@ -116,6 +116,8 @@
           return tk && SAFE_SECTORS.indexOf(tk.sector) >= 0;
         });
         scen.events = (scen.events || []).concat(extra);
+        // Sqwak hype: big accounts naming a ticker move it briefly, true or not.
+        if (B.Sqwak) scen.events = B.Sqwak.hype(scen.events, 'story|' + d);
         return scen;
       },
 
