@@ -42,6 +42,13 @@
         if (this.feedTab === 'inbox') { this.unread = 0; this.updateBadge(); }
         this.renderFeed();
       }));
+      // Sqwak: tapping a $TICKER in a post or the trending strip jumps the chart.
+      onPress($('feed-list'), (e) => {
+        const rq = e.target.closest('[data-rq]');
+        if (rq) { e.preventDefault(); this.resqwak(rq.dataset.rq); return; }
+        const tag = e.target.closest('[data-sym]');
+        if (tag) this.select(tag.dataset.sym);
+      });
       document.querySelectorAll('.bt-tabs button').forEach((b) => b.addEventListener('click', () => {
         this.btTab = b.dataset.bt;
         document.querySelectorAll('.bt-tabs button').forEach((x) => x.classList.toggle('on', x === b));
@@ -249,6 +256,13 @@
     addNews(e) {
       const kind = e.kind === 'chirp' ? 'chirp' : 'wire';
       const item = { kind, text: e.text, src: e.src || (kind === 'chirp' ? '@anon' : 'NEWSWIRE'), t: e.t, big: e.big };
+      if (kind === 'chirp') {
+        // Stable id so a resqwak survives save and restore; truth flags stay
+        // hidden from the player and only matter to the story engine.
+        item.id = (B.hashSeed(`${e.t}|${item.src}|${e.text}`) >>> 0).toString(36);
+        if (e.fake) item.fake = true;
+        if (e.truth) item.truth = true;
+      }
       this.feed[kind].unshift(item);
       if (this.feed[kind].length > 120) this.feed[kind].pop();
       if (kind === 'wire') B.SFX.news();
@@ -285,12 +299,69 @@
 
     renderFeed() {
       const list = this.feed[this.feedTab];
-      if (!list.length) { $('feed-list').innerHTML = '<div class="empty">Nothing yet.</div>'; return; }
-      $('feed-list').innerHTML = list.slice(0, 80).map((n) => {
+      const head = this.feedTab === 'chirp' ? this.sqwakTrending() : '';
+      if (!list.length) { $('feed-list').innerHTML = head + '<div class="empty">Nothing yet.</div>'; return; }
+      $('feed-list').innerHTML = head + list.slice(0, 80).map((n) => {
         if (n.kind === 'sep') return `<div class="news sep">${B.esc(n.text)}</div>`;
-        const channel = n.kind === 'wire' ? 'WIRE' : n.kind === 'chirp' ? 'SOCIAL' : 'DIRECT';
+        if (n.kind === 'chirp' && B.Sqwak) return this.sqwakCard(n);
+        const channel = n.kind === 'wire' ? 'WIRE' : 'DIRECT';
         return `<div class="news ${n.kind}${n.big ? ' big' : ''}"><div class="meta"><span class="channel">${channel}</span><span>${B.Calendar.fmtTime(n.t || 0)}</span><span class="src">${B.esc(n.src)}</span></div><div class="txt">${B.esc(n.text)}</div></div>`;
       }).join('');
+    },
+
+    // ---- Sqwak ----
+    sqwakText(text) {
+      return B.esc(text).replace(/\$([A-Z]{2,5})/g, (m, sym) =>
+        B.TICKERS.some((t) => t.sym === sym) ? `<button class="sq-tag" data-sym="${sym}">$${sym}</button>` : m);
+    },
+
+    sqwakCard(n) {
+      const a = B.Sqwak.account(n.src);
+      const m = B.Sqwak.metrics(n);
+      const k = (v) => (v >= 10000 ? Math.round(v / 1000) + 'K' : v >= 1000 ? (v / 1000).toFixed(1) + 'K' : String(v));
+      const big = a.followers >= B.Sqwak.HYPE_MIN_FOLLOWERS;
+      return `<div class="news chirp sq-post"><span class="sq-av" style="--av:var(--c-${a.col})">${B.esc(B.Sqwak.initials(a))}</span>
+        <div class="sq-body"><div class="sq-who"><b>${B.esc(a.name)}</b>${big ? '<i class="sq-v" title="1M+ followers">&#10004;</i>' : ''}<span>${B.esc(a.handle)} · ${B.Calendar.fmtTime(n.t || 0)}</span></div>
+        <div class="txt">${this.sqwakText(n.text)}</div>
+        <div class="sq-stats"><span>&#9633; ${k(m.replies)}</span>${n.id ? `<button class="sq-rq${n.rq ? ' on' : ''}" data-rq="${n.id}" ${n.rq ? 'disabled aria-pressed="true"' : ''} title="${n.rq ? 'You resqwaked this. It cannot be taken back.' : 'Resqwak: share this with your followers'}">&#8644; ${k(m.resqwaks + (n.rq ? 1 : 0))}${n.rq ? ' resqwaked' : ''}</button>` : `<span>&#8644; ${k(m.resqwaks)}</span>`}<span>&#9825; ${k(m.likes)}</span></div></div></div>`;
+    },
+
+    // Resqwak: amplify a post under your own name. There is no undo, because
+    // the internet does not have one either. Consequences live in the mode.
+    resqwak(id) {
+      const g = this.g;
+      if (!g) return;
+      const item = this.feed.chirp.find((n) => n.id === id);
+      if (!item || item.rq) return;
+      item.rq = true;
+      B.SFX.click();
+      const note = g.mode.onResqwak ? g.mode.onResqwak(g, item) : null;
+      this.toast(note || `Resqwaked ${item.src}.`, note ? 'warn' : '');
+      this.renderFeed();
+    },
+
+    // The three tickers Sqwak is loudest about in the last 30 game-minutes.
+    // The arrow is Sqwak's mood, not the truth.
+    sqwakTrending() {
+      if (!B.Sqwak) return '';
+      const now = this.g && this.g.market ? this.g.market.t : 0;
+      const tally = {};
+      for (const n of this.feed.chirp) {
+        if (n.kind !== 'chirp' || (n.t || 0) < now - 30) continue;
+        const mood = B.Sqwak.sentiment(n.text);
+        for (const sym of B.Sqwak.tickersIn(n.text)) {
+          if (!B.TICKERS.some((t) => t.sym === sym)) continue;
+          const r = tally[sym] || (tally[sym] = { n: 0, mood: 0 });
+          r.n++; r.mood += mood;
+        }
+      }
+      const top = Object.keys(tally).sort((x, y) => tally[y].n - tally[x].n).slice(0, 3);
+      const chips = top.map((sym) => {
+        const md = tally[sym].mood;
+        const cls = md > 0 ? 'up' : md < 0 ? 'down' : '';
+        return `<button class="sq-trend ${cls}" data-sym="${sym}">$${sym} <i>${md > 0 ? '&#9650;' : md < 0 ? '&#9660;' : '&#9670;'}</i></button>`;
+      }).join('');
+      return `<div class="sq-trending"><span class="sq-logo">sqwak</span><span class="sq-label">TRENDING</span>${chips || '<span class="sq-quiet">quiet</span>'}</div>`;
     },
 
     // ---- phone ----
@@ -487,6 +558,19 @@
       } else {
         $('tb-quota-amt').textContent = 'none';
         $('tb-quota-bar').style.width = '0%';
+      }
+      // Weekly quota: progress is everything made since the week opened.
+      const wq = g.mode.weekQuota ? g.mode.weekQuota(g, eq) : null;
+      const wk = $('tb-week');
+      if (wk) {
+        wk.hidden = !wq;
+        if (wq) {
+          $('tb-week-amt').textContent = F.money(wq.target);
+          const wp = B.clamp(wq.made / wq.target, 0, 1);
+          $('tb-week-bar').style.width = (wp * 100) + '%';
+          $('tb-week-bar').className = wp >= 1 ? 'met' : '';
+          wk.title = `Week ${wq.week}: ${F.money(wq.made, true)} of ${F.money(wq.target)} · ${wq.left} session${wq.left === 1 ? '' : 's'} left`;
+        }
       }
       const strike = $('tb-strikes');
       if (g.mode.kind === 'story' && g.mode.S) {

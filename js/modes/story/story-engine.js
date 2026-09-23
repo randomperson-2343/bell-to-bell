@@ -6,6 +6,11 @@
   // even a perfect-foresight trader before the late-game choices. Thirty keeps
   // misses permanent while allowing a competent run to reach session 61.
   const QUOTA_STRIKE_LIMIT = 30;
+  // Weekly quota: on top of the daily mandate, the desk wants the whole week
+  // to clear the sum of its daily quotas plus a margin. It resets every
+  // Monday. A missed week is one more career strike, logged at Friday's close.
+  // A made week wipes one missed day from that same week: make it back.
+  const WEEK_MULT = 1.15;
   // Sectors outside the CASCADE story. Background noise lives here so every day
   // stays tradable even when the scripted drama is pointed somewhere else.
   const SAFE_SECTORS = ['retail', 'haven', 'defense', 'power'];
@@ -88,6 +93,7 @@
           feed: day.feed || [],
           anomalyCount: d >= 15 ? S.anomalies : null,
           quotaStrikes: { count: S.quotaStrikes, limit: QUOTA_STRIKE_LIMIT },
+          weekQuota: g && g.broker ? (this.openWeek(g), this.weekQuota(g)) : null,
           quota: this.quota(d, g),
           quotaMeta: qm,
           rules
@@ -116,6 +122,8 @@
           return tk && SAFE_SECTORS.indexOf(tk.sector) >= 0;
         });
         scen.events = (scen.events || []).concat(extra);
+        // Sqwak hype: big accounts naming a ticker move it briefly, true or not.
+        if (B.Sqwak) scen.events = B.Sqwak.hype(scen.events, 'story|' + d);
         return scen;
       },
 
@@ -158,12 +166,14 @@
       stressCarry(d) { return d > 0 && d % 5 === 0 ? 0.08 : 0.15; },
       reconcileQuotaStrikes(history) {
         const byDay = {};
-        for (const entry of S.quotaLedger) if (entry && Number.isFinite(entry.day)) byDay[entry.day] = entry;
+        const key = (entry) => (entry.kind === 'week' ? 'w' + entry.week : String(entry.day));
+        for (const entry of S.quotaLedger) if (entry && Number.isFinite(entry.day)) byDay[key(entry)] = entry;
         for (const row of history || []) {
-          if (!row || row.quotaMet !== false || byDay[row.day]) continue;
-          byDay[row.day] = { day: row.day, pnl: row.pnl || 0, migrated: true };
+          if (!row || row.quotaMet !== false || byDay[String(row.day)]) continue;
+          if ((S.forgivenDays || []).indexOf(row.day) >= 0) continue; // wiped by a made week
+          byDay[String(row.day)] = { day: row.day, pnl: row.pnl || 0, migrated: true };
         }
-        S.quotaLedger = Object.keys(byDay).map((k) => byDay[k]).sort((a, b) => a.day - b.day);
+        S.quotaLedger = Object.keys(byDay).map((k) => byDay[k]).sort((a, b) => a.day - b.day || (a.kind === 'week') - (b.kind === 'week'));
         S.quotaStrikes = S.quotaLedger.length;
         return S.quotaStrikes;
       },
@@ -172,6 +182,39 @@
         if (!item || !item.anomalyId || S.openedAnomalies[item.anomalyId]) return;
         S.openedAnomalies[item.anomalyId] = true;
         S.anomalies = Object.keys(S.openedAnomalies).length;
+      },
+      // Resqwak consequences. Amplifying a rumour that never comes true costs
+      // heat; amplifying one that does builds a little influence; touting a
+      // stock you hold draws Compliance. Per-session caps stop farming.
+      onResqwak(g, item) {
+        const day = g.day;
+        if (!S.resqwak || S.resqwak.day !== day) S.resqwak = { day, heat: 0, influence: 0, warned: false, count: 0, fakes: 0, trues: 0 };
+        const R = S.resqwak;
+        R.count++;
+        S.resqwakTotal = (S.resqwakTotal || 0) + 1;
+        let note = null;
+        if (item.fake) R.fakes = (R.fakes || 0) + 1;
+        else if (item.truth) R.trues = (R.trues || 0) + 1;
+        if (item.fake) {
+          const add = Math.min(3, 9 - R.heat);
+          if (add > 0) { S.m.heat = B.clamp(S.m.heat + add, 0, 100); R.heat += add; }
+          S.rumorsSpread = (S.rumorsSpread || 0) + 1;
+        } else if (item.truth && R.influence < 3) {
+          S.m.influence = B.clamp(S.m.influence + 1, 0, 100);
+          R.influence++;
+        }
+        const syms = B.Sqwak ? B.Sqwak.tickersIn(item.text) : [];
+        const held = syms.find((sym) => g.broker && g.broker.posQty(sym) !== 0);
+        if (held) {
+          const add = Math.min(2, 9 - R.heat);
+          if (add > 0) { S.m.heat = B.clamp(S.m.heat + add, 0, 100); R.heat += add; }
+          if (!R.warned) {
+            R.warned = true;
+            note = `Compliance: you publicly promoted $${held} while holding it.`;
+            if (B.UI && B.UI.inbox) B.UI.inbox({ from: 'Compliance', text: `You resqwaked a post about $${held} while holding a position in it. Public promotion of your own positions is logged and reviewed.`, toast: false });
+          }
+        }
+        return note;
       },
       onFeedSkip(g) {
         if (S.feedOpenedDays[g.day] || S.feedSkippedDays[g.day]) return;
@@ -184,8 +227,35 @@
       bossName() { return D.boss(S); },
       wipeLevel() { return capital * 0.1; },
 
+      weekBounds(d) {
+        const start = Math.floor(d / 5) * 5;
+        return { start, end: Math.min(start + 4, D.DAYS.length - 1) };
+      },
+
+      // Opens the week's book the first session of each week (or the first
+      // session played after a load, using only the sessions that remain).
+      openWeek(g) {
+        const w = D.weekOf(g.day);
+        if (S.week && S.week.w === w) return S.week;
+        const eq = g.broker.equity();
+        const { end } = this.weekBounds(g.day);
+        let pct = 0;
+        for (let d = g.day; d <= end; d++) pct += D.QUOTAS[d];
+        S.week = { w, start: g.day, end, solo: Math.floor(g.day / 5) * 5 === end, startEq: eq, target: Math.round(Math.max(1500, eq * pct * WEEK_MULT) / 50) * 50, done: false };
+        return S.week;
+      },
+
+      weekQuota(g, equity) {
+        const W = S.week;
+        // The orphan final Monday is a week of one session: the daily quota covers it.
+        if (!W || W.w !== D.weekOf(g.day) || W.solo) return null;
+        const eq = equity == null ? g.broker.equity() : equity;
+        return { week: W.w, target: W.target, made: eq - W.startEq, left: W.end - g.day + 1, done: W.done };
+      },
+
       onDayStart(g) {
         const b = g.broker;
+        this.openWeek(g);
         this.applyPending(g);
 
         // Session 16: did you actually trade on Perry's downgrade tip?
@@ -313,6 +383,16 @@
 
       onDayEnd(g, r) {
         const notes = [];
+        // The day's resqwaks are judged after the bell, once the truth is out.
+        const R = S.resqwak;
+        if (R && R.day === g.day && R.count) {
+          const n = R.count, f = R.fakes || 0, t = R.trues || 0;
+          const parts = [`You resqwaked ${n} post${n === 1 ? '' : 's'} today.`];
+          if (f) parts.push(`<b>${f} turned out to be fake.</b> Compliance noticed.`);
+          if (t) parts.push(`${t} ${t === 1 ? 'was' : 'were'} right, and people saw you share ${t === 1 ? 'it' : 'them'} first.`);
+          if (!f && !t) parts.push('None of them moved anything.');
+          notes.push(`Sqwak: ${parts.join(' ')}`);
+        }
         if (g.day === D.DAYS.length - 1 && !S.f.pulledPlug && ((S.anomalies || 0) < 8 || S.f.leftStack)) {
           S.f.aiUncontained = true;
         }
@@ -337,7 +417,7 @@
             notes.push(`${D.boss(S)}: "Quota met. Again tomorrow."`);
           } else {
             S.missStreak++;
-            if (!S.quotaLedger.some((entry) => entry.day === g.day)) {
+            if (!S.quotaLedger.some((entry) => entry.day === g.day && entry.kind !== 'week')) {
               S.quotaLedger.push({ day: g.day, pnl: r.pnl, quota: r.quota, date: r.date });
               S.quotaLedger.sort((a, b) => a.day - b.day);
             }
@@ -345,6 +425,40 @@
             const left = QUOTA_STRIKE_LIMIT - S.quotaStrikes;
             const warning = left === 1 ? ' FINAL WARNING: one more miss ends your career.' : left === 2 ? ' Only two misses remain.' : '';
             notes.push(`<b>Missed quota. Career strike ${S.quotaStrikes} of ${QUOTA_STRIKE_LIMIT}.</b>${warning} ${D.boss(S)} logged the miss.`);
+          }
+        }
+        const W = S.week;
+        // Only sessions that carry a quota count toward the week.
+        if (W && W.w === D.weekOf(g.day) && !W.done && !W.solo && r.quota > 0) {
+          const made = r.equity - W.startEq;
+          if (g.day >= W.end) {
+            W.done = true;
+            if (made >= W.target) {
+              D.adj(S, { firm: 2 }, { kroll: 3 });
+              let wiped = '';
+              const missed = S.quotaLedger.filter((e) => e.kind !== 'week' && e.day >= W.start && e.day <= W.end);
+              if (missed.length) {
+                const last = missed[missed.length - 1];
+                S.quotaLedger = S.quotaLedger.filter((e) => e !== last);
+                S.forgivenDays = (S.forgivenDays || []).concat(last.day);
+                S.quotaStrikes = S.quotaLedger.length;
+                wiped = ` It wipes one missed day off your record: <b>career strikes ${S.quotaStrikes} of ${QUOTA_STRIKE_LIMIT}.</b>`;
+              }
+              notes.push(`<b>Weekly quota met:</b> ${B.fmt.money(made, true)} against ${B.fmt.money(W.target)}.${wiped} ${D.boss(S)}: "Good week. The next one starts higher."`);
+            } else {
+              if (!S.quotaLedger.some((e) => e.kind === 'week' && e.week === W.w)) {
+                S.quotaLedger.push({ day: g.day, week: W.w, kind: 'week', pnl: made, quota: W.target, date: r.date });
+                S.quotaLedger.sort((a, b) => a.day - b.day || (a.kind === 'week') - (b.kind === 'week'));
+              }
+              S.quotaStrikes = S.quotaLedger.length;
+              notes.push(`<b>Weekly quota missed:</b> ${B.fmt.money(made, true)} against ${B.fmt.money(W.target)}. Career strike ${S.quotaStrikes} of ${QUOTA_STRIKE_LIMIT}. The week resets Monday.`);
+            }
+          } else {
+            const need = W.target - made;
+            const left = W.end - g.day;
+            notes.push(need > 0
+              ? `Week so far: ${B.fmt.money(made, true)} of ${B.fmt.money(W.target)}. ${B.fmt.money(need)} to go with ${left} session${left === 1 ? '' : 's'} left.`
+              : `Week so far: ${B.fmt.money(made, true)}. Weekly quota of ${B.fmt.money(W.target)} already cleared. Hold it through Friday.`);
           }
         }
         if (r.earlyEnd === 'wiped' || r.equity < capital * 0.1) return { notes, ending: this.buildEnding(g, 'wiped') };

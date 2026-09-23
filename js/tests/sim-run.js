@@ -15,7 +15,7 @@ function load() {
   vm.createContext(ctx);
   ctx.setInterval = () => 0; ctx.clearInterval = () => {}; ctx.setTimeout = () => 0;
   const files = ['js/core/util.js', 'js/core/rng.js', 'js/core/events.js', 'js/core/storage.js', 'js/core/save.js', 'js/core/clock.js',
-    'js/market/tickers.js', 'js/market/engine.js', 'js/market/news.js', 'js/trading/options.js', 'js/trading/broker.js',
+    'js/market/tickers.js', 'js/market/engine.js', 'js/market/news.js', 'js/market/sqwak.js', 'js/trading/options.js', 'js/trading/broker.js',
     'js/stress.js', 'js/audio/sfx.js', 'js/audio/music.js', 'js/interrupts.js', 'js/game.js'];
   for (const f of files) vm.runInContext(fs.readFileSync(path.join(root, f), 'utf8'), ctx, { filename: f });
   vm.runInContext(`
@@ -36,7 +36,7 @@ function load() {
       closeModal() {},
       log: [] };
   `, ctx);
-  for (const f of ['js/modes/story/story-data.js', 'js/modes/story/patch3-data.js', 'js/modes/story/endings.js', 'js/modes/story/patch3-endings.js', 'js/modes/story/story-engine.js', 'js/modes/endless/endless.js']) {
+  for (const f of ['js/modes/story/story-data.js', 'js/modes/story/patch3-data.js', 'js/modes/story/sqwak-story.js', 'js/modes/story/endings.js', 'js/modes/story/patch3-endings.js', 'js/modes/story/story-engine.js', 'js/modes/endless/endless.js']) {
     vm.runInContext(fs.readFileSync(path.join(root, f), 'utf8'), ctx, { filename: f });
   }
   return ctx.BTB;

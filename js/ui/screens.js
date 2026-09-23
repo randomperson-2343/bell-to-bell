@@ -121,16 +121,31 @@
       const d = B.Calendar.dayInfo(g.day);
       const dateLabel = g.mode.kind === 'story' && B.Calendar.storyLabel ? B.Calendar.storyLabel(g.day) : d.long;
       const rules = b.rules && b.rules.length ? `<div class="rules-list">${b.rules.map((r) => `<div>&#9656; ${r}</div>`).join('')}</div>` : '';
-      const feed = (b.feed || []).map((item, i) => `<button class="preopen-item ${B.esc(item.kind || 'wire')}" data-feed-item="${i}">
+      // Sqwak posts show as posts (avatar, name, handle); everything else keeps
+      // its channel label. Reply text stays hidden until the item is opened.
+      const feed = (b.feed || []).map((item, i) => {
+        const kind = B.esc(item.kind || 'wire');
+        const src = item.src || (item.kind === 'chirp' ? item.source : null);
+        if (src && B.Sqwak && String(src).charAt(0) === '@') {
+          const a = B.Sqwak.account(src);
+          return `<button class="preopen-item sq ${kind}" data-feed-item="${i}">
+            <i class="sq-av" style="--av:var(--c-${a.col})">${B.esc(B.Sqwak.initials(a))}</i>
+            <span class="sq-who"><b>${B.esc(a.name)}</b>${a.followers >= B.Sqwak.HYPE_MIN_FOLLOWERS ? '<i class="sq-v">&#10004;</i>' : ''}<span>${B.esc(a.handle)}</span></span>
+            <strong>${B.esc(item.title || '')}</strong>
+            <p hidden>${B.esc(item.text || '')}</p>
+          </button>`;
+        }
+        return `<button class="preopen-item ${kind}" data-feed-item="${i}">
         <span><b>${B.esc(item.source || 'THE WIRE')}</b>${item.locked ? ' · PAYWALLED' : ''}</span>
         <strong>${B.esc(item.title || 'Before the bell')}</strong>
         <p hidden>${B.esc(item.text || '')}</p>
-      </button>`).join('');
+      </button>`;
+      }).join('');
       const phone = feed ? `<section class="preopen-device" aria-label="Pre-open phone feed">
         <div class="preopen-speaker" aria-hidden="true"></div>
         <div class="preopen-screen">
           <div class="preopen-status"><span>6:38</span><i></i><span>LTE&nbsp;▮▮▮</span></div>
-          <div class="preopen-top"><span>PRE-OPEN</span>${b.anomalyCount == null ? '<b>NOTIFICATIONS</b>' : `<b>ANOMALIES: ${b.anomalyCount}</b>`}</div>
+          <div class="preopen-top"><span class="sq-logo">sqwak</span>${b.anomalyCount == null ? '<b>NOTIFICATIONS</b>' : `<b>ANOMALIES: ${b.anomalyCount}</b>`}</div>
           <div class="preopen-scroll">${feed}</div>
         </div>
         <div class="preopen-home" aria-hidden="true"></div>
@@ -139,6 +154,7 @@
         <div class="stat"><div class="l">Equity</div><div class="v">${F.money(g.broker.equity())}</div></div>
         <div class="stat quota-stat"><div class="l">${b.quotaMeta ? B.esc(b.quotaMeta.label) : 'Today\'s quota'}</div><div class="v">${b.quota > 0 ? F.money(b.quota) : 'none'}</div>${b.quotaMeta ? `<div class="quota-delta">${(b.quotaMeta.pct * 100).toFixed(2)}% of book${b.quotaMeta.raised ? ` · ↑ ${b.quotaMeta.raised}% overnight` : ''}</div>` : ''}</div>
         <div class="stat"><div class="l">Open positions</div><div class="v">${Object.keys(g.broker.pos).length + g.broker.opts.length}</div></div>
+        ${b.weekQuota ? `<div class="stat quota-stat week-stat"><div class="l">Weekly quota</div><div class="v">${F.money(b.weekQuota.target)}</div><div class="quota-delta">${F.money(b.weekQuota.made, true)} so far · ${b.weekQuota.left} session${b.weekQuota.left === 1 ? '' : 's'} left</div></div>` : ''}
         ${b.quotaStrikes ? `<div class="stat strike-stat"><div class="l">Career strikes</div><div class="v">${b.quotaStrikes.count} / ${b.quotaStrikes.limit}</div></div>` : ''}
       </div>`;
       const anomalyHelp = b.anomalyCount == null ? '' : '<p class="anomaly-help"><b>Anomalies</b> are unusual details hidden in pre-open items. Open a suspicious item to inspect it. Enough verified anomalies can unlock the final systems decision.</p>';

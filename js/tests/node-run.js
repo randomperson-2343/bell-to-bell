@@ -22,7 +22,7 @@ const run = (f) => vm.runInContext(fs.readFileSync(path.join(root, f), 'utf8'), 
 [
   'js/core/util.js', 'js/core/rng.js', 'js/core/events.js', 'js/core/storage.js', 'js/core/save.js', 'js/core/clock.js',
   'js/art/palette.js', 'js/art/pixel.js', 'js/art/scenes.js', 'js/art/rhythm.js',
-  'js/market/tickers.js', 'js/market/engine.js', 'js/market/news.js',
+  'js/market/tickers.js', 'js/market/engine.js', 'js/market/news.js', 'js/market/sqwak.js',
   'js/trading/options.js', 'js/trading/broker.js', 'js/stress.js',
   'js/audio/sfx.js', 'js/audio/music.js', 'js/interrupts.js', 'js/game.js'
 ].forEach(run);
@@ -38,7 +38,7 @@ vm.runInContext(`
   B.Screens = { briefing: (g, b, cb) => cb && cb(), eod: (g, r, cb) => cb && cb(), choice: () => {}, aftermath: (t, x, cb) => cb && cb(), ending: () => {}, closeModal: () => {} };
 `, ctx);
 
-['js/modes/story/story-data.js', 'js/modes/story/patch3-data.js', 'js/modes/story/endings.js', 'js/modes/story/patch3-endings.js', 'js/modes/story/story-engine.js', 'js/tests/tests.js'].forEach(run);
+['js/modes/story/story-data.js', 'js/modes/story/patch3-data.js', 'js/modes/story/sqwak-story.js', 'js/modes/story/endings.js', 'js/modes/story/patch3-endings.js', 'js/modes/story/story-engine.js', 'js/tests/tests.js'].forEach(run);
 
 const res = ctx.BTB.Tests.results;
 let fail = 0;

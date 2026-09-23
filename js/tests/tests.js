@@ -533,6 +533,8 @@
     Object.keys(B.SECTORS).forEach((k) => push(B.SECTORS[k].name));
     Object.keys(B.REGIMES).forEach((k) => push(B.REGIMES[k].name));
     push(B.News.HANDLES);
+    if (B.Sqwak) Object.keys(B.Sqwak.ACCOUNTS).forEach((h) => push([h, B.Sqwak.ACCOUNTS[h].name]));
+    if (B.SqwakStory) { push(B.SqwakStory.INTRADAY); push(B.SqwakStory.PREOPEN); push(B.SqwakStory.POOLS); push(B.SqwakStory.BREAKING); }
     push(B.News.NOISE);
     push(B.News.TEMPLATES);
 
@@ -772,6 +774,112 @@
     const b2 = clone(S); b2.m.stability = 15; b2.f.whippedAgainst = true; b2.m.anger = 60;
     assert(B.StoryMode.votePasses(a) === true, 'should pass');
     assert(B.StoryMode.votePasses(b2) === false, 'should fail');
+  });
+
+  // ---------- Sqwak ----------
+  test('Sqwak hype: only 1M+ accounts move prices, and every pop fades', () => {
+    const evs = [
+      { t: 100, kind: 'chirp', text: 'loading calls on $CRVS', src: '@CallsOnlyCarl' },
+      { t: 120, kind: 'chirp', text: 'loading calls on $CRVS', src: '@HedgeHog88' },
+      { t: 140, kind: 'chirp', text: 'no ticker here, just vibes. buying', src: '@CallsOnlyCarl' }
+    ];
+    const out = B.Sqwak.hype(evs, 'test');
+    const h = out.filter((e) => e.hype);
+    assert(h.length === 2, 'expected one pop and one fade, got ' + h.length);
+    const pop = h[0].impacts[0], fade = h[1].impacts[0];
+    assert(pop.id === 'CRVS' && pop.pct > 0.005 && pop.pct < 0.021, 'pop size out of range: ' + pop.pct);
+    assert(fade.pct < 0 && -fade.pct >= pop.pct * 0.99, 'fade must give back the whole pop');
+    assert(h[1].t - h[0].t >= 8 && h[1].t - h[0].t <= 13, 'fade timing out of range');
+    assert(B.Sqwak.hype(evs, 'test', 0).length === evs.length, 'strength 0 must switch hype off');
+  });
+
+  test('Sqwak hype and engagement are deterministic for save replay', () => {
+    const m = B.StoryMode();
+    for (const d of [5, 30, 55]) assert(JSON.stringify(m.scenario(d).events) === JSON.stringify(m.scenario(d).events), 'session ' + (d + 1) + ' differs between builds');
+    const post = { t: 115, text: 'BREAKING?? $RDGW buyout', src: '@CallsOnlyCarl' };
+    assert(JSON.stringify(B.Sqwak.metrics(post)) === JSON.stringify(B.Sqwak.metrics(post)), 'metrics changed between calls');
+  });
+
+  test('Sqwak: every session has authored market-hours posts and a full pre-open feed', () => {
+    const D = B.StoryData;
+    const counts = (d) => (d >= 58 ? 3 : d >= 26 ? 9 : d >= 21 ? 8 : d >= 15 ? 7 : d >= 10 ? 6 : d >= 5 ? 5 : 4);
+    assert(B.SqwakStory.INTRADAY.length === D.DAYS.length, 'intraday list must cover every session');
+    D.DAYS.forEach((day, d) => {
+      assert(B.SqwakStory.INTRADAY[d].length >= 3, 'session ' + (d + 1) + ' has fewer than 3 posts');
+      assert(day.feed.length === counts(d), 'session ' + (d + 1) + ' pre-open count ' + day.feed.length + ' breaks the snowball');
+      const an = D.ANOMALIES.find((x) => x[0] === d);
+      if (an) assert(day.feed.some((it) => it.anomalyId), 'session ' + (d + 1) + ' lost its anomaly');
+      const titles = day.feed.map((it) => it.title);
+      assert(new Set(titles).size === titles.length, 'session ' + (d + 1) + ' repeats a pre-open item');
+    });
+  });
+
+  test('Resqwak: false rumours cost heat, true ones build influence, touting draws Compliance', () => {
+    const m = B.StoryMode();
+    const S = m.S;
+    const pos = {};
+    const g = { day: 5, broker: { posQty: (sym) => pos[sym] || 0 } };
+    const h0 = S.m.heat, i0 = S.m.influence;
+    m.onResqwak(g, { text: 'BREAKING?? $RDGW buyout', src: '@CallsOnlyCarl', fake: true });
+    assert(S.m.heat === h0 + 3, 'false rumour should add 3 heat, got ' + (S.m.heat - h0));
+    for (let i = 0; i < 5; i++) m.onResqwak(g, { text: 'fake again $RDGW', src: '@CallsOnlyCarl', fake: true });
+    assert(S.m.heat === h0 + 9, 'heat from resqwaks must cap at 9 per session, got ' + (S.m.heat - h0));
+    for (let i = 0; i < 5; i++) m.onResqwak(g, { text: 'hearing something on $CRVS', src: '@MacroMaven', truth: true });
+    assert(S.m.influence === i0 + 3, 'influence from true rumours must cap at 3 per session');
+    const g2 = { day: 6, broker: { posQty: (sym) => (sym === 'HLST' ? 100 : 0) } };
+    const h1 = S.m.heat;
+    const note = m.onResqwak(g2, { text: 'loading $HLST calls', src: '@TendiesTomorrow' });
+    assert(S.m.heat === h1 + 2 && /Compliance/.test(note || ''), 'touting a held stock should add heat and warn once');
+    assert(m.onResqwak(g2, { text: 'more $HLST', src: '@TendiesTomorrow' }) === null, 'Compliance warns only once per session');
+    const g3 = { day: 7, broker: { posQty: () => 0, equity: () => 250000, pos: {}, opts: [] }, market: { bySym: {} } };
+    m.onResqwak(g3, { text: 'fake $RDGW', src: '@CallsOnlyCarl', fake: true });
+    m.onResqwak(g3, { text: 'true $CRVS', src: '@MacroMaven', truth: true });
+    const v = m.onDayEnd(g3, { quota: 0, pnl: 0, equity: 250000 }) || {};
+    const recap = (v.notes || []).find((n) => /^Sqwak:/.test(n)) || '';
+    assert(/2 posts/.test(recap) && /1 turned out to be fake/.test(recap) && /1 was right/.test(recap), 'end-of-day recap missing or wrong: ' + recap);
+  });
+
+  test('Weekly quota: resets each Monday, a missed week is one career strike', () => {
+    const mode = B.StoryMode({ S: B.StoryMode.freshState(250000) });
+    const S = mode.S;
+    let eq = 250000;
+    const g = { day: 0, broker: { equity: () => eq, posQty: () => 0, opts: [], pos: {} }, market: { bySym: {} }, inboxQueue: [] };
+    const close = (day, pnl) => { g.day = day; eq += pnl; return mode.onDayEnd(g, { quota: 1, quotaMet: true, pnl, equity: eq, date: 'x' }); };
+    // Week 1: open Monday, clear the target by Friday.
+    g.day = 0; mode.openWeek(g);
+    const t1 = S.week.target;
+    const pct = B.StoryData.QUOTAS.slice(0, 5).reduce((a, b) => a + b, 0);
+    assert(Math.abs(t1 - 250000 * pct * 1.15) <= 50, 'week 1 target should be the week\'s daily quotas plus 15%, got ' + t1);
+    for (let d = 0; d < 4; d++) close(d, 1000);
+    const fri = close(4, t1);
+    assert(S.quotaStrikes === 0 && fri.notes.some((n) => /Weekly quota met/.test(n)), 'a cleared week must not strike');
+    // Week 2: resets from Friday's equity, and a losing week strikes once.
+    g.day = 5; mode.openWeek(g);
+    assert(S.week.w === 2 && S.week.startEq === eq, 'week 2 must reset from the new equity');
+    for (let d = 5; d < 9; d++) close(d, -100);
+    close(9, -100);
+    assert(S.quotaStrikes === 1 && S.quotaLedger[0].kind === 'week', 'a missed week must add exactly one strike');
+    mode.onDayEnd(g, { quota: 1, quotaMet: true, pnl: 0, equity: eq, date: 'x' });
+    assert(S.quotaStrikes === 1, 'reprocessing Friday must not double the weekly strike');
+    // A Friday daily miss and a weekly miss are two separate strikes, and survive a ledger rebuild.
+    g.day = 10; mode.openWeek(g);
+    for (let d = 10; d < 14; d++) close(d, 0);
+    g.day = 14; eq -= 5000;
+    mode.onDayEnd(g, { quota: 1000, quotaMet: false, pnl: -5000, equity: eq, date: 'x' });
+    assert(S.quotaStrikes === 3, 'Friday daily miss plus weekly miss should be two strikes, total ' + S.quotaStrikes);
+    mode.reconcileQuotaStrikes([]);
+    assert(S.quotaStrikes === 3, 'ledger rebuild merged a weekly strike into a daily one');
+    // Week 4: miss Monday, then make the week. The Monday strike is wiped and stays wiped.
+    g.day = 15; mode.openWeek(g);
+    const t4 = S.week.target;
+    g.day = 15; eq -= 100;
+    mode.onDayEnd(g, { quota: 1000, quotaMet: false, pnl: -100, equity: eq, date: 'x' });
+    assert(S.quotaStrikes === 4, 'Monday miss should strike');
+    for (let d = 16; d < 19; d++) close(d, 0);
+    const v4 = close(19, t4 + 500);
+    assert(S.quotaStrikes === 3 && v4.notes.some((n) => /wipes one missed day/.test(n)), 'a made week should wipe one missed day');
+    mode.reconcileQuotaStrikes([{ day: 15, quotaMet: false, pnl: -100 }]);
+    assert(S.quotaStrikes === 3, 'a wiped day came back after a ledger rebuild');
   });
 
   B.Tests = { results, run: () => results };

@@ -84,11 +84,11 @@
         <div class="page-head"><button class="btn ghost" data-back>&larr; Back</button><h2>How to Play</h2></div>
         <div class="howto">
           <h3>The goal</h3>
-          <p>Each trading day runs from the <b>opening bell (9:30)</b> to the <b>closing bell (4:00)</b>, which takes about three real minutes. Make as much money as you can. Your boss sets a <b>daily quota</b>. Every miss becomes a permanent career strike. Thirty strikes and you're done.</p>
+          <p>Each trading day runs from the <b>opening bell (9:30)</b> to the <b>closing bell (4:00)</b>, which takes about three real minutes. Make as much money as you can. Your boss sets a <b>daily quota</b>, and a <b>weekly quota</b> that resets every Monday: the whole week has to clear the sum of its daily quotas plus 15%. Every missed day and every missed week becomes a career strike, but making the weekly quota wipes one missed day from that week. Thirty strikes and you're done.</p>
           <h3>Your desk</h3>
           <ul>
             <li>The <b>left monitor</b> is the trading terminal: watchlist, chart, order ticket, and your positions.</li>
-            <li>The <b>right monitor</b> is comms: the <b>Wire</b> (real news), <b>Chirp</b> (rumors, many of them fake), your <b>Inbox</b>, and the phone when it rings.</li>
+            <li>The <b>right monitor</b> is comms: the <b>Wire</b> (real news), <b>Sqwak</b> (rumors, many of them fake, and big accounts can move a stock for a few minutes), your <b>Inbox</b>, and the phone when it rings.</li>
             <li>The <b>desk</b> below holds the clock, your coffee, the stress gauge and the pause button.</li>
           </ul>
           <h3>Trading</h3>
@@ -160,6 +160,7 @@
                   <div class="st"><span class="l">EQUITY</span><span class="v" id="tb-equity">&nbsp;</span></div>
                   <div class="st"><span class="l">BUY PWR</span><span class="v" id="tb-bp">&nbsp;</span></div>
                   <div class="st meter"><span class="l">QUOTA <i id="tb-quota-amt"></i></span><span class="bar"><i id="tb-quota-bar"></i></span></div>
+                  <div class="st meter" id="tb-week" hidden><span class="l">WEEK <i id="tb-week-amt"></i></span><span class="bar"><i id="tb-week-bar"></i></span></div>
                   <div class="st strike-hud" id="tb-strikes" hidden><span class="l">STRIKES</span><span class="v" id="tb-strikes-value">0/30</span><span class="strike-warning" id="tb-strikes-warning"></span></div>
                 </div>
 
@@ -243,7 +244,7 @@
                 <div id="tasks"></div>
                 <div class="feed-tabs">
                   <button class="on" data-feed="wire">Wire</button>
-                  <button data-feed="chirp">Chirp</button>
+                  <button data-feed="chirp">Sqwak</button>
                   <button data-feed="inbox">Inbox <span id="inbox-badge" class="badge" hidden>0</span></button>
                 </div>
                 <div id="feed-list"></div>
@@ -308,6 +309,7 @@
   <script src="js/market/tickers.js"></script>
   <script src="js/market/engine.js"></script>
   <script src="js/market/news.js"></script>
+  <script src="js/market/sqwak.js"></script>
   <script src="js/trading/options.js"></script>
   <script src="js/trading/broker.js"></script>
   <script src="js/stress.js"></script>
@@ -322,6 +324,7 @@
   <script src="js/ui/saveslots.js"></script>
   <script src="js/modes/story/story-data.js"></script>
   <script src="js/modes/story/patch3-data.js"></script>
+  <script src="js/modes/story/sqwak-story.js"></script>
   <script src="js/modes/story/endings.js"></script>
   <script src="js/modes/story/patch3-endings.js"></script>
   <script src="js/modes/story/story-engine.js"></script>

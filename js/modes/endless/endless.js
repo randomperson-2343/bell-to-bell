@@ -5,10 +5,10 @@
   const F = B.fmt;
 
   const PRESETS = {
-    intern: { presetName: 'Intern', capital: 50000, volMult: 0.7, newsFreq: 1, fakeShare: 0.1, crashProb: 0.02, maxLev: 2, feeMult: 0.5, maintStrict: 0.8, stressRate: 0.6, callFreq: 0.6, dayLength: 180 },
-    trader: { presetName: 'Trader', capital: 100000, volMult: 1, newsFreq: 1.2, fakeShare: 0.25, crashProb: 0.05, maxLev: 4, feeMult: 1, maintStrict: 1, stressRate: 1, callFreq: 1, dayLength: 180 },
-    shark: { presetName: 'Shark', capital: 250000, volMult: 1.4, newsFreq: 1.6, fakeShare: 0.4, crashProb: 0.08, maxLev: 6, feeMult: 1.2, maintStrict: 1.1, stressRate: 1.3, callFreq: 1.3, dayLength: 180 },
-    degenerate: { presetName: 'Degenerate', capital: 5000, volMult: 2.2, newsFreq: 2.2, fakeShare: 0.6, crashProb: 0.18, maxLev: 10, feeMult: 1, maintStrict: 1.25, stressRate: 1.7, callFreq: 1.6, dayLength: 180 }
+    intern: { presetName: 'Intern', capital: 50000, volMult: 0.7, newsFreq: 1, fakeShare: 0.1, crashProb: 0.02, maxLev: 2, feeMult: 0.5, maintStrict: 0.8, stressRate: 0.6, callFreq: 0.6, hypeStrength: 1, dayLength: 180 },
+    trader: { presetName: 'Trader', capital: 100000, volMult: 1, newsFreq: 1.2, fakeShare: 0.25, crashProb: 0.05, maxLev: 4, feeMult: 1, maintStrict: 1, stressRate: 1, callFreq: 1, hypeStrength: 1, dayLength: 180 },
+    shark: { presetName: 'Shark', capital: 250000, volMult: 1.4, newsFreq: 1.6, fakeShare: 0.4, crashProb: 0.08, maxLev: 6, feeMult: 1.2, maintStrict: 1.1, stressRate: 1.3, callFreq: 1.3, hypeStrength: 1, dayLength: 180 },
+    degenerate: { presetName: 'Degenerate', capital: 5000, volMult: 2.2, newsFreq: 2.2, fakeShare: 0.6, crashProb: 0.18, maxLev: 10, feeMult: 1, maintStrict: 1.25, stressRate: 1.7, callFreq: 1.6, hypeStrength: 1, dayLength: 180 }
   };
   const DEFAULT_ENDS = { broke: true, drawdown: false, drawdownPct: 50, sudden: false, quota: false, quotaPct: 0.5, panic: false, target: true, targetMult: 3, days: false, daysN: 20 };
 
@@ -22,7 +22,8 @@
     ['feeMult', 'Fees & slippage', 0, 3, 0.1, (v) => v.toFixed(1) + 'x'],
     ['maintStrict', 'Margin strictness', 0.5, 1.5, 0.05, (v) => v.toFixed(2) + 'x'],
     ['stressRate', 'Stress gain', 0.3, 2.5, 0.1, (v) => v.toFixed(1) + 'x'],
-    ['callFreq', 'Phone interruptions', 0, 2.5, 0.1, (v) => v.toFixed(1) + 'x']
+    ['callFreq', 'Phone interruptions', 0, 2.5, 0.1, (v) => v.toFixed(1) + 'x'],
+    ['hypeStrength', 'Sqwak hype', 0, 2, 0.25, (v) => (v ? v.toFixed(2) + 'x' : 'off')]
   ];
 
   const REGIME_NEXT = {
@@ -43,7 +44,9 @@
   };
 
   function cfgKey(c) {
-    const k = SLIDERS.map((s) => s[0] + '=' + c[s[0]]).join('&') + '|' + JSON.stringify(c.ends) + '|' + c.dayLength;
+    // Default hype (1x) is left out of the key so leaderboards from before
+    // Sqwak existed keep matching the same settings.
+    const k = SLIDERS.filter((s) => !(s[0] === 'hypeStrength' && (c.hypeStrength == null || c.hypeStrength === 1))).map((s) => s[0] + '=' + c[s[0]]).join('&') + '|' + JSON.stringify(c.ends) + '|' + c.dayLength;
     return B.hashSeed(k).toString(36);
   }
 
@@ -125,6 +128,7 @@
         }
         const bias = reg.mu > 0 ? 0.6 : reg.mu < 0 ? 0.4 : 0.5;
         sc.events = sc.events.concat(B.News.randomEvents(rng, cfg, { bias }));
+        if (B.Sqwak) sc.events = B.Sqwak.hype(sc.events, cfg.seed + '|' + d, cfg.hypeStrength == null ? 1 : cfg.hypeStrength);
         return sc;
       },
 
