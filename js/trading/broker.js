@@ -122,6 +122,7 @@
 
     fill(sym, qty, price, tag) {
       const p = this.pos[sym] || (this.pos[sym] = { qty: 0, avg: 0, realized: 0 });
+      const opens = Math.abs(p.qty + qty) > Math.abs(p.qty);
       const comm = this.commission(qty);
       this.cash -= qty * price + comm;
       this.fees += comm;
@@ -140,6 +141,7 @@
       }
       realized -= comm;
       const tr = { t: this.market.t, day: this.market.day, sym, qty, price, realized, tag: tag || '' };
+      if (opens) tr.open = true;
       this.trades.push(tr);
       if (p.qty === 0) {
         delete this.pos[sym];
@@ -250,7 +252,7 @@
         o = { id: OID++, sym, type, strike, expiry, qty: n, avg: q.ask };
         this.opts.push(o);
       }
-      const tr = { t: this.market.t, day: this.market.day, sym: B.Options.label(o), qty: n, price: q.ask, realized: -comm, tag: 'OPT BUY', opt: true };
+      const tr = { t: this.market.t, day: this.market.day, sym: B.Options.label(o), qty: n, price: q.ask, realized: -comm, tag: 'OPT BUY', opt: true, open: true };
       this.trades.push(tr);
       B.bus.emit('fill', tr);
       return { ok: true, price: q.ask };
@@ -288,10 +290,12 @@
       if (this.stockGross() > 0 && this.netLiq() < this.maintenance()) {
         if (!this.mc) {
           this.mc = { start: t, deadline: t + 30 };
+          if (this.dayRisk) this.dayRisk.mc++;
           ev.push({ type: 'mc' });
         } else if (t >= this.mc.deadline) {
           if (this.liquidateForMargin()) {
             this.mc = null;
+            if (this.dayRisk) this.dayRisk.liq++;
             ev.push({ type: 'liq' });
           }
         }
@@ -322,6 +326,19 @@
       this.dayTradeStart = this.trades.length;
       this.dayFeesStart = this.fees;
       this.mc = null;
+      this.dayRisk = { trough: this.dayStartEquity, breachT: null, mc: 0, liq: 0, peakLev: 0 };
+    }
+
+    // Intraday risk tape for the risk desk review: the day's low, the minute
+    // the daily loss limit was first hit, and the most leverage carried.
+    trackRisk(t, lossLimit) {
+      const r = this.dayRisk;
+      if (!r) return;
+      const eq = this.equity();
+      if (eq < r.trough) r.trough = eq;
+      if (r.breachT == null && lossLimit > 0 && eq <= this.dayStartEquity * (1 - lossLimit)) r.breachT = t;
+      const lev = this.leverage();
+      if (lev < 99 && lev > r.peakLev) r.peakLev = lev;
     }
 
     // Close-of-day bookkeeping. Market must already be closed.
@@ -389,6 +406,7 @@
         dayTradeStart: this.dayTradeStart || 0,
         dayFeesStart: this.dayFeesStart || 0,
         mc: this.mc,
+        dayRisk: this.dayRisk || null,
         rules: { maxLev: this.rules.maxLev, overnightLev: this.rules.overnightLev, shortBan: this.rules.shortBan, locked: this.rules.locked }
       });
     }
@@ -407,6 +425,7 @@
       this.dayTradeStart = o.dayTradeStart || 0;
       this.dayFeesStart = o.dayFeesStart || 0;
       this.mc = o.mc || null;
+      this.dayRisk = o.dayRisk || { trough: o.dayStartEquity, breachT: null, mc: 0, liq: 0, peakLev: 0 };
       if (o.rules) Object.assign(this.rules, o.rules);
     }
   }

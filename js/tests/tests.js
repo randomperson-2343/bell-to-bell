@@ -536,6 +536,7 @@
     if (B.Sqwak) Object.keys(B.Sqwak.ACCOUNTS).forEach((h) => push([h, B.Sqwak.ACCOUNTS[h].name]));
     if (B.SqwakStory) { push(B.SqwakStory.INTRADAY); push(B.SqwakStory.PREOPEN); push(B.SqwakStory.POOLS); push(B.SqwakStory.BREAKING); }
     push(B.News.NOISE);
+    if (B.Economy) { push(B.Economy.TIERS.map((t) => [t.name, t.note])); push(B.Economy.EVICT_STAGES); }
     push(B.News.TEMPLATES);
 
     const D = B.StoryData;
@@ -880,6 +881,101 @@
     assert(S.quotaStrikes === 3 && v4.notes.some((n) => /wipes one missed day/.test(n)), 'a made week should wipe one missed day');
     mode.reconcileQuotaStrikes([{ day: 15, quotaMet: false, pnl: -100 }]);
     assert(S.quotaStrikes === 3, 'a wiped day came back after a ledger rebuild');
+  });
+
+
+  // ---- Personal economy ----
+  const econRisk = (o) => Object.assign({ trough: 250000, breachT: null, mc: 0, liq: 0, peakLev: 0 }, o);
+
+  test('Risk desk review: a clean day is clean', () => {
+    const E = B.Economy;
+    const rv = E.review({ risk: econRisk({ peakLev: 1.5 }), start: 250000, maxLev: 4, trades: [{ t: 10, sym: 'BSTN', qty: 100, open: true }], forced: [], events: [] });
+    assert(rv.breaches.length === 0, 'clean day flagged: ' + JSON.stringify(rv.breaches));
+    assert(/clean/.test(E.reviewNote(rv)), 'clean note missing');
+  });
+
+  test('Risk desk review flags revenge trading, margin, leverage, overnight and hype chasing', () => {
+    const E = B.Economy;
+    const events = [
+      { t: 100, hype: true, impacts: [{ scope: 'ticker', id: 'HLST', pct: 0.01 }] },
+      { t: 110, hype: true, impacts: [{ scope: 'ticker', id: 'HLST', pct: -0.01 }] }
+    ];
+    const trades = [
+      { t: 50, sym: 'BSTN', qty: 100, open: true },
+      { t: 205, sym: 'BSTN', qty: -100, tag: '' },
+      { t: 210, sym: 'FRLN', qty: 100, open: true },
+      { t: 104, sym: 'HLST', qty: 50, open: true },
+      { t: 300, sym: 'FRLN', qty: -100, tag: 'STOP-LOSS', open: true }
+    ];
+    const rv = E.review({ risk: econRisk({ breachT: 200, trough: 238000, mc: 1, peakLev: 3.8 }), start: 250000, maxLev: 4, trades, forced: ['AMVL'], events });
+    const ids = rv.breaches.map((b) => b.id).sort().join(',');
+    assert(ids === 'blowthrough,hype,leverage,margin,overnight,revenge', 'wrong breaches: ' + ids);
+    const closingOnly = E.review({ risk: econRisk({ breachT: 200, trough: 246000 }), start: 250000, maxLev: 4, trades: [{ t: 220, sym: 'BSTN', qty: -100 }], events: [] });
+    assert(closingOnly.breaches.length === 0 && closingOnly.hitLimit, 'cutting risk after the loss limit is discipline, not a breach');
+    const liq = E.review({ risk: econRisk({ mc: 1, liq: 1 }), start: 250000, trades: [] });
+    assert(liq.breaches.length === 1 && liq.breaches[0].zero, 'a liquidation should zero the bonus');
+  });
+
+  test('Pay is a draw against bonus, and an unearned draw is repaid first', () => {
+    const E = B.Economy, P = E.P;
+    const w = E.fresh(); w.peakEq = 250000;
+    const flat = E.settle(w, { equity: 250000, capital: 250000, weekMade: false, breaches: [], sessions: 5 });
+    assert(flat.bonus === 0 && flat.draw === P.drawPerSession * 5, 'flat week should pay the draw only');
+    assert(w.deficit === P.drawPerSession * 5, 'unearned draw not recorded as owed');
+    const big = E.settle(w, { equity: 300000, capital: 250000, weekMade: true, breaches: [], sessions: 5 });
+    const expectBonus = Math.round(50000 * P.bonusMade * (1 + P.cleanKicker));
+    assert(big.bonus === expectBonus, `bonus ${big.bonus} != ${expectBonus}`);
+    const gross = big.draw + (expectBonus - big.draw) - P.drawPerSession * 5;
+    assert(big.net === Math.round(gross * (1 - P.taxRate)), 'deficit was not repaid out of the bonus');
+    assert(w.deficit === 0, 'deficit should be cleared');
+    // Same P&L again pays no bonus: only new highs count.
+    const again = E.settle(w, { equity: 300000, capital: 250000, weekMade: true, breaches: [], sessions: 5 });
+    assert(again.bonus === 0, 'bonus paid twice on the same high');
+  });
+
+  test('Discipline pays: same P&L, breaches earn less, a liquidation earns only the draw', () => {
+    const E = B.Economy;
+    const run = (breaches) => {
+      const w = E.fresh(); w.peakEq = 250000;
+      return E.settle(w, { equity: 290000, capital: 250000, weekMade: true, breaches, sessions: 5 }).net;
+    };
+    const clean = run([]), two = run([{ id: 'revenge' }, { id: 'hype' }]), liq = run([{ id: 'liquidated', zero: true }]);
+    assert(clean > two && two > liq, `clean ${clean} > two breaches ${two} > liquidated ${liq}`);
+    assert(liq === Math.round(E.P.drawPerSession * 5 * (1 - E.P.taxRate)), 'a liquidation week should pay the bare draw');
+  });
+
+  test('A trader who never makes money slides into eviction, never a game over', () => {
+    const E = B.Economy;
+    const w = E.fresh(); w.peakEq = 250000;
+    let evictedWeek = 0;
+    for (let wk = 1; wk <= 13 && !evictedWeek; wk++) {
+      E.settle(w, { equity: 250000, capital: 250000, weekMade: false, breaches: [], sessions: 5 });
+      if (w.evictions) evictedWeek = wk;
+    }
+    assert(evictedWeek >= 5 && evictedWeek <= 10, 'a flat trader on the default flat should be evicted mid-career, got week ' + evictedWeek);
+    assert(E.tier(w).id === 'couch' && E.netWorth(w) < 0, 'eviction should land on the couch, in debt');
+    // Downsizing early is the way out.
+    const w2 = E.fresh(); w2.peakEq = 250000; E.move(w2, 1);
+    for (let wk = 1; wk <= 13; wk++) E.settle(w2, { equity: 250000, capital: 250000, weekMade: false, breaches: [], sessions: 5 });
+    assert(!w2.evictions, 'moving to the cheapest flat should keep a flat trader housed');
+  });
+
+  test('Career payroll runs once per week and never touches the book', () => {
+    const mode = B.StoryMode(), S = mode.S;
+    const cash0 = 250000;
+    const broker = { cash: cash0, equity: () => 260000, posQty: () => 0, opts: [], dayTrades: () => [], rules: { maxLev: 4 },
+      dayRisk: { trough: 250000, breachT: null, mc: 0, liq: 0, peakLev: 1 } };
+    const g = { day: 4, history: [], broker, market: { events: [], bySym: { INDX: { last: 500 } } }, indexStart: 500 };
+    const r = () => ({ day: 4, date: 'x', pnl: 3000, equity: 260000, start: 257000, quota: 1000, quotaMet: true, eod: { forced: [] } });
+    const before = S.wallet.cash;
+    const v1 = mode.onDayEnd(g, r());
+    const after = S.wallet.cash;
+    mode.onDayEnd(g, r());
+    assert(S.wallet.cash === after, 'a replayed Friday close paid twice');
+    assert(after !== before && v1.notes.some((n) => /Payslip/.test(n)) && v1.notes.some((n) => /Risk desk review/.test(n)), 'payslip or review missing from the closing memo');
+    assert(broker.cash === cash0, 'payroll touched the trading book');
+    const legacy = B.StoryMode({ S: JSON.parse(JSON.stringify(Object.assign({}, S, { wallet: undefined }))) });
+    assert(legacy.S.wallet && legacy.S.wallet.cash === B.Economy.P.startCash, 'a pre-economy save did not get a fresh wallet');
   });
 
   B.Tests = { results, run: () => results };

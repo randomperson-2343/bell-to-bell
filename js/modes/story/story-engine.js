@@ -54,6 +54,9 @@
     // Legacy saves only knew the current consecutive streak. Preserve that
     // value until Game.restore can rebuild the cumulative ledger from history.
     if (!Number.isFinite(S.quotaStrikes)) S.quotaStrikes = Math.max(0, S.missStreak | 0);
+    // Saves from before the personal economy start with a fresh wallet.
+    const E = B.Economy;
+    const W$ = E.ensure(S, capital);
 
     const mode = {
       kind: 'story',
@@ -66,6 +69,7 @@
       // Roughly one tip in three pays, and at most one per session actually works.
       tipOdds: { real: 0.33, stale: 0.18, reversal: 0.14 },
       tipCap: 1,
+      lossLimit: E.P.lossLimit,
       S,
 
       slotLabel(g) {
@@ -82,6 +86,9 @@
         if (S.m.heat >= 50) rules.push('Compliance is watching you. Examiners may visit your desk.');
         const remaining = QUOTA_STRIKE_LIMIT - S.quotaStrikes;
         if (S.quotaStrikes > 0) rules.push(`Career quota strikes: ${S.quotaStrikes}/${QUOTA_STRIKE_LIMIT}`);
+        const T = E.tier(W$);
+        rules.push(`Your money: ${B.fmt.money(W$.cash)} cash${W$.card > 0 ? `, ${B.fmt.money(-W$.card)} on the card` : ''}. ${T.name}${T.rent ? `, ${B.fmt.money(T.rent)} rent due Friday` : ''}.${W$.arrears > 0 ? ` <b>${B.fmt.money(W$.arrears)} rent overdue.</b>` : ''}`);
+        rules.push(`Risk desk: daily loss limit ${B.fmt.money(-E.P.lossLimit * (g && g.broker ? g.broker.equity() : capital))}. Stop there. Every breach cuts your bonus ${Math.round(E.P.breachCut * 100)}%.`);
         if (remaining === 1) rules.push('FINAL WARNING: one more missed quota ends this career.');
         else if (remaining === 2) rules.push('WARNING: two missed quotas remain before termination.');
         if (S.f.v2RewoundToBell) rules.push('SAVE MIGRATION: this V2 mid-session save was rewound to the matching opening bell; book and decisions were preserved.');
@@ -163,7 +170,15 @@
         return notional / eq;
       },
 
-      stressCarry(d) { return d > 0 && d % 5 === 0 ? 0.08 : 0.15; },
+      stressCarry(d) { return (d > 0 && d % 5 === 0 ? 0.08 : 0.15) * E.tier(W$).carry; },
+
+      // What home does to you before the bell: where you sleep, and whatever
+      // the landlord did last week.
+      morningStress() {
+        const s = E.tier(W$).floor + (W$.stressNext || 0);
+        W$.stressNext = 0;
+        return s;
+      },
       reconcileQuotaStrikes(history) {
         const byDay = {};
         const key = (entry) => (entry.kind === 'week' ? 'w' + entry.week : String(entry.day));
@@ -461,6 +476,7 @@
               : `Week so far: ${B.fmt.money(made, true)}. Weekly quota of ${B.fmt.money(W.target)} already cleared. Hold it through Friday.`);
           }
         }
+        notes.push(...this.payroll(g, r));
         if (r.earlyEnd === 'wiped' || r.equity < capital * 0.1) return { notes, ending: this.buildEnding(g, 'wiped') };
         if (S.quotaStrikes >= QUOTA_STRIKE_LIMIT || (!S.f.defected && S.rel.kroll <= 0)) return { notes, ending: this.buildEnding(g, 'fired') };
         if (g.day % 5 === 4 && g.day < D.DAYS.length - 1) {
@@ -471,6 +487,46 @@
         if (S.m.heat >= 50) notes.push('Your heat with regulators is <b>high</b>.');
         if (g.day === D.DAYS.length - 1) return { notes, ending: this.buildEnding(g, 'final') };
         return { notes };
+      },
+
+      // Risk desk review every session; payslip and bills every Friday and on
+      // the lone final Monday. Keyed by day and week so a replayed close never
+      // pays or bills twice.
+      payroll(g, r) {
+        const out = [];
+        const b = g.broker;
+        const rv = E.review({
+          risk: b.dayRisk, start: r.start, trades: b.dayTrades ? b.dayTrades() : [],
+          forced: r.eod && r.eod.forced, maxLev: b.rules && b.rules.maxLev,
+          events: g.market && g.market.events
+        });
+        W$.days[g.day] = rv.breaches.map((x) => ({ id: x.id, zero: !!x.zero }));
+        r.riskReview = rv;
+        out.push(E.reviewNote(rv));
+        const last = g.day === D.DAYS.length - 1;
+        if (g.day % 5 !== 4 && !last) return out;
+        const wk = D.weekOf(g.day);
+        if (W$.weeks[wk] || !Number.isFinite(r.equity)) return out;
+        const first = (wk - 1) * 5;
+        const breaches = [];
+        for (let d = first; d <= g.day; d++) for (const x of W$.days[d] || []) breaches.push(x);
+        const weekMade = last && g.day % 5 === 0
+          ? !!r.quotaMet
+          : !S.quotaLedger.some((e) => e.kind === 'week' && e.week === wk);
+        const res = E.settle(W$, { equity: r.equity, capital, weekMade, breaches, sessions: g.day - first + 1 });
+        W$.weeks[wk] = { net: res.net, bonus: res.bonus, draw: res.draw };
+        W$.stressNext = (W$.stressNext || 0) + res.stress;
+        r.payslip = res;
+        return out.concat(res.lines);
+      },
+
+      // Sunday: the one weekly money decision. Where you live.
+      weekendLedger(g, cb) {
+        if (!B.Screens.ledger) return cb();
+        B.Screens.ledger({ wallet: W$, options: E.moveOptions(W$), tiers: E.TIERS, worth: E.netWorth(W$) }, (i) => {
+          if (i != null) E.move(W$, i);
+          cb();
+        });
       },
 
       afterDay(g, cb) {
@@ -508,11 +564,18 @@
 
       buildEnding(g, reason) {
         const ctx = { S, wealth: g.broker.equity(), start: capital, reason,
-          days: g.history.length, quotaMet: g.history.filter((h) => h.quotaMet).length };
+          days: g.history.length, quotaMet: g.history.filter((h) => h.quotaMet).length,
+          personal: { worth: E.netWorth(W$), band: E.band(W$), home: E.tier(W$).name, evictions: W$.evictions } };
         const e = B.StoryEndings.resolve(ctx);
+        const P = ctx.personal;
+        const epilogue = P.band === 'broke'
+          ? `Personally, you walked away owing ${B.fmt.money(-P.worth)}. The book was never yours; the debt is.${P.evictions ? ' You still sleep on your mother\'s couch.' : ''}`
+          : P.band === 'rich'
+            ? `Personally, you walked away with ${B.fmt.money(P.worth)} of your own and a key to the ${P.home.toLowerCase()}. The desk paid for discipline, and you gave it some.`
+            : `Personally, you walked away with ${B.fmt.money(P.worth)}. Enough for a month or two in the ${P.home.toLowerCase()}. Not enough to stop.`;
         return {
           id: e.id, title: e.title, headline: e.headline, deck: e.deck,
-          story: e.story(ctx), wealth: e.wealth(ctx),
+          story: e.story(ctx).concat(epilogue), wealth: e.wealth(ctx), personal: P,
           dark: !!e.dark || ['wiped', 'fired', 'perp', 'depression', 'replaced'].indexOf(e.id) >= 0,
           unpriced: !!e.unpriced,
           timeline: S.log.map((l) => `<b>W${D.weekOf(l.day)} ${D.dowOf(l.day)}:</b> ${l.text}`),

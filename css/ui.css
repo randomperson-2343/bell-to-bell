@@ -402,6 +402,7 @@ input.short { width: 60px; }
   border: 2px solid; border-color: var(--c-slate2) var(--c-ink) var(--c-ink) var(--c-slate2); font-family: var(--pixel);
 }
 .choice-btn:hover { border-color: var(--c-amber); background: #4e4a3a; }
+.choice-btn:disabled { opacity: 0.45; cursor: not-allowed; border-color: transparent; background: inherit; }
 .choice-btn b { display: block; margin-bottom: 4px; font-size: 11px; }
 .choice-btn span { color: var(--c-putty); font-size: 10px; line-height: 1.7; }
 .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(132px, 1fr)); gap: 2px; background: var(--c-slate); border: 2px solid var(--c-slate); margin: 8px 0 14px; }

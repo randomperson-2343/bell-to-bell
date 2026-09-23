@@ -249,6 +249,33 @@
       });
     },
 
+    // ---- Sunday ledger: the one weekly money decision ----
+    ledger(v, onPick) {
+      const w = v.wallet, T = v.tiers[w.tier | 0];
+      const opts = v.options.filter((o) => !o.current);
+      const body = `
+        <div class="stats">
+          <div class="stat"><div class="l">Cash</div><div class="v ${F.cls(w.cash)}">${F.money(w.cash)}</div></div>
+          <div class="stat"><div class="l">Card</div><div class="v ${w.card > 0 ? 'down' : ''}">${w.card > 0 ? F.money(-w.card) : '$0'}</div></div>
+          <div class="stat"><div class="l">Rent owed</div><div class="v ${w.arrears > 0 ? 'down' : ''}">${F.money(w.arrears)}</div></div>
+          <div class="stat"><div class="l">Owed to desk</div><div class="v ${w.deficit > 0 ? 'amber' : ''}">${F.money(w.deficit)}</div></div>
+          <div class="stat"><div class="l">Net worth</div><div class="v ${F.cls(v.worth)}">${F.money(v.worth)}</div></div>
+        </div>
+        <p>You live in the <b>${T.name}</b>: ${F.money(T.rent)} a week. ${T.note}</p>
+        <p class="muted">Moving up costs two weeks of the new rent up front. Moving down is free. Better sleep means less stress carried into the morning.</p>`;
+      const after = `<div class="choice-list">
+        <button class="choice-btn" data-tier=""><b>Stay put</b><span>${T.name} · ${F.money(T.rent)}/week</span></button>
+        ${opts.map((o) => `<button class="choice-btn" data-tier="${o.i}" ${o.afford ? '' : 'disabled'}><b>${o.i < (w.tier | 0) ? 'Move down' : 'Move up'}: ${o.name}</b><span>${F.money(o.rent)}/week${o.cost ? ` · ${F.money(o.cost)} to move in` : ''}${o.afford ? '' : ' · you cannot afford it'} · ${o.note}</span></button>`).join('')}
+      </div>`;
+      const el = this.modal({ kicker: 'SUNDAY · YOUR MONEY', title: 'The Ledger', body, after, wide: true });
+      el.querySelectorAll('.choice-btn').forEach((btn) => btn.addEventListener('click', () => {
+        if (btn.disabled) return;
+        B.SFX.unlock();
+        this.closeModal();
+        onPick(btn.dataset.tier === '' ? null : +btn.dataset.tier);
+      }));
+    },
+
     // ---- story choice ----
     choice(c, S, onPick) {
       const opts = c.options.filter((o) => !o.req || o.req(S));
@@ -304,7 +331,8 @@
             <div class="box">
               <div><span>ENDING</span><b>${e.title}</b></div>
               <div><span>Reached</span><b>${tally[e.id] || 1}x</b></div>
-              <div><span>Final net worth</span><b>${wealthLabel}</b></div>
+              <div><span>Final book</span><b>${wealthLabel}</b></div>
+              ${e.personal ? `<div><span>Your own money</span><b class="${F.cls(e.personal.worth)}">${F.money(e.personal.worth)}</b></div><div><span>Home</span><span>${e.personal.home}</span></div>` : ''}
               <div><span>Starting capital</span><span>${F.money(g.startCapital)}</span></div>
               <div><span>Return</span><b>${returnLabel}</b></div>
               <div><span>Index, campaign</span><span>${F.pct(e.indexMonth || 0)}</span></div>
