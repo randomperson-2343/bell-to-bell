@@ -1024,5 +1024,20 @@
     assert(jackpot.bonus <= 5000000 * P.bonusCap / 5 * (1 + P.cleanKicker) + 1, 'one session cannot pay out a season');
   });
 
+  test('Stopping cleanly at the loss limit excuses the missed quota; staying in does not', () => {
+    const run = (flatT) => {
+      const mode = B.StoryMode(), S = mode.S;
+      const broker = { cash: 250000, equity: () => 242000, posQty: () => 0, opts: [], dayTrades: () => [], rules: { maxLev: 4 }, stockGross: () => 0, leverage: () => 0,
+        dayRisk: { trough: 242000, breachT: 120, flatT, mc: 0, liq: 0, peakLev: 1 } };
+      const g = { day: 2, history: [{ day: 2, pnl: -8000, quotaMet: false }], broker, market: { events: [], bySym: { INDX: { last: 500 } } }, indexStart: 500 };
+      const v = mode.onDayEnd(g, { day: 2, date: 'x', pnl: -8000, equity: 242000, start: 250000, quota: 2000, quotaMet: false, eod: { forced: [] } });
+      mode.reconcileQuotaStrikes(g.history);
+      return { strikes: S.quotaStrikes, v };
+    };
+    const clean = run(122), stayed = run(null);
+    assert(clean.strikes === 0 && clean.v.notes.some((n) => /strike excused/.test(n)), 'a clean stop should not strike, even after a ledger rebuild');
+    assert(stayed.strikes === 1, 'staying in past the limit should still strike');
+  });
+
   B.Tests = { results, run: () => results };
 })(window.BTB);
