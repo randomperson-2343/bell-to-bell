@@ -196,6 +196,7 @@
       R.beat('weekend', `${key}:sat`, 1.7, (c) => apartmentShot(c, day, home, false, w), sat, { sfx: 'apartment', transition: 'fade', informative: !story }),
       R.beat('weekend', `${key}:sun`, 1.8, (c) => apartmentShot(c, day, home, true, w), story || 'SUNDAY NIGHT. THE ALARM IS SET FOR 5:58.', { sfx: 'apartment', informative: !!story })
     ];
+    beats.push(R.beat('weekend', `${key}:hold`, 0.8, (c) => { apartmentShot(c, day, home, true, w); c.save(); c.globalAlpha = 0.3; X.rect(c, 0, 0, V.w, V.h, P.ink); c.restore(); }, '', {}));
     if (day === 59) beats.push(R.beat('weekend', `${key}:317`, 1.6, (c) => at2x(c, (cc) => SH.tradingFloor(cc, 0.4, false, 60)), 'THE FLOOR IS DARK. THE RACKS ARE NOT.', {}));
     return beats;
   };
