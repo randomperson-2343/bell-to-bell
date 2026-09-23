@@ -19,7 +19,7 @@ vm.runInContext(`
   B.Settings={get:()=>({storyDayLength:180}),set:()=>{}};
   B.UI=new Proxy({}, {get:()=>()=>{}}); B.SFX=new Proxy({}, {get:()=>()=>{}}); B.Music=new Proxy({}, {get:()=>()=>{}});
 `,ctx);
-['js/modes/story/story-data.js','js/modes/story/patch3-data.js','js/modes/story/endings.js','js/modes/story/patch3-endings.js','js/modes/story/story-engine.js'].forEach(load);
+['js/modes/story/story-data.js','js/modes/story/patch3-data.js','js/modes/story/sqwak-story.js','js/modes/story/endings.js','js/modes/story/patch3-endings.js','js/modes/story/story-engine.js'].forEach(load);
 const B=ctx.BTB, D=B.StoryData;
 const ORDER=Object.keys(D.CHOICES).sort((a,b)=>D.CHOICES[a].day-D.CHOICES[b].day);
 const clone=(o)=>JSON.parse(JSON.stringify(o));

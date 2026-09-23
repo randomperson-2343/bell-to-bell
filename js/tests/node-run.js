@@ -38,7 +38,7 @@ vm.runInContext(`
   B.Screens = { briefing: (g, b, cb) => cb && cb(), eod: (g, r, cb) => cb && cb(), choice: () => {}, aftermath: (t, x, cb) => cb && cb(), ending: () => {}, closeModal: () => {} };
 `, ctx);
 
-['js/modes/story/story-data.js', 'js/modes/story/patch3-data.js', 'js/modes/story/endings.js', 'js/modes/story/patch3-endings.js', 'js/modes/story/story-engine.js', 'js/tests/tests.js'].forEach(run);
+['js/modes/story/story-data.js', 'js/modes/story/patch3-data.js', 'js/modes/story/sqwak-story.js', 'js/modes/story/endings.js', 'js/modes/story/patch3-endings.js', 'js/modes/story/story-engine.js', 'js/tests/tests.js'].forEach(run);
 
 const res = ctx.BTB.Tests.results;
 let fail = 0;

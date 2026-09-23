@@ -1,0 +1,61 @@
+{
+  "results": {
+    "newsUnique": 61,
+    "endingUnique": 22,
+    "weekendUnique": 12,
+    "emptyPhoneDiffers": true,
+    "closeOpts": {
+      "pnl": 12345,
+      "quotaMet": true,
+      "quota": 2200,
+      "date": "QA"
+    },
+    "endingOpts": {
+      "id": "fund",
+      "title": "The Fund",
+      "deck": "Deck",
+      "dark": true
+    },
+    "shortInformative": true,
+    "skipChain": true,
+    "cacheMs": 3891.2999999998137,
+    "cacheEntries": 65
+  },
+  "layouts": [
+    {
+      "width": 1920,
+      "height": 1080,
+      "scrollWidth": 1920
+    },
+    {
+      "width": 1440,
+      "height": 900,
+      "scrollWidth": 1440
+    },
+    {
+      "width": 1280,
+      "height": 720,
+      "scrollWidth": 1280
+    },
+    {
+      "width": 1280,
+      "height": 800,
+      "scrollWidth": 1280
+    },
+    {
+      "width": 900,
+      "height": 1000,
+      "scrollWidth": 900
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "scrollWidth": 390
+    }
+  ],
+  "mobile": {
+    "scroll": 390,
+    "modal": 372,
+    "viewport": 390
+  }
+}

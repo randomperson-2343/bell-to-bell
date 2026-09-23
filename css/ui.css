@@ -449,6 +449,13 @@ input.short { width: 60px; }
 .preopen-item > span { display: block; color: var(--c-phosphor-d); font-size: 9px; letter-spacing: .08em; }
 .preopen-item > strong { display: block; color: var(--c-bone); font-size: 12px; margin-top: 3px; }
 .preopen-item > p { margin: 7px 0 0; color: var(--c-putty); font-size: 11px; line-height: 1.6; }
+.preopen-item.life { border-left-color: var(--c-grey); }
+.preopen-item.life > strong { color: var(--c-putty2); }
+.preopen-item.sq { display: grid; grid-template-columns: 24px 1fr; column-gap: 8px; align-items: start; }
+.preopen-item.sq > .sq-av { grid-row: 1 / span 3; font-style: normal; }
+.preopen-item.sq > .sq-who { display: flex; font-size: 10px; letter-spacing: 0; color: var(--c-grey); }
+.preopen-item.sq > strong, .preopen-item.sq > p { grid-column: 2; font-weight: 400; }
+.preopen-top .sq-logo { color: var(--c-bone); font-size: 14px; letter-spacing: .02em; text-transform: none; }
 .unpriced { display: inline-block; min-width: 90px; color: #731f2a; letter-spacing: .05em; overflow-wrap: anywhere; }
 
 /* ---- Newspaper ending ---- */

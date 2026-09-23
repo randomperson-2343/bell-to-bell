@@ -208,7 +208,7 @@
       switch (e.type) {
         case 'news':
           B.UI.addNews(e);
-          if (e.big) { B.UI.flash('amber'); g.stress.spike(4); }
+          if (e.big) { B.UI.flash('amber'); g.stress.spike(4); if (e.kind !== 'chirp' && e.text) B.UI.toast(`SQWAK ALERT · ${e.text}`, 'warn'); }
           break;
         case 'script':
           if (g.mode.onScript) g.mode.onScript(g, e.id);

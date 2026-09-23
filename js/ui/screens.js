@@ -121,16 +121,31 @@
       const d = B.Calendar.dayInfo(g.day);
       const dateLabel = g.mode.kind === 'story' && B.Calendar.storyLabel ? B.Calendar.storyLabel(g.day) : d.long;
       const rules = b.rules && b.rules.length ? `<div class="rules-list">${b.rules.map((r) => `<div>&#9656; ${r}</div>`).join('')}</div>` : '';
-      const feed = (b.feed || []).map((item, i) => `<button class="preopen-item ${B.esc(item.kind || 'wire')}" data-feed-item="${i}">
+      // Sqwak posts show as posts (avatar, name, handle); everything else keeps
+      // its channel label. Reply text stays hidden until the item is opened.
+      const feed = (b.feed || []).map((item, i) => {
+        const kind = B.esc(item.kind || 'wire');
+        const src = item.src || (item.kind === 'chirp' ? item.source : null);
+        if (src && B.Sqwak && String(src).charAt(0) === '@') {
+          const a = B.Sqwak.account(src);
+          return `<button class="preopen-item sq ${kind}" data-feed-item="${i}">
+            <i class="sq-av" style="--av:var(--c-${a.col})">${B.esc(B.Sqwak.initials(a))}</i>
+            <span class="sq-who"><b>${B.esc(a.name)}</b>${a.followers >= B.Sqwak.HYPE_MIN_FOLLOWERS ? '<i class="sq-v">&#10004;</i>' : ''}<span>${B.esc(a.handle)}</span></span>
+            <strong>${B.esc(item.title || '')}</strong>
+            <p hidden>${B.esc(item.text || '')}</p>
+          </button>`;
+        }
+        return `<button class="preopen-item ${kind}" data-feed-item="${i}">
         <span><b>${B.esc(item.source || 'THE WIRE')}</b>${item.locked ? ' · PAYWALLED' : ''}</span>
         <strong>${B.esc(item.title || 'Before the bell')}</strong>
         <p hidden>${B.esc(item.text || '')}</p>
-      </button>`).join('');
+      </button>`;
+      }).join('');
       const phone = feed ? `<section class="preopen-device" aria-label="Pre-open phone feed">
         <div class="preopen-speaker" aria-hidden="true"></div>
         <div class="preopen-screen">
           <div class="preopen-status"><span>6:38</span><i></i><span>LTE&nbsp;▮▮▮</span></div>
-          <div class="preopen-top"><span>PRE-OPEN</span>${b.anomalyCount == null ? '<b>NOTIFICATIONS</b>' : `<b>ANOMALIES: ${b.anomalyCount}</b>`}</div>
+          <div class="preopen-top"><span class="sq-logo">sqwak</span>${b.anomalyCount == null ? '<b>NOTIFICATIONS</b>' : `<b>ANOMALIES: ${b.anomalyCount}</b>`}</div>
           <div class="preopen-scroll">${feed}</div>
         </div>
         <div class="preopen-home" aria-hidden="true"></div>

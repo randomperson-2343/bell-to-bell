@@ -68,6 +68,16 @@
 
   const HYPE_MIN_FOLLOWERS = 1000000;
 
+  // Who posts what. Rumours that come true come from sharp accounts; fake
+  // rumours from hype accounts; idle chatter from the jokers. That is what
+  // makes the hidden accuracy scores something a player can learn.
+  const VOICES = {
+    sharp: ['@MacroMaven', '@BondVigilante', '@Quant_Kween', '@TheTapeReader', '@BearCaveBets', '@DeepValueDane'],
+    hype: ['@CallsOnlyCarl', '@TendiesTomorrow', '@DiamondHandsDiane', '@ScalingLawSteve'],
+    noise: ['@PromptAndPray', '@GPUgoblin', '@FlopsPerDollar', '@HedgeHog88', '@TendiesTomorrow', '@DiamondHandsDiane']
+  };
+  const pickHandle = (rng, voice) => rng.pick(VOICES[voice] || VOICES.noise);
+
   // Hype: a big account naming a ticker moves it, true or not, and the move
   // fades. Runs once when the day's scenario is built so saves replay exactly.
   // Uses its own seed so the rest of the day's random stream is untouched.
@@ -100,5 +110,5 @@
     return events.concat(add);
   }
 
-  B.Sqwak = { ACCOUNTS, HYPE_MIN_FOLLOWERS, account, initials, metrics, sentiment, tickersIn, hype };
+  B.Sqwak = { ACCOUNTS, VOICES, pickHandle, HYPE_MIN_FOLLOWERS, account, initials, metrics, sentiment, tickersIn, hype };
 })(window.BTB);

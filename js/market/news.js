@@ -58,7 +58,17 @@
     'my cousin at {sym} says the next earnings are INSANE. loading calls',
     '{sym} is the next 10-bagger, shorts are about to get obliterated',
     'a model told me to buy {sym} and models are never wrong',
-    '{sym} datacenter is running on a diesel generator lmao. someone check this'
+    '{sym} datacenter is running on a diesel generator lmao. someone check this',
+    'loading {sym} calls. do not ask me why. i will not be taking questions',
+    '{sym} insiders dumping shares all week. check the filings',
+    'hearing {sym} misses tonight. getting out before the rest of you',
+    '{sym} short squeeze starts at the open. shorts are obliterated',
+    '{sym} is cooked. whole team quit on a group call apparently',
+    'my barber is buying {sym}. that is either the top or the bottom',
+    '{sym} to the moon. bought more at lunch',
+    '{sym} is selling assets to make payroll?? unconfirmed but wow',
+    'friend in procurement says {sym} just landed a HUGE order',
+    '{sym} probe coming. regulators asking questions all week'
   ];
   const NOISE = [
     'is it too late to buy the dip or too early to panic',
@@ -70,7 +80,19 @@
     'green candle. I have been healed',
     'if this closes red I am becoming a farmer',
     'we automated the analysts and kept the bubble. efficiency',
-    'the machines are front-running the machines now'
+    'the machines are front-running the machines now',
+    'every chart is a line until you zoom in',
+    'the tape is lying to me and i am choosing to believe it',
+    'market open is my cardio',
+    'i do not have a strategy. i have a feeling and a margin account',
+    'the quiet part of the day is the part that scares me',
+    'bought the rumor. sold the news. bought the news. sold the rumor. flat',
+    'who is buying at these prices. show yourself. again',
+    'three monitors and i still cannot see what is coming',
+    'my risk manager just sent a thumbs up and i do not know what it means',
+    'somewhere a model is reading this post and changing its mind',
+    'lunch is for people who are not down 4%',
+    'every rally is a relief rally if you are relieved enough'
   ];
 
   const fill = (tpl, tk) => tpl.replace('{name}', tk.name).replace('{sym}', '$' + tk.sym);
@@ -80,7 +102,7 @@
     NOISE,
     // Exposed so js/tests/tests.js can lint every string the game can print.
     TEMPLATES: { POS, NEG, SECTOR_POS, SECTOR_NEG, MARKET_POS, MARKET_NEG, FAKE },
-    handle(rng) { return rng.pick(HANDLES); },
+    handle(rng, voice) { return B.Sqwak && voice ? B.Sqwak.pickHandle(rng, voice) : rng.pick(HANDLES); },
 
     // Build a list of random intraday events for a day.
     // cfg: { newsFreq, fakeShare, volMult }
@@ -98,7 +120,7 @@
           const tk = rng.pick(tradable);
           const mag = rng.range(0.02, 0.07) * (cfg.volMult || 1);
           ev = { t, text: fill(rng.pick(up ? POS : NEG), tk), impacts: [{ scope: 'ticker', id: tk.sym, pct: up ? mag : -mag, over: rng.range(0, 0.6) }] };
-          if (rng.chance(0.35)) ev.rumor = { lead: Math.round(rng.range(4, 14)), text: `hearing something big on $${tk.sym}... ${up ? 'positioning long' : 'getting out now'}`, src: this.handle(rng) };
+          if (rng.chance(0.35)) ev.rumor = { lead: Math.round(rng.range(4, 14)), text: `hearing something big on $${tk.sym}... ${up ? 'positioning long' : 'getting out now'}`, src: this.handle(rng, 'sharp') };
         } else if (roll < 0.85) {
           const secs = Object.keys(SECTOR_POS);
           const s = rng.pick(secs);
@@ -120,11 +142,11 @@
       const nf = Math.round((cfg.fakeShare || 0) * n * 1.4);
       for (let i = 0; i < nf; i++) {
         const tk = rng.pick(tradable);
-        out.push({ t: Math.round(rng.range(5, 385)), kind: 'chirp', text: fill(rng.pick(FAKE), tk), src: this.handle(rng) });
+        out.push({ t: Math.round(rng.range(5, 385)), kind: 'chirp', text: fill(rng.pick(FAKE), tk), src: this.handle(rng, 'hype') });
       }
       // Flavor chatter.
       const nn = rng.int(3, 6);
-      for (let i = 0; i < nn; i++) out.push({ t: Math.round(rng.range(2, 388)), kind: 'chirp', text: rng.pick(NOISE), src: this.handle(rng) });
+      for (let i = 0; i < nn; i++) out.push({ t: Math.round(rng.range(2, 388)), kind: 'chirp', text: rng.pick(NOISE), src: this.handle(rng, 'noise') });
       return out;
     },
 

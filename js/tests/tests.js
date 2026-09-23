@@ -534,6 +534,7 @@
     Object.keys(B.REGIMES).forEach((k) => push(B.REGIMES[k].name));
     push(B.News.HANDLES);
     if (B.Sqwak) Object.keys(B.Sqwak.ACCOUNTS).forEach((h) => push([h, B.Sqwak.ACCOUNTS[h].name]));
+    if (B.SqwakStory) { push(B.SqwakStory.INTRADAY); push(B.SqwakStory.PREOPEN); push(B.SqwakStory.POOLS); push(B.SqwakStory.BREAKING); }
     push(B.News.NOISE);
     push(B.News.TEMPLATES);
 
@@ -797,6 +798,20 @@
     for (const d of [5, 30, 55]) assert(JSON.stringify(m.scenario(d).events) === JSON.stringify(m.scenario(d).events), 'session ' + (d + 1) + ' differs between builds');
     const post = { t: 115, text: 'BREAKING?? $RDGW buyout', src: '@CallsOnlyCarl' };
     assert(JSON.stringify(B.Sqwak.metrics(post)) === JSON.stringify(B.Sqwak.metrics(post)), 'metrics changed between calls');
+  });
+
+  test('Sqwak: every session has authored market-hours posts and a full pre-open feed', () => {
+    const D = B.StoryData;
+    const counts = (d) => (d >= 58 ? 3 : d >= 26 ? 9 : d >= 21 ? 8 : d >= 15 ? 7 : d >= 10 ? 6 : d >= 5 ? 5 : 4);
+    assert(B.SqwakStory.INTRADAY.length === D.DAYS.length, 'intraday list must cover every session');
+    D.DAYS.forEach((day, d) => {
+      assert(B.SqwakStory.INTRADAY[d].length >= 3, 'session ' + (d + 1) + ' has fewer than 3 posts');
+      assert(day.feed.length === counts(d), 'session ' + (d + 1) + ' pre-open count ' + day.feed.length + ' breaks the snowball');
+      const an = D.ANOMALIES.find((x) => x[0] === d);
+      if (an) assert(day.feed.some((it) => it.anomalyId), 'session ' + (d + 1) + ' lost its anomaly');
+      const titles = day.feed.map((it) => it.title);
+      assert(new Set(titles).size === titles.length, 'session ' + (d + 1) + ' repeats a pre-open item');
+    });
   });
 
   B.Tests = { results, run: () => results };

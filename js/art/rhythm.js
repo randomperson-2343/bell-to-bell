@@ -131,7 +131,7 @@
     const w = close || count>2 ? 226 : 180, h = close || count>2 ? 308 : 250;
     const x=(V.w-w)/2, y=18;
     phone(ctx,x,y,w,h,feed,sb.act,sb.day);
-    text(ctx,'PRE-OPEN', close?92:88, 92, colors(sb.act).wash);
+    text(ctx,'SQWAK · PRE-OPEN', close?92:88, 92, colors(sb.act).wash);
     text(ctx,`${count} NOTIFICATION${count===1?'':'S'}`,close?92:88,110,P.bone);
   }
 
@@ -171,6 +171,59 @@
     if(detail){X.box(ctx,80,82,480,92);text(ctx,clean(o.title).slice(0,42),320,104,dark?P.crimson:P.amber,'center');X.wrap(clean(o.deck),430).slice(0,3).forEach((line,i)=>text(ctx,line,320,130+i*11,P.bone,'center'));}
   }
 
+
+  // Sqwak breaking-news insert: a phone held in one hand against the act's
+  // skyline, one post filling the screen. Content comes from B.SqwakStory.
+  function big(ctx, value, x, y, color, scale, align) {
+    ctx.save(); ctx.scale(scale, scale);
+    X.textShadow(ctx, clean(value).slice(0, 40), Math.round(x / scale), Math.round(y / scale), color, P.ink, { align: align || 'left' });
+    ctx.restore();
+  }
+  function sqwakFrame(ctx, sb, b, full) {
+    const c = colors(sb.act);
+    skyline(ctx, sb.act, sb.day * 7 + 3, 300);
+    X.rect(ctx, 0, 300, V.w, 60, P.ink);
+    const pw = 236, ph = 330, px = (V.w - pw) / 2, py = full ? 14 : 40;
+    // hand behind the phone
+    X.rect(ctx, px - 22, py + 150, 30, 120, P.desk);
+    X.rect(ctx, px - 24, py + 150, 6, 110, P.deskD);
+    X.rect(ctx, px + pw - 30, py + 112, 44, 150, P.desk);
+    X.rect(ctx, px + pw + 10, py + 122, 4, 116, P.deskD);
+    X.rect(ctx, px + pw - 6, py + 118, 34, 26, P.desk2);
+    X.rect(ctx, px + pw - 6, py + 150, 38, 26, P.desk2);
+    X.rect(ctx, px + pw - 6, py + 182, 34, 26, P.desk2);
+    X.rect(ctx, px + pw - 6, py + 214, 28, 24, P.desk);
+    X.plate(ctx, px, py, pw, ph, P.ink2, P.slate2, P.ink);
+    const sx = px + 9, sy = py + 12, sw = pw - 18;
+    X.rect(ctx, sx, sy, sw, ph - 24, P.screenD);
+    X.rect(ctx, px + pw / 2 - 20, py + 4, 40, 5, P.ink);
+    // app header
+    big(ctx, 'sqwak', px + pw / 2, sy + 12, P.bone, 2, 'center');
+    text(ctx, 'MARKETS TALK. EVERYONE LISTENS.', px + pw / 2, sy + 32, P.grey, 'center');
+    X.rect(ctx, sx, sy + 44, sw, 1, P.slate);
+    // the post
+    const cy = sy + 52;
+    X.rect(ctx, sx + 6, cy, sw - 12, 190, P.screen);
+    X.rect(ctx, sx + 12, cy + 8, 10, 10, P.crimson);
+    text(ctx, b.flag || 'BREAKING', sx + 28, cy + 10, P.crimson);
+    text(ctx, b.when || 'NOW', sx + sw - 14, cy + 10, P.grey2, 'right');
+    X.wrap(clean(b.head).toUpperCase(), (sw - 30) / 2).slice(0, 3).forEach((line, i) => big(ctx, line, sx + 12, cy + 26 + i * 18, P.bone, 2));
+    const bodyY = cy + 88;
+    X.wrap(clean(b.text), sw - 30).slice(0, 5).forEach((line, i) => text(ctx, line, sx + 12, bodyY + i * 10, P.putty2));
+    // glitch thumbnail strip
+    for (let i = 0; i < 6; i++) X.rect(ctx, sx + 12 + ((i * 29 + sb.day) % (sw - 60)), cy + 150 + i * 4, 30 + (i * 11) % 24, 2, i % 2 ? P.crimsonD : P.crimson);
+    text(ctx, `${b.stats ? b.stats[0] : '1.2K'}   ${b.stats ? b.stats[1] : '4.8K'}   ${b.stats ? b.stats[2] : '12K'}`, sx + 12, cy + 176, P.grey2);
+    // reply
+    if (b.reply) {
+      const ry = cy + 198;
+      X.rect(ctx, sx + 12, ry, 14, 14, P.slate);
+      text(ctx, clean(b.reply[0]).slice(0, 26), sx + 32, ry + 1, P.sky);
+      X.wrap(clean(b.reply[1]), sw - 44).slice(0, 3).forEach((line, i) => text(ctx, line, sx + 32, ry + 12 + i * 10, P.bone));
+    }
+    X.scanlines(ctx, 0, 0, V.w, V.h, P.ink, full ? .06 : .1);
+    if (!full) { ctx.save(); ctx.globalAlpha = .25; X.rect(ctx, 0, 0, V.w, V.h, c.wash); ctx.restore(); }
+  }
+
   function beat(scene, id, dur, draw, line, extra) {
     return Object.assign({ id:`${scene}:${id}`, view:V, dur, draw, line:line||'', cache:true, transition:'cut' }, extra||{});
   }
@@ -201,11 +254,17 @@
     beat('office',`${day}:desk`,1.8,(c)=>officeFrame(c,day,true),'THE DESK IS ALREADY AWAKE.',{sfx:'office',informative:true}),
     beat('office',`${day}:hold`,.85,(c)=>officeFrame(c,day,true),'SIT DOWN. NINE THIRTY.',{})
   ];};
-  B.Scenes.close = function(o){const r=o.report||{};return [
-    beat('close',`${r.day||0}:bell`,1.25,(c)=>closeFrame(c,r,false),'4:00 PM.',{sfx:'closeBell',transition:'fade'}),
-    beat('close',`${r.day||0}:report`,2.0,(c)=>closeFrame(c,r,true),(r.pnl||0)>=0?'YOU MADE MONEY. NOBODY SAYS WELL DONE.':'YOU LOST MONEY. EVERYBODY NOTICED.',{sfx:'office',informative:true}),
-    beat('close',`${r.day||0}:hold`,.85,(c)=>closeFrame(c,r,true),'',{})
-  ];};
+  B.Scenes.close = function(o){const r=o.report||{};const story=!o.game||!o.game.mode||o.game.mode.kind==='story';
+    const sq=story&&B.SqwakStory&&B.SqwakStory.BREAKING?B.SqwakStory.BREAKING[r.day]:null;const sb=board(r.day||0);
+    const bell=beat('close',`${r.day||0}:bell`,1.25,(c)=>closeFrame(c,r,false),'4:00 PM.',{sfx:'closeBell',transition:'fade'});
+    const post=sq?[
+      beat('close',`${r.day||0}:sqwak`,1.0,(c)=>sqwakFrame(c,sb,sq,false),'',{sfx:'news'}),
+      beat('close',`${r.day||0}:sqwak-read`,2.6,(c)=>sqwakFrame(c,sb,sq,true),clean(sq.head).toUpperCase(),{sfx:'broadcast'})
+    ]:[];
+    return [bell].concat(post,[
+      beat('close',`${r.day||0}:report`,2.0,(c)=>closeFrame(c,r,true),(r.pnl||0)>=0?'YOU MADE MONEY. NOBODY SAYS WELL DONE.':'YOU LOST MONEY. EVERYBODY NOTICED.',{sfx:'office',informative:true}),
+      beat('close',`${r.day||0}:hold`,.85,(c)=>closeFrame(c,r,true),'',{})
+    ]);};
   B.Scenes.weekend = function(o){const sb=board(o.day||0);return [
     beat('weekend',`${sb.week}:sat`,1.6,(c)=>weekendFrame(c,sb,false),`WEEK ${sb.week} · SATURDAY`,{sfx:'apartment',transition:'fade',informative:true}),
     beat('weekend',`${sb.week}:sun`,1.8,(c)=>weekendFrame(c,sb,true),'SUNDAY · 11:48 PM',{sfx:'apartment'}),
