@@ -180,11 +180,13 @@
       // stock you hold draws Compliance. Per-session caps stop farming.
       onResqwak(g, item) {
         const day = g.day;
-        if (!S.resqwak || S.resqwak.day !== day) S.resqwak = { day, heat: 0, influence: 0, warned: false, count: 0 };
+        if (!S.resqwak || S.resqwak.day !== day) S.resqwak = { day, heat: 0, influence: 0, warned: false, count: 0, fakes: 0, trues: 0 };
         const R = S.resqwak;
         R.count++;
         S.resqwakTotal = (S.resqwakTotal || 0) + 1;
         let note = null;
+        if (item.fake) R.fakes = (R.fakes || 0) + 1;
+        else if (item.truth) R.trues = (R.trues || 0) + 1;
         if (item.fake) {
           const add = Math.min(3, 9 - R.heat);
           if (add > 0) { S.m.heat = B.clamp(S.m.heat + add, 0, 100); R.heat += add; }
@@ -346,6 +348,16 @@
 
       onDayEnd(g, r) {
         const notes = [];
+        // The day's resqwaks are judged after the bell, once the truth is out.
+        const R = S.resqwak;
+        if (R && R.day === g.day && R.count) {
+          const n = R.count, f = R.fakes || 0, t = R.trues || 0;
+          const parts = [`You resqwaked ${n} post${n === 1 ? '' : 's'} today.`];
+          if (f) parts.push(`<b>${f} turned out to be fake.</b> Compliance noticed.`);
+          if (t) parts.push(`${t} ${t === 1 ? 'was' : 'were'} right, and people saw you share ${t === 1 ? 'it' : 'them'} first.`);
+          if (!f && !t) parts.push('None of them moved anything.');
+          notes.push(`Sqwak: ${parts.join(' ')}`);
+        }
         if (g.day === D.DAYS.length - 1 && !S.f.pulledPlug && ((S.anomalies || 0) < 8 || S.f.leftStack)) {
           S.f.aiUncontained = true;
         }

@@ -831,6 +831,12 @@
     const note = m.onResqwak(g2, { text: 'loading $HLST calls', src: '@TendiesTomorrow' });
     assert(S.m.heat === h1 + 2 && /Compliance/.test(note || ''), 'touting a held stock should add heat and warn once');
     assert(m.onResqwak(g2, { text: 'more $HLST', src: '@TendiesTomorrow' }) === null, 'Compliance warns only once per session');
+    const g3 = { day: 7, broker: { posQty: () => 0, equity: () => 250000, pos: {}, opts: [] }, market: { bySym: {} } };
+    m.onResqwak(g3, { text: 'fake $RDGW', src: '@CallsOnlyCarl', fake: true });
+    m.onResqwak(g3, { text: 'true $CRVS', src: '@MacroMaven', truth: true });
+    const v = m.onDayEnd(g3, { quota: 0, pnl: 0, equity: 250000 }) || {};
+    const recap = (v.notes || []).find((n) => /^Sqwak:/.test(n)) || '';
+    assert(/2 posts/.test(recap) && /1 turned out to be fake/.test(recap) && /1 was right/.test(recap), 'end-of-day recap missing or wrong: ' + recap);
   });
 
   B.Tests = { results, run: () => results };
