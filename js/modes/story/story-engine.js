@@ -11,6 +11,9 @@
   // Monday. A missed week is one more career strike, logged at Friday's close.
   // A made week wipes one missed day from that same week: make it back.
   const WEEK_MULT = 1.15;
+  // How many missed days a made week wipes. The week is the real mandate: a
+  // trader who is wrong one day in three but makes the week keeps the seat.
+  const WEEK_WIPES = 2;
   // Sectors outside the CASCADE story. Background noise lives here so every day
   // stays tradable even when the scripted drama is pointed somewhere else.
   const SAFE_SECTORS = ['retail', 'haven', 'defense', 'power'];
@@ -18,6 +21,8 @@
   const CASCADE_NAMES = ['BSTN', 'HLST', 'RDGW', 'FRLN', 'AMVL'];
   // Your boss can fire you through session 57. After that he can only shout.
   const BOSS_FIRE_LAST = 57;
+  // A loss-limit stop can excuse a missed quota once a week, if it comes before 3:00 PM.
+  const EXCUSE_BEFORE = 330;
 
   function freshState(capital) {
     return {
@@ -96,7 +101,7 @@
         }
         const T = E.tier(W$);
         if (d >= 2) rules.push(`Your money: ${B.fmt.money(W$.cash)} cash${W$.card > 0 ? `, ${B.fmt.money(-W$.card)} on the card` : ''}. ${T.name}${T.rent ? `, ${B.fmt.money(T.rent)} rent due Friday` : ''}.${W$.arrears > 0 ? ` <b>${B.fmt.money(W$.arrears)} rent overdue.</b>` : ''}`);
-        if (d >= 2) rules.push(`Risk desk: daily loss limit ${B.fmt.money(-E.P.lossLimit * (g && g.broker ? g.broker.equity() : capital))}. Hit it and get flat within ${E.P.flatWithin} minutes, and a missed quota that day is excused. Each kind of breach cuts your bonus ${Math.round(E.P.breachCut * 100)}% this week and next.`);
+        if (d >= 2) rules.push(`Risk desk: daily loss limit ${B.fmt.money(-E.P.lossLimit * (g && g.broker ? g.broker.equity() : capital))}. Hit it before 3:00 PM and get flat within ${E.P.flatWithin} minutes, and a missed quota that day is excused, once a week. Each kind of breach cuts your bonus ${Math.round(E.P.breachCut * 100)}% this week and next.`);
         if (remaining === 1) rules.push('FINAL WARNING: one more missed quota ends this career.');
         else if (remaining === 2) rules.push('WARNING: two missed quotas remain before termination.');
         if (S.f.v2RewoundToBell) rules.push('SAVE MIGRATION: this V2 mid-session save was rewound to the matching opening bell; book and decisions were preserved.');
@@ -400,7 +405,7 @@
       onMissedCall(g, call) {
         if (call.kind === 'boss' && !S.f.defected) D.adj(S, {}, { kroll: -2 });
       },
-      onTaskFailed() { if (!S.f.defected) D.adj(S, {}, { kroll: -3 }); },
+      onTaskFailed() { if (!S.f.defected) D.adj(S, {}, { kroll: -2 }); },
       onTaskDone() { if (!S.f.defected) D.adj(S, {}, { kroll: 2 }); },
 
       resolveMidChoice(g, choiceId, optId, timedOut) {
@@ -455,13 +460,21 @@
         const rv = this.riskReview(g, r);
         // Stopping cleanly at the loss limit is the job. The risk desk excuses
         // that day's missed quota, so the lesson and the rules agree.
-        const excused = !r.quotaMet && rv.hitLimit && !rv.breaches.length;
+        // One excuse per week, and only for a limit hit before 3:00 PM, so the
+        // rule rewards stopping, not losing on purpose to dodge a strike.
+        const wk = D.weekOf(g.day);
+        const usedThisWeek = (S.excusedDays || []).some((d) => d !== g.day && D.weekOf(d) === wk);
+        const early = !g.broker.dayRisk || g.broker.dayRisk.breachT == null || g.broker.dayRisk.breachT < EXCUSE_BEFORE;
+        const excused = !r.quotaMet && rv.hitLimit && !rv.breaches.length && !usedThisWeek && early;
         if (r.quota > 0) {
           if (r.quotaMet) {
             S.missStreak = 0;
+            // Kroll notices results, not just whether you pick up the phone.
+            if (!S.f.defected) D.adj(S, {}, { kroll: 1 });
             notes.push(`${D.boss(S)}: "Quota met.${g.day === D.DAYS.length - 1 ? '"' : ' Again tomorrow."'}`);
           } else if (excused) {
             if ((S.forgivenDays || []).indexOf(g.day) < 0) S.forgivenDays = (S.forgivenDays || []).concat(g.day);
+            if ((S.excusedDays || []).indexOf(g.day) < 0) S.excusedDays = (S.excusedDays || []).concat(g.day);
             S.quotaLedger = S.quotaLedger.filter((e) => !(e.day === g.day && e.kind !== 'week'));
             S.quotaStrikes = S.quotaLedger.length;
             notes.push(`<b>Quota missed, strike excused.</b> You stopped at the loss limit and got flat. The risk desk signed off on the day. ${D.boss(S)} did not like it, but the rule is the rule.`);
@@ -488,11 +501,11 @@
               let wiped = '';
               const missed = S.quotaLedger.filter((e) => e.kind !== 'week' && e.day >= W.start && e.day <= W.end);
               if (missed.length) {
-                const last = missed[missed.length - 1];
-                S.quotaLedger = S.quotaLedger.filter((e) => e !== last);
-                S.forgivenDays = (S.forgivenDays || []).concat(last.day);
+                const wipe = missed.slice(-WEEK_WIPES);
+                S.quotaLedger = S.quotaLedger.filter((e) => wipe.indexOf(e) < 0);
+                S.forgivenDays = (S.forgivenDays || []).concat(wipe.map((e) => e.day));
                 S.quotaStrikes = S.quotaLedger.length;
-                wiped = ` It wipes one missed day off your record: <b>career strikes ${S.quotaStrikes} of ${QUOTA_STRIKE_LIMIT}.</b>`;
+                wiped = ` It wipes ${wipe.length === 1 ? 'one missed day' : wipe.length + ' missed days'} off your record: <b>career strikes ${S.quotaStrikes} of ${QUOTA_STRIKE_LIMIT}.</b>`;
               }
               notes.push(`<b>Weekly quota met:</b> ${B.fmt.money(made, true)} against ${B.fmt.money(W.target)}.${wiped} ${D.boss(S)}: "Good week. The next one starts higher."`);
             } else {

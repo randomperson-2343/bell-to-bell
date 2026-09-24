@@ -400,11 +400,13 @@
   test('Quota curve is regime-based across all 61 sessions', () => {
     const Q = B.StoryData.QUOTAS;
     assert(Q.length === B.StoryData.DAYS.length, 'one quota per day');
-    assert(Q[0] >= 0.0075 && Q[0] <= 0.01, 'day 1 quota ' + Q[0]);
+    // V4.3 calibration: half the V4 curve, so a careful trader right two days
+    // in three reaches the final decisions (js/tests/economy-run.js career bots).
+    assert(Q[0] >= 0.00375 && Q[0] <= 0.005, 'day 1 quota ' + Q[0]);
     assert(Q.length === 61, 'campaign must contain 61 sessions');
     assert(Q[45] === Math.max(...Q), 'quota should peak after false-dawn weekend');
     assert(Q[30] < Q[29] && Q[60] < Q[55], 'panic regimes should cut quota');
-    assert(Math.max(...Q) <= .03, 'quota curve should not extrapolate above 3%');
+    assert(Math.max(...Q) <= .015, 'quota curve should not extrapolate above 1.5%');
   });
 
   test('Patch 3 calendar and anomaly arithmetic is exact', () => {
@@ -1043,6 +1045,13 @@
       return { strikes: S.quotaStrikes, v };
     };
     const clean = run(122), stayed = run(null);
+    // Once a week: a second clean stop in the same week still strikes.
+    const mode2 = B.StoryMode(), S2 = mode2.S;
+    const mk = (day) => ({ cash: 250000, equity: () => 242000, posQty: () => 0, opts: [], dayTrades: () => [], rules: { maxLev: 4 }, stockGross: () => 0, leverage: () => 0,
+      dayRisk: { trough: 242000, breachT: 120, flatT: 122, mc: 0, liq: 0, peakLev: 1 } });
+    for (const day of [1, 2]) mode2.onDayEnd({ day, history: [], broker: mk(day), market: { events: [], bySym: { INDX: { last: 500 } } }, indexStart: 500 },
+      { day, date: 'x', pnl: -8000, equity: 242000, start: 250000, quota: 2000, quotaMet: false, eod: { forced: [] } });
+    assert(S2.quotaStrikes === 1, 'only one excused stop per week: strikes ' + S2.quotaStrikes);
     assert(clean.strikes === 0 && clean.v.notes.some((n) => /strike excused/.test(n)), 'a clean stop should not strike, even after a ledger rebuild');
     assert(stayed.strikes === 1, 'staying in past the limit should still strike');
   });
