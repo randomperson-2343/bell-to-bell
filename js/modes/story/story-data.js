@@ -426,12 +426,13 @@
       ],
       options: [
         {
-          id: 'dump', label: 'Sell the paper to Riverbend.', hint: 'Big bonus. Your fingerprints on it forever.',
+          id: 'dump', label: 'Sell the paper to Riverbend.', hint: 'A $45k desk bonus and $10k of your own. Your fingerprints on it forever.',
           headline: 'Sold $40M of impaired CASCADE paper to a teachers\' pension fund',
           apply: (S) => {
             S.f.dumped = true;
             adj(S, { integrity: -22, heat: 8, firm: 14, stability: -4 }, { kroll: 16, imani: -12 });
             S.pending.push({ type: 'cash', amount: 45000, reason: 'Desk bonus' });
+            S.pending.push({ type: 'personal', amount: 10000, reason: 'Your cut, after tax' });
           },
           reply: 'Kroll: "Good. You\'re going to be fine here."',
           after: [
@@ -664,7 +665,7 @@
           reply: 'Kroll: "You just saved this firm. Nobody will ever thank you for it."',
           after: [
             'You sign on the second page. It takes four seconds.',
-            'The capital ratio holds. The regulator comes Thursday and leaves Thursday. Sixty thousand dollars of restricted Holloway Stern stock appears in your account on Friday.',
+            'The capital ratio holds. The regulator comes Thursday and leaves Thursday. Sixty thousand dollars of restricted Holloway Stern stock appears in your desk account on Friday.',
             'Every one of those things is a separate reason you will not sleep well.'
           ]
         },

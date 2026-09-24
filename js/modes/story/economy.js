@@ -23,8 +23,10 @@
     cleanKicker: 0.25,      // a clean week (3+ sessions) pays x1.25
     lossLimit: 0.03,        // daily loss limit, share of the day's opening book. At 2%,
                             // stopping there got disciplined traders fired on quota.
-    flatWithin: 5,          // minutes to get flat after touching the limit
-    levCap: 3,              // gross leverage above this (or 90% of a lower limit) is a breach
+    flatWithin: 13,         // game minutes to get flat after touching the limit (about
+                            // six real seconds at normal speed; five was about two)
+    levCap: 3.25,           // gross leverage above this (or 90% of a lower limit) is a breach;
+                            // the 75% size key opens at about 3x and must not trip it
     overnightLev: 1,        // gross exposure above 1x equity carried past the close
     hypeWindow: 3,          // minutes after a hype post that count as chasing it
     bonusCap: 0.20,         // new highs paid on are capped at this share of the book per 5 sessions
@@ -179,25 +181,26 @@
     const breaches = o.breaches || [];
     const mult = multiplier(breaches, o.lastBreaches, o.sessions);
     const nk = kinds(breaches.concat(o.lastBreaches || [])).length;
-    const bonus = round(Math.min(newHigh * rate * mult, P.bonusMax * o.sessions / 5));
+    // The cap applies before breaches, so a big book cannot make breaches free.
+    const bonus = round(Math.min(newHigh * rate, P.bonusMax * o.sessions / 5) * mult);
     if (careerPnl > w.hwm) w.hwm = careerPnl;
     const draw = P.drawPerSession * o.sessions;
     // Draw against bonus: whichever is bigger; an unearned draw is owed back.
-    let gross;
+    let gross, repaid = 0;
     if (bonus <= draw) { gross = draw; w.deficit += draw - bonus; }
     else {
       const excess = bonus - draw;
-      const repay = Math.min(w.deficit, excess);
-      w.deficit -= repay;
-      gross = draw + excess - repay;
+      repaid = Math.min(w.deficit, excess);
+      w.deficit -= repaid;
+      gross = draw + excess - repaid;
     }
     const net = round(gross * (1 - P.taxRate));
     w.cash += net;
     w.paidTotal += net;
     const how = bonus > draw ? `bonus ${B.fmt.money(bonus)}` : `draw ${B.fmt.money(draw)}${bonus ? ` (bonus ${B.fmt.money(bonus)} did not beat it)` : ''}`;
-    const whyRate = `${Math.round(rate * 100)}% of new highs${o.weekMade ? '' : ' (weekly quota missed)'}${dd ? ', halved for drawdown' : ''}`;
+    const whyRate = `${+(rate * 100).toFixed(1)}% of new highs${o.weekMade ? '' : ' (weekly quota missed)'}${dd ? ', halved for drawdown' : ''}`;
     const cuts = breaches.some((b) => b.zero) ? ', zeroed by a margin call' : mult === 0 ? ', zeroed by breaches' : nk ? `, cut ${Math.round(Math.min(1, nk * P.breachCut) * 100)}% for ${nk} kind${nk === 1 ? '' : 's'} of breach this week and last` : mult > 1 ? `, x${1 + P.cleanKicker} for a clean week` : '';
-    lines.push(`<b>Payslip:</b> ${how}. Bonus rate ${whyRate}${cuts}. After ${Math.round(P.taxRate * 100)}% tax: <b>${B.fmt.money(net, true)}</b>.${w.deficit > 0 ? ` You owe the desk ${B.fmt.money(w.deficit)} of unearned draw.` : ''}`);
+    lines.push(`<b>Payslip:</b> ${how}. Bonus rate ${whyRate}${cuts}. ${repaid ? ` ${B.fmt.money(repaid)} of it went to repay unearned draw.` : ''} After ${Math.round(P.taxRate * 100)}% tax: <b>${B.fmt.money(net, true)}</b>.${w.deficit > 0 ? ` You owe the desk ${B.fmt.money(w.deficit)} of unearned draw.` : ''}`);
 
     // Card interest first, then fixed bills, then rent.
     const interest = round(w.card * P.cardApr / 52);
@@ -257,12 +260,31 @@
   // Unearned draw is only ever repaid out of future bonus, so it is not debt.
   function netWorth(w) { return round(w.cash - w.card - w.arrears); }
 
+  // At the end of a career the promises come due: whatever part of a bonus
+  // advance was never earned back, the rest of any payment plan, and the
+  // support you pledged home (counted for the ten weeks of winter). Returns
+  // lines for the epilogue. Runs once.
+  function settleUp(w) {
+    if (w.settled) return w.settled;
+    const lines = [];
+    if (w.advanceGross && w.deficit > 0) {
+      const owed = round(Math.min(w.deficit, w.advanceGross) * (1 - P.taxRate));
+      if (owed > 0) { charge(w, owed); lines.push(`The desk clawed back ${B.fmt.money(owed)} of the bonus advance you never earned.`); }
+    }
+    let plan = 0;
+    for (const pl of w.plans || []) { if (pl.left > 0) { plan += pl.amt * pl.left; pl.left = 0; } }
+    if (plan) { charge(w, plan); lines.push(`The last ${B.fmt.money(plan)} of your father's surgery plan still came due.`); }
+    if (w.momExtra) { const pledge = w.momExtra * 10; charge(w, pledge); lines.push(`You kept sending money home through the winter: ${B.fmt.money(pledge)}.`); }
+    w.settled = lines;
+    return lines;
+  }
+
   // All-in weekly cost of living somewhere.
   const weekly = (t, w) => round(t.rent * ((w && w.rentMult) || 1)) + P.living + P.loan + P.mom + ((w && w.momExtra) || 0);
 
   function band(w) {
     const n = netWorth(w);
-    return n < 0 ? 'broke' : n < 50000 ? 'getting by' : 'rich';
+    return n < 0 ? 'broke' : n < 40000 ? 'getting by' : 'rich';
   }
 
   // Moving: an upgrade costs two weeks of the new rent up front. Moving down
@@ -271,7 +293,9 @@
     const cur = w.tier | 0;
     return TIERS.map((t, i) => {
       const cost = i > cur ? t.rent * 2 : 0;
-      return { i, id: t.id, name: t.name, rent: t.rent, weekly: weekly(t, w), note: t.note, cost, current: i === cur, afford: i === cur || w.cash >= cost };
+      // Moving up needs the deposit plus one full week there, and no rent owed.
+      const afford = i === cur || (i < cur ? true : w.cash >= cost + weekly(t, w) && !(w.arrears > 0));
+      return { i, id: t.id, name: t.name, rent: round(t.rent * (w.rentMult || 1)), weekly: weekly(t, w), note: t.note, cost, current: i === cur, afford };
     }).filter((o) => !TIERS[o.i].forced || o.current);
   }
 
@@ -283,5 +307,5 @@
     return true;
   }
 
-  B.Economy = { P, weekly, charge, TIERS, EVICT_STAGES, multiplier, kinds, DEFAULT_TIER, fresh, ensure, review, reviewNote, hypeWindows, settle, netWorth, band, tier, moveOptions, move };
+  B.Economy = { P, weekly, charge, settleUp, TIERS, EVICT_STAGES, multiplier, kinds, DEFAULT_TIER, fresh, ensure, review, reviewNote, hypeWindows, settle, netWorth, band, tier, moveOptions, move };
 })(window.BTB);

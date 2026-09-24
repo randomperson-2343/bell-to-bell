@@ -49,11 +49,13 @@
 
   const rightEarly = {
     id:'right-early', icon:'&#9203;', title:'Right Too Early', hint:'Held the correct short through the false dawn and paid for the timing.', lockedHint:'Being right and surviving are separate trades.',
-    test:(c)=>!!c.S.f.rightTooEarly,
+    // The payoff is diminished by definition: a book that doubled is The Fund
+    // or Quiet Fortune, not this.
+    test:(c)=>!!c.S.f.rightTooEarly && c.wealth < c.start * 2,
     headline:'Correct Trade Arrives After Capital Does Not', deck:'Trader saw the collapse, survived the rally, and reached the payoff diminished.',
     story:(c)=>[
       'The thesis was right. The calendar was not. For eight sessions the false dawn climbed without a gap large enough to force surrender and without a reason strong enough to justify it.',
-      `By the time the collapse arrived, the book was below its starting value and the firm had stopped listening. The final account stood at ${B.fmt.compact(c.wealth)}.`,
+      `By the time the collapse arrived, the rally had taken its share and the firm had stopped listening. The final account stood at ${B.fmt.compact(c.wealth)}, a fraction of what the thesis was worth.`,
       'Markets do not pay for being correct. They pay for being correct while still solvent.'
     ], wealth:(c)=>c.wealth
   };
@@ -86,7 +88,7 @@
     headline:'Government Takes Controlling Stake in Holloway Stern', deck:'Firm survives under public ownership and compensation review.',
     story:(c)=>[
       'The guarantee became preferred shares, then voting shares, then control. Holloway Stern still opened Monday. Its logo remained above the doors.',
-      `The trader kept the seat and ${B.fmt.compact(c.wealth)}, subject to a compensation committee that now met in a government building.`,
+      `The trader kept the seat and ${B.fmt.compact(c.wealth * .8)}, subject to a compensation committee that now met in a government building.`,
       'The institution survived. The word private did not.'
     ], wealth:(c)=>c.wealth * .8
   };
@@ -119,7 +121,7 @@
     headline:'Crisis Trader Raises New Fund', deck:'Investors commit billions to the person who read the footnotes first.',
     story:(c)=>[
       `The pitch deck began with one number: ${B.fmt.compact(c.wealth)}. It did not mention the nights, the calls or the people on the other side.`,
-      'Imani took the first meeting. Greta brought the first anchor investor. The fund closed above target.',
+      c.S.rel.greta >= 50 ? 'Imani took the first meeting. Greta brought the first anchor investor. The fund closed above target.' : 'Imani took the first meeting and brought the first anchor investor herself. The fund closed above target.',
       'The strategy section promised disciplined skepticism. The fee section was less skeptical.'
     ], wealth:(c)=>c.wealth
   };
@@ -153,7 +155,7 @@
   const everything = {
     id:'everything-rally', icon:'&#128200;', title:'The Everything Rally', hint:'Asset prices recovered. The economy did not.', lockedHint:'A green screen can hide a country in recession.',
     test:(c)=>!!c.S.f.bailout && !!c.S.f.billPassed && c.S.m.stability >= 45 && c.S.m.stability <= 55 && c.wealth >= c.start * 2 && !c.S.f.leftStack,
-    headline:'Markets Triple as Recovery Passes Households By', deck:'Liquidity restores every asset price except the price of ordinary life.',
+    headline:'Asset Prices Soar as Recovery Passes Households By', deck:'Liquidity restores every asset price except the price of ordinary life.',
     story:(c)=>[
       `The account finished at ${B.fmt.compact(c.wealth)} after emergency liquidity lifted every security the trader could still buy.`,
       'Employment did not recover with the index. Wages did not follow the portfolio. Empty datacenters changed owners and rose in value.',

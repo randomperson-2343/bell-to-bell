@@ -187,6 +187,7 @@
       const wipe = this.mode.wipeLevel ? this.mode.wipeLevel(this) : 0;
       if (wipe && eq < wipe && !this.earlyEnd) {
         b.flattenAll('WIPED OUT', true);
+        b.floorAtZero();
         this.earlyEnd = 'wiped';
         B.UI.toast('ACCOUNT WIPED OUT. Risk has frozen your book.', 'bad big');
         B.SFX.crash();
@@ -471,7 +472,8 @@
         date: this.mode.kind === 'story' && B.Calendar.storyLabel ? B.Calendar.storyLabel(this.day) : B.Calendar.dayInfo(this.day).long,
         pnl, equity: eq, start: b.dayStartEquity,
         quota: this.quota,
-        quotaMet: this.quota <= 0 || pnl >= this.quota,
+        // A story fine (a settlement, a forced unwind) is not a missed quota.
+        quotaMet: this.quota <= 0 || pnl - ((b.dayRisk && b.dayRisk.adj) || 0) >= this.quota,
         trades: trades.length,
         best: realized.length ? Math.max(...realized) : 0,
         worst: realized.length ? Math.min(...realized) : 0,
@@ -526,8 +528,15 @@
     finish(ending) {
       this.running = false;
       this.alive = false;
-      if (this.slot != null) B.Save.finish(this.slot, ending);
-      else B.Save.recordEnding(ending.id);
+      if (this.mode.kind === 'story') {
+        if (this.slot != null) B.Save.finish(this.slot, ending);
+        else B.Save.recordEnding(ending.id);
+      } else {
+        // Endless runs live on the leaderboard. They do not count as Career
+        // endings, and a finished run frees its save slot.
+        B.Save.recordEndless(ending.id);
+        if (this.slot != null) B.Save.clear(this.slot);
+      }
       B.Music.stop();
       if (B.UI.clearToasts) B.UI.clearToasts();
       B.Screens.ending(this, ending);

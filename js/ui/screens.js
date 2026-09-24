@@ -152,7 +152,7 @@
       </section>` : '';
       const stats = `<div class="stats">
         <div class="stat"><div class="l">Equity</div><div class="v">${F.money(g.broker.equity())}</div></div>
-        <div class="stat quota-stat"><div class="l">${b.quotaMeta ? B.esc(b.quotaMeta.label) : 'Today\'s quota'}</div><div class="v">${b.quota > 0 ? F.money(b.quota) : 'none'}</div>${b.quotaMeta ? `<div class="quota-delta">${(b.quotaMeta.pct * 100).toFixed(2)}% of book${b.quotaMeta.raised ? ` · ↑ ${b.quotaMeta.raised}% overnight` : ''}</div>` : ''}</div>
+        <div class="stat quota-stat"><div class="l">${b.quotaMeta ? B.esc(b.quotaMeta.label) : 'Today\'s quota'}</div><div class="v">${b.quota > 0 ? F.money(b.quota) : 'none'}</div>${b.quotaMeta ? `<div class="quota-delta">${(b.quotaMeta.pct * 100).toFixed(2)}% of book${b.quotaMeta.raised ? ` · ${b.quotaMeta.raised > 0 ? '↑' : '↓'} ${Math.abs(b.quotaMeta.raised)}% overnight` : ''}</div>` : ''}</div>
         <div class="stat"><div class="l">Open positions</div><div class="v">${Object.keys(g.broker.pos).length + g.broker.opts.length}</div></div>
         ${b.weekQuota ? `<div class="stat quota-stat week-stat"><div class="l">Weekly quota</div><div class="v">${F.money(b.weekQuota.target)}</div><div class="quota-delta">${F.money(b.weekQuota.made, true)} so far · ${b.weekQuota.left} session${b.weekQuota.left === 1 ? '' : 's'} left</div></div>` : ''}
         ${b.quotaStrikes ? `<div class="stat strike-stat"><div class="l">Career strikes</div><div class="v">${b.quotaStrikes.count} / ${b.quotaStrikes.limit}</div></div>` : ''}
@@ -261,10 +261,10 @@
           <div class="stat"><div class="l">Unearned draw</div><div class="v ${w.deficit > 0 ? 'amber' : ''}">${F.money(w.deficit)}</div></div>
           <div class="stat"><div class="l">Net worth</div><div class="v ${F.cls(v.worth)}">${F.money(v.worth)}</div></div>
         </div>
-        <p>You live in the <b>${T.name}</b>: ${F.money(T.rent)} a week. ${T.note}</p>
-        <p class="muted">Your draw pays about ${F.money(v.draw)} a week after tax. Moving up costs two weeks of the new rent up front; moving down is free. A better home means less stress in the morning and calmer hands at the desk. Unearned draw is repaid only out of future bonus.</p>`;
+        <p>You live in ${w.tier | 0 ? 'the ' : ''}<b>${T.name}</b>${T.rent ? `: ${F.money(T.rent * (w.rentMult || 1))} a week` : ''}. ${T.note}</p>
+        <p class="muted">Your draw pays about ${F.money(v.draw)} a week after tax. Moving up costs two weeks of the new rent up front, and you need a week's costs left over; moving down is free. A better home means less stress in the morning and calmer hands at the desk. Unearned draw is repaid only out of future bonus.</p>`;
       const after = `<div class="choice-list">
-        <button class="choice-btn" data-tier=""><b>Stay put</b><span>${T.name} · ${F.money(T.rent)} rent · ${F.money(v.weekly)}/week all in</span></button>
+        <button class="choice-btn" data-tier=""><b>Stay put</b><span>${T.name} · ${F.money(T.rent * (w.rentMult || 1))} rent · ${F.money(v.weekly)}/week all in</span></button>
         ${opts.map((o) => `<button class="choice-btn" data-tier="${o.i}" ${o.afford ? '' : 'disabled'}><b>${o.i < (w.tier | 0) ? 'Move down' : 'Move up'}: ${o.name}</b><span>${F.money(o.rent)} rent · ${F.money(o.weekly)}/week all in${o.cost ? ` · ${F.money(o.cost)} to move in` : ''}${o.afford ? '' : ' · you cannot afford it'} · ${o.note}</span></button>`).join('')}
       </div>`;
       const el = this.modal({ kicker: 'SUNDAY · YOUR MONEY', title: 'The Ledger', body, after, wide: true });
@@ -316,7 +316,7 @@
       document.querySelectorAll('#screen-ending-page').forEach((x) => x.remove());
       scr.className = 'screen active';
       document.querySelectorAll('.screen').forEach((s) => s.classList.remove('active'));
-      const tally = B.Save.tally();
+      const tally = B.Save.careerTally();
       const found = Object.keys(tally).length;
       const wealthLabel = e.unpriced ? '<span id="unpriced-value" class="unpriced">$482,119.07</span>' : F.money(e.wealth);
       const returnLabel = e.unpriced ? 'UNPRICED' : F.pct(e.wealth / g.startCapital - 1);
@@ -333,7 +333,7 @@
               <div><span>ENDING</span><b>${e.title}</b></div>
               <div><span>Reached</span><b>${tally[e.id] || 1}x</b></div>
               <div><span>Final book</span><b>${wealthLabel}</b></div>
-              ${e.personal ? `<div><span>Your own money</span><b class="${F.cls(e.personal.worth)}">${F.money(e.personal.worth)}</b></div><div><span>Home</span><span>${e.personal.home}</span></div>` : ''}
+              ${e.personal ? `<div><span>Your own money</span><b class="${e.personal.label ? '' : F.cls(e.personal.worth)}">${e.personal.label || F.money(e.personal.worth)}</b></div><div><span>Home</span><span>${e.personal.home}</span></div>` : ''}
               <div><span>Starting capital</span><span>${F.money(g.startCapital)}</span></div>
               <div><span>Return</span><b>${returnLabel}</b></div>
               <div><span>Index, campaign</span><span>${F.pct(e.indexMonth || 0)}</span></div>
@@ -399,7 +399,7 @@
     },
 
     showEndings() {
-      const tally = B.Save.tally();
+      const tally = B.Save.careerTally();
       const found = Object.keys(tally).length;
       const total = B.StoryEndings.list.length;
       const runs = B.Save.totalRuns();

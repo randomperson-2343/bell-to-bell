@@ -32,6 +32,7 @@ const D = B.StoryData, E = B.Economy;
 const ARCH = {
   passive: { pick: 'index', risk: 0.006, p: 0.65, stop: false, trade: 0.7 },
   average: { pick: 'story', risk: 0.025, p: 0.82, stop: true, trade: 1 },
+  careful: { pick: 'story', risk: 0.025, p: 0.70, stop: true, trade: 1 },
   reckless: { pick: 'story', risk: 0.060, p: 0.82, stop: false, trade: 1, chase: 0.35, overnight: 0.3 }
 };
 
@@ -59,7 +60,7 @@ function career(arch, seed) {
   m.startDay(-1, { regime: 'melt' }); while (m.status === 'open' && m.t < B.DAY_MIN) m.step(1); m.close(); m.status = 'pre';
   const rng = B.RNG(B.hashSeed('econ-bot|' + arch + '|' + seed));
   const g = { day: 0, broker: b, market: m, history: [], indexStart: 512.4 };
-  const weeks = [];
+  const weeks = []; let firedAt = null;
   for (let day = 0; day < D.DAYS.length; day++) {
     g.day = day;
     const rules = mode.rules(day);
@@ -112,6 +113,7 @@ function career(arch, seed) {
     const report = { day, date: 'S' + (day + 1), pnl: eq - start, equity: eq, start, quota, quotaMet: eq - start >= quota, eod };
     g.history.push({ day, pnl: report.pnl, equity: eq, quotaMet: report.quotaMet });
     mode.onDayEnd(g, report); // careers keep going past firing: we want 61 sessions of pay
+    if (firedAt == null && mode.S.quotaStrikes >= B.StoryMode.QUOTA_STRIKE_LIMIT) firedAt = day + 1;
     if (day % 5 === 4 || day === D.DAYS.length - 1) {
       // Upgrade policy: move up one tier when cash covers the move-in and two
       // more weeks there, and the card is clear.
@@ -121,7 +123,7 @@ function career(arch, seed) {
     }
     if (eq < mode.capital * 0.1) break;
   }
-  return { arch, seed, book: Math.round(b.equity()), worth: E.netWorth(W), weeks };
+  return { arch, seed, book: Math.round(b.equity()), worth: E.netWorth(W), weeks, firedAt, strikes: mode.S.quotaStrikes };
 }
 
 const SEEDS = ['s0', 's1', 's2', 's3'];
@@ -129,7 +131,7 @@ const med = (a) => { const s = a.slice().sort((x, y) => x - y); return s.length 
 const R = {};
 for (const a of Object.keys(ARCH)) {
   R[a] = SEEDS.map((s) => career(a, s));
-  for (const r of R[a]) console.log(`${a.padEnd(9)} ${r.seed}  book $${r.book.toLocaleString().padStart(11)}  own money $${r.worth.toLocaleString().padStart(8)}  weeks: ${r.weeks.map((w) => w.worth + (w.evictions ? 'E' : '')).join(' ')}`);
+  for (const r of R[a]) console.log(`${a.padEnd(9)} ${r.seed}  strikes ${String(r.strikes).padStart(2)}${r.firedAt ? ' fired@' + r.firedAt : '         '}  book $${r.book.toLocaleString().padStart(11)}  own money $${r.worth.toLocaleString().padStart(8)}  weeks: ${r.weeks.map((w) => w.worth + (w.evictions ? 'E' : '')).join(' ')}`);
 }
 
 let fail = 0;
@@ -142,5 +144,9 @@ let paired = 0, won = 0;
 SEEDS.forEach((s, i) => { if (R.reckless[i].book >= R.average[i].book) { paired++; if (R.average[i].worth > R.reckless[i].worth) won++; } });
 check(won === paired, `wherever reckless grew the bigger book, average still took home more (${won}/${paired})`);
 check(avgWorth > med(R.passive.map((r) => r.worth)), 'an average trader ends ahead of a passive one');
+const carefulSurvive = R.careful.filter((r) => !r.firedAt).length;
+check(carefulSurvive >= 3, `a careful trader right 70% of days reaches the final session in at least 3 of 4 careers (${carefulSurvive}/4)`);
+const passiveFired = R.passive.filter((r) => r.firedAt).length;
+check(passiveFired === 4, `a passive trader is still fired on quota strikes (${passiveFired}/4)`);
 console.log(`\n${fail ? fail + ' economy check(s) failed' : 'All economy checks passed.'}`);
 process.exit(fail ? 1 : 0);

@@ -17,14 +17,16 @@
 
   // Quotas follow the market regime instead of extrapolating forever. The desk
   // is most demanding at the false dawn and relents only when the system breaks.
+  // V4.3 halved the whole table: at full height a careful trader who was right
+  // two days in three was fired before the story's final decisions.
   const QUOTAS = [
-    .0080,.0082,.0084,.0087,.0090, .0092,.0095,.0098,.0102,.0106,
-    .0110,.0114,.0118,.0122,.0126, .0130,.0134,.0138,.0142,.0146,
-    .0150,.0155,.0160,.0165,.0170, .0175,.0180,.0185,.0190,.0195,
-    .0120,.0115,.0120,.0110,.0100, .0110,.0115,.0120,.0125,.0130,
-    .0140,.0150,.0160,.0170,.0180, .0300,.0280,.0260,.0240,.0220,
-    .0210,.0190,.0170,.0140,.0120, .0100,.0090,.0080,.0060,.0040,
-    .0030
+    .0040,.0041,.0042,.0043,.0045,.0046,.0047,.0049,.0051,.0053,
+    .0055,.0057,.0059,.0061,.0063,.0065,.0067,.0069,.0071,.0073,
+    .0075,.0077,.0080,.0083,.0085,.0088,.0090,.0092,.0095,.0097,
+    .0060,.0057,.0060,.0055,.0050,.0055,.0057,.0060,.0063,.0065,
+    .0070,.0075,.0080,.0085,.0090,.0150,.0140,.0130,.0120,.0110,
+    .0105,.0095,.0085,.0070,.0060,.0050,.0045,.0040,.0030,.0020,
+    .0015
   ];
 
   const A = [
@@ -254,7 +256,7 @@
         'It will also flatten your book into whatever price exists first. The market may survive. Your money will not.'
       ],
       options: [
-        { id:'pull', label:'Pull the plug.', hint:'Save price discovery. Lose the book.', headline:'Disabled the shared automated execution stack before the final open', apply:(S)=>{S.f.pulledPlug=true;S.f.public=true;D.adj(S,{integrity:22,stability:30,firm:-35},{imani:25,kroll:-40});}, reply:'Imani: "Do it before you can talk yourself out of it."', after:['The token dies at 3:17 AM.','At 9:30 the book is flattened into a forty-percent gap. Human bids return by noon.'] },
+        { id:'pull', label:'Pull the plug.', hint:'Save price discovery. Lose the book.', headline:'Disabled the shared automated execution stack before the final open', apply:(S)=>{S.f.pulledPlug=true;S.f.public=true;D.adj(S,{integrity:22,stability:30,firm:-35},{imani:25,kroll:-40});}, reply:'Imani: "Do it before you can talk yourself out of it."', after:['The token dies at 3:17 AM.','At 9:30 the book is flattened into a forty-percent gap. The exchange halts the market for the day. Human bids come back on Tuesday.'] },
         { id:'leave', label:'Leave it running.', hint:'Keep the book. Trust a market with no human loop.', headline:'Left the shared automated execution stack running', apply:(S)=>{S.f.leftStack=true;D.adj(S,{integrity:-12,stability:-18},{imani:-20,kroll:8});}, reply:'Imani: "Then whatever opens Monday is not a market."', after:['You close the laptop.','Across the street, identical systems wait for the same opening print.'] }
       ]
     }

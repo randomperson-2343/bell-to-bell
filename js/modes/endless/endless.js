@@ -51,7 +51,7 @@
   }
 
   B.EndlessMode = function (cfg, save) {
-    const S = save ? save.S : { regime: 'bull', missStreak: 0, quotaDay: 0, ended: false };
+    const S = save ? save.S : { regime: 'bull', missStreak: 0, quotaDay: 0, ended: false, runId: Date.now().toString(36) };
     const mode = {
       kind: 'endless',
       cfg,
@@ -142,7 +142,7 @@
       bossName() { return 'Risk Manager'; },
       wipeLevel() { return cfg.ends.broke ? cfg.capital * 0.05 : 1; },
       onPanic(g) {
-        if (cfg.ends.panic) { this.panicEnd = true; }
+        if (cfg.ends.panic) { S.panicEnd = true; }
       },
 
       onDayEnd(g, r) {
@@ -160,7 +160,7 @@
         else if (e.drawdown && eq < cfg.capital * (1 - e.drawdownPct / 100)) ending = 'drawdown';
         else if (e.sudden && r.pnl < 0) ending = 'sudden';
         else if (e.quota && S.missStreak >= 2) ending = 'fired';
-        else if (e.panic && this.panicEnd) ending = 'burnout';
+        else if (e.panic && S.panicEnd) ending = 'burnout';
         else if (e.target && eq >= cfg.capital * e.targetMult) ending = days <= 5 ? 'legend' : 'rich';
         else if (e.days && days >= e.daysN) ending = eq >= cfg.capital ? 'survivorUp' : 'survivor';
         if (ending) return { notes, ending: this.buildEnding(g, ending) };
@@ -183,7 +183,7 @@
           quit: ['Walked Away', false, 'You walked away from the desk. Sometimes that\'s the best trade.']
         }[id];
         const wealth = g.broker.equity();
-        const rank = recordScore(cfg, { mult: wealth / cfg.capital, days: g.history.length, ending: T[0], date: Date.now() });
+        const rank = recordScore(cfg, { mult: wealth / cfg.capital, days: g.history.length, ending: T[0], date: Date.now(), run: `${cfg.seed}|${S.runId || ''}|${g.history.length}` });
         return { id, title: T[0], good: T[1], text: T[2], wealth, rank };
       },
 
@@ -197,6 +197,9 @@
     const all = B.storage.get('leaderboard', {});
     const key = cfgKey(cfg);
     const list = all[key] || [];
+    // Reloading the last day replays it exactly: one run, one entry.
+    const dup = list.find((x) => x.run && x.run === entry.run);
+    if (dup) return list.indexOf(dup) + 1;
     list.push(entry);
     list.sort((a, b) => b.mult - a.mult);
     all[key] = list.slice(0, 10);
@@ -270,7 +273,14 @@
         this.summary();
       }));
       document.querySelectorAll('[data-end]').forEach((inp) => inp.addEventListener('change', () => { c.ends[inp.dataset.end] = inp.checked; this.summary(); }));
-      document.querySelectorAll('[data-endn]').forEach((inp) => inp.addEventListener('change', () => { c.ends[inp.dataset.endn] = +inp.value; this.summary(); }));
+      // Typed values are clamped to the field's own range: a target of 0 was an instant Legend.
+      document.querySelectorAll('[data-endn]').forEach((inp) => inp.addEventListener('change', () => {
+        const lo = +inp.min, hi = +inp.max, v = +inp.value;
+        const val = B.clamp(Number.isFinite(v) ? v : lo, lo, hi);
+        inp.value = String(val);
+        c.ends[inp.dataset.endn] = val;
+        this.summary();
+      }));
       $('es-dayLength').addEventListener('change', (e) => { c.dayLength = +e.target.value; this.summary(); });
       $('es-seed').addEventListener('input', (e) => { c.seed = e.target.value.trim() || 'SEED'; });
       $('es-go').addEventListener('click', () => {

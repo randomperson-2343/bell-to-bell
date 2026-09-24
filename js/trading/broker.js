@@ -236,6 +236,12 @@
       return results;
     }
 
+    // A wipeout's forced sale can overshoot through market impact. The firm eats
+    // anything past zero: a book never ends a career below nothing.
+    floorAtZero() {
+      if (this.isFlat() && this.cash < 0) this.cash = 0;
+    }
+
     // ---- options ----
     buyOption(sym, type, strike, expiry, n) {
       n = Math.trunc(n);
@@ -288,6 +294,7 @@
       const eq = this.equity();
       if (eq <= 0 && !this.isFlat()) {
         this.flattenAll('WIPED OUT', true);
+        this.floorAtZero();
         this.mc = null;
         ev.push({ type: 'wiped' });
         return ev;

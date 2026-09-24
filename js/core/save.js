@@ -142,16 +142,32 @@
       B.storage.set('endings:tally', t);
     },
 
-    discovered() { return Object.keys(this.tally()); },
+    // Career endings only. Earlier builds also counted Endless results here,
+    // and Endless 'fired' collided with the Career ending of the same name;
+    // keep only ids the story knows, and let Endless keep its own tally.
+    careerTally() {
+      const t = this.tally(), ids = B.StoryEndings ? B.StoryEndings.list.map((e) => e.id) : null;
+      if (!ids) return t;
+      const out = {};
+      for (const k in t) if (ids.indexOf(k) >= 0) out[k] = t[k];
+      return out;
+    },
+    recordEndless(id) {
+      const t = B.storage.get('endless:tally', {}) || {};
+      t[id] = (t[id] || 0) + 1;
+      B.storage.set('endless:tally', t);
+    },
+
+    discovered() { return Object.keys(this.careerTally()); },
 
     totalRuns() {
-      const t = this.tally();
+      const t = this.careerTally();
       return Object.keys(t).reduce((a, k) => a + t[k], 0);
     },
 
     wipe() {
       for (let i = 0; i < SLOTS; i++) B.storage.remove(key(i));
-      ['saves:index', 'endings:tally', 'endings', 'leaderboard', 'save:story', 'save:endless'].forEach((k) => B.storage.remove(k));
+      ['saves:index', 'endings:tally', 'endless:tally', 'endings', 'leaderboard', 'save:story', 'save:endless'].forEach((k) => B.storage.remove(k));
     },
 
     // ---- one-time migration from the V1 single-save layout ----

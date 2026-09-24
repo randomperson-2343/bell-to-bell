@@ -11,6 +11,9 @@
   // Monday. A missed week is one more career strike, logged at Friday's close.
   // A made week wipes one missed day from that same week: make it back.
   const WEEK_MULT = 1.15;
+  // How many missed days a made week wipes. The week is the real mandate: a
+  // trader who is wrong one day in three but makes the week keeps the seat.
+  const WEEK_WIPES = 2;
   // Sectors outside the CASCADE story. Background noise lives here so every day
   // stays tradable even when the scripted drama is pointed somewhere else.
   const SAFE_SECTORS = ['retail', 'haven', 'defense', 'power'];
@@ -18,6 +21,8 @@
   const CASCADE_NAMES = ['BSTN', 'HLST', 'RDGW', 'FRLN', 'AMVL'];
   // Your boss can fire you through session 57. After that he can only shout.
   const BOSS_FIRE_LAST = 57;
+  // A loss-limit stop can excuse a missed quota once a week, if it comes before 3:00 PM.
+  const EXCUSE_BEFORE = 330;
 
   function freshState(capital) {
     return {
@@ -92,15 +97,17 @@
         // Kroll from session 2, your money and the risk desk from session 3.
         if (!S.f.defected && (d >= 1 || this.bossMood().warn)) {
           const mood = this.bossMood();
-          rules.push(`${mood.warn ? '<b>' : ''}${D.boss(S)}: ${mood.label} (${mood.value}/100).${mood.warn ? ' At zero he fires you.</b>' : ''} Answering his calls and working client orders keeps him on side.`);
+          const canFire = d < BOSS_FIRE_LAST;
+          rules.push(`${mood.warn && canFire ? '<b>' : ''}${D.boss(S)} ${mood.label} (${mood.value}/100).${mood.warn && canFire ? ' At zero he fires you.</b>' : ''} Answering his calls, working client orders and making quota keep him on side.`);
         }
         const T = E.tier(W$);
-        if (d >= 2) rules.push(`Your money: ${B.fmt.money(W$.cash)} cash${W$.card > 0 ? `, ${B.fmt.money(-W$.card)} on the card` : ''}. ${T.name}${T.rent ? `, ${B.fmt.money(T.rent)} rent due Friday` : ''}.${W$.arrears > 0 ? ` <b>${B.fmt.money(W$.arrears)} rent overdue.</b>` : ''}`);
-        if (d >= 2) rules.push(`Risk desk: daily loss limit ${B.fmt.money(-E.P.lossLimit * (g && g.broker ? g.broker.equity() : capital))}. Hit it and get flat within ${E.P.flatWithin} minutes, and a missed quota that day is excused. Each kind of breach cuts your bonus ${Math.round(E.P.breachCut * 100)}% this week and next.`);
+        if (d >= 2) rules.push(`Your money: ${B.fmt.money(W$.cash)} cash${W$.card > 0 ? `, ${B.fmt.money(-W$.card)} on the card` : ''}. ${T.name}${T.rent ? `, ${B.fmt.money(T.rent * (W$.rentMult || 1))} rent due Friday` : ''}.${W$.arrears > 0 ? ` <b>${B.fmt.money(W$.arrears)} rent overdue.</b>` : ''}`);
+        if (d >= 2) rules.push(`Risk desk: daily loss limit ${B.fmt.money(-E.P.lossLimit * (g && g.broker ? g.broker.equity() : capital))}. Hit it before 3:00 PM and get flat within ${E.P.flatWithin} game minutes, and a missed quota that day is excused, once a week. Each kind of breach cuts your bonus ${Math.round(E.P.breachCut * 100)}% this week and next.`);
         if (remaining === 1) rules.push('FINAL WARNING: one more missed quota ends this career.');
         else if (remaining === 2) rules.push('WARNING: two missed quotas remain before termination.');
         if (S.f.v2RewoundToBell) rules.push('SAVE MIGRATION: this V2 mid-session save was rewound to the matching opening bell; book and decisions were preserved.');
-        if (d === 0) rules.push('Tip: open How to Play from the pause menu (Esc) any time.');
+        if (d === 0) rules.push('Tip: How to Play is in the Menu, any time.');
+        if (d === 2) rules.push('Imani: read the dull items in this morning\'s feed. Nobody hides anything in a headline.');
         return {
           kicker: D.actOf(d) + ' ·',
           title: `Session ${d + 1}: ${day.title}`,
@@ -156,7 +163,7 @@
         const who = D.boss(S);
         let memo = d === 0
           ? `${who}: Desk floor set at ${B.fmt.money(amount)}. This is the minimum, not the target.`
-          : `${who}: New ${labels[D.actIndex(d)].toLowerCase()}: ${B.fmt.money(amount)}. ${raised > 0 ? `Up ${raised}% from yesterday.` : 'No relief from yesterday.'} Volatility is not an excuse.`;
+          : `${who}: New ${labels[D.actIndex(d)].toLowerCase()}: ${B.fmt.money(amount)}. ${raised > 0 ? `Up ${raised}% from yesterday.` : raised < 0 ? `Down ${-raised}% from yesterday. Do not get comfortable.` : 'No relief from yesterday.'} Volatility is not an excuse.`;
         const remaining = QUOTA_STRIKE_LIMIT - S.quotaStrikes;
         if (remaining === 1) memo += ' FINAL WARNING: one more miss ends your career.';
         else if (remaining === 2) memo += ' WARNING: only two misses remain.';
@@ -339,10 +346,17 @@
           if (p.type === 'cash') {
             if (!p.amount) continue;
             b.cash += p.amount;
+            // Booked money is not trading: it moves the day's baseline, not its P&L.
+            if (b.dayRisk) b.dayRisk.adj = (b.dayRisk.adj || 0) + p.amount;
             B.UI.toast(`${p.reason}: ${B.fmt.money(p.amount, true)}`, p.amount >= 0 ? 'good' : 'bad');
+          } else if (p.type === 'personal') {
+            // Money that is yours, not the book's.
+            W$.cash += p.amount;
+            B.UI.toast(`${p.reason}: ${B.fmt.money(p.amount, true)} to your own account`, 'good');
           } else if (p.type === 'fineFrac') {
             const amt = Math.max(0, b.equity() * p.frac);
             b.cash -= amt;
+            if (b.dayRisk) { b.dayRisk.adj = (b.dayRisk.adj || 0) - amt; b.dayRisk.trough -= amt; }
             B.UI.toast(`${p.reason}: -${B.fmt.money(amt)}`, 'bad');
           } else if (p.type === 'short') {
             const px = m.bySym[p.sym].last;
@@ -356,6 +370,7 @@
             if (cur && cur.qty > 0) { cur.avg = (cur.avg * cur.qty + px * qty) / (cur.qty + qty); cur.qty += qty; }
             else if (!cur) b.pos[p.sym] = { qty, avg: px, realized: 0 };
             else b.cash += p.value; // already short the name: take it as cash instead
+            if (b.dayRisk) b.dayRisk.adj = (b.dayRisk.adj || 0) + qty * px;
             B.UI.toast(`Stock grant: ${B.fmt.qty(qty)} ${p.sym}`, 'good');
           }
         }
@@ -400,7 +415,7 @@
       onMissedCall(g, call) {
         if (call.kind === 'boss' && !S.f.defected) D.adj(S, {}, { kroll: -2 });
       },
-      onTaskFailed() { if (!S.f.defected) D.adj(S, {}, { kroll: -3 }); },
+      onTaskFailed() { if (!S.f.defected) D.adj(S, {}, { kroll: -2 }); },
       onTaskDone() { if (!S.f.defected) D.adj(S, {}, { kroll: 2 }); },
 
       resolveMidChoice(g, choiceId, optId, timedOut) {
@@ -455,13 +470,21 @@
         const rv = this.riskReview(g, r);
         // Stopping cleanly at the loss limit is the job. The risk desk excuses
         // that day's missed quota, so the lesson and the rules agree.
-        const excused = !r.quotaMet && rv.hitLimit && !rv.breaches.length;
+        // One excuse per week, and only for a limit hit before 3:00 PM, so the
+        // rule rewards stopping, not losing on purpose to dodge a strike.
+        const wk = D.weekOf(g.day);
+        const usedThisWeek = (S.excusedDays || []).some((d) => d !== g.day && D.weekOf(d) === wk);
+        const early = !g.broker.dayRisk || g.broker.dayRisk.breachT == null || g.broker.dayRisk.breachT < EXCUSE_BEFORE;
+        const excused = !r.quotaMet && rv.hitLimit && !rv.breaches.length && !usedThisWeek && early;
         if (r.quota > 0) {
           if (r.quotaMet) {
             S.missStreak = 0;
+            // Kroll notices results, not just whether you pick up the phone.
+            if (!S.f.defected) D.adj(S, {}, { kroll: 1 });
             notes.push(`${D.boss(S)}: "Quota met.${g.day === D.DAYS.length - 1 ? '"' : ' Again tomorrow."'}`);
           } else if (excused) {
             if ((S.forgivenDays || []).indexOf(g.day) < 0) S.forgivenDays = (S.forgivenDays || []).concat(g.day);
+            if ((S.excusedDays || []).indexOf(g.day) < 0) S.excusedDays = (S.excusedDays || []).concat(g.day);
             S.quotaLedger = S.quotaLedger.filter((e) => !(e.day === g.day && e.kind !== 'week'));
             S.quotaStrikes = S.quotaLedger.length;
             notes.push(`<b>Quota missed, strike excused.</b> You stopped at the loss limit and got flat. The risk desk signed off on the day. ${D.boss(S)} did not like it, but the rule is the rule.`);
@@ -488,11 +511,11 @@
               let wiped = '';
               const missed = S.quotaLedger.filter((e) => e.kind !== 'week' && e.day >= W.start && e.day <= W.end);
               if (missed.length) {
-                const last = missed[missed.length - 1];
-                S.quotaLedger = S.quotaLedger.filter((e) => e !== last);
-                S.forgivenDays = (S.forgivenDays || []).concat(last.day);
+                const wipe = missed.slice(-WEEK_WIPES);
+                S.quotaLedger = S.quotaLedger.filter((e) => wipe.indexOf(e) < 0);
+                S.forgivenDays = (S.forgivenDays || []).concat(wipe.map((e) => e.day));
                 S.quotaStrikes = S.quotaLedger.length;
-                wiped = ` It wipes one missed day off your record: <b>career strikes ${S.quotaStrikes} of ${QUOTA_STRIKE_LIMIT}.</b>`;
+                wiped = ` It wipes ${wipe.length === 1 ? 'one missed day' : wipe.length + ' missed days'} off your record: <b>career strikes ${S.quotaStrikes} of ${QUOTA_STRIKE_LIMIT}.</b>`;
               }
               notes.push(`<b>Weekly quota met:</b> ${B.fmt.money(made, true)} against ${B.fmt.money(W.target)}.${wiped} ${D.boss(S)}: "Good week. The next one starts higher."`);
             } else {
@@ -558,7 +581,8 @@
         W$.days[g.day] = rv.breaches.map((x) => ({ id: x.id, zero: !!x.zero }));
         // Drawdown is measured against the running peak of the book, intraday.
         if (Number.isFinite(r.equity)) {
-          const low = b.dayRisk ? b.dayRisk.trough : r.equity;
+          // Story fines move the baseline; they are not a drawdown you traded into.
+          const low = b.dayRisk ? b.dayRisk.trough - (b.dayRisk.adj || 0) : r.equity;
           if (low < W$.peakEq * (1 - E.P.drawdown)) (W$.ddDays = W$.ddDays || {})[g.day] = true;
           W$.peakEq = Math.max(W$.peakEq, r.equity, b.dayPeak || 0);
         }
@@ -600,7 +624,8 @@
       applyLife(id, optId) {
         const beat = B.Life && B.Life.byId(id);
         if (!beat || (W$.life && W$.life[id])) return null;
-        const opt = beat.options.find((o) => o.id === optId) || beat.options[beat.options.length - 1];
+        const ok = beat.options.filter((o) => !o.req || o.req(S, W$));
+        const opt = ok.find((o) => o.id === optId) || ok[ok.length - 1];
         const after = opt.apply(S, W$, E) || [];
         (W$.life = W$.life || {})[id] = opt.id;
         S.log.push({ day: beat.day, text: `${beat.title}: ${opt.label}` });
@@ -610,9 +635,11 @@
       // After the desk's decision (if any), the day's personal-money beat.
       lifeBeat(g, cb) {
         const beat = B.Life && B.Life.byDay(g.day);
-        if (!beat || (W$.life && W$.life[beat.id]) || !B.Screens.choice) return cb();
-        const view = { speaker: beat.speaker, role: beat.role, kicker: beat.kicker, title: beat.title, text: beat.text(S, W$),
-          options: beat.options.map((o) => ({ id: o.id, label: o.label, hint: o.hint })) };
+        if (!beat || (W$.life && W$.life[beat.id]) || !B.Screens.choice || (beat.when && !beat.when(S, W$))) return cb();
+        // You decide with your balance in front of you.
+        const bal = `<span class="muted">Your money: ${B.fmt.money(W$.cash)} cash${W$.card > 0 ? ` · ${B.fmt.money(-W$.card)} on the card` : ''} · ${E.tier(W$).name}, ${B.fmt.money(E.weekly(E.tier(W$), W$))} a week all in.</span>`;
+        const view = { speaker: beat.speaker, role: beat.role, kicker: beat.kicker, title: beat.title, text: beat.text(S, W$).concat(bal),
+          options: beat.options.filter((o) => !o.req || o.req(S, W$)).map((o) => ({ id: o.id, label: o.label, hint: o.hint })) };
         B.Screens.choice(view, S, (optId) => {
           const res = this.applyLife(beat.id, optId);
           B.Screens.aftermath(beat.title, (res && res.after) || [], () => cb());
@@ -659,28 +686,37 @@
       buildEnding(g, reason, firedBy) {
         const ctx = { S, wealth: g.broker.equity(), start: capital, reason, firedBy,
           days: g.history.length, quotaMet: g.history.filter((h) => h.quotaMet).length,
+          settled: E.settleUp(W$),
           personal: { worth: E.netWorth(W$), band: E.band(W$), home: E.tier(W$).name, couch: (W$.tier | 0) === 0, evictions: W$.evictions,
             breachDays: Object.keys(W$.days).filter((k) => W$.days[k].length).length } };
         const e = B.StoryEndings.resolve(ctx);
         const P = ctx.personal;
+        // A fall guy pays a lawyer before anything else.
+        if (e.id === 'fall-guy' && P.worth > 0) { const fee = Math.min(P.worth, 25000); E.charge(W$, fee); P.worth = E.netWorth(W$); P.retainer = fee; }
         const home = P.couch ? "a spot on your mother's couch" : `the ${P.home}`;
         const clean = P.breachDays <= 5;
         const money = B.fmt.money(Math.abs(P.worth));
+        const owe = P.worth < 0;
         // Endings where the money is not the point, or not yours to keep.
         const special = {
-          perp: `The seizure order covered your personal accounts too. ${money} of your own went with the rest.`,
-          clawback: `The clawback reached past the firm: your deferred pay and ${money} of your own are frozen pending review.`,
-          'fall-guy': `Your lawyer's retainer took ${money} of your own before the first hearing.`,
-          fired: P.worth < 0 ? `Security walked you out owing ${money}, with rent due Friday.` : `Security walked you out with ${money} of your own and no reference.`,
-          wiped: P.worth < 0 ? `The book is gone, and so is your credit: you owe ${money}.` : `The book is gone. You still have ${money} of your own, and nobody who will hire you.`,
-          exit: `The firm's money went into the gap. ${P.worth >= 0 ? `Yours, ${money}, did not. It is enough to disappear for a while.` : `You owe ${money}. You sleep anyway.`}`,
-          nobody: `Your own ${money} sits in an account no human will ever look at again.`,
-          master: `You left with the book and ${money} of your own. Neither will spend the way it used to.`
+          perp: owe ? `The seizure order found nothing of yours but debts. You still owe ${money}.` : `The seizure order covered your personal accounts too. The ${money} you had of your own went with the rest.`,
+          clawback: owe ? `You owe ${money}, and the clawback froze the deferred pay you were counting on.` : `The clawback reached past the firm: your deferred pay and the ${money} of your own are frozen pending review.`,
+          'fall-guy': `Your lawyer's retainer took ${B.fmt.money(P.retainer || 0)} of your own before the first hearing.${owe ? ` You owe ${money} on top.` : P.worth > 0 ? ` ${money} is left.` : ''}`,
+          fired: owe ? `Security walked you out owing ${money}${P.couch ? ', back to your mother\'s couch.' : ', with rent due Friday.'}` : `Security walked you out with ${money} of your own and no reference.`,
+          wiped: owe ? `The book is gone, and so is your credit: you owe ${money}.` : `The book is gone. You still have ${money} of your own, and nobody who will hire you.`,
+          exit: S.f.pulledPlug
+            ? `The firm's money went into the gap. ${owe ? `You owe ${money}. You sleep anyway.` : `Yours, ${money}, did not. It is enough to disappear for a while.`}`
+            : `You left without a headline. ${owe ? `You owe ${money}, and nobody is looking for you.` : `${money} of your own, and nobody looking for you.`}`,
+          nobody: owe ? `You owe ${money} to a system that will never ask for it back.` : `Your own ${money} sits in an account no human will ever look at again.`,
+          master: owe ? `You left with the book and ${money} of debt behind you. Neither will follow you, for a while.` : `You left with the book and ${money} of your own. Neither will spend the way it used to.`
         };
-        const extras = [];
+        // What the box says your own money is, when the ending took it.
+        if (e.id === 'perp' && !owe) P.label = 'Seized';
+        if (e.id === 'clawback' && !owe) P.label = 'Frozen';
+        const extras = (ctx.settled || []).slice();
         if (W$.perryLoan) extras.push(S.m.stability >= 45 ? 'Perry paid back the six thousand in March, with a note.' : 'Perry never paid back the six thousand. You never asked.');
+        if (W$.perryRefused) extras.push('Perry stopped answering your texts sometime in the spring.');
         if (W$.dadUnpaid) extras.push("Your father's surgery bill went to collections. Your mother never mentioned it again.");
-        if (W$.momExtra) extras.push('The money home still goes out every Friday.');
         const tail = extras.length ? ' ' + extras.join(' ') : '';
         const epilogue0 = special[e.id] ? `Personally: ${special[e.id]}`
           : P.band === 'broke'

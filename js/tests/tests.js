@@ -400,11 +400,13 @@
   test('Quota curve is regime-based across all 61 sessions', () => {
     const Q = B.StoryData.QUOTAS;
     assert(Q.length === B.StoryData.DAYS.length, 'one quota per day');
-    assert(Q[0] >= 0.0075 && Q[0] <= 0.01, 'day 1 quota ' + Q[0]);
+    // V4.3 calibration: half the V4 curve, so a careful trader right two days
+    // in three reaches the final decisions (js/tests/economy-run.js career bots).
+    assert(Q[0] >= 0.00375 && Q[0] <= 0.005, 'day 1 quota ' + Q[0]);
     assert(Q.length === 61, 'campaign must contain 61 sessions');
     assert(Q[45] === Math.max(...Q), 'quota should peak after false-dawn weekend');
     assert(Q[30] < Q[29] && Q[60] < Q[55], 'panic regimes should cut quota');
-    assert(Math.max(...Q) <= .03, 'quota curve should not extrapolate above 3%');
+    assert(Math.max(...Q) <= .015, 'quota curve should not extrapolate above 1.5%');
   });
 
   test('Patch 3 calendar and anomaly arithmetic is exact', () => {
@@ -537,7 +539,7 @@
     if (B.SqwakStory) { push(B.SqwakStory.INTRADAY); push(B.SqwakStory.PREOPEN); push(B.SqwakStory.POOLS); push(B.SqwakStory.BREAKING); }
     push(B.News.NOISE);
     if (B.Economy) { push(B.Economy.TIERS.map((t) => [t.name, t.note])); push(B.Economy.EVICT_STAGES); }
-    if (B.Mentor) push(B.Mentor.LINES.map((l) => l[3]));
+    if (B.Mentor) for (const day of [0, 1, 2]) push(B.Mentor.LINES.map((l) => l[3]({ day, market: { events: [] } }, {})));
     if (B.Life) {
       const LS = B.StoryMode.freshState(250000);
       for (const f of [{}, { insider: true }, { perryFiled: true }, { dumped: true }]) {
@@ -1043,6 +1045,13 @@
       return { strikes: S.quotaStrikes, v };
     };
     const clean = run(122), stayed = run(null);
+    // Once a week: a second clean stop in the same week still strikes.
+    const mode2 = B.StoryMode(), S2 = mode2.S;
+    const mk = (day) => ({ cash: 250000, equity: () => 242000, posQty: () => 0, opts: [], dayTrades: () => [], rules: { maxLev: 4 }, stockGross: () => 0, leverage: () => 0,
+      dayRisk: { trough: 242000, breachT: 120, flatT: 122, mc: 0, liq: 0, peakLev: 1 } });
+    for (const day of [1, 2]) mode2.onDayEnd({ day, history: [], broker: mk(day), market: { events: [], bySym: { INDX: { last: 500 } } }, indexStart: 500 },
+      { day, date: 'x', pnl: -8000, equity: 242000, start: 250000, quota: 2000, quotaMet: false, eod: { forced: [] } });
+    assert(S2.quotaStrikes === 1, 'only one excused stop per week: strikes ' + S2.quotaStrikes);
     assert(clean.strikes === 0 && clean.v.notes.some((n) => /strike excused/.test(n)), 'a clean stop should not strike, even after a ledger rebuild');
     assert(stayed.strikes === 1, 'staying in past the limit should still strike');
   });
@@ -1104,19 +1113,64 @@
     const saveInbox = B.UI && B.UI.inbox;
     B.UI = B.UI || {};
     B.UI.inbox = (m) => said.push(m.text);
-    const b = { pos: {}, orders: [], opts: [], dayStartEquity: 250000, equity: () => 250000, isFlat() { return !Object.keys(this.pos).length; }, dayTrades: () => [] };
+    const tape = [];
+    const b = { pos: {}, orders: [], opts: [], dayStartEquity: 250000, equity: () => 250000, isFlat() { return !Object.keys(this.pos).length; }, dayTrades: () => tape };
     const g = { day: 0, broker: b, market: { events: [] }, quota: 2000, interrupts: { ringing: false } };
     const S = {};
     for (let t = 0; t <= 40; t++) B.Mentor.tick(g, t, S);
     assert(said.length === 2 && /Welcome/.test(said[0]) && /Still flat/.test(said[1]), 'a flat first morning should get a hello and one nudge: ' + JSON.stringify(said));
     for (let t = 0; t <= 40; t++) B.Mentor.tick(g, t, S);
     assert(said.length === 2, 'lines must not repeat within a session');
-    b.pos.INDX = { qty: 100, avg: 500 };
+    b.pos.INDX = { qty: 100, avg: 500 }; tape.push({ t: 45, sym: 'INDX', qty: 100, open: true });
     B.Mentor.tick(g, 50, S);
     assert(/SL%/.test(said[2]), 'an unprotected position should get the stop-loss line');
+    g.day = 1; B.Mentor.tick(g, 60, S); B.Mentor.tick(g, 90, S);
+    assert(!said.slice(3).some((x) => /SL%/.test(x)), 'the stop-loss line is said once per career, not every morning');
+    const n = said.length;
     g.day = 3; B.Mentor.tick(g, 60, S);
-    assert(said.length === 3, 'Imani goes quiet after session 3');
+    assert(said.length === n, 'Imani goes quiet after session 3');
     B.UI.inbox = saveInbox;
+  });
+
+  test('V4.3 economy: cap before breaches, obligations come due, booked money is not P&L', () => {
+    const E = B.Economy, P = E.P;
+    const mk = () => { const w = E.fresh(); w.peakEq = 250000; return w; };
+    const big = (breaches) => E.settle(mk(), { equity: 5000000, capital: 250000, weekMade: true, breaches, sessions: 5 }).bonus;
+    assert(big([{ id: 'size' }, { id: 'overnight' }]) < big([]) * 0.75, 'breaches must cut a capped bonus too');
+    const w = mk(); w.cash = 20000;
+    w.advanceGross = 12308; w.deficit = 12308;
+    (w.plans = []).push({ label: "Dad's surgery", amt: 1200, left: 2 });
+    w.momExtra = 290;
+    const lines = E.settleUp(w);
+    assert(w.cash === 20000 - 8000 - 2400 - 2900, 'advance, plan and pledge should come due: ' + w.cash);
+    assert(lines.length === 3 && E.settleUp(w) === lines, 'settle-up runs once');
+    const mode = B.StoryMode(); mode.S.wallet.tier = 0;
+    assert(!B.Life.byId('rentHike').when(mode.S, mode.S.wallet), 'no landlord on the couch');
+    const w2 = mk(); w2.tier = 1;
+    assert(!B.Life.byId('rentHike').options.find((o) => o.id === 'move').req(mode.S, w2), 'no free move from the cheapest flat');
+  });
+
+  test('A wipeout never leaves the book below zero; Right Too Early is a diminished payoff', () => {
+    const m = new B.Market({ seed: 'wipe-floor' });
+    const b = new B.Broker({ cash: 20000 }); b.attach(m);
+    m.startDay(0, { regime: 'chop' }); b.startDay(); m.step(1);
+    b.pos.BSTN = { qty: 60000, avg: 80, realized: 0 };
+    b.cash = -60000 * 80 + 20000;
+    b.flattenAll('WIPED OUT', true); b.floorAtZero();
+    assert(b.isFlat() && b.equity() >= 0, 'book after a wipe: ' + b.equity());
+    const re = B.StoryEndings.list.find((e) => e.id === 'right-early');
+    const S = B.StoryMode.freshState(250000); S.f.rightTooEarly = true;
+    assert(re.test({ S, wealth: 400000, start: 250000 }) && !re.test({ S, wealth: 900000, start: 250000 }), 'Right Too Early should not pay a doubled book');
+  });
+
+  test('Endless results stay out of the Career endings tally', () => {
+    const keep = B.storage.get('endings:tally', {});
+    B.storage.set('endings:tally', { fired: 1, legend: 3, margin: 2, grind: 1 });
+    const t = B.Save.careerTally();
+    assert(t.grind === 1 && t.fired === 1 && !t.legend && !t.margin, 'career tally should drop Endless ids: ' + JSON.stringify(t));
+    B.Save.recordEndless('legend');
+    assert(!B.Save.careerTally().legend, 'recording an Endless result must not touch Career endings');
+    B.storage.set('endings:tally', keep);
   });
 
   B.Tests = { results, run: () => results };
