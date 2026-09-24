@@ -97,11 +97,12 @@
         // Kroll from session 2, your money and the risk desk from session 3.
         if (!S.f.defected && (d >= 1 || this.bossMood().warn)) {
           const mood = this.bossMood();
-          rules.push(`${mood.warn ? '<b>' : ''}${D.boss(S)}: ${mood.label} (${mood.value}/100).${mood.warn ? ' At zero he fires you.</b>' : ''} Answering his calls and working client orders keeps him on side.`);
+          const canFire = d < BOSS_FIRE_LAST;
+          rules.push(`${mood.warn && canFire ? '<b>' : ''}${D.boss(S)} ${mood.label} (${mood.value}/100).${mood.warn && canFire ? ' At zero he fires you.</b>' : ''} Answering his calls, working client orders and making quota keep him on side.`);
         }
         const T = E.tier(W$);
         if (d >= 2) rules.push(`Your money: ${B.fmt.money(W$.cash)} cash${W$.card > 0 ? `, ${B.fmt.money(-W$.card)} on the card` : ''}. ${T.name}${T.rent ? `, ${B.fmt.money(T.rent * (W$.rentMult || 1))} rent due Friday` : ''}.${W$.arrears > 0 ? ` <b>${B.fmt.money(W$.arrears)} rent overdue.</b>` : ''}`);
-        if (d >= 2) rules.push(`Risk desk: daily loss limit ${B.fmt.money(-E.P.lossLimit * (g && g.broker ? g.broker.equity() : capital))}. Hit it before 3:00 PM and get flat within ${E.P.flatWithin} minutes, and a missed quota that day is excused, once a week. Each kind of breach cuts your bonus ${Math.round(E.P.breachCut * 100)}% this week and next.`);
+        if (d >= 2) rules.push(`Risk desk: daily loss limit ${B.fmt.money(-E.P.lossLimit * (g && g.broker ? g.broker.equity() : capital))}. Hit it before 3:00 PM and get flat within ${E.P.flatWithin} game minutes, and a missed quota that day is excused, once a week. Each kind of breach cuts your bonus ${Math.round(E.P.breachCut * 100)}% this week and next.`);
         if (remaining === 1) rules.push('FINAL WARNING: one more missed quota ends this career.');
         else if (remaining === 2) rules.push('WARNING: two missed quotas remain before termination.');
         if (S.f.v2RewoundToBell) rules.push('SAVE MIGRATION: this V2 mid-session save was rewound to the matching opening bell; book and decisions were preserved.');
@@ -162,7 +163,7 @@
         const who = D.boss(S);
         let memo = d === 0
           ? `${who}: Desk floor set at ${B.fmt.money(amount)}. This is the minimum, not the target.`
-          : `${who}: New ${labels[D.actIndex(d)].toLowerCase()}: ${B.fmt.money(amount)}. ${raised > 0 ? `Up ${raised}% from yesterday.` : 'No relief from yesterday.'} Volatility is not an excuse.`;
+          : `${who}: New ${labels[D.actIndex(d)].toLowerCase()}: ${B.fmt.money(amount)}. ${raised > 0 ? `Up ${raised}% from yesterday.` : raised < 0 ? `Down ${-raised}% from yesterday. Do not get comfortable.` : 'No relief from yesterday.'} Volatility is not an excuse.`;
         const remaining = QUOTA_STRIKE_LIMIT - S.quotaStrikes;
         if (remaining === 1) memo += ' FINAL WARNING: one more miss ends your career.';
         else if (remaining === 2) memo += ' WARNING: only two misses remain.';

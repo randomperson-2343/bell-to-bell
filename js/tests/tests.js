@@ -1150,5 +1150,18 @@
     assert(!B.Life.byId('rentHike').options.find((o) => o.id === 'move').req(mode.S, w2), 'no free move from the cheapest flat');
   });
 
+  test('A wipeout never leaves the book below zero; Right Too Early is a diminished payoff', () => {
+    const m = new B.Market({ seed: 'wipe-floor' });
+    const b = new B.Broker({ cash: 20000 }); b.attach(m);
+    m.startDay(0, { regime: 'chop' }); b.startDay(); m.step(1);
+    b.pos.BSTN = { qty: 60000, avg: 80, realized: 0 };
+    b.cash = -60000 * 80 + 20000;
+    b.flattenAll('WIPED OUT', true); b.floorAtZero();
+    assert(b.isFlat() && b.equity() >= 0, 'book after a wipe: ' + b.equity());
+    const re = B.StoryEndings.list.find((e) => e.id === 'right-early');
+    const S = B.StoryMode.freshState(250000); S.f.rightTooEarly = true;
+    assert(re.test({ S, wealth: 400000, start: 250000 }) && !re.test({ S, wealth: 900000, start: 250000 }), 'Right Too Early should not pay a doubled book');
+  });
+
   B.Tests = { results, run: () => results };
 })(window.BTB);

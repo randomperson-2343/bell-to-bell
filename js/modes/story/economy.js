@@ -23,7 +23,8 @@
     cleanKicker: 0.25,      // a clean week (3+ sessions) pays x1.25
     lossLimit: 0.03,        // daily loss limit, share of the day's opening book. At 2%,
                             // stopping there got disciplined traders fired on quota.
-    flatWithin: 5,          // minutes to get flat after touching the limit
+    flatWithin: 13,         // game minutes to get flat after touching the limit (about
+                            // six real seconds at normal speed; five was about two)
     levCap: 3.25,           // gross leverage above this (or 90% of a lower limit) is a breach;
                             // the 75% size key opens at about 3x and must not trip it
     overnightLev: 1,        // gross exposure above 1x equity carried past the close

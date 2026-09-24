@@ -88,7 +88,7 @@
       deck: 'Unemployment hits 14% as credit freezes and datacenters go dark.',
       story: (c) => [
         'Half-built datacenters stand empty across four states, financed by bonds that no longer have a rating. Three more banks failed over the weekend. Two large pension systems are insolvent.',
-        `Somewhere in the wreckage, a young trader sits on ${B.fmt.compact(c.wealth)}. In a country where nobody is hiring and nothing is lending, it does not feel like much.`,
+        `Somewhere in the wreckage, a young trader sits on ${B.fmt.compact(c.wealth * 0.6)}. In a country where nobody is hiring and nothing is lending, it does not feel like much.`,
         'Historians will argue for decades over which decisions turned a correction into a catastrophe. The trader already knows.'
       ],
       wealth: (c) => c.wealth * 0.6

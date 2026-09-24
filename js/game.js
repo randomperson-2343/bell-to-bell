@@ -187,6 +187,7 @@
       const wipe = this.mode.wipeLevel ? this.mode.wipeLevel(this) : 0;
       if (wipe && eq < wipe && !this.earlyEnd) {
         b.flattenAll('WIPED OUT', true);
+        b.floorAtZero();
         this.earlyEnd = 'wiped';
         B.UI.toast('ACCOUNT WIPED OUT. Risk has frozen your book.', 'bad big');
         B.SFX.crash();

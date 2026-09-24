@@ -256,7 +256,7 @@
         'It will also flatten your book into whatever price exists first. The market may survive. Your money will not.'
       ],
       options: [
-        { id:'pull', label:'Pull the plug.', hint:'Save price discovery. Lose the book.', headline:'Disabled the shared automated execution stack before the final open', apply:(S)=>{S.f.pulledPlug=true;S.f.public=true;D.adj(S,{integrity:22,stability:30,firm:-35},{imani:25,kroll:-40});}, reply:'Imani: "Do it before you can talk yourself out of it."', after:['The token dies at 3:17 AM.','At 9:30 the book is flattened into a forty-percent gap. Human bids return by noon.'] },
+        { id:'pull', label:'Pull the plug.', hint:'Save price discovery. Lose the book.', headline:'Disabled the shared automated execution stack before the final open', apply:(S)=>{S.f.pulledPlug=true;S.f.public=true;D.adj(S,{integrity:22,stability:30,firm:-35},{imani:25,kroll:-40});}, reply:'Imani: "Do it before you can talk yourself out of it."', after:['The token dies at 3:17 AM.','At 9:30 the book is flattened into a forty-percent gap. The exchange halts the market for the day. Human bids come back on Tuesday.'] },
         { id:'leave', label:'Leave it running.', hint:'Keep the book. Trust a market with no human loop.', headline:'Left the shared automated execution stack running', apply:(S)=>{S.f.leftStack=true;D.adj(S,{integrity:-12,stability:-18},{imani:-20,kroll:8});}, reply:'Imani: "Then whatever opens Monday is not a market."', after:['You close the laptop.','Across the street, identical systems wait for the same opening print.'] }
       ]
     }
