@@ -223,14 +223,6 @@
   }
   function dim(ctx, a) { ctx.save(); ctx.globalAlpha = a; X.rect(ctx, 0, 0, V.w, V.h, P.ink); ctx.restore(); }
 
-  // A caption must fit two lines of the 640 caption box: about 90 characters.
-  function fit(line, fallback) {
-    const t = R.clean(line).replace(/\s+/g, ' ').trim();
-    const first = (t.match(/^.*?[.!?](\s|$)/) || [t])[0].trim();
-    if (first && first.length <= 90) return first;
-    return R.clean(fallback || '').trim();
-  }
-
   B.Scenes.decision = function (o) {
     const id = o.id || 'c1', day = o.day || 0, name = o.speaker || '', S = o.S || null;
     const who = R.clean(name + (o.role ? ' · ' + o.role : '')).toUpperCase().slice(0, 88);
@@ -243,13 +235,16 @@
       }, R.clean(o.title || '').toUpperCase(), { sfx: 'broadcast', informative: true })
     ];
   };
-  B.Scenes.decisionAfter = function (o) {
-    const id = o.id || 'c1', day = o.day || 0, S = o.S || null;
-    const line = fit((o.after || [])[0], o.label);
-    if (!line) return [];
-    return [R.beat('decision', `${id}:${o.opt || ''}:${Math.floor(day / 5)}:after`, 2.4, (c) => { room(c, id, day, true, S); dim(c, 0.5); }, line,
-      { sfx: 'room', transition: 'fade', informative: true })];
-  };
+  // V4.5: the room after the choice is a picture in the aftermath popup,
+  // not a separate cutscene that repeated the popup's first sentence.
+  function still(canvas, o) {
+    if (!canvas || !canvas.getContext) return false;
+    const ctx = canvas.getContext('2d');
+    ctx.imageSmoothingEnabled = false;
+    room(ctx, o.id || 'c1', o.day || 0, true, o.S || null);
+    dim(ctx, 0.3);
+    return true;
+  }
 
-  B.DecisionArt = { ROOMS, room, fit };
+  B.DecisionArt = { ROOMS, room, still };
 })(window.BTB);

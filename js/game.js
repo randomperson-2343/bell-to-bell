@@ -466,7 +466,8 @@
       const eq = b.equity();
       const pnl = eq - b.dayStartEquity;
       const trades = b.dayTrades();
-      const realized = trades.map((x) => x.realized);
+      // Best and worst count finished trades only: an opening fill is just its fee.
+      const realized = trades.filter((x) => x.closed).map((x) => x.realized);
       const report = {
         day: this.day,
         date: this.mode.kind === 'story' && B.Calendar.storyLabel ? B.Calendar.storyLabel(this.day) : B.Calendar.dayInfo(this.day).long,
@@ -475,8 +476,8 @@
         // A story fine (a settlement, a forced unwind) is not a missed quota.
         quotaMet: this.quota <= 0 || pnl - ((b.dayRisk && b.dayRisk.adj) || 0) >= this.quota,
         trades: trades.length,
-        best: realized.length ? Math.max(...realized) : 0,
-        worst: realized.length ? Math.min(...realized) : 0,
+        best: realized.length ? Math.max(...realized) : null,
+        worst: realized.length ? Math.min(...realized) : null,
         fees: b.fees - b.dayFeesStart,
         stressPeak: this.stress.peak,
         eod,

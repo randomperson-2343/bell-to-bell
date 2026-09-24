@@ -520,7 +520,7 @@
       R.beat('ending', `${id}:world`, 1.8, (c) => endingWorld(c, o, 0.3, false), '', { sfx: 'apartment', transition: 'fade' }),
       R.beat('ending', `${id}:card`, 2.6, (c) => endingWorld(c, o, 1, true), R.clean(o.deck), { informative: true }),
       R.beat('ending', `${id}:after:${pulled ? 'p' : ''}`, 2.2, (c) => lastLight(c, pulled),
-        pulled ? 'THE RACKS STAY DARK. FOR NOW.' : 'MONDAY. THE MARKET OPENS AT NINE THIRTY.', { sfx: 'room' })
+        pulled ? 'THE RACKS STAY DARK. FOR NOW.' : 'FIRST LIGHT. THE CITY IS STILL THERE.', { sfx: 'room' })
     ];
   };
 })(window.BTB);

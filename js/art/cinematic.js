@@ -106,7 +106,9 @@
       try { beat.draw(ctx, view, beat.cacheAt == null ? 1 : beat.cacheAt, this.opts); }
       catch (e) { X.rect(ctx, 0, 0, view.w, view.h, P.ink); }
       this.frameCache.set(key, canvas);
-      if (this.frameCache.size > 220) this.frameCache.delete(this.frameCache.keys().next().value);
+      // Each 640x360 frame is about 0.9 MB. 40 of them is plenty for any one
+      // scene chain; 220 (about 200 MB) could get a phone tab killed.
+      if (this.frameCache.size > 40) this.frameCache.delete(this.frameCache.keys().next().value);
       return canvas;
     },
 

@@ -67,6 +67,19 @@
     assert(b.isFlat(), 'should be flat');
   });
 
+  test('Only fills that close something count as finished trades', () => {
+    const m = mkMarket(); const b = mkBroker(m);
+    const tk = m.bySym.BLWT;
+    tk.last = 100; tk.spread = 1e-12;
+    b.marketOrder('BLWT', 100);
+    assert(!b.dayTrades().some((x) => x.closed), 'an opening fill is not a finished trade');
+    b.marketOrder('BLWT', 50);
+    tk.last = 110;
+    b.marketOrder('BLWT', -150);
+    const done = b.dayTrades().filter((x) => x.closed);
+    assert(done.length === 1 && done[0].realized > 0, 'the closing fill is the one finished trade');
+  });
+
   test('Short round trip profits when price falls', () => {
     const m = mkMarket(); const b = mkBroker(m);
     const tk = m.bySym.BLWT;
@@ -480,10 +493,8 @@
       assert(beats.length === 2 && beats[1].informative && beats.every((b) => b.view.w === 640), c.id + ' decision beats');
       if (c.speaker !== 'Your landlord' && c.id !== 'perry') assert(B.Portraits.has(c.speaker), 'no portrait for ' + c.speaker);
     }
-    // Aftermath captions fit the two-line caption box, or fall back to the label.
-    assert(A.fit('Short. Then more.', 'L') === 'Short.', 'first sentence');
-    assert(A.fit('x'.repeat(120), 'Sign it.') === 'Sign it.', 'long lines fall back to the option label');
-    assert(B.Scenes.decisionAfter({ id: 'c1', after: [], label: '' }).length === 0, 'nothing to say, no still');
+    // The aftermath is one popup with the room in it, not a second cutscene.
+    assert(!B.Scenes.decisionAfter && typeof A.still === 'function', 'aftermath still belongs in the popup');
   });
 
   test('Endings: 22 props, one card, and a last picture after', () => {
@@ -496,6 +507,17 @@
     }
     const pulled = B.Scenes.ending({ id: 'grind', pulled: true })[2], dawn = B.Scenes.ending({ id: 'grind' })[2];
     assert(pulled.id !== dawn.id && pulled.line !== dawn.line, 'pulling the plug changes the last picture');
+  });
+
+  test('Quota pay: each quota day pays on top of the draw, cut by breaches', () => {
+    const E = B.Economy;
+    const pay = (metDays, breaches) => { const w = E.fresh(); return E.settle(w, { equity: 250000, capital: 250000, weekMade: false, breaches: breaches || [], metDays, sessions: 5 }).net; };
+    const none = pay(0), three = pay(3);
+    near(three - none, Math.round(3 * E.P.quotaPay * (1 + E.P.cleanKicker) * (1 - E.P.taxRate)), 2, 'three clean quota days');
+    assert(pay(3, [{ id: 'size' }]) < three, 'a breach cuts quota pay');
+    assert(pay(3, [{ id: 'margin', zero: true }]) === none, 'a margin call zeroes quota pay');
+    const w = E.fresh(); E.settle(w, { equity: 250000, capital: 250000, weekMade: false, breaches: [], metDays: 5, sessions: 5 });
+    assert(w.deficit === E.P.drawPerSession * 5, 'quota pay never repays or reduces unearned draw');
   });
 
   test('Seasons run October to January across the thirteen weeks', () => {
@@ -929,8 +951,11 @@
     g.day = 10; mode.openWeek(g);
     for (let d = 10; d < 14; d++) close(d, 0);
     g.day = 14; eq -= 5000;
-    mode.onDayEnd(g, { quota: 1000, quotaMet: false, pnl: -5000, equity: eq, date: 'x' });
+    const v3 = mode.onDayEnd(g, { quota: 1000, quotaMet: false, pnl: -5000, equity: eq, date: 'x' });
     assert(S.quotaStrikes === 3, 'Friday daily miss plus weekly miss should be two strikes, total ' + S.quotaStrikes);
+    // One line says both, with the count that is true now; no stale "strike 2 of".
+    assert(v3.notes.some((n) => /2 strikes today\. Career strikes 3 of/.test(n)), 'double strike is not stated in one line');
+    assert(!v3.notes.some((n) => /Career strike 2 of/.test(n)), 'a stale strike count is still printed');
     mode.reconcileQuotaStrikes([]);
     assert(S.quotaStrikes === 3, 'ledger rebuild merged a weekly strike into a daily one');
     // Week 4: miss Monday, then make the week. The Monday strike is wiped and stays wiped.
