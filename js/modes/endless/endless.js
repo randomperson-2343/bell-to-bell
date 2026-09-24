@@ -43,6 +43,23 @@
     recovery: 'Relief mode. Violent short-covering rallies.'
   };
 
+  // The analyst outlook is a forecast, not the answer. Crash days are never
+  // called in advance: the analysts see the tape the day before, so a crash
+  // is forecast as whatever came before it, or as nervous chop. Ordinary days
+  // are called right about two times in three, and now and then the desk
+  // cries wolf with a panic forecast that never comes.
+  const NEIGHBOR = {
+    bubble: ['bull', 'bubble'], bull: ['bubble', 'chop'], chop: ['bull', 'bear'],
+    bear: ['chop', 'recovery'], recovery: ['bull', 'chop'], panic: ['bear', 'chop']
+  };
+  function outlookOf(seed, d, actual, prev) {
+    const rng = B.RNG(B.hashSeed(seed + '|outlook|' + d));
+    if (actual === 'panic') return prev && prev !== 'panic' ? (rng.next() < 0.6 ? prev : 'chop') : rng.pick(NEIGHBOR.panic);
+    if (rng.next() < 0.06) return 'panic';
+    if (rng.next() < 0.67) return actual;
+    return rng.pick(NEIGHBOR[actual] || ['chop']);
+  }
+
   function cfgKey(c) {
     // Default hype (1x) is left out of the key so leaderboards from before
     // Sqwak existed keep matching the same settings.
@@ -78,8 +95,14 @@
       },
 
       briefing(d, g) {
-        if (S.regimeDay !== d) { S.regime = this.nextRegime(d); S.regimeDay = d; }
-        const reg = B.REGIMES[S.regime];
+        if (S.regimeDay !== d) {
+          const prev = S.regime;
+          S.regime = this.nextRegime(d);
+          S.regimeDay = d;
+          S.outlook = outlookOf(cfg.seed, d, S.regime, d > 0 ? prev : null);
+        }
+        const call = S.outlook || S.regime;
+        const reg = B.REGIMES[call];
         const rules = [`Leverage limit: ${cfg.maxLev}x intraday / ${Math.max(1, cfg.maxLev / 2)}x overnight`];
         const e = cfg.ends;
         const goals = [];
@@ -93,7 +116,7 @@
         return {
           kicker: `ENDLESS · DAY ${d + 1} ·`,
           title: `Analyst outlook: ${reg.name}`,
-          html: `<p>${OUTLOOK[S.regime]}</p><p class="muted">Outlooks are only mostly right. Seed <code>${B.esc(cfg.seed)}</code>.</p>`,
+          html: `<p>${OUTLOOK[call]}</p><p class="muted">Outlooks are only mostly right, and nobody calls a crash the day before. Seed <code>${B.esc(cfg.seed)}</code>.</p>`,
           quota: this.quota(d, g),
           rules: rules.concat(goals)
         };
@@ -304,5 +327,5 @@
     }
   };
 
-  B.Endless = { PRESETS, DEFAULT_ENDS, cfgKey };
+  B.Endless = { PRESETS, DEFAULT_ENDS, cfgKey, outlookOf };
 })(window.BTB);
