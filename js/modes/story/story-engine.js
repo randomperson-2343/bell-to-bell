@@ -105,7 +105,8 @@
         if (remaining === 1) rules.push('FINAL WARNING: one more missed quota ends this career.');
         else if (remaining === 2) rules.push('WARNING: two missed quotas remain before termination.');
         if (S.f.v2RewoundToBell) rules.push('SAVE MIGRATION: this V2 mid-session save was rewound to the matching opening bell; book and decisions were preserved.');
-        if (d === 0) rules.push('Tip: open How to Play from the pause menu (Esc) any time.');
+        if (d === 0) rules.push('Tip: How to Play is in the Menu, any time.');
+        if (d === 2) rules.push('Imani: read the dull items in this morning\'s feed. Nobody hides anything in a headline.');
         return {
           kicker: D.actOf(d) + ' ·',
           title: `Session ${d + 1}: ${day.title}`,

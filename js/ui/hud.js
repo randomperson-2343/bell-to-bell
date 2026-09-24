@@ -217,6 +217,8 @@
 
     leaveGame() {
       this.clearToasts();
+      this.clearNotes();
+      this.hideRingPill();
       this.g = null;
       this.unlock();
       this.pause(false);
@@ -248,6 +250,8 @@
 
     dayEnd() {
       this.clearToasts();
+      this.clearNotes();
+      this.hideRingPill();
       $('mc-banner').hidden = true;
       this.render(true);
     },
@@ -382,6 +386,42 @@
       return `<div class="sq-trending"><span class="sq-logo">sqwak</span><span class="sq-label">TRENDING</span>${chips || '<span class="sq-quiet">quiet</span>'}</div>`;
     },
 
+    // ---- Imani's desk notes: the full line, readable, one at a time ----
+    isTouch() { return !!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches); },
+    mentor(from, text) {
+      this.feed.inbox.unshift({ kind: 'inbox', text, src: from, t: this.g ? this.g.market.t : 0 });
+      if (this.feedTab !== 'inbox') { this.unread++; this.updateBadge(); }
+      this.renderFeed();
+      (this.noteQueue = this.noteQueue || []).push({ from, text });
+      if (!this.noteOn) this.nextNote();
+    },
+    nextNote() {
+      const n = (this.noteQueue || []).shift();
+      let el = document.getElementById('mentor-note');
+      if (!n) { this.noteOn = false; if (el) el.hidden = true; return; }
+      if (!el) {
+        el = document.createElement('div');
+        el.id = 'mentor-note';
+        el.setAttribute('role', 'status');
+        el.addEventListener('click', () => { clearTimeout(this.noteTimer); this.nextNote(); });
+        document.getElementById('screen-game').appendChild(el);
+      }
+      el.innerHTML = `<b>${B.esc(n.from)}</b><span>${B.esc(n.text)}</span>`;
+      el.hidden = false;
+      this.noteOn = true;
+      B.SFX.news();
+      // Long enough to read: about 55ms a character, never under five seconds.
+      clearTimeout(this.noteTimer);
+      this.noteTimer = setTimeout(() => this.nextNote(), Math.max(5000, n.text.length * 55));
+    },
+    clearNotes() {
+      this.noteQueue = [];
+      clearTimeout(this.noteTimer);
+      this.noteOn = false;
+      const el = document.getElementById('mentor-note');
+      if (el) el.hidden = true;
+    },
+
     // ---- phone ----
     phoneRing(call) {
       const p = $('phone');
@@ -393,12 +433,27 @@
       this.ringTimer = true;
       B.SFX.ring();
       this.ringAcc = 0;
+      // On a phone the comms monitor is below the fold: surface the call.
+      if (this.isTouch()) {
+        let pill = document.getElementById('ring-pill');
+        if (!pill) {
+          pill = document.createElement('button');
+          pill.id = 'ring-pill';
+          pill.className = 'btn buy';
+          pill.addEventListener('click', () => { if (this.g) this.g.interrupts.answer(); });
+          document.getElementById('screen-game').appendChild(pill);
+        }
+        pill.textContent = `☎ Answer · ${call.from}`;
+        pill.hidden = false;
+      }
     },
+    hideRingPill() { const pill = document.getElementById('ring-pill'); if (pill) pill.hidden = true; },
 
     phoneOpen(call) {
       const p = $('phone');
       p.classList.remove('ringing');
       this.ringTimer = false;
+      this.hideRingPill();
       let body = `<div class="ph-top"><div><div class="ph-from">${B.esc(call.from)}</div><div class="ph-role">${B.esc(call.role || '')}</div></div>`;
       body += call.kind === 'choice' ? '</div>' : '<button class="btn small" data-ph="hang">Hang up</button></div>';
       body += `<div class="ph-text">${B.esc(call.text)}</div>`;
@@ -411,6 +466,7 @@
     },
 
     phoneHide() {
+      this.hideRingPill();
       $('phone').hidden = true;
       $('phone').classList.remove('ringing');
       this.ringTimer = false;

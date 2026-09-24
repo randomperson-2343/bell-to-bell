@@ -539,7 +539,7 @@
     if (B.SqwakStory) { push(B.SqwakStory.INTRADAY); push(B.SqwakStory.PREOPEN); push(B.SqwakStory.POOLS); push(B.SqwakStory.BREAKING); }
     push(B.News.NOISE);
     if (B.Economy) { push(B.Economy.TIERS.map((t) => [t.name, t.note])); push(B.Economy.EVICT_STAGES); }
-    if (B.Mentor) push(B.Mentor.LINES.map((l) => l[3]));
+    if (B.Mentor) for (const day of [0, 1, 2]) push(B.Mentor.LINES.map((l) => l[3]({ day, market: { events: [] } }, {})));
     if (B.Life) {
       const LS = B.StoryMode.freshState(250000);
       for (const f of [{}, { insider: true }, { perryFiled: true }, { dumped: true }]) {
@@ -1113,18 +1113,22 @@
     const saveInbox = B.UI && B.UI.inbox;
     B.UI = B.UI || {};
     B.UI.inbox = (m) => said.push(m.text);
-    const b = { pos: {}, orders: [], opts: [], dayStartEquity: 250000, equity: () => 250000, isFlat() { return !Object.keys(this.pos).length; }, dayTrades: () => [] };
+    const tape = [];
+    const b = { pos: {}, orders: [], opts: [], dayStartEquity: 250000, equity: () => 250000, isFlat() { return !Object.keys(this.pos).length; }, dayTrades: () => tape };
     const g = { day: 0, broker: b, market: { events: [] }, quota: 2000, interrupts: { ringing: false } };
     const S = {};
     for (let t = 0; t <= 40; t++) B.Mentor.tick(g, t, S);
     assert(said.length === 2 && /Welcome/.test(said[0]) && /Still flat/.test(said[1]), 'a flat first morning should get a hello and one nudge: ' + JSON.stringify(said));
     for (let t = 0; t <= 40; t++) B.Mentor.tick(g, t, S);
     assert(said.length === 2, 'lines must not repeat within a session');
-    b.pos.INDX = { qty: 100, avg: 500 };
+    b.pos.INDX = { qty: 100, avg: 500 }; tape.push({ t: 45, sym: 'INDX', qty: 100, open: true });
     B.Mentor.tick(g, 50, S);
     assert(/SL%/.test(said[2]), 'an unprotected position should get the stop-loss line');
+    g.day = 1; B.Mentor.tick(g, 60, S); B.Mentor.tick(g, 90, S);
+    assert(!said.slice(3).some((x) => /SL%/.test(x)), 'the stop-loss line is said once per career, not every morning');
+    const n = said.length;
     g.day = 3; B.Mentor.tick(g, 60, S);
-    assert(said.length === 3, 'Imani goes quiet after session 3');
+    assert(said.length === n, 'Imani goes quiet after session 3');
     B.UI.inbox = saveInbox;
   });
 
