@@ -307,7 +307,8 @@
         else this.endlessEnding(g, ending);
       };
       if (B.Cinematic.startChain) B.Cinematic.startChain('ending');
-      B.Cinematic.play('ending', { id: ending.id, title: ending.title, deck: ending.deck, dark }, show);
+      const pulled = !!(g.mode && g.mode.S && g.mode.S.f && g.mode.S.f.pulledPlug);
+      B.Cinematic.play('ending', { id: ending.id, title: ending.title, deck: ending.deck, dark, pulled }, show);
     },
 
     storyEnding(g, e) {

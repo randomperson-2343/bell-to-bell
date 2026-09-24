@@ -439,16 +439,69 @@
     assert(D[58].feed.length === 3 && D[60].feed.length === 3, 'Act IV feed contraction');
   });
 
-  test('Cinematic Rhythm assigns a distinct high-resolution board to all 61 sessions', () => {
-    assert(B.Rhythm && B.Rhythm.storyboards.length === 61, 'missing 61-board presentation map');
-    const signatures = new Set(B.Rhythm.storyboards.map((x) => x.signature));
-    assert(signatures.size === 61, `only ${signatures.size} distinct storyboard signatures`);
-    const news = B.Scenes.news({ day: 60, brief: { title: 'Orphan Monday', kicker: 'IV · RECKONING', feed: [] } });
+  test('Storyboard: every session has an authored row and native 640x360 beats', () => {
+    const SB = B.Storyboard;
+    assert(SB && SB.SHEET.length === 61, 'beat sheet must cover all 61 sessions');
+    for (let day = 0; day < 61; day++) {
+      const news = B.Scenes.news({ day, brief: { title: 'Session ' + (day + 1), feed: [] } });
+      assert(news.length >= 1 && news.every((b) => b.view.w === 640 && b.view.h === 360), 'session ' + (day + 1) + ' is not native 640x360');
+      assert(news.some((b) => b.informative), 'session ' + (day + 1) + ' has no informative beat for short mode');
+    }
+    // Close-ups quote the current quota table, not a stale one.
+    const q = SB.SHEET[45][2].match(/([\d.]+)%/);
+    near(+q[1] / 100, B.StoryData.QUOTAS[45], 1e-9, 'session 46 quota insert');
     const phone = B.Scenes.phone({ day: 60, brief: { feed: [{ source: 'WIRE', title: 'Before the bell' }] } });
-    const weekend = B.Scenes.weekend({ day: 54 });
-    assert(news.length >= 3 && news.every((beat) => beat.view.w === 640 && beat.view.h === 360), 'news boards are not native 640x360');
     assert(phone.length === 2 && phone.every((beat) => beat.view.w === 640), 'phone handoff is missing');
-    assert(weekend.length === 3 && weekend.every((beat) => beat.view.h === 360), 'weekend punctuation is missing');
+    assert(B.Scenes.weekend({ day: 44 }).length === 3, 'ordinary weekends are sat, sun, hold');
+    assert(B.Scenes.weekend({ day: 34 }).length === 4 && B.Scenes.weekend({ day: 54 }).length === 4, 'rescue and whip weekends get a second room');
+  });
+
+  test('Storyboard: four mornings follow the choice made the night before', () => {
+    const SB = B.Storyboard;
+    const S = (choices, f) => ({ choices: choices || {}, f: f || {} });
+    assert(SB.row(10, S({ c1: 'dump' })).arg !== SB.row(10, S({ c1: 'refuse' })).arg, 'session 11 ignores the pension dump');
+    assert(SB.row(35, S({ c5: 'fail' })).shot === 'dark' && SB.row(35, S({ c5: 'ban' })).arg !== SB.row(35, S({ c5: 'bail' })).arg, 'session 36 ignores Rescue Weekend');
+    assert(SB.row(55, S({}, { billPassed: true })).doc === 'vote' && SB.row(55, S()).shot === 'tableau', 'session 56 ignores the vote');
+    assert(SB.row(60, S({}, { pulledPlug: true })).shot === 'racks', 'session 61 ignores Pull the Plug');
+    // Variant mornings must not reuse the default morning's cached frames.
+    const ids = (S$) => B.Scenes.news({ day: 10, brief: { title: 'x', feed: [] }, game: { mode: { S: S$ } } }).map((b) => b.id).join();
+    assert(ids(S({ c1: 'dump' })) !== ids(S()), 'variant shares frame cache ids with the default');
+    assert(SB.ANOMALY_DAYS.length === 12, 'one tell per technical anomaly');
+  });
+
+  test('Decision scenes: every desk and life decision opens on its own room', () => {
+    const D = B.StoryData, A = B.DecisionArt;
+    const list = Object.keys(D.CHOICES).filter((k) => !D.CHOICES[k].mid).map((k) => Object.assign({ id: k }, D.CHOICES[k]))
+      .concat(B.Life.LIFE);
+    assert(list.length === 13, 'expected 8 desk decisions and 5 life beats, got ' + list.length);
+    for (const c of list) {
+      assert(A.ROOMS[c.id], c.id + ' has no room');
+      const beats = B.Scenes.decision({ id: c.id, day: c.day, speaker: c.speaker, role: c.role, title: c.title, S: B.StoryMode.freshState(250000) });
+      assert(beats.length === 2 && beats[1].informative && beats.every((b) => b.view.w === 640), c.id + ' decision beats');
+      if (c.speaker !== 'Your landlord' && c.id !== 'perry') assert(B.Portraits.has(c.speaker), 'no portrait for ' + c.speaker);
+    }
+    // Aftermath captions fit the two-line caption box, or fall back to the label.
+    assert(A.fit('Short. Then more.', 'L') === 'Short.', 'first sentence');
+    assert(A.fit('x'.repeat(120), 'Sign it.') === 'Sign it.', 'long lines fall back to the option label');
+    assert(B.Scenes.decisionAfter({ id: 'c1', after: [], label: '' }).length === 0, 'nothing to say, no still');
+  });
+
+  test('Endings: 22 props, one card, and a last picture after', () => {
+    const ids = B.Rhythm.endingIds;
+    assert(ids.length === 22, 'ending list');
+    for (const id of ids) {
+      const beats = B.Scenes.ending({ id, title: id, deck: 'Deck', dark: false });
+      assert(beats.length === 3, id + ' ending beats');
+      assert(beats.filter((b) => b.line === 'Deck').length === 1, id + ' prints the deck once');
+    }
+    const pulled = B.Scenes.ending({ id: 'grind', pulled: true })[2], dawn = B.Scenes.ending({ id: 'grind' })[2];
+    assert(pulled.id !== dawn.id && pulled.line !== dawn.line, 'pulling the plug changes the last picture');
+  });
+
+  test('Seasons run October to January across the thirteen weeks', () => {
+    const s = B.Rhythm.season;
+    assert(s(0).id === 'autumn' && s(19).id === 'autumn' && s(20).id === 'grey' && s(44).id === 'grey' && s(45).id === 'winter', 'season boundaries');
+    assert(!s(44).snow && s(60).snow === 1, 'snow arrives in winter and deepens');
   });
 
   test('Version 2 story saves migrate to matching Patch 3 beats', () => {

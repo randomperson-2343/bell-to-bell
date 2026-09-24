@@ -9,6 +9,19 @@
   const X = B.Pixel;
   const P = B.Pal;
   const V = { w: 320, h: 180 };
+  // The storyboard layer sets the season before drawing a set piece (see
+  // B.Rhythm.season): exteriors seen through windows follow October to January.
+  let SEASON = null;
+  function setSeason(s) { SEASON = s || null; }
+  function windowWeather(ctx, x, y, w, h, seed) {
+    if (!SEASON) return;
+    if (SEASON.snow) {
+      X.speckle(ctx, x, y, w, h, P.bone, 0.02 + SEASON.snow * 0.03, seed || 5);
+      X.rect(ctx, x, y + h - 2, w, 2, P.bone);
+    } else if (SEASON.id === 'autumn') {
+      X.dither(ctx, x, y + Math.round(h * 0.6), w, Math.round(h * 0.4), P.slate2, P.amberD, 0.3);
+    }
+  }
 
   // ---------- reusable set pieces ----------
 
@@ -19,6 +32,7 @@
     // window with a dead-blue city outside
     X.inset(ctx, 214, 24, 74, 56, P.slate, P.ink2, P.ink);
     X.gradient(ctx, 216, 26, 70, 52, P.slate2, P.ink2, 5);
+    if (SEASON) X.dither(ctx, 216, 52, 70, 26, P.ink2, SEASON.dawn, SEASON.glow);
     for (let i = 0; i < 7; i++) {
       const bx = 218 + i * 10, bh = 14 + ((i * 37) % 26);
       X.rect(ctx, bx, 78 - bh, 8, bh, P.ink2);
@@ -28,6 +42,7 @@
         }
       }
     }
+    windowWeather(ctx, 216, 26, 70, 52, 3);
     // TV light spill on the floor and wall
     if (glow > 0) {
       X.dither(ctx, 0, 96, V.w, 84, P.ink, P.screenGlow, 0.22 * glow);
@@ -77,7 +92,8 @@
       X.rect(ctx, x + 3, y + h - 16, w - 6, 8, P.crimsonD);
       X.text(ctx, (kicker || 'MARKET WATCH').slice(0, 26), x + 6, y + h - 14, P.white);
       const lines = X.wrap(headline || '', w - 12).slice(0, 2);
-      lines.forEach((ln, i) => X.text(ctx, ln, x + 6, y + h - 6 + i * 8, P.amber));
+      // One line: a second one would print on the bezel.
+      lines.slice(0, 1).forEach((ln, i) => X.text(ctx, ln, x + 6, y + h - 6 + i * 8, P.amber));
       X.scanlines(ctx, x + 2, y + 2, w - 4, h - 4, P.ink, 0.2);
     }
     // standby light
@@ -140,12 +156,15 @@
       const wx = sx(8 + i * 52), wy = sy(14), ww = sw(40), wh = sw(48);
       if (wx + ww < 0 || wx > V.w) continue;
       X.inset(ctx, wx, wy, ww, wh, P.slate2, P.putty2, P.plasticD);
-      X.gradient(ctx, wx + 1, wy + 1, ww - 2, wh - 2, lit ? P.sky : P.slate, P.putty, 5);
+      const top = !SEASON ? (lit ? P.sky : P.slate) : SEASON.id === 'winter' ? (lit ? P.slate2 : P.ink2) : SEASON.id === 'grey' ? (lit ? P.grey : P.slate) : (lit ? P.sky : P.slate);
+      X.gradient(ctx, wx + 1, wy + 1, ww - 2, wh - 2, top, SEASON && SEASON.id === 'autumn' ? P.amber : P.putty, 5);
       // skyline beyond
       for (let b = 0; b < 4; b++) {
         const bh = sw(8 + ((i * 5 + b * 11) % 20));
         X.rect(ctx, wx + 2 + b * sw(9), wy + wh - 1 - bh, sw(7), bh, P.slate);
+        if (SEASON && SEASON.snow) X.rect(ctx, wx + 2 + b * sw(9), wy + wh - 1 - bh, sw(7), 1, P.bone);
       }
+      if (SEASON && SEASON.snow) X.speckle(ctx, wx + 1, wy + 1, ww - 2, wh - 2, P.bone, 0.02 + SEASON.snow * 0.02, i + 3);
     }
     // carpet
     X.rect(ctx, 0, sy(70), V.w, V.h, P.carpet);
@@ -257,6 +276,21 @@
     X.rect(ctx, 44, 29, 2, 11, P.ink);                 // minute hand to 12
     X.rect(ctx, 46, 39, 7, 2, P.ink);                  // hour hand to 4
     X.rect(ctx, 44, 38, 2, 2, P.crimson);
+
+    // A window: at four o'clock it is daylight in October, sunset by
+    // mid-November and full dark in December.
+    if (SEASON) {
+      X.inset(ctx, 232, 14, 64, 44, P.slate2, P.putty2, P.plasticD);
+      const late = SEASON.week >= 8, dark = SEASON.week >= 11;
+      X.gradient(ctx, 234, 16, 60, 40, dark ? P.ink : late ? P.violet : P.sky, dark ? P.ink2 : late ? P.crimson : P.putty2, 5);
+      for (let b = 0; b < 5; b++) {
+        const bh = 8 + ((b * 13) % 18);
+        X.rect(ctx, 236 + b * 12, 56 - bh, 10, bh, dark ? P.ink2 : P.slate);
+        if (dark || late) for (let wy = 3; wy < bh - 2; wy += 5) X.rect(ctx, 238 + b * 12 + (wy % 4), 56 - bh + wy, 2, 2, P.amber);
+      }
+      windowWeather(ctx, 234, 16, 60, 40, 9);
+      X.rect(ctx, 263, 14, 2, 44, P.plasticD);
+    }
 
     // the bell: bracket, yoke, flared body, rim, clapper
     const a = Math.round(Math.sin(swing * Math.PI * 7) * (1 - swing) * 6);
@@ -513,6 +547,74 @@
         for (let r = 0; r < 4; r++) X.rect(ctx, 103 + i * 34, 30 + r * 10, 17, 5, P.screenGlow);
         X.rect(ctx, 105 + i * 34, 31, 2, 2, P.phosphor);
       }
+    } else if (id === 'exit') {
+      // An open door, a bag, and nothing else.
+      X.rect(ctx, 138, 18, 44, 60, P.ink2);
+      X.rect(ctx, 142, 22, 36, 56, P.bone);
+      X.dither(ctx, 142, 22, 36, 56, P.bone, P.amber, 0.3);
+      X.plate(ctx, 190, 62, 26, 16, P.deskD, P.desk2, P.ink);
+      X.rect(ctx, 199, 58, 8, 4, P.deskD);
+    } else if (id === 'nobody') {
+      for (let i = 0; i < 5; i++) {
+        X.plate(ctx, 92 + i * 28, 22, 22, 54, P.slate, P.slate2, P.ink);
+        X.rect(ctx, 101 + i * 28, 30, 4, 22, P.crimson);
+        X.rect(ctx, 97 + i * 28, 50, 12, 3, P.crimson);
+        X.rect(ctx, 100 + i * 28, 53, 6, 3, P.crimson);
+      }
+      X.text(ctx, 'SELL SELL SELL SELL SELL', cx, 12, P.crimson, { align: 'center' });
+    } else if (id === 'fall-guy') {
+      X.dither(ctx, 110, 10, 100, 70, P.ink, P.bone, 0.12);
+      X.plate(ctx, 118, 30, 84, 44, P.bone, P.white, P.plasticD);
+      X.rect(ctx, 126, 38, 50, 2, P.grey);
+      X.rect(ctx, 126, 44, 60, 2, P.grey);
+      X.rect(ctx, 126, 62, 68, 1, P.ink);
+      X.text(ctx, 'NOT MINE', 160, 54, P.crimsonD, { align: 'center' });
+      X.rect(ctx, 188, 58, 14, 2, P.slate);
+    } else if (id === 'cassandra') {
+      for (let i = 0; i < 6; i++) X.plate(ctx, 96 + i * 3, 50 - i * 4, 60, 24, P.bone, P.white, P.plasticD);
+      X.rect(ctx, 104, 32, 34, 5, P.crimsonD);
+      X.text(ctx, 'UNREAD', 126, 42, P.ink, { align: 'center' });
+      X.plate(ctx, 176, 26, 50, 48, P.putty2, P.white, P.plasticD);
+      X.text(ctx, 'FILED', 201, 36, P.ink, { align: 'center' });
+      X.text(ctx, 'WEEK 3', 201, 48, P.crimson, { align: 'center' });
+    } else if (id === 'acquirer') {
+      X.plate(ctx, 90, 30, 40, 44, P.slate, P.slate2, P.ink);
+      X.plate(ctx, 190, 30, 40, 44, P.crimsonD, P.crimson, P.ink);
+      X.rect(ctx, 132, 50, 18, 3, P.amber);
+      X.rect(ctx, 170, 50, 18, 3, P.amber);
+      X.plate(ctx, 148, 18, 24, 56, P.amberD, P.amber, P.ink);
+    } else if (id === 'ward') {
+      X.plate(ctx, 120, 34, 80, 42, P.slate2, P.bone, P.ink2);
+      for (let i = 0; i < 5; i++) X.rect(ctx, 128 + i * 15, 42, 6, 30, P.bone);
+      X.rect(ctx, 114, 30, 92, 5, P.bone);
+      X.rect(ctx, 158, 10, 2, 22, P.grey2);
+      X.rect(ctx, 160, 10, 20, 11, P.sky);
+      X.rect(ctx, 160, 14, 20, 2, P.bone);
+    } else if (id === 'clawback') {
+      for (let i = 0; i < 10; i++) {
+        const kept = i < 4;
+        X.rect(ctx, 100 + i * 12, 70 - (kept ? 30 : 14), 9, kept ? 30 : 14, kept ? P.amber : P.slate);
+        if (!kept) X.rect(ctx, 98 + i * 12, 52 - (i % 2) * 4, 13, 2, P.crimson);
+      }
+      X.text(ctx, '40 CENTS', cx, 16, P.amber, { align: 'center' });
+    } else if (id === 'fund') {
+      X.plate(ctx, 136, 14, 48, 64, P.slate2, P.sky, P.ink2);
+      for (let y = 0; y < 5; y++) for (let x = 0; x < 3; x++) X.rect(ctx, 142 + x * 14, 20 + y * 11, 8, 6, P.amber);
+      for (let i = 0; i < 9; i++) X.rect(ctx, 196 + i * 6, 70 - i * 5, 5, 3, P.jade);
+    } else if (id === 'right-early') {
+      const ys = [30, 34, 40, 48, 44, 36, 28, 22, 20, 30, 46, 58, 66];
+      ys.forEach((y, i) => X.rect(ctx, 96 + i * 10, y + 4, 9, 3, i < 4 || i > 8 ? P.crimson : P.jade));
+      X.rect(ctx, 226, 64, 6, 10, P.ink2);
+      X.rect(ctx, 227, 59, 4, 5, P.desk2);
+    } else if (id === 'everything-rally') {
+      for (let i = 0; i < 7; i++) X.rect(ctx, 92 + i * 16, 74 - (20 + i * 6), 11, 20 + i * 6, P.jade);
+      X.plate(ctx, 212, 18, 30, 58, P.bone, P.white, P.plasticD);
+      for (let i = 0; i < 6; i++) X.rect(ctx, 216, 24 + i * 8, 22 - (i % 3) * 4, 2, P.grey);
+      X.rect(ctx, 216, 70, 22, 2, P.crimson);
+    } else if (id === 'lost-decade') {
+      X.rect(ctx, 80, 50, 160, 2, P.grey2);
+      for (let i = 0; i < 10; i++) X.plate(ctx, 88 + i * 15, 20 + (i % 2) * 3, 12, 16, P.bone, P.white, P.plasticD);
+      for (let i = 0; i < 10; i++) X.rect(ctx, 90 + i * 15, 24 + (i % 2) * 3, 8, 2, P.crimsonD);
     } else {
       X.plate(ctx, 108, 45, 104, 12, P.desk, P.desk2, P.deskD);
       X.plate(ctx, 143, 28, 34, 20, P.plastic, P.plastic2, P.plasticD);
@@ -671,5 +773,5 @@
 
   B.Scenes = Scenes;
   // The hand-drawn 320x180 set pieces, for the storyboard layer to reuse at 2x.
-  B.Shots = { V, apartment, tvSet, elevator, tradingFloor, deskCloseup, bellScene, endingShot, briefingTableau, endingDetail };
+  B.Shots = { V, setSeason, apartment, tvSet, elevator, tradingFloor, deskCloseup, bellScene, endingShot, briefingTableau, endingDetail };
 })(window.BTB);
