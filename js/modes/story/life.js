@@ -11,6 +11,8 @@
   const LIFE = [
     {
       id: 'rentHike', day: 20, speaker: 'Your landlord', role: 'Building management',
+      // No landlord on your mother's couch.
+      when: (S, W) => (W.tier | 0) > 0,
       kicker: 'YOUR MONEY', title: 'The Building Is AI-Managed Now',
       text: () => ['New owners. The building runs on the same kind of model you trade against now. It has reviewed your unit.',
         '"Rent goes up nine percent from next week. The system says congratulations."'],
@@ -24,6 +26,7 @@
             return ['The system does not negotiate. The increase stands, and you lie awake composing replies.'];
           } },
         { id: 'move', label: 'Give notice and move somewhere cheaper', hint: 'Down one home this weekend, free. Your sibling helps carry boxes.',
+          req: (S, W) => (W.tier | 0) > 1,
           apply: (S, W) => { W.tier = Math.max(1, (W.tier | 0) - 1); return ['Your sibling shows up with a borrowed van and says nothing about the promise you broke to help them move.']; } }
       ]
     },
@@ -33,8 +36,8 @@
       text: (S, W) => [`Kroll pays for dinner. Steak, the good wine, a toast to "the bottom being in."`,
         `"Pool closes the first of the year. Your number is looking good. HR can advance you ${money(8000)} against it tonight. Don't do anything stupid before then."`],
       options: [
-        { id: 'take', label: `Take the ${money(8000)} advance`, hint: 'Cash now. It comes out of your future bonus, with the tax.',
-          apply: (S, W, E) => { W.cash += 8000; W.deficit += Math.round(8000 / (1 - E.P.taxRate)); D.adj(S, {}, { kroll: 3 }); return ['The money lands before dessert. Imani, when you tell her, says: "Bonus money is a loan from the future."']; } },
+        { id: 'take', label: `Take the ${money(8000)} advance`, hint: 'Cash now. It comes out of your future bonus, and whatever you have not earned back is clawed back when you leave.',
+          apply: (S, W, E) => { const gross = Math.round(8000 / (1 - E.P.taxRate)); W.cash += 8000; W.deficit += gross; W.advanceGross = (W.advanceGross || 0) + gross; D.adj(S, {}, { kroll: 3 }); return ['The money lands before dessert. Imani, when you tell her, says: "Bonus money is a loan from the future."']; } },
         { id: 'decline', label: 'Decline', hint: 'Nothing changes. Kroll notices.',
           apply: (S) => { D.adj(S, {}, { kroll: -2 }); return ['Kroll shrugs. "Suit yourself." The quota slip is already on your plate.']; } }
       ]
@@ -66,7 +69,7 @@
         { id: 'give', label: `Give it. Don't pay me back.`, hint: `${money(6000)}, gone.`,
           apply: (S, W, E) => { E.charge(W, 6000); D.adj(S, {}, { perry: 15 }); return ['He calls instead of texting. Neither of you says much. It is the best call you have had in weeks.']; } },
         { id: 'refuse', label: 'Refuse', hint: 'Your money stays yours.',
-          apply: (S) => { D.adj(S, {}, { perry: -15 }); return ['You do not call back. The voicemail stays at the top of the list for the rest of the year.']; } }
+          apply: (S, W) => { D.adj(S, {}, { perry: -15 }); W.perryRefused = true; return ['You do not call back. The voicemail stays at the top of the list for the rest of the year.']; } }
       ]
     },
     {
@@ -75,7 +78,7 @@
       text: (S) => ['"A letter from Riverbend. Benefits are cut twenty-two percent from January."',
         '"Your father says we\'ll manage. We won\'t."'].concat(S.f.dumped ? ['<i>The paper you sold to Riverbend at par is part of why the letter exists. She will never know that.</i>'] : []),
       options: [
-        { id: 'monthly', label: 'Send something every week', hint: `Money home goes up ${money(290)} a week, for good.`,
+        { id: 'monthly', label: 'Send something every week', hint: `${money(290)} a week home, through the winter: about ${money(2900)} in all.`,
           apply: (S, W) => { W.momExtra = (W.momExtra || 0) + 290; return ['"You don\'t have to." You do anyway.']; } },
         { id: 'once', label: `One time: ${money(5000)}`, hint: 'Cash first, then the card.',
           apply: (S, W, E) => { E.charge(W, 5000); return ['She says it will cover the winter. It will cover most of it.']; } },

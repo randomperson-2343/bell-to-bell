@@ -1128,5 +1128,23 @@
     B.UI.inbox = saveInbox;
   });
 
+  test('V4.3 economy: cap before breaches, obligations come due, booked money is not P&L', () => {
+    const E = B.Economy, P = E.P;
+    const mk = () => { const w = E.fresh(); w.peakEq = 250000; return w; };
+    const big = (breaches) => E.settle(mk(), { equity: 5000000, capital: 250000, weekMade: true, breaches, sessions: 5 }).bonus;
+    assert(big([{ id: 'size' }, { id: 'overnight' }]) < big([]) * 0.75, 'breaches must cut a capped bonus too');
+    const w = mk(); w.cash = 20000;
+    w.advanceGross = 12308; w.deficit = 12308;
+    (w.plans = []).push({ label: "Dad's surgery", amt: 1200, left: 2 });
+    w.momExtra = 290;
+    const lines = E.settleUp(w);
+    assert(w.cash === 20000 - 8000 - 2400 - 2900, 'advance, plan and pledge should come due: ' + w.cash);
+    assert(lines.length === 3 && E.settleUp(w) === lines, 'settle-up runs once');
+    const mode = B.StoryMode(); mode.S.wallet.tier = 0;
+    assert(!B.Life.byId('rentHike').when(mode.S, mode.S.wallet), 'no landlord on the couch');
+    const w2 = mk(); w2.tier = 1;
+    assert(!B.Life.byId('rentHike').options.find((o) => o.id === 'move').req(mode.S, w2), 'no free move from the cheapest flat');
+  });
+
   B.Tests = { results, run: () => results };
 })(window.BTB);
