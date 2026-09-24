@@ -7,7 +7,7 @@ You sit at a desk on the 41st floor with two CRT monitors: the left one trades, 
 - **Career**: sixty-one trading sessions across thirteen calendar weeks. A compute bubble built on **CASCADE notes** — datacenter leases stapled to consumer loans and stamped AAA — comes apart while a conflict you only ever see on the tape constrains the power grid. Ten decisions reshape the market itself, change the rules you trade under, and send you to one of **22 endings**.
 - Every session begins with its own skippable news tableau, followed by a physical phone reveal and the pre-open feed. Twelve unmarked anomalies are hidden in public information; opening them changes what is possible on the final weekend.
 - The story uses two false dawns: an eight-session rally that punishes correct shorts, then one violent relief session after the rescue passes before the worst selloff of the campaign.
-- **Endless**: random market regimes and crash days, with sliders for capital, volatility, leverage, fake rumours, crash odds, fees, margin strictness, stress and interruptions. You pick your own win and lose conditions, and each set of settings has its own local leaderboard.
+- **Endless**: random market regimes and crash days, with sliders for capital, volatility, leverage, fake rumours, crash odds, fees, margin strictness, stress and interruptions. The morning analyst outlook is a forecast, right about two days in three, and nobody calls a crash the day before. You pick your own win and lose conditions, and each set of settings has its own local leaderboard.
 
 Every company, person, instrument, agency, country and event in this game is invented. Any resemblance to a real firm, person or event is coincidence, not intention — and a test enforces it (see below).
 

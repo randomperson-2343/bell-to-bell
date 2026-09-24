@@ -1173,5 +1173,20 @@
     B.storage.set('endings:tally', keep);
   });
 
+  test('Endless never announces a crash day in advance, and its outlook is only mostly right', () => {
+    const regs = ['bull', 'bubble', 'chop', 'bear', 'recovery'];
+    let crashes = 0, calledCrash = 0, right = 0, total = 0, wolf = 0;
+    for (let d = 1; d < 4000; d++) {
+      const actual = d % 7 === 0 ? 'panic' : regs[d % regs.length];
+      const call = B.Endless.outlookOf('seed-x', d, actual, regs[(d + 1) % regs.length]);
+      if (actual === 'panic') { crashes++; if (call === 'panic') calledCrash++; }
+      else { total++; if (call === actual) right++; if (call === 'panic') wolf++; }
+    }
+    assert(crashes > 0 && calledCrash === 0, `crash days were called ${calledCrash}/${crashes}`);
+    const acc = right / total;
+    assert(acc > 0.5 && acc < 0.8, 'outlook accuracy on normal days ' + acc.toFixed(2));
+    assert(wolf > 0, 'the desk should sometimes cry wolf');
+  });
+
   B.Tests = { results, run: () => results };
 })(window.BTB);
