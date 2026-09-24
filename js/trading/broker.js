@@ -128,12 +128,13 @@
       const comm = this.commission(qty);
       this.cash -= qty * price + comm;
       this.fees += comm;
-      let realized = 0;
+      let realized = 0, closes = false;
       if (p.qty === 0 || Math.sign(p.qty) === Math.sign(qty)) {
         p.avg = (p.avg * Math.abs(p.qty) + price * Math.abs(qty)) / (Math.abs(p.qty) + Math.abs(qty));
         p.qty += qty;
       } else {
         const closeQ = Math.min(Math.abs(qty), Math.abs(p.qty));
+        closes = closeQ > 0;
         realized = (price - p.avg) * closeQ * Math.sign(p.qty);
         p.realized += realized;
         const rem = Math.abs(qty) - closeQ;
@@ -144,6 +145,8 @@
       realized -= comm;
       const tr = { t: this.market.t, day: this.market.day, sym, qty, price, realized, tag: tag || '' };
       if (opens) tr.open = true;
+      // Only a fill that closed something is a finished trade for best/worst.
+      if (closes) tr.closed = true;
       this.trades.push(tr);
       if (p.qty === 0) {
         delete this.pos[sym];
@@ -282,7 +285,7 @@
       const realized = (q.bid - o.avg) * n * 100 - comm;
       o.qty -= n;
       if (o.qty <= 0) this.opts = this.opts.filter((x) => x !== o);
-      const tr = { t: this.market.t, day: this.market.day, sym: B.Options.label(o), qty: -n, price: q.bid, realized, tag: 'OPT SELL', opt: true };
+      const tr = { t: this.market.t, day: this.market.day, sym: B.Options.label(o), qty: -n, price: q.bid, realized, tag: 'OPT SELL', opt: true, closed: true };
       this.trades.push(tr);
       B.bus.emit('fill', tr);
       return { ok: true, price: q.bid, realized };

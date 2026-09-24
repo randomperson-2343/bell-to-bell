@@ -34,6 +34,13 @@
   }
 
   // Deterministic vote outcome from the political state.
+  // Decision scenes (js/art/decisions.js) play around each choice when the
+  // cinematic player is present; headless runs go straight through.
+  function scene(name, o, cb) {
+    if (B.Cinematic && B.Cinematic.play && B.Scenes && B.Scenes[name]) B.Cinematic.play(name, o, cb);
+    else cb();
+  }
+
   function votePasses(S) {
     let score = 50 + (S.m.stability - 50) * 0.5 - (S.m.anger - 30) * 0.5;
     if (S.f.whipped) score += 18 + (S.rel.thorne >= 50 ? 8 : 0) + S.m.influence / 12;
@@ -476,6 +483,11 @@
         const usedThisWeek = (S.excusedDays || []).some((d) => d !== g.day && D.weekOf(d) === wk);
         const early = !g.broker.dayRisk || g.broker.dayRisk.breachT == null || g.broker.dayRisk.breachT < EXCUSE_BEFORE;
         const excused = !r.quotaMet && rv.hitLimit && !rv.breaches.length && !usedThisWeek && early;
+        let dayMissNote = null;
+        const strikeWarning = () => {
+          const left = QUOTA_STRIKE_LIMIT - S.quotaStrikes;
+          return left === 1 ? ' FINAL WARNING: one more miss ends your career.' : left === 2 ? ' Only two misses remain.' : '';
+        };
         if (r.quota > 0) {
           if (r.quotaMet) {
             S.missStreak = 0;
@@ -495,9 +507,8 @@
               S.quotaLedger.sort((a, b) => a.day - b.day);
             }
             S.quotaStrikes = S.quotaLedger.length;
-            const left = QUOTA_STRIKE_LIMIT - S.quotaStrikes;
-            const warning = left === 1 ? ' FINAL WARNING: one more miss ends your career.' : left === 2 ? ' Only two misses remain.' : '';
-            notes.push(`<b>Missed quota. Career strike ${S.quotaStrikes} of ${QUOTA_STRIKE_LIMIT}.</b>${warning} ${D.boss(S)} logged the miss.`);
+            dayMissNote = notes.length;
+            notes.push(`<b>Missed quota. Career strike ${S.quotaStrikes} of ${QUOTA_STRIKE_LIMIT}.</b>${strikeWarning()} ${D.boss(S)} logged the miss.`);
           }
         }
         const W = S.week;
@@ -524,7 +535,14 @@
                 S.quotaLedger.sort((a, b) => a.day - b.day || (a.kind === 'week') - (b.kind === 'week'));
               }
               S.quotaStrikes = S.quotaLedger.length;
-              notes.push(`<b>Weekly quota missed:</b> ${B.fmt.money(made, true)} against ${B.fmt.money(W.target)}. Career strike ${S.quotaStrikes} of ${QUOTA_STRIKE_LIMIT}. The week resets Monday.`);
+              // A missed Friday that also misses the week is two strikes at
+              // once: say so in one line, with the count that is now true.
+              if (dayMissNote != null) {
+                notes[dayMissNote] = `<b>Missed the day and the week: 2 strikes today. Career strikes ${S.quotaStrikes} of ${QUOTA_STRIKE_LIMIT}.</b>${strikeWarning()} ${D.boss(S)} logged both.`;
+                notes.push(`<b>Weekly quota missed:</b> ${B.fmt.money(made, true)} against ${B.fmt.money(W.target)}. The week resets Monday.`);
+              } else {
+                notes.push(`<b>Weekly quota missed:</b> ${B.fmt.money(made, true)} against ${B.fmt.money(W.target)}. Career strike ${S.quotaStrikes} of ${QUOTA_STRIKE_LIMIT}.${strikeWarning()} The week resets Monday.`);
+              }
             }
           } else {
             const need = W.target - made;
@@ -603,7 +621,8 @@
         const weekMade = last && g.day % 5 === 0
           ? !!r.quotaMet
           : !S.quotaLedger.some((e) => e.kind === 'week' && e.week === wk);
-        const res = E.settle(W$, { equity: r.equity, capital, weekMade, breaches, lastBreaches, drawdown, sessions: g.day - first + 1 });
+        const metDays = (g.history || []).filter((h) => h.day >= first && h.day <= g.day && h.quotaMet).length;
+        const res = E.settle(W$, { equity: r.equity, capital, weekMade, breaches, lastBreaches, drawdown, metDays, sessions: g.day - first + 1 });
         W$.weeks[wk] = { net: res.net, bonus: res.bonus, draw: res.draw };
         W$.stressNext = (W$.stressNext || 0) + res.stress;
         r.payslip = res;
@@ -614,7 +633,7 @@
       weekendLedger(g, cb) {
         if (!B.Screens.ledger) return cb();
         B.Screens.ledger({ wallet: W$, options: E.moveOptions(W$), tiers: E.TIERS, worth: E.netWorth(W$), weekly: E.weekly(E.tier(W$), W$),
-          draw: Math.round(E.P.drawPerSession * 5 * (1 - E.P.taxRate)) }, (i) => {
+          draw: Math.round(E.P.drawPerSession * 5 * (1 - E.P.taxRate)), quotaPay: E.P.quotaPay }, (i) => {
           if (i != null) E.move(W$, i);
           cb();
         });
@@ -640,10 +659,12 @@
         const bal = `<span class="muted">Your money: ${B.fmt.money(W$.cash)} cash${W$.card > 0 ? ` · ${B.fmt.money(-W$.card)} on the card` : ''} · ${E.tier(W$).name}, ${B.fmt.money(E.weekly(E.tier(W$), W$))} a week all in.</span>`;
         const view = { speaker: beat.speaker, role: beat.role, kicker: beat.kicker, title: beat.title, text: beat.text(S, W$).concat(bal),
           options: beat.options.filter((o) => !o.req || o.req(S, W$)).map((o) => ({ id: o.id, label: o.label, hint: o.hint })) };
-        B.Screens.choice(view, S, (optId) => {
-          const res = this.applyLife(beat.id, optId);
-          B.Screens.aftermath(beat.title, (res && res.after) || [], () => cb());
-        });
+        scene('decision', { id: beat.id, day: g.day, speaker: beat.speaker, role: beat.role, title: beat.title, S }, () =>
+          B.Screens.choice(view, S, (optId) => {
+            const res = this.applyLife(beat.id, optId);
+            const after = (res && res.after) || [];
+            B.Screens.aftermath(beat.title, after, () => cb(), { id: beat.id, day: g.day, S });
+          }));
       },
 
       afterDay(g, cb) {
@@ -658,7 +679,7 @@
         const view = Object.assign({}, c, {
           options: c.options.filter((o) => !o.req || o.req(S, wealth)).map((o) => Object.assign({}, o, { req: null }))
         });
-        B.Screens.choice(view, S, (optId) => {
+        scene('decision', { id, day: d, speaker: c.speaker, role: c.role, title: c.title, S }, () => B.Screens.choice(view, S, (optId) => {
           const opt = c.options.find((o) => o.id === optId);
           opt.apply(S);
           S.choices[id] = optId;
@@ -671,8 +692,8 @@
               return cb(this.buildEnding(g, 'final'));
             }
             cb();
-          });
-        });
+          }, { id, day: d, S });
+        }));
       },
 
       liquidate(g) {

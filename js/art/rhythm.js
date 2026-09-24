@@ -40,16 +40,48 @@
   function text(ctx, value, x, y, color, align) {
     X.textShadow(ctx, clean(value).slice(0, 80), x, y, color || P.bone, P.ink, { align: align || 'left' });
   }
-  function skyline(ctx, act, seed, y) {
+  // Thirteen weeks run from October into the new year: amber dawns first,
+  // then grey six-o'clock darkness, then snow. Every exterior reads this.
+  function season(day) {
+    const week = Math.floor(Math.max(0, day | 0) / 5) + 1;
+    if (week <= 4) return { id: 'autumn', week, dawn: P.amberD, glow: 0.34, snow: 0 };
+    if (week <= 9) return { id: 'grey', week, dawn: P.slate, glow: 0.22, snow: 0 };
+    return { id: 'winter', week, dawn: P.slate2, glow: 0.16, snow: Math.min(1, (week - 9) / 3), wreath: week >= 11 };
+  }
+  // Sky over the horizon line at y for a given day, then weather on top.
+  function sky(ctx, x, y0, w, h, day, top) {
+    const s = season(day);
+    X.gradient(ctx, x, y0, w, h, top || P.ink2, P.ink, 10);
+    X.dither(ctx, x, y0 + Math.round(h * 0.55), w, Math.round(h * 0.45), P.ink, s.dawn, s.glow);
+    return s;
+  }
+  function weather(ctx, x, y0, w, h, day) {
+    const s = season(day);
+    if (s.snow) {
+      X.speckle(ctx, x, y0, w, h, P.bone, 0.006 + s.snow * 0.01, 7 + (day | 0));
+      X.speckle(ctx, x, y0, w, h, P.white, 0.002 + s.snow * 0.004, 31 + (day | 0));
+    } else if (s.id === 'autumn') {
+      for (let i = 0; i < 9; i++) {
+        const k = (i * 97 + (day | 0) * 31) % 1000;
+        X.rect(ctx, x + (k * 7) % w, y0 + (k * 13) % h, 3, 2, i % 2 ? P.amber : P.crimsonD);
+      }
+    }
+    return s;
+  }
+  function skyline(ctx, act, seed, y, day) {
     const c = colors(act); y = y || 248;
     X.gradient(ctx, 0, 0, V.w, y, c.sky, P.ink, 12);
+    const s = day == null ? null : season(day);
+    if (s) X.dither(ctx, 0, Math.round(y * 0.6), V.w, Math.round(y * 0.4), P.ink, s.dawn, s.glow);
     for (let i = 0; i < 34; i++) {
       const w = 10 + ((i * 17 + seed * 3) % 22), h = 34 + ((i * 41 + seed * 11) % 128), x = i * 20 - 9;
       X.rect(ctx, x, y - h, w, h, i % 4 ? P.ink2 : P.slate);
+      if (s && s.snow) X.rect(ctx, x, y - h, w, 2, P.bone);
       for (let yy = 7; yy < h - 5; yy += 10) for (let xx = 4; xx < w - 3; xx += 8) {
         if ((i * 13 + xx + yy + seed) % 11 < 2) X.rect(ctx, x + xx, y - h + yy, 2, 2, c.wash);
       }
     }
+    if (s) weather(ctx, 0, 0, V.w, y - 20, day);
   }
   function person(ctx, x, y, scale, act, face) {
     const s = scale || 1, dir = face < 0 ? -1 : 1;
@@ -78,7 +110,7 @@
   function placeFrame(ctx, sb, headline, detail) {
     const c = colors(sb.act), shift = sb.crop;
     X.rect(ctx, 0, 0, V.w, V.h, P.ink);
-    skyline(ctx, sb.act, sb.day, 252);
+    skyline(ctx, sb.act, sb.day, 252, sb.day);
     X.rect(ctx, 0, 252, V.w, 108, sb.place === 'street' || sb.place === 'platform' ? P.ink2 : P.carpetD);
     if (sb.place === 'subway' || sb.place === 'platform') {
       X.rect(ctx, 0, 26, V.w, 226, P.plasticD);
@@ -97,7 +129,7 @@
       X.rect(ctx, 0, 226, V.w, 134, P.desk);
       chart(ctx, 374+shift/3, 66, 198, 130, sb.day, marketDown(sb.day - 1));
     } else if (sb.place === 'rideshare') {
-      X.rect(ctx, 0, 0, V.w, 360, P.ink2); skyline(ctx, sb.act, sb.day, 210);
+      X.rect(ctx, 0, 0, V.w, 360, P.ink2); skyline(ctx, sb.act, sb.day, 210, sb.day);
       X.rect(ctx, 0, 214, V.w, 146, P.ink);
       person(ctx, 74, 250, 2, sb.act, 1); person(ctx, 574, 250, 2, sb.act, -1);
     }
@@ -146,14 +178,30 @@
     text(ctx,`${count} NOTIFICATION${count===1?'':'S'}`,close?92:88,110,P.bone);
   }
 
-  function officeFrame(ctx, day, detail, down) {
-    const sb=board(day), c=colors(sb.act);
+  // The floor empties by act: one more dead desk each act. Your own desk
+  // carries the story: the CASCADE stack slips as stability falls, and the
+  // red HOLD files arrive once the heat is on.
+  function officeFrame(ctx, day, detail, down, S) {
+    const sb=board(day), c=colors(sb.act), s=season(day);
     if (down == null) down = marketDown(day - 1);
     X.rect(ctx,0,0,V.w,V.h,P.putty); X.gradient(ctx,0,0,V.w,235,P.putty2,P.putty,10); X.rect(ctx,0,235,V.w,125,P.desk);
-    for(let i=0;i<5;i++){const x=24+i*124;X.plate(ctx,x,78,104,126,P.plastic,P.plastic2,P.plasticD);chart(ctx,x+10,92,84,78,day+i,down);}
-    X.plate(ctx,196,250,248,40,P.plasticD,P.plastic2,P.ink2);
-    for(let i=0;i<12;i++) X.rect(ctx,208+i*18,260,12,5,i%4?P.slate:P.slate2);
-    if(detail){X.plate(ctx,58,246,110,62,P.bone,P.white,P.plasticD);text(ctx,'CASCADE',113,261,c.signal,'center');chart(ctx,478,238,130,73,day,down);}
+    // A strip of windows: the season outside the forty-first floor.
+    for(let i=0;i<6;i++){const wx=18+i*104;X.inset(ctx,wx,16,90,44,P.slate2,P.putty2,P.plasticD);sky(ctx,wx+2,18,86,40,day,P.sky);
+      for(let b=0;b<5;b++){const bh=8+((i*5+b*11+day)%20);X.rect(ctx,wx+4+b*17,58-bh,13,bh,P.slate);if(s.snow)X.rect(ctx,wx+4+b*17,58-bh,13,1,P.bone);}
+      weather(ctx,wx+2,18,86,30,day+i);}
+    const dead=sb.act-1;
+    for(let i=0;i<5;i++){const x=24+i*124,off=i>=5-dead;X.plate(ctx,x,78,104,126,P.plastic,P.plastic2,P.plasticD);
+      if(off){X.rect(ctx,x+10,92,84,78,P.screenD);X.rect(ctx,x+20,176,64,3,P.plasticD);}else chart(ctx,x+10,92,84,78,day+i,down);}
+    X.plate(ctx,196,242,248,30,P.plasticD,P.plastic2,P.ink2);
+    for(let i=0;i<12;i++) X.rect(ctx,208+i*18,250,12,5,i%4?P.slate:P.slate2);
+    if(detail){
+      const st=S&&S.m?S.m.stability:100, slip=Math.round((100-st)/12), f=(S&&S.f)||{};
+      for(let i=0;i<4;i++){const x=58+i*4+(i>1?slip:0),y=250-i*9;X.rect(ctx,x+4,y+4,110,16,P.deskD);X.plate(ctx,x,y,110,16,P.bone,P.white,P.plasticD);X.rect(ctx,x+6,y+5,40,2,i>1&&st<60?P.crimsonD:P.sky);X.rect(ctx,x+6,y+10,80,1,P.grey);}
+      text(ctx,'CASCADE',64,216,c.signal);
+      if(st<40){X.rect(ctx,176+slip,262,8,4,P.crimson);X.rect(ctx,188+slip,266,5,3,P.crimsonD);}
+      if(S&&S.m&&(S.m.heat>=50||f.insiderTraded||f.raid)){X.plate(ctx,470,236,56,34,P.crimsonD,P.crimson,P.ink);text(ctx,'HOLD',498,246,P.white,'center');text(ctx,'FILES',498,256,P.bone,'center');}
+      chart(ctx,540,218,86,50,day,down);
+    }
   }
   function closeFrame(ctx, report, detail) {
     const good=(report.pnl||0)>=0, met=!!report.quotaMet;
@@ -193,7 +241,7 @@
   }
   function sqwakFrame(ctx, sb, b, full) {
     const c = colors(sb.act);
-    skyline(ctx, sb.act, sb.day * 7 + 3, 300);
+    skyline(ctx, sb.act, sb.day * 7 + 3, 300, sb.day);
     X.rect(ctx, 0, 300, V.w, 60, P.ink);
     const pw = 236, ph = 330, px = (V.w - pw) / 2, py = full ? 14 : 40;
     // hand behind the phone
@@ -242,7 +290,7 @@
   B.Rhythm = {
     view:V, storyboards:STORYBOARDS, endingIds:ENDING_IDS,
     // Drawing helpers for js/art/storyboard.js.
-    placeFrame, phoneFrame, officeFrame, closeFrame, weekendFrame, skyline, text, colors, clean, chart, person, marketDown, beat,
+    placeFrame, phoneFrame, officeFrame, closeFrame, weekendFrame, skyline, season, sky, weather, text, colors, clean, chart, person, marketDown, beat,
     phoneRowCount(feed){return Math.min(4,(feed||[]).length);},
     storyboard(day){return STORYBOARDS[day]||board(day);},
     frameMap(day){const sb=this.storyboard(day);return [
@@ -263,10 +311,10 @@
     beat('phone',`${sb.day}:handoff`,1.4,(c)=>phoneFrame(c,sb,feed,false),'',{sfx:'apartment',transition:'fade'}),
     beat('phone',`${sb.day}:read`,2.0,(c)=>phoneFrame(c,sb,feed,true),'PRE-OPEN FEED',{sfx:'news',informative:true})
   ];};
-  B.Scenes.office = function(o){const day=o.day||0;return [
-    beat('office',`${day}:wide`,1.45,(c)=>officeFrame(c,day,false),'FORTY-FIRST FLOOR.',{sfx:'elevator',transition:'fade'}),
-    beat('office',`${day}:desk`,1.8,(c)=>officeFrame(c,day,true),'THE DESK IS ALREADY AWAKE.',{sfx:'office',informative:true}),
-    beat('office',`${day}:hold`,.85,(c)=>officeFrame(c,day,true),'SIT DOWN. NINE THIRTY.',{})
+  B.Scenes.office = function(o){const day=o.day||0,g=o.game,S=g&&g.mode&&g.mode.S,k=S&&S.m?`${Math.round((100-S.m.stability)/12)}${S.m.heat>=50?'h':''}`:'';const dead=board(day).act-1;return [
+    beat('office',`${day}:wide`,1.45,(c)=>officeFrame(c,day,false,null,S),'FORTY-FIRST FLOOR.',{sfx:'elevator',transition:'fade'}),
+    beat('office',`${day}:desk:${k}`,1.8,(c)=>officeFrame(c,day,true,null,S),dead?`${['','ONE DESK','TWO DESKS','THREE DESKS'][dead]} ON YOUR ROW. NOBODY SITS THERE NOW.`:'THE DESK IS ALREADY AWAKE.',{sfx:'office',informative:true}),
+    beat('office',`${day}:hold:${k}`,.85,(c)=>officeFrame(c,day,true,null,S),'SIT DOWN. NINE THIRTY.',{})
   ];};
   B.Scenes.close = function(o){const r=o.report||{};const story=!o.game||!o.game.mode||o.game.mode.kind==='story';
     const sq=story&&B.SqwakStory&&B.SqwakStory.BREAKING?B.SqwakStory.BREAKING[r.day]:null;const sb=board(r.day||0);

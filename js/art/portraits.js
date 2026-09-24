@@ -12,18 +12,29 @@
     'Sen. Marcus Thorne': { skin: P.desk2, hair: P.bone, suit: P.sky, accent: P.white, cut: 'silver', tie: true },
     'Perry Nakash': { skin: P.putty2, hair: P.ink, suit: P.amberD, accent: P.amber, cut: 'crop', glasses: true },
     'Adele Venn': { skin: P.desk, hair: P.ink2, suit: P.phosphorD, accent: P.phosphor, cut: 'crop' },
-    'Greta Vail': { skin: P.putty2, hair: P.crimsonD, suit: P.slate, accent: P.plastic2, cut: 'bob' }
+    'Greta Vail': { skin: P.putty2, hair: P.crimsonD, suit: P.slate, accent: P.plastic2, cut: 'bob' },
+    'Mom': { skin: P.desk2, hair: P.grey2, suit: P.carpet, accent: P.bone, cut: 'bob', cardigan: true }
   };
 
   function draw(canvas, name) {
     if (!canvas) return;
-    const c = CAST[name] || { skin: P.desk2, hair: P.ink2, suit: P.slate, accent: P.grey2, cut: 'crop' };
     const { ctx } = X.fit(canvas, 48, 48, 4);
+    paint(ctx, name);
+  }
 
-    X.rect(ctx, 0, 0, 48, 48, P.ink2);
-    X.dither(ctx, 2, 2, 44, 44, P.slate, c.accent, 0.13);
-    for (let i = 6; i < 44; i += 8) X.rect(ctx, i, 3, 1, 42, P.ink2);
-    X.rect(ctx, 2, 38, 44, 8, P.ink);
+  // Paint a portrait into any context on a 48x48 grid. Scenes scale it up
+  // with ctx.scale and pass bare: true to drop the card background and frame,
+  // so the person stands in the room instead of on a badge.
+  function paint(ctx, name, opt) {
+    const c = CAST[name] || { skin: P.desk2, hair: P.ink2, suit: P.slate, accent: P.grey2, cut: 'crop' };
+    const bare = !!(opt && opt.bare);
+
+    if (!bare) {
+      X.rect(ctx, 0, 0, 48, 48, P.ink2);
+      X.dither(ctx, 2, 2, 44, 44, P.slate, c.accent, 0.13);
+      for (let i = 6; i < 44; i += 8) X.rect(ctx, i, 3, 1, 42, P.ink2);
+      X.rect(ctx, 2, 38, 44, 8, P.ink);
+    }
 
     // shoulders, shirt and lapels
     X.rect(ctx, 7, 34, 34, 12, c.suit);
@@ -33,6 +44,11 @@
     X.rect(ctx, 28, 34, 8, 2, c.accent);
     X.rect(ctx, 18, 34, 4, 8, c.suit);
     X.rect(ctx, 26, 34, 4, 8, c.suit);
+    if (c.cardigan) {
+      X.rect(ctx, 20, 34, 8, 12, P.putty2);
+      X.rect(ctx, 23, 37, 2, 2, c.accent);
+      X.rect(ctx, 23, 41, 2, 2, c.accent);
+    }
     if (c.tie) {
       X.rect(ctx, 23, 35, 2, 3, c.accent);
       X.rect(ctx, 22, 38, 4, 6, c.accent);
@@ -87,6 +103,7 @@
       X.rect(ctx, 33, 42, 4, 1, P.grey);
     }
 
+    if (bare) return;
     X.rect(ctx, 0, 0, 48, 2, c.accent);
     X.rect(ctx, 0, 46, 48, 2, P.ink);
     X.rect(ctx, 0, 0, 2, 48, c.accent);
@@ -94,7 +111,10 @@
   }
 
   B.Portraits = {
+    CAST,
     draw,
+    paint,
+    has: (name) => !!CAST[name],
     drawAll(root) {
       (root || document).querySelectorAll('canvas[data-portrait]').forEach((canvas) => draw(canvas, canvas.dataset.portrait));
     }

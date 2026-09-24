@@ -136,8 +136,15 @@ for (const a of Object.keys(ARCH)) {
 
 let fail = 0;
 const check = (ok, msg) => { console.log((ok ? '  PASS  ' : '  FAIL  ') + msg); if (!ok) fail++; };
-const evictedBy8 = R.passive.filter((r) => r.weeks.some((w) => w.w <= 8 && w.evictions)).length;
-check(evictedBy8 >= 3, `a passive trader is evicted by week 8 in at least 3 of 4 careers (${evictedBy8}/4)`);
+// V4.5: skill must show in the wallet from the first month (quota pay), and
+// a timid trader must still be losing money by the time Kroll fires them.
+const wk = (r, n) => (r.weeks.find((w) => w.w === n) || {}).worth;
+const aheadBy4 = SEEDS.filter((s, i) => wk(R.careful[i], 4) > wk(R.passive[i], 4)).length;
+check(aheadBy4 === 4, `a careful trader has more money than a timid one by week 4 (${aheadBy4}/4)`);
+const carefulHolds = R.careful.filter((r) => wk(r, 4) >= 1045 * 0.9).length;
+check(carefulHolds >= 3, `a careful trader is not bleeding in month one: week 4 at least ~the week 1 level (${carefulHolds}/4)`);
+const timidSinks = R.passive.filter((r) => wk(r, 6) < E.P.startCash).length;
+check(timidSinks === 4, `a timid trader is below starting cash by week 6 (${timidSinks}/4)`);
 const avgWorth = med(R.average.map((r) => r.worth)), reckWorth = med(R.reckless.map((r) => r.worth));
 check(avgWorth > reckWorth, `discipline pays: average median own money $${avgWorth} beats reckless $${reckWorth}`);
 let paired = 0, won = 0;

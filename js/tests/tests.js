@@ -67,6 +67,19 @@
     assert(b.isFlat(), 'should be flat');
   });
 
+  test('Only fills that close something count as finished trades', () => {
+    const m = mkMarket(); const b = mkBroker(m);
+    const tk = m.bySym.BLWT;
+    tk.last = 100; tk.spread = 1e-12;
+    b.marketOrder('BLWT', 100);
+    assert(!b.dayTrades().some((x) => x.closed), 'an opening fill is not a finished trade');
+    b.marketOrder('BLWT', 50);
+    tk.last = 110;
+    b.marketOrder('BLWT', -150);
+    const done = b.dayTrades().filter((x) => x.closed);
+    assert(done.length === 1 && done[0].realized > 0, 'the closing fill is the one finished trade');
+  });
+
   test('Short round trip profits when price falls', () => {
     const m = mkMarket(); const b = mkBroker(m);
     const tk = m.bySym.BLWT;
@@ -439,16 +452,78 @@
     assert(D[58].feed.length === 3 && D[60].feed.length === 3, 'Act IV feed contraction');
   });
 
-  test('Cinematic Rhythm assigns a distinct high-resolution board to all 61 sessions', () => {
-    assert(B.Rhythm && B.Rhythm.storyboards.length === 61, 'missing 61-board presentation map');
-    const signatures = new Set(B.Rhythm.storyboards.map((x) => x.signature));
-    assert(signatures.size === 61, `only ${signatures.size} distinct storyboard signatures`);
-    const news = B.Scenes.news({ day: 60, brief: { title: 'Orphan Monday', kicker: 'IV · RECKONING', feed: [] } });
+  test('Storyboard: every session has an authored row and native 640x360 beats', () => {
+    const SB = B.Storyboard;
+    assert(SB && SB.SHEET.length === 61, 'beat sheet must cover all 61 sessions');
+    for (let day = 0; day < 61; day++) {
+      const news = B.Scenes.news({ day, brief: { title: 'Session ' + (day + 1), feed: [] } });
+      assert(news.length >= 1 && news.every((b) => b.view.w === 640 && b.view.h === 360), 'session ' + (day + 1) + ' is not native 640x360');
+      assert(news.some((b) => b.informative), 'session ' + (day + 1) + ' has no informative beat for short mode');
+    }
+    // Close-ups quote the current quota table, not a stale one.
+    const q = SB.SHEET[45][2].match(/([\d.]+)%/);
+    near(+q[1] / 100, B.StoryData.QUOTAS[45], 1e-9, 'session 46 quota insert');
     const phone = B.Scenes.phone({ day: 60, brief: { feed: [{ source: 'WIRE', title: 'Before the bell' }] } });
-    const weekend = B.Scenes.weekend({ day: 54 });
-    assert(news.length >= 3 && news.every((beat) => beat.view.w === 640 && beat.view.h === 360), 'news boards are not native 640x360');
     assert(phone.length === 2 && phone.every((beat) => beat.view.w === 640), 'phone handoff is missing');
-    assert(weekend.length === 3 && weekend.every((beat) => beat.view.h === 360), 'weekend punctuation is missing');
+    assert(B.Scenes.weekend({ day: 44 }).length === 3, 'ordinary weekends are sat, sun, hold');
+    assert(B.Scenes.weekend({ day: 34 }).length === 4 && B.Scenes.weekend({ day: 54 }).length === 4, 'rescue and whip weekends get a second room');
+  });
+
+  test('Storyboard: four mornings follow the choice made the night before', () => {
+    const SB = B.Storyboard;
+    const S = (choices, f) => ({ choices: choices || {}, f: f || {} });
+    assert(SB.row(10, S({ c1: 'dump' })).arg !== SB.row(10, S({ c1: 'refuse' })).arg, 'session 11 ignores the pension dump');
+    assert(SB.row(35, S({ c5: 'fail' })).shot === 'dark' && SB.row(35, S({ c5: 'ban' })).arg !== SB.row(35, S({ c5: 'bail' })).arg, 'session 36 ignores Rescue Weekend');
+    assert(SB.row(55, S({}, { billPassed: true })).doc === 'vote' && SB.row(55, S()).shot === 'tableau', 'session 56 ignores the vote');
+    assert(SB.row(60, S({}, { pulledPlug: true })).shot === 'racks', 'session 61 ignores Pull the Plug');
+    // Variant mornings must not reuse the default morning's cached frames.
+    const ids = (S$) => B.Scenes.news({ day: 10, brief: { title: 'x', feed: [] }, game: { mode: { S: S$ } } }).map((b) => b.id).join();
+    assert(ids(S({ c1: 'dump' })) !== ids(S()), 'variant shares frame cache ids with the default');
+    assert(SB.ANOMALY_DAYS.length === 12, 'one tell per technical anomaly');
+  });
+
+  test('Decision scenes: every desk and life decision opens on its own room', () => {
+    const D = B.StoryData, A = B.DecisionArt;
+    const list = Object.keys(D.CHOICES).filter((k) => !D.CHOICES[k].mid).map((k) => Object.assign({ id: k }, D.CHOICES[k]))
+      .concat(B.Life.LIFE);
+    assert(list.length === 13, 'expected 8 desk decisions and 5 life beats, got ' + list.length);
+    for (const c of list) {
+      assert(A.ROOMS[c.id], c.id + ' has no room');
+      const beats = B.Scenes.decision({ id: c.id, day: c.day, speaker: c.speaker, role: c.role, title: c.title, S: B.StoryMode.freshState(250000) });
+      assert(beats.length === 2 && beats[1].informative && beats.every((b) => b.view.w === 640), c.id + ' decision beats');
+      if (c.speaker !== 'Your landlord' && c.id !== 'perry') assert(B.Portraits.has(c.speaker), 'no portrait for ' + c.speaker);
+    }
+    // The aftermath is one popup with the room in it, not a second cutscene.
+    assert(!B.Scenes.decisionAfter && typeof A.still === 'function', 'aftermath still belongs in the popup');
+  });
+
+  test('Endings: 22 props, one card, and a last picture after', () => {
+    const ids = B.Rhythm.endingIds;
+    assert(ids.length === 22, 'ending list');
+    for (const id of ids) {
+      const beats = B.Scenes.ending({ id, title: id, deck: 'Deck', dark: false });
+      assert(beats.length === 3, id + ' ending beats');
+      assert(beats.filter((b) => b.line === 'Deck').length === 1, id + ' prints the deck once');
+    }
+    const pulled = B.Scenes.ending({ id: 'grind', pulled: true })[2], dawn = B.Scenes.ending({ id: 'grind' })[2];
+    assert(pulled.id !== dawn.id && pulled.line !== dawn.line, 'pulling the plug changes the last picture');
+  });
+
+  test('Quota pay: each quota day pays on top of the draw, cut by breaches', () => {
+    const E = B.Economy;
+    const pay = (metDays, breaches) => { const w = E.fresh(); return E.settle(w, { equity: 250000, capital: 250000, weekMade: false, breaches: breaches || [], metDays, sessions: 5 }).net; };
+    const none = pay(0), three = pay(3);
+    near(three - none, Math.round(3 * E.P.quotaPay * (1 + E.P.cleanKicker) * (1 - E.P.taxRate)), 2, 'three clean quota days');
+    assert(pay(3, [{ id: 'size' }]) < three, 'a breach cuts quota pay');
+    assert(pay(3, [{ id: 'margin', zero: true }]) === none, 'a margin call zeroes quota pay');
+    const w = E.fresh(); E.settle(w, { equity: 250000, capital: 250000, weekMade: false, breaches: [], metDays: 5, sessions: 5 });
+    assert(w.deficit === E.P.drawPerSession * 5, 'quota pay never repays or reduces unearned draw');
+  });
+
+  test('Seasons run October to January across the thirteen weeks', () => {
+    const s = B.Rhythm.season;
+    assert(s(0).id === 'autumn' && s(19).id === 'autumn' && s(20).id === 'grey' && s(44).id === 'grey' && s(45).id === 'winter', 'season boundaries');
+    assert(!s(44).snow && s(60).snow === 1, 'snow arrives in winter and deepens');
   });
 
   test('Version 2 story saves migrate to matching Patch 3 beats', () => {
@@ -876,8 +951,11 @@
     g.day = 10; mode.openWeek(g);
     for (let d = 10; d < 14; d++) close(d, 0);
     g.day = 14; eq -= 5000;
-    mode.onDayEnd(g, { quota: 1000, quotaMet: false, pnl: -5000, equity: eq, date: 'x' });
+    const v3 = mode.onDayEnd(g, { quota: 1000, quotaMet: false, pnl: -5000, equity: eq, date: 'x' });
     assert(S.quotaStrikes === 3, 'Friday daily miss plus weekly miss should be two strikes, total ' + S.quotaStrikes);
+    // One line says both, with the count that is true now; no stale "strike 2 of".
+    assert(v3.notes.some((n) => /2 strikes today\. Career strikes 3 of/.test(n)), 'double strike is not stated in one line');
+    assert(!v3.notes.some((n) => /Career strike 2 of/.test(n)), 'a stale strike count is still printed');
     mode.reconcileQuotaStrikes([]);
     assert(S.quotaStrikes === 3, 'ledger rebuild merged a weekly strike into a daily one');
     // Week 4: miss Monday, then make the week. The Monday strike is wiped and stays wiped.

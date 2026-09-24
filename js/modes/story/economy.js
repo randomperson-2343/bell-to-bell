@@ -18,6 +18,9 @@
     taxRate: 0.35,
     bonusMade: 0.25,        // share of new career P&L highs when the week's quota was made
     bonusMissed: 0.10,      // ... when it was missed
+    quotaPay: 300,          // V4.5: paid for each session you make quota, on top of the draw.
+                            // Without it a steady trader's wallet looked exactly like a
+                            // passive one's for the first month: new highs came too slowly.
     drawdown: 0.05,         // a week that fell this far off peak book equity halves the rate
     breachCut: 0.15,        // each KIND of rule broken this week or last cuts the bonus this much
     cleanKicker: 0.25,      // a clean week (3+ sessions) pays x1.25
@@ -194,13 +197,18 @@
       w.deficit -= repaid;
       gross = draw + excess - repaid;
     }
+    // Quota pay: every session you made quota, paid on top and never against
+    // the draw. The risk desk's multiplier applies, so breaches still cost.
+    const quotaPay = round(P.quotaPay * (o.metDays | 0) * mult);
+    gross += quotaPay;
     const net = round(gross * (1 - P.taxRate));
     w.cash += net;
     w.paidTotal += net;
     const how = bonus > draw ? `bonus ${B.fmt.money(bonus)}` : `draw ${B.fmt.money(draw)}${bonus ? ` (bonus ${B.fmt.money(bonus)} did not beat it)` : ''}`;
     const whyRate = `${+(rate * 100).toFixed(1)}% of new highs${o.weekMade ? '' : ' (weekly quota missed)'}${dd ? ', halved for drawdown' : ''}`;
     const cuts = breaches.some((b) => b.zero) ? ', zeroed by a margin call' : mult === 0 ? ', zeroed by breaches' : nk ? `, cut ${Math.round(Math.min(1, nk * P.breachCut) * 100)}% for ${nk} kind${nk === 1 ? '' : 's'} of breach this week and last` : mult > 1 ? `, x${1 + P.cleanKicker} for a clean week` : '';
-    lines.push(`<b>Payslip:</b> ${how}. Bonus rate ${whyRate}${cuts}. ${repaid ? ` ${B.fmt.money(repaid)} of it went to repay unearned draw.` : ''} After ${Math.round(P.taxRate * 100)}% tax: <b>${B.fmt.money(net, true)}</b>.${w.deficit > 0 ? ` You owe the desk ${B.fmt.money(w.deficit)} of unearned draw.` : ''}`);
+    const qp = o.metDays ? ` Quota pay: ${o.metDays} day${o.metDays === 1 ? '' : 's'} made, ${B.fmt.money(quotaPay)}.` : ' Quota pay: no days made.';
+    lines.push(`<b>Payslip:</b> ${how}.${qp} Bonus rate ${whyRate}${cuts}. ${repaid ? ` ${B.fmt.money(repaid)} of it went to repay unearned draw.` : ''} After ${Math.round(P.taxRate * 100)}% tax: <b>${B.fmt.money(net, true)}</b>.${w.deficit > 0 ? ` You owe the desk ${B.fmt.money(w.deficit)} of unearned draw.` : ''}`);
 
     // Card interest first, then fixed bills, then rent.
     const interest = round(w.card * P.cardApr / 52);
@@ -233,9 +241,11 @@
     }
     // Payment plans from the story (a surgery bill, say) come due weekly.
     const planLines = [];
+    let planOut = 0;
     for (const pl of w.plans || []) {
       if (!(pl.left > 0)) continue;
       charge(w, pl.amt);
+      planOut += pl.amt;
       pl.left--;
       planLines.push(`${pl.label} ${B.fmt.money(pl.amt)}${pl.left ? ` (${pl.left} left)` : ' (last one)'}`);
     }
@@ -254,7 +264,15 @@
       }
     }
     lines.push(`<b>Wallet:</b> ${B.fmt.money(w.cash)} cash · card ${w.card > 0 ? B.fmt.money(-w.card) : '$0'} of ${B.fmt.money(-P.cardLimit)} · ${tier(w).name}.`);
-    return { lines, net, bonus, draw, stress };
+    // V4.5: one plain sentence first; the arithmetic folds away underneath.
+    // Eviction warnings stay out in the open.
+    const billsOut = fixed + round(rent * part) + planOut + interest;
+    const owe = [w.card > 0 ? `${B.fmt.money(w.card)} on the card` : '', w.arrears > 0 ? `${B.fmt.money(w.arrears)} of rent` : ''].filter(Boolean).join(' and ');
+    const summary = `<b>Payday:</b> ${B.fmt.money(net)} in, ${B.fmt.money(billsOut)} of bills out. You have ${B.fmt.money(w.cash)}${owe ? ` and owe ${owe}` : ''}.`;
+    const warn = lines.filter((l) => EVICT_STAGES.some((st) => st && l.indexOf(st) >= 0));
+    const detail = lines.filter((l) => warn.indexOf(l) < 0);
+    const folded = `<details class="payslip"><summary>Payslip details</summary>${detail.map((l) => `<p>${l}</p>`).join('')}</details>`;
+    return { lines: [summary].concat(warn, [folded]), net, bonus, draw, stress };
   }
 
   // Unearned draw is only ever repaid out of future bonus, so it is not debt.

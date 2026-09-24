@@ -235,8 +235,8 @@
           <div class="stat"><div class="l">Equity</div><div class="v">${F.money(r.equity)}</div></div>
           <div class="stat"><div class="l">Quota</div><div class="v">${r.quota > 0 ? F.money(r.quota) : 'none'}</div></div>
           <div class="stat"><div class="l">Trades</div><div class="v">${r.trades}</div></div>
-          <div class="stat"><div class="l">Best trade</div><div class="v ${F.cls(r.best)}">${F.money(r.best, true)}</div></div>
-          <div class="stat"><div class="l">Worst trade</div><div class="v ${F.cls(r.worst)}">${F.money(r.worst, true)}</div></div>
+          <div class="stat"><div class="l">Best trade</div><div class="v ${r.best == null ? 'muted' : F.cls(r.best)}">${r.best == null ? 'none closed' : F.money(r.best, true)}</div></div>
+          <div class="stat"><div class="l">Worst trade</div><div class="v ${r.worst == null ? 'muted' : F.cls(r.worst)}">${r.worst == null ? 'none closed' : F.money(r.worst, true)}</div></div>
           <div class="stat"><div class="l">Stress peak</div><div class="v ${r.stressPeak > 80 ? 'down' : r.stressPeak > 50 ? 'amber' : ''}">${Math.round(r.stressPeak)}</div></div>
           ${r.quotaStrikeLimit ? `<div class="stat strike-stat"><div class="l">Career strikes</div><div class="v">${r.quotaStrikes} / ${r.quotaStrikeLimit}</div>${r.quotaStrikeLimit - r.quotaStrikes === 1 ? '<div class="quota-delta">FINAL WARNING · ONE MISS LEFT</div>' : ''}</div>` : ''}
         </div>
@@ -262,7 +262,7 @@
           <div class="stat"><div class="l">Net worth</div><div class="v ${F.cls(v.worth)}">${F.money(v.worth)}</div></div>
         </div>
         <p>You live in ${w.tier | 0 ? 'the ' : ''}<b>${T.name}</b>${T.rent ? `: ${F.money(T.rent * (w.rentMult || 1))} a week` : ''}. ${T.note}</p>
-        <p class="muted">Your draw pays about ${F.money(v.draw)} a week after tax. Moving up costs two weeks of the new rent up front, and you need a week's costs left over; moving down is free. A better home means less stress in the morning and calmer hands at the desk. Unearned draw is repaid only out of future bonus.</p>`;
+        <p class="muted">Your draw pays about ${F.money(v.draw)} a week after tax, plus quota pay: ${F.money(v.quotaPay)} for each day you make quota, before tax. Moving up costs two weeks of the new rent up front, and you need a week's costs left over; moving down is free. A better home means less stress in the morning and calmer hands at the desk. Unearned draw is repaid only out of future bonus.</p>`;
       const after = `<div class="choice-list">
         <button class="choice-btn" data-tier=""><b>Stay put</b><span>${T.name} · ${F.money(T.rent * (w.rentMult || 1))} rent · ${F.money(v.weekly)}/week all in</span></button>
         ${opts.map((o) => `<button class="choice-btn" data-tier="${o.i}" ${o.afford ? '' : 'disabled'}><b>${o.i < (w.tier | 0) ? 'Move down' : 'Move up'}: ${o.name}</b><span>${F.money(o.rent)} rent · ${F.money(o.weekly)}/week all in${o.cost ? ` · ${F.money(o.cost)} to move in` : ''}${o.afford ? '' : ' · you cannot afford it'} · ${o.note}</span></button>`).join('')}
@@ -292,8 +292,10 @@
     },
 
     // Short follow-up after a choice.
-    aftermath(title, text, onNext) {
-      this.modal({ title, body: text.map((p) => `<p>${p}</p>`).join(''), buttons: [{ label: 'Continue', cls: 'primary', onClick: onNext }] });
+    aftermath(title, text, onNext, art) {
+      const pic = art && B.DecisionArt ? '<canvas class="aftermath-art" width="640" height="360" aria-hidden="true"></canvas>' : '';
+      const el = this.modal({ title, body: pic + text.map((p) => `<p>${p}</p>`).join(''), buttons: [{ label: 'Continue', cls: 'primary', onClick: onNext }] });
+      if (pic && el) B.DecisionArt.still(el.querySelector('.aftermath-art'), art);
     },
 
     // ---- endings ----
@@ -307,7 +309,8 @@
         else this.endlessEnding(g, ending);
       };
       if (B.Cinematic.startChain) B.Cinematic.startChain('ending');
-      B.Cinematic.play('ending', { id: ending.id, title: ending.title, deck: ending.deck, dark }, show);
+      const pulled = !!(g.mode && g.mode.S && g.mode.S.f && g.mode.S.f.pulledPlug);
+      B.Cinematic.play('ending', { id: ending.id, title: ending.title, deck: ending.deck, dark, pulled }, show);
     },
 
     storyEnding(g, e) {
