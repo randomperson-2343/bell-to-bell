@@ -528,8 +528,15 @@
     finish(ending) {
       this.running = false;
       this.alive = false;
-      if (this.slot != null) B.Save.finish(this.slot, ending);
-      else B.Save.recordEnding(ending.id);
+      if (this.mode.kind === 'story') {
+        if (this.slot != null) B.Save.finish(this.slot, ending);
+        else B.Save.recordEnding(ending.id);
+      } else {
+        // Endless runs live on the leaderboard. They do not count as Career
+        // endings, and a finished run frees its save slot.
+        B.Save.recordEndless(ending.id);
+        if (this.slot != null) B.Save.clear(this.slot);
+      }
       B.Music.stop();
       if (B.UI.clearToasts) B.UI.clearToasts();
       B.Screens.ending(this, ending);

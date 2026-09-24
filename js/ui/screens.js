@@ -316,7 +316,7 @@
       document.querySelectorAll('#screen-ending-page').forEach((x) => x.remove());
       scr.className = 'screen active';
       document.querySelectorAll('.screen').forEach((s) => s.classList.remove('active'));
-      const tally = B.Save.tally();
+      const tally = B.Save.careerTally();
       const found = Object.keys(tally).length;
       const wealthLabel = e.unpriced ? '<span id="unpriced-value" class="unpriced">$482,119.07</span>' : F.money(e.wealth);
       const returnLabel = e.unpriced ? 'UNPRICED' : F.pct(e.wealth / g.startCapital - 1);
@@ -399,7 +399,7 @@
     },
 
     showEndings() {
-      const tally = B.Save.tally();
+      const tally = B.Save.careerTally();
       const found = Object.keys(tally).length;
       const total = B.StoryEndings.list.length;
       const runs = B.Save.totalRuns();

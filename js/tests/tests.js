@@ -1163,5 +1163,15 @@
     assert(re.test({ S, wealth: 400000, start: 250000 }) && !re.test({ S, wealth: 900000, start: 250000 }), 'Right Too Early should not pay a doubled book');
   });
 
+  test('Endless results stay out of the Career endings tally', () => {
+    const keep = B.storage.get('endings:tally', {});
+    B.storage.set('endings:tally', { fired: 1, legend: 3, margin: 2, grind: 1 });
+    const t = B.Save.careerTally();
+    assert(t.grind === 1 && t.fired === 1 && !t.legend && !t.margin, 'career tally should drop Endless ids: ' + JSON.stringify(t));
+    B.Save.recordEndless('legend');
+    assert(!B.Save.careerTally().legend, 'recording an Endless result must not touch Career endings');
+    B.storage.set('endings:tally', keep);
+  });
+
   B.Tests = { results, run: () => results };
 })(window.BTB);
