@@ -116,22 +116,53 @@
       X.rect(ctx, 0, 26, V.w, 226, P.plasticD);
       for (let i=0;i<7;i++) X.inset(ctx, 18+i*94, 52, 76, 92, P.screenD, P.plastic2, P.plasticD);
       X.rect(ctx, 0, 252, V.w, 108, P.carpetD);
+      // Platform LEDs, bench ends and rails establish a current transit stop.
+      X.rect(ctx, 0, 246, V.w, 3, P.amberD);
+      for (let i=0;i<8;i++) {
+        X.rect(ctx, 20+i*82, 38, 48, 1, P.bone);
+        X.rect(ctx, 35+i*82, 226, 34, 3, P.plastic);
+        X.rect(ctx, 40+i*82, 229, 2, 19, P.plasticD);
+      }
     } else if (sb.place === 'lobby' || sb.place === 'elevator') {
       X.gradient(ctx, 0, 0, V.w, 278, P.putty2, P.plasticD, 10);
       for (let i=0;i<10;i++) X.rect(ctx, i*68, 0, 2, 278, P.plastic);
       X.rect(ctx, 0, 278, V.w, 82, P.slate);
+      for (let i=0;i<8;i++) X.rect(ctx, i*93, 273, 75, 1, P.bone);
+      X.plate(ctx, 516, 68, 74, 96, P.plasticD, P.plastic2, P.ink2);
+      X.rect(ctx, 526, 84, 54, 56, P.screenD);
+      for (let i=0;i<4;i++) X.rect(ctx, 534, 92+i*11, 40-i*6, 2, P.sky);
     } else if (sb.place === 'kitchen' || sb.place === 'breakroom') {
       X.gradient(ctx, 0, 0, V.w, 255, P.putty2, P.putty, 9);
       X.rect(ctx, 0, 255, V.w, 105, P.desk);
       for (let i=0;i<9;i++) X.plate(ctx, 12+i*72, 52, 62, 52, P.plastic, P.plastic2, P.plasticD);
+      X.plate(ctx, 0, 207, V.w, 21, P.deskD, P.desk2, P.ink2);
+      X.inset(ctx, 420, 213, 94, 11, P.plastic2, P.bone, P.plasticD);
+      X.rect(ctx, 524, 192, 3, 24, P.plastic2);
+      X.rect(ctx, 526, 191, 22, 2, P.plastic2);
+      X.plate(ctx, 570, 192, 24, 24, P.bone, P.white, P.plasticD);
     } else if (sb.place === 'desk') {
       X.gradient(ctx, 0, 0, V.w, 226, P.putty2, P.putty, 9);
       X.rect(ctx, 0, 226, V.w, 134, P.desk);
       chart(ctx, 374+shift/3, 66, 198, 130, sb.day, marketDown(sb.day - 1));
+      X.rect(ctx, 0, 219, V.w, 4, P.deskD);
+      for (let i=0;i<7;i++) X.rect(ctx, 398+i*23, 232, 15, 1, P.grey2);
+      X.plate(ctx, 554, 230, 33, 26, P.plastic2, P.bone, P.plasticD);
+      X.rect(ctx, 561, 237, 20, 1, P.grey);
     } else if (sb.place === 'rideshare') {
       X.rect(ctx, 0, 0, V.w, 360, P.ink2); skyline(ctx, sb.act, sb.day, 210, sb.day);
       X.rect(ctx, 0, 214, V.w, 146, P.ink);
       person(ctx, 74, 250, 2, sb.act, 1); person(ctx, 574, 250, 2, sb.act, -1);
+      X.rect(ctx, 0, 202, V.w, 5, P.slate);
+      X.plate(ctx, 254, 236, 132, 24, P.slate, P.slate2, P.ink2);
+      X.rect(ctx, 269, 242, 102, 10, P.screen);
+      X.rect(ctx, 280, 246, 36, 2, P.sky);
+      X.rect(ctx, 324, 246, 28, 2, P.amber);
+    } else if (sb.place === 'street') {
+      for (let i=0;i<10;i++) {
+        X.rect(ctx, i*76, 234, 2, 18, P.slate2);
+        X.rect(ctx, i*76+5, 249, 38, 1, P.grey2);
+      }
+      X.rect(ctx, 14, 249, 612, 2, P.amberD);
     }
     const mx = B.clamp(70 + shift, 24, 330), my = detail ? 56 : 76, mw = detail ? 300 : 250, mh = detail ? 170 : 142;
     monitor(ctx, mx, my, mw, mh, headline, sb.act);
@@ -173,7 +204,15 @@
     const count=(feed||[]).slice(0,4).length;
     const w = close || count>2 ? 226 : 180, h = close || count>2 ? 308 : 250;
     const x=(V.w-w)/2, y=18;
+    // A thin reflected edge keeps the handoff and the close view grounded
+    // as one physical device, while leaving the notification text untouched.
+    X.rect(ctx,x-12,y+16,1,h-24,P.slate2);
+    X.rect(ctx,x+w+11,y+16,1,h-24,P.slate2);
     phone(ctx,x,y,w,h,feed,sb.act,sb.day);
+    X.rect(ctx,x+3,y+14,1,h-28,P.grey2);
+    X.rect(ctx,x+w-4,y+19,1,h-38,P.slate2);
+    X.rect(ctx,x+Math.round(w/2)-9,y+h-8,18,1,P.slate2);
+    for(let i=0;i<5;i++) X.rect(ctx,x+14+i*8,y+h+12,4,1,colors(sb.act).signal);
     text(ctx,'SQWAK · PRE-OPEN', close?92:88, 92, colors(sb.act).wash);
     text(ctx,`${count} NOTIFICATION${count===1?'':'S'}`,close?92:88,110,P.bone);
   }
@@ -207,6 +246,9 @@
     const good=(report.pnl||0)>=0, met=!!report.quotaMet;
     officeFrame(ctx, report.day||0, true, (report.indexPct != null ? report.indexPct : (report.pnl||0)) < 0); ctx.save(); ctx.globalAlpha=.32;X.rect(ctx,0,0,V.w,V.h,P.ink);ctx.restore();
     X.box(ctx,165,72,310,112);
+    X.rect(ctx,166,71,308,1,P.grey2);
+    X.rect(ctx,166,185,308,1,P.slate2);
+    for(let i=0;i<9;i++) X.rect(ctx,172+i*37,180,15,1,met?P.jadeD:P.crimsonD);
     text(ctx, met?'QUOTA MET':report.quota>0?'QUOTA MISSED':'CLOSING BELL',320,93,met?P.jade:P.crimson,'center');
     text(ctx,B.fmt.money(report.pnl||0,true),320,124,good?P.jade:P.crimson,'center');
     if(detail){text(ctx,`QUOTA ${B.fmt.money(report.quota||0)}`,320,146,P.grey2,'center');text(ctx,clean(report.date||''),320,162,P.putty,'center');}

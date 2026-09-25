@@ -916,6 +916,27 @@
     });
   });
 
+  test('Sqwak Memory reveals existing posts in order without spoiling later sessions', () => {
+    const T = B.SqwakStory;
+    assert(T.THREADS.length === 3, 'first slice should include three threads');
+    assert(T.threadAt('ridgeway', 5, 124) === null, 'buyout claim leaked before its post');
+    assert(T.threadAt('ridgeway', 5, 125).posts.length === 1, 'claim missing at its market minute');
+    assert(T.threadAt('ridgeway', 5, 159).posts.length === 1, 'denial leaked before its post');
+    assert(T.threadAt('ridgeway', 5, 159).fact === 'UNVERIFIED', 'truth leaked before evidence');
+    assert(T.threadAt('ridgeway', 5, 240).posts.length === 3, 'rumour outcome missing');
+    assert(T.threadAt('ridgeway', 5, 240).fact === 'DENIED' && T.threadAt('ridgeway', 5, 240).price === 'HYPE FADED', 'false rumour readout wrong');
+    assert(T.threadAt('auction', 23, 149).posts.length === 1, 'zero-bid evidence leaked early');
+    assert(T.threadAt('auction', 24, 60).posts.length === 4, 'next-day price reaction missing');
+    assert(T.threadAt('auction', 24, 60).fact === 'ZERO BID' && T.threadAt('auction', 24, 60).price === 'GREEN NEXT DAY', 'fact and price should disagree here');
+    assert(T.threadAt('loop', 30, 189).posts.length === 2, 'bounce leaked early');
+    assert(T.threadAt('loop', 31, 60).posts.length === 4, 'official reaction missing');
+    const m = B.StoryMode();
+    for (const thread of T.THREADS) for (const [day, t, src, stage] of thread.posts) {
+      const post = m.scenario(day).events.find((e) => e.kind === 'chirp' && e.t === t && e.src === src && e.threadId === thread.id);
+      assert(post && post.threadStage === stage && post.text === T.INTRADAY[day].find((p) => p[0] === t && p[1] === src)[2], 'thread detached from an existing post');
+    }
+  });
+
   test('Resqwak: false rumours cost heat, true ones build influence, touting draws Compliance', () => {
     const m = B.StoryMode();
     const S = m.S;

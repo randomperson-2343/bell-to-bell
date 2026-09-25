@@ -303,6 +303,24 @@ input.short { width: 60px; }
 .sq-post .txt { overflow-wrap: anywhere; }
 .sq-tag { font: inherit; color: var(--c-sky); background: none; border: 0; border-bottom: 1px dotted var(--c-sky); padding: 0; cursor: pointer; }
 .sq-stats { display: flex; gap: 14px; margin-top: 3px; font-family: var(--mono); font-size: 9px; color: var(--c-grey); font-variant-numeric: tabular-nums; }
+.sq-thread-link { margin: 6px 0 3px; padding: 2px 5px; border: 1px solid var(--c-violet); background: var(--c-screen-d); color: var(--c-bone); font-family: var(--mono); font-size: 10px; cursor: pointer; }
+.sq-thread-link:hover, .sq-thread-link:focus-visible { border-color: var(--c-sky); }
+.sq-memory { padding: 8px; border-bottom: 2px solid var(--c-slate); background: var(--c-screen-d); font-family: var(--mono); }
+.sq-memory-heading { color: var(--c-bone); font-family: var(--pixel); font-size: 11px; letter-spacing: .08em; margin-bottom: 5px; }
+.sq-memory-links { display: flex; gap: 5px; flex-wrap: wrap; }
+.sq-memory-link { display: flex; gap: 6px; align-items: center; max-width: 100%; padding: 4px 6px; border: 1px solid var(--c-slate2); background: var(--c-screen); color: var(--c-bone); font-size: 10px; text-align: left; cursor: pointer; }
+.sq-memory-link span { color: var(--c-sky); font-size: 9px; }
+.sq-memory-link.on, .sq-memory-link:hover { border-color: var(--c-sky); }
+.sq-memory-detail { margin-top: 8px; padding: 6px 8px; border-left: 2px solid var(--c-violet); background: var(--c-screen); }
+.sq-memory-title { color: var(--c-bone); font-size: 12px; margin-bottom: 6px; }
+.sq-memory-readout { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 5px; }
+.sq-memory-readout span { padding: 2px 4px; border: 1px solid var(--c-slate2); color: var(--c-grey2); font-size: 9px; }
+.sq-memory-readout b { color: var(--c-bone); font-weight: 600; }
+.sq-memory-row { padding: 5px 0; border-top: 1px solid var(--c-slate); line-height: 1.45; }
+.sq-memory-row b { color: var(--c-amber); font-size: 10px; margin-right: 6px; }
+.sq-memory-row span { color: var(--c-grey2); font-size: 10px; }
+.sq-memory-row p { margin: 3px 0 0; color: var(--c-bone); font-size: 11px; overflow-wrap: anywhere; }
+.sq-memory-note { border-top: 1px solid var(--c-slate); padding-top: 6px; color: var(--c-grey2); font-size: 10px; line-height: 1.5; }
 .badge { display: inline-block; min-width: 15px; padding: 0 4px; background: var(--c-crimson); color: var(--c-white); font-size: 9px; font-weight: 700; margin-left: 3px; }
 .badge.dim { background: var(--c-slate2); }
 

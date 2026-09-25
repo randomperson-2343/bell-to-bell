@@ -186,15 +186,22 @@
         X.rect(ctx, x + sw(5), y - mh + sw(2), Math.max(1, per - sw(12)), Math.max(1, mh - sw(4)), P.screen);
         if (r >= 2) {
           // close enough to show something on the glass
-          const on = ((i * 7 + r * 3) % 5) !== 0;
+          const late = (seed || 0) >= 45;
+          const on = late ? ((i * 7 + r * 3 + seed) % 5) < 2 : ((i * 7 + r * 3) % 5) !== 0;
           X.dither(ctx, x + sw(5), y - mh + sw(2), Math.max(1, per - sw(12)), Math.max(1, mh - sw(4)),
             P.screen, on ? P.jadeD : P.crimsonD, 0.4);
+          if (late && !on) X.rect(ctx, x + sw(5), y - mh + sw(2), Math.max(1, per - sw(12)), Math.max(1, mh - sw(4)), P.screenD);
         }
         // desk slab + chair + a person, sometimes
         X.plate(ctx, x, y, per - sw(4), sw(4), P.desk, P.desk2, P.deskD);
-        if (((i * 3 + r) % 3) !== 0) {
+        const occupied = (seed || 0) >= 45 ? ((i * 3 + r + seed) % 6) === 0
+          : (seed || 0) >= 30 ? ((i * 3 + r + seed) % 4) < 2 : ((i * 3 + r) % 3) !== 0;
+        if (occupied) {
           X.rect(ctx, x + sw(10), y + sw(4), sw(9), sw(10), P.ink2);
           X.rect(ctx, x + sw(12), y + sw(1), sw(5), sw(4), P.slate2);
+        } else if (r >= 2) {
+          X.rect(ctx, x + sw(12), y + sw(6), sw(10), sw(7), P.ink2);
+          X.rect(ctx, x + sw(13), y + sw(12), sw(8), Math.max(1, sw(2)), P.slate2);
         }
       }
     }
@@ -340,10 +347,17 @@
   }
 
   // A single establishing shot behind the ending card.
-  function endingShot(ctx, kind) {
+  function endingShot(ctx, kind, id) {
     const light = kind === 'light';
+    // Endings share a city, but the light is shaped by where the player lands.
+    // This is atmosphere, never a green/red moral ranking of an outcome.
+    const cold = ['wiped','fired','perp','fall-guy','ward','replaced','depression','nobody'].indexOf(id) >= 0;
+    const paper = ['whistle','cassandra','revolving','clawback','lost-decade'].indexOf(id) >= 0;
+    const skyA = cold ? P.slate2 : paper ? P.putty2 : light ? P.amber : P.slate2;
+    const skyB = cold ? P.ink2 : paper ? P.crimsonD : light ? P.crimsonD : P.ink2;
+    const lit = cold ? P.sky : paper ? P.bone : P.amber;
     // sky
-    X.gradient(ctx, 0, 0, V.w, 130, light ? P.amber : P.slate2, light ? P.crimsonD : P.ink2, 9);
+    X.gradient(ctx, 0, 0, V.w, 130, skyA, skyB, 9);
     // far skyline, flat silhouettes so the shape reads at a glance
     for (let i = 0; i < 11; i++) {
       const bw = 22 + ((i * 17) % 14);
@@ -353,13 +367,13 @@
       for (let wy = 5; wy < bh - 5; wy += 7) {
         for (let wx = 4; wx < bw - 4; wx += 7) {
           const on = ((i * 5 + wy + wx) % (light ? 3 : 6)) < 2;
-          if (on) X.rect(ctx, bx + wx, 132 - bh + wy, 3, 3, light ? P.amber : P.sky);
+          if (on) X.rect(ctx, bx + wx, 132 - bh + wy, 3, 3, lit);
         }
       }
     }
     // foreground block + street
     X.rect(ctx, 0, 132, V.w, V.h - 132, P.ink);
-    X.rect(ctx, 0, 132, V.w, 2, light ? P.amberD : P.slate);
+    X.rect(ctx, 0, 132, V.w, 2, cold ? P.sky : paper ? P.bone : light ? P.amberD : P.slate);
     if (light) {
       // low sun flare on the street
       X.dither(ctx, 0, 134, V.w, 20, P.ink, P.amberD, 0.35);

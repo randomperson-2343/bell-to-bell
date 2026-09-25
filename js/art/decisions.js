@@ -202,18 +202,57 @@
 
   function room(ctx, id, day, after, S) {
     const r = ROOMS[id] || 'office';
-    if (r === 'office') return office(ctx, day, false);
-    if (r === 'officeNight') return office(ctx, day, true);
-    if (r === 'hearing') return hearing(ctx, day, false);
-    if (r === 'vote') return hearing(ctx, day, true, !!(after && S && S.f && S.f.billPassed));
-    if (r === 'treasury') return treasury(ctx, day);
-    if (r === 'stairwell') return stairwell(ctx, day);
-    if (r === 'racks') return racks(ctx, day, after && S && S.f && S.f.pulledPlug);
-    if (r === 'lobby') return lobby(ctx, day);
-    if (r === 'dinner') return dinner(ctx, day);
-    if (r === 'call') return kitchen(ctx, day, false);
-    if (r === 'letter') return kitchen(ctx, day, true);
-    if (r === 'voicemail') return voicemail(ctx, day);
+    if (r === 'office') office(ctx, day, false);
+    else if (r === 'officeNight') office(ctx, day, true);
+    else if (r === 'hearing') hearing(ctx, day, false);
+    else if (r === 'vote') hearing(ctx, day, true, !!(after && S && S.f && S.f.billPassed));
+    else if (r === 'treasury') treasury(ctx, day);
+    else if (r === 'stairwell') stairwell(ctx, day);
+    else if (r === 'racks') racks(ctx, day, after && S && S.f && S.f.pulledPlug);
+    else if (r === 'lobby') lobby(ctx, day);
+    else if (r === 'dinner') dinner(ctx, day);
+    else if (r === 'call' || r === 'letter') kitchen(ctx, day, r === 'letter');
+    else if (r === 'voicemail') voicemail(ctx, day);
+    // Fine material marks at the native resolution distinguish these rooms
+    // from the 320-pixel establishing shots. All stay above the caption area.
+    ctx.save(); ctx.globalAlpha = 0.62;
+    if (r === 'office' || r === 'officeNight') {
+      for (let i = 0; i < 12; i++) X.rect(ctx, 260 + i * 28, 220, 12, 1, P.bone);
+      X.rect(ctx, 306, 210, 170, 1, P.grey2);
+      X.rect(ctx, 447, 191, 108, 1, P.amber);
+    } else if (r === 'hearing' || r === 'vote') {
+      for (let i = 0; i < 7; i++) {
+        X.rect(ctx, 257 + i * 54, 155, 1, 32, P.grey2);
+        X.rect(ctx, 257 + i * 54, 153, 5, 2, P.bone);
+      }
+      X.rect(ctx, 0, 238, V.w, 1, P.amberD);
+    } else if (r === 'treasury') {
+      for (let i = 0; i < 9; i++) {
+        X.rect(ctx, 255 + i * 40, 210, 18, 1, P.grey2);
+        X.rect(ctx, 255 + i * 40, 214, 10, 1, P.grey2);
+      }
+      X.rect(ctx, 30, 104, 71, 1, P.amber);
+    } else if (r === 'stairwell') {
+      for (let i = 0; i < 8; i++) X.rect(ctx, 277 + i * 40, 221 - i * 26, 36, 1, P.bone);
+      X.rect(ctx, 170, 84, 51, 1, P.grey2);
+    } else if (r === 'racks') {
+      for (let i = 0; i < 7; i++) for (let y = 58; y < 237; y += 18)
+        X.rect(ctx, 188 + i * 70, y, 1, 4, P.sky);
+      X.rect(ctx, 106, 194, 59, 1, P.crimsonD);
+    } else if (r === 'lobby') {
+      for (let i = 0; i < 8; i++) X.rect(ctx, i * 84, 255, 1, 22, P.bone);
+      X.rect(ctx, 90, 213, 200, 1, P.grey2);
+    } else if (r === 'dinner') {
+      for (let i = 0; i < 6; i++) X.rect(ctx, 204 + i * 75, 244, 42, 1, P.grey2);
+      X.rect(ctx, 422, 156, 6, 1, P.bone);
+    } else if (r === 'call' || r === 'letter') {
+      for (let i = 0; i < 7; i++) X.rect(ctx, 183 + i * 64, 224, 28, 1, P.grey2);
+      X.rect(ctx, 480, 215, 72, 1, P.screenGlow);
+    } else if (r === 'voicemail') {
+      X.rect(ctx, 240, 183, 159, 1, P.slate2);
+      X.rect(ctx, 240, 183, 57, 1, P.phosphor);
+    }
+    ctx.restore();
   }
   // The speaker, standing in the room at 5x: a medium close-up, feet out of shot.
   function speaker(ctx, name, x) {
