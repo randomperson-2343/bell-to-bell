@@ -491,12 +491,13 @@
     const D = B.StoryData, A = B.DecisionArt;
     const list = Object.keys(D.CHOICES).filter((k) => !D.CHOICES[k].mid).map((k) => Object.assign({ id: k }, D.CHOICES[k]))
       .concat(B.Life.LIFE);
-    assert(list.length === 13, 'expected 8 desk decisions and 5 life beats, got ' + list.length);
+    assert(list.length === 18, 'expected 8 desk decisions and 10 life beats, got ' + list.length);
     for (const c of list) {
       assert(A.ROOMS[c.id], c.id + ' has no room');
       const beats = B.Scenes.decision({ id: c.id, day: c.day, speaker: c.speaker, role: c.role, title: c.title, S: B.StoryMode.freshState(250000) });
       assert(beats.length === 2 && beats[1].informative && beats.every((b) => b.view.w === 640), c.id + ' decision beats');
-      if (c.speaker !== 'Your landlord' && c.id !== 'perry') assert(B.Portraits.has(c.speaker), 'no portrait for ' + c.speaker);
+      // Voices off-screen (a landlord, a voicemail, the shelter, the dentist, the vet) have no portrait.
+      if (!['Your landlord', 'Harbor Street Animal Shelter', 'Your dentist', 'Your vet'].includes(c.speaker) && c.id !== 'perry') assert(B.Portraits.has(c.speaker), 'no portrait for ' + c.speaker);
     }
     // The aftermath is one popup with the room in it, not a second cutscene.
     assert(!B.Scenes.decisionAfter && typeof A.still === 'function', 'aftermath still belongs in the popup');
@@ -1240,6 +1241,59 @@
     const k0 = S.rel.kroll; mode.applyLife('advance', 'take');
     assert(W.deficit > 8000 && S.rel.kroll > k0, 'the advance is owed back out of bonus and pleases Kroll');
     assert(B.Life.LIFE.every((b) => !Object.keys(B.StoryData.CHOICES).some((k) => B.StoryData.CHOICES[k].day === b.day)), 'life beats should not share a day with a desk decision');
+  });
+
+  test('Household beats are cosmetic: wallet only, never story, stress or endings', () => {
+    const E = B.Economy, ids = ['adopt', 'dentist', 'vetCheck', 'toothache', 'vetER', 'dadBill'];
+    for (const id of ids) {
+      const beat = B.Life.byId(id);
+      assert(beat, id + ' missing');
+      for (const opt of beat.options) {
+        const S = B.StoryMode.freshState(250000);
+        const W = Object.assign(E.fresh(), { cash: 30000, pet: { kind: 'dog', sex: 'girl', name: 'Jemma' }, teeth: 'skipped', vet: 'skipped' });
+        S.wallet = W;
+        const story = () => JSON.stringify(Object.assign({}, S, { wallet: null }));
+        const before = story();
+        const out = opt.apply(S, W, E) || [];
+        assert(story() === before, `${id}:${opt.id} changed the story state`);
+        assert(!W.stressNext, `${id}:${opt.id} changed stress`);
+        assert(out.length && out.every((l) => typeof l === 'string' && l.length), `${id}:${opt.id} needs aftermath text`);
+      }
+    }
+    // Endings never read the wallet: the same story resolves the same way whatever the household did.
+    const S = B.StoryMode.freshState(250000);
+    const base = B.StoryEndings.resolve({ S, wealth: 300000, start: 250000, reason: 'final', days: 61, quotaMet: 40 }).id;
+    S.wallet = Object.assign(E.fresh(), { pet: { kind: 'cat', sex: 'boy', name: 'Rosco' }, vet: 'neglected', teeth: 'sore', dad: 'unpaid', dadUnpaid: true });
+    assert(B.StoryEndings.resolve({ S, wealth: 300000, start: 250000, reason: 'final', days: 61, quotaMet: 40 }).id === base, 'household state changed the ending');
+    // Follow-ups only fire for the choice that earned them; names follow the sex.
+    const W0 = E.fresh();
+    assert(!B.Life.byId('vetCheck').when(null, W0) && !B.Life.byId('toothache').when(null, W0), 'follow-ups fired without a cause');
+    B.Life.byId('adopt').options.find((o) => o.id === 'cat-girl').apply(null, W0, E);
+    assert(W0.pet.name === 'Jemma' && W0.pet.kind === 'cat' && W0.cash === E.P.startCash - 150, 'adoption should cost $150 and name a girl Jemma');
+    B.Life.byId('adopt').options.find((o) => o.id === 'dog-boy').apply(null, W0, E);
+    assert(W0.pet.name === 'Rosco', 'a boy is named Rosco');
+    assert(B.Life.byId('dadBill').day < 36, "Dad's surgery should land before most careers end");
+  });
+
+  test('Pet food is billed weekly and the pet shows up in the weekend art', () => {
+    const E = B.Economy, W = Object.assign(E.fresh(), { cash: 5000, peakEq: 250000 });
+    const t = E.tier(W);
+    assert(E.weekly(t, Object.assign({}, W, { pet: { kind: 'cat', sex: 'boy', name: 'Rosco' } })) === E.weekly(t, W) + E.P.petFood, 'weekly cost should include pet food');
+    const a = Object.assign({}, W), b = Object.assign({}, W, { pet: { kind: 'cat', sex: 'boy', name: 'Rosco' } });
+    E.settle(a, { equity: 250000, capital: 250000, weekMade: false, breaches: [], sessions: 5 });
+    const r = E.settle(b, { equity: 250000, capital: 250000, weekMade: false, breaches: [], sessions: 5 });
+    assert(Math.abs((a.cash - b.cash) - E.P.petFood) < 1e-6, 'a week with a pet should cost exactly the food more: ' + (a.cash - b.cash));
+    assert(/Rosco's food/.test(r.lines.join(' ')), 'the payslip should itemise the pet food');
+    const SB = B.Storyboard;
+    for (const kind of ['cat', 'dog']) {
+      const cared = SB.petRows({ kind, sex: 'boy' }, true), girl = SB.petRows({ kind, sex: 'girl' }, true), sad = SB.petRows({ kind, sex: 'boy' }, false);
+      assert(cared.join('').includes('b') && girl.join('').includes('r') && !sad.join('').match(/[rb]/), kind + ': collar blue for Rosco, red for Jemma, gone when neglected');
+      assert(cared.every((row, i) => row.length === sad[i].length), kind + ': neglect must not change the sprite shape');
+    }
+    const ids = (w) => B.Scenes.weekend({ day: 24, game: { mode: { S: { wallet: w, f: {} } } } }).map((x) => x.id).join();
+    const noPet = ids(E.fresh()), cat = ids(Object.assign(E.fresh(), { pet: { kind: 'cat', sex: 'boy', name: 'Rosco' } }));
+    const sadCat = ids(Object.assign(E.fresh(), { pet: { kind: 'cat', sex: 'boy', name: 'Rosco' }, vet: 'neglected' }));
+    assert(noPet !== cat && cat !== sadCat, 'weekend frames with and without a pet (or a neglected one) must not share a cache id');
   });
 
   test('Imani talks in the first three sessions only, once per line, and reacts to what you do', () => {

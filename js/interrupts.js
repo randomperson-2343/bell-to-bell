@@ -128,7 +128,10 @@
         call.from = f[0];
         call.text = f[1];
         // No landlord once you are back on your mother's couch.
-        if (f[0] === 'Your landlord' && g.mode.onCouch && g.mode.onCouch()) {
+        // In a career the dentist only chases you once you have skipped the cleaning.
+        const W = g.mode.S && g.mode.S.wallet;
+        const dodged = W && (W.teeth === 'skipped' || W.teeth === 'sore');
+        if ((f[0] === 'Your landlord' && g.mode.onCouch && g.mode.onCouch()) || (f[0] === 'Your dentist' && W && !dodged)) {
           call.from = 'Mom';
           call.text = 'Are you eating? You left your good shirt in the dryer. Call me back.';
         }
