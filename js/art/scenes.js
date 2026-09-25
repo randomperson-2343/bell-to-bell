@@ -347,42 +347,6 @@
   }
 
   // A single establishing shot behind the ending card.
-  function endingShot(ctx, kind, id) {
-    const light = kind === 'light';
-    // Endings share a city, but the light is shaped by where the player lands.
-    // This is atmosphere, never a green/red moral ranking of an outcome.
-    const cold = ['wiped','fired','perp','fall-guy','ward','replaced','depression','nobody'].indexOf(id) >= 0;
-    const paper = ['whistle','cassandra','revolving','clawback','lost-decade'].indexOf(id) >= 0;
-    const skyA = cold ? P.slate2 : paper ? P.putty2 : light ? P.amber : P.slate2;
-    const skyB = cold ? P.ink2 : paper ? P.crimsonD : light ? P.crimsonD : P.ink2;
-    const lit = cold ? P.sky : paper ? P.bone : P.amber;
-    // sky
-    X.gradient(ctx, 0, 0, V.w, 130, skyA, skyB, 9);
-    // far skyline, flat silhouettes so the shape reads at a glance
-    for (let i = 0; i < 11; i++) {
-      const bw = 22 + ((i * 17) % 14);
-      const bh = 26 + ((i * 41) % 58);
-      const bx = i * 30 - 6;
-      X.rect(ctx, bx, 132 - bh, bw, bh, light ? P.slate : P.ink2);
-      for (let wy = 5; wy < bh - 5; wy += 7) {
-        for (let wx = 4; wx < bw - 4; wx += 7) {
-          const on = ((i * 5 + wy + wx) % (light ? 3 : 6)) < 2;
-          if (on) X.rect(ctx, bx + wx, 132 - bh + wy, 3, 3, lit);
-        }
-      }
-    }
-    // foreground block + street
-    X.rect(ctx, 0, 132, V.w, V.h - 132, P.ink);
-    X.rect(ctx, 0, 132, V.w, 2, cold ? P.sky : paper ? P.bone : light ? P.amberD : P.slate);
-    if (light) {
-      // low sun flare on the street
-      X.dither(ctx, 0, 134, V.w, 20, P.ink, P.amberD, 0.35);
-    } else {
-      X.speckle(ctx, 0, 0, V.w, 130, P.grey2, 0.003, 9);   // rain
-      X.dither(ctx, 0, 134, V.w, 16, P.ink, P.slate, 0.25); // wet tarmac
-    }
-  }
-
   // Story-specific broadcast tableaux. These use contemporary systems imagery
   // without naming a calendar year: fibre maps, server racks, hearings, queues.
   function briefingTableau(ctx, day, p) {
@@ -505,138 +469,163 @@
   }
 
   // A compact visual signature for each ending, layered over the city shot.
-  function endingDetail(ctx, id, p) {
-    const cx = 160;
-    if (id === 'wiped') {
-      for (let i = 0; i < 6; i++) {
-        const drop = Math.round(p * i * 2);
-        X.plate(ctx, 116 + i * 6, 22 + i * 7 + drop, 67 - i * 5, 7, P.bone, P.white, P.plasticD);
-        X.rect(ctx, 121 + i * 6, 24 + i * 7 + drop, 21, 2, i > 2 ? P.crimson : P.sky);
+  const c1 = (ctx, x, y, w, h, base, hi, sh, out) => X.cel(ctx, x, y, w, h, base, hi, sh, out, 1);
+  const R = (ctx, x, y, w, h, c) => X.rect(ctx, x, y, w, h, c);
+  const spr = (ctx, rows, x, y) => X.drawSprite(ctx, X.sprite(rows), x, y);
+  function rings(ctx, cx, cy, radii, col, a) {
+    for (const rad of radii) { ctx.save(); ctx.globalAlpha = a; ctx.fillStyle = col;
+      for (let y = cy - rad; y < cy + rad; y++) { const h = Math.floor(Math.sqrt(Math.max(0, rad * rad - (y - cy) * (y - cy))) * 1.2); ctx.fillRect(cx - h, y, h * 2, 1); }
+      ctx.restore(); }
+  }
+
+  // ---- endings, drawn to the pet's rules at the 320 grid (ink outlines, light
+  // top-left, shade bottom-right, light as stepped rings) ----
+  const COLD = ['wiped', 'fired', 'perp', 'fall-guy', 'ward', 'replaced', 'depression', 'nobody'];
+  const PAPER = ['whistle', 'cassandra', 'revolving', 'clawback', 'lost-decade'];
+  function endingShot(ctx, kind, id) {
+    const light = kind === 'light', cold = COLD.indexOf(id) >= 0, paper = PAPER.indexOf(id) >= 0;
+    const skyA = cold ? P.slate2 : paper ? P.putty2 : light ? P.amber : P.slate2;
+    const skyB = cold ? P.ink2 : paper ? P.crimsonD : light ? P.crimsonD : P.ink2;
+    const lit = cold ? P.sky : paper ? P.bone : P.amber;
+    X.gradient(ctx, 0, 0, V.w, 132, skyA, skyB, 9);
+    if (light && !cold) { rings(ctx, 262, 118, [40, 26, 14], P.amber, 0.12); R(ctx, 254, 110, 16, 16, P.amber); R(ctx, 256, 110, 12, 2, P.white); }
+    // Far skyline: outlined towers, a shaded right face, roof trim, a few water tanks.
+    for (let i = 0; i < 11; i++) {
+      const bw = 22 + ((i * 17) % 14), bh = 26 + ((i * 41) % 58), bx = i * 30 - 6, by = 132 - bh;
+      c1(ctx, bx, by, bw, bh + 1, light && !cold ? P.slate : P.ink2, light && !cold ? P.slate2 : P.slate, P.ink, P.ink);
+      R(ctx, bx + bw - 5, by + 2, 3, bh - 2, P.ink);
+      if (i % 4 === 1) { c1(ctx, bx + 5, by - 7, 9, 7, P.deskD, P.desk, P.ink2, P.ink); R(ctx, bx + 6, by - 1, 1, 1, P.ink); R(ctx, bx + 12, by - 1, 1, 1, P.ink); }
+      if (i % 5 === 3) R(ctx, bx + bw / 2 | 0, by - 12, 1, 12, P.grey);
+      for (let wy = 5; wy < bh - 5; wy += 6) for (let wx = 3; wx < bw - 7; wx += 5) {
+        if (((i * 5 + wy + wx) % (light ? 3 : 6)) < 2) { R(ctx, bx + wx, by + wy, 2, 2, lit); R(ctx, bx + wx, by + wy + 2, 2, 1, P.ink); }
       }
-    } else if (id === 'fired') {
-      X.plate(ctx, 126, 37, 68, 30, P.desk2, P.putty2, P.deskD);
-      X.rect(ctx, 134, 43, 32, 4, P.crimsonD);
-      X.text(ctx, 'PERSONAL', cx, 53, P.ink, { align: 'center' });
-      X.rect(ctx, 145, 27, 30, 10, P.slate);
-    } else if (id === 'perp') {
-      for (let i = 0; i < 5; i++) X.rect(ctx, 112 + i * 24, 19, 7, 53, P.slate2);
-      X.rect(ctx, 139, 34, 42, 28, P.ink2);
-      X.rect(ctx, 151, 25, 18, 13, P.grey2);
-      if (p > .45) X.dither(ctx, 80, 12, 160, 62, P.ink, P.white, .18);
-    } else if (id === 'master') {
-      X.rect(ctx, 86, 59, 148, 5, P.bone);
-      X.rect(ctx, 106, 64, 104, 8, P.plastic2);
-      X.rect(ctx, 138, 38, 42, 21, P.white);
-      X.rect(ctx, 151, 24, 4, 34, P.slate2);
-      X.rect(ctx, 155, 25, 39, 3, P.amber);
-      X.dither(ctx, 0, 72, 320, 18, P.screen, P.sky, .35);
-    } else if (id === 'whistle') {
-      for (let i = 0; i < 4; i++) X.plate(ctx, 106 + i * 5, 25 + i * 7, 95, 13, P.bone, P.white, P.plasticD);
-      X.rect(ctx, 122, 35, 57, 4, P.crimsonD);
-      X.rect(ctx, 122, 46, 48, 2, P.grey);
-      X.rect(ctx, 122, 54, 62, 2, P.grey);
-    } else if (id === 'revolving') {
-      for (let i = 0; i < 5; i++) X.rect(ctx, 102 + i * 28, 31, 8, 40, P.bone);
-      X.rect(ctx, 94, 25, 132, 7, P.sky);
-      X.rect(ctx, 90, 70, 140, 5, P.slate2);
-      X.text(ctx, 'PRIVATE / PUBLIC', cx, 15, P.amber, { align: 'center' });
-    } else if (id === 'depression') {
-      for (let i = 0; i < 8; i++) {
-        X.rect(ctx, 64 + i * 28, 30 + (i % 3) * 8, 20, 44 - (i % 3) * 8, P.ink2);
-        if (i === 2) X.rect(ctx, 70 + i * 28, 39, 4, 4, P.crimsonD);
-      }
-      X.rect(ctx, 54, 73, 222, 4, P.crimsonD);
-    } else if (id === 'soft') {
-      for (let i = 0; i < 7; i++) {
-        X.rect(ctx, 68 + i * 28, 38 + (i % 2) * 9, 21, 36, P.slate);
-        for (let w = 0; w < 2; w++) X.rect(ctx, 73 + i * 28 + w * 8, 48, 4, 4, P.amber);
-      }
-      X.rect(ctx, 52, 74, 216, 4, P.jade);
-    } else if (id === 'quiet') {
-      X.rect(ctx, 111, 18, 98, 58, P.ink2);
-      for (let y = 0; y < 4; y++) for (let x = 0; x < 6; x++) X.rect(ctx, 120 + x * 14, 25 + y * 12, 6, 5, x === 4 && y === 2 ? P.amber : P.screenD);
-    } else if (id === 'replaced') {
-      for (let i = 0; i < 4; i++) {
-        X.plate(ctx, 98 + i * 34, 23, 27, 53, P.slate, P.slate2, P.ink);
-        for (let r = 0; r < 4; r++) X.rect(ctx, 103 + i * 34, 30 + r * 10, 17, 5, P.screenGlow);
-        X.rect(ctx, 105 + i * 34, 31, 2, 2, P.phosphor);
-      }
-    } else if (id === 'exit') {
-      // An open door, a bag, and nothing else.
-      X.rect(ctx, 138, 18, 44, 60, P.ink2);
-      X.rect(ctx, 142, 22, 36, 56, P.bone);
-      X.dither(ctx, 142, 22, 36, 56, P.bone, P.amber, 0.3);
-      X.plate(ctx, 190, 62, 26, 16, P.deskD, P.desk2, P.ink);
-      X.rect(ctx, 199, 58, 8, 4, P.deskD);
-    } else if (id === 'nobody') {
-      for (let i = 0; i < 5; i++) {
-        X.plate(ctx, 92 + i * 28, 22, 22, 54, P.slate, P.slate2, P.ink);
-        X.rect(ctx, 101 + i * 28, 30, 4, 22, P.crimson);
-        X.rect(ctx, 97 + i * 28, 50, 12, 3, P.crimson);
-        X.rect(ctx, 100 + i * 28, 53, 6, 3, P.crimson);
-      }
-      X.text(ctx, 'SELL SELL SELL SELL SELL', cx, 12, P.crimson, { align: 'center' });
-    } else if (id === 'fall-guy') {
-      X.dither(ctx, 110, 10, 100, 70, P.ink, P.bone, 0.12);
-      X.plate(ctx, 118, 30, 84, 44, P.bone, P.white, P.plasticD);
-      X.rect(ctx, 126, 38, 50, 2, P.grey);
-      X.rect(ctx, 126, 44, 60, 2, P.grey);
-      X.rect(ctx, 126, 62, 68, 1, P.ink);
-      X.text(ctx, 'NOT MINE', 160, 54, P.crimsonD, { align: 'center' });
-      X.rect(ctx, 188, 58, 14, 2, P.slate);
-    } else if (id === 'cassandra') {
-      for (let i = 0; i < 6; i++) X.plate(ctx, 96 + i * 3, 50 - i * 4, 60, 24, P.bone, P.white, P.plasticD);
-      X.rect(ctx, 104, 32, 34, 5, P.crimsonD);
-      X.text(ctx, 'UNREAD', 126, 42, P.ink, { align: 'center' });
-      X.plate(ctx, 176, 26, 50, 48, P.putty2, P.white, P.plasticD);
-      X.text(ctx, 'FILED', 201, 36, P.ink, { align: 'center' });
-      X.text(ctx, 'WEEK 3', 201, 48, P.crimson, { align: 'center' });
-    } else if (id === 'acquirer') {
-      X.plate(ctx, 90, 30, 40, 44, P.slate, P.slate2, P.ink);
-      X.plate(ctx, 190, 30, 40, 44, P.crimsonD, P.crimson, P.ink);
-      X.rect(ctx, 132, 50, 18, 3, P.amber);
-      X.rect(ctx, 170, 50, 18, 3, P.amber);
-      X.plate(ctx, 148, 18, 24, 56, P.amberD, P.amber, P.ink);
-    } else if (id === 'ward') {
-      X.plate(ctx, 120, 34, 80, 42, P.slate2, P.bone, P.ink2);
-      for (let i = 0; i < 5; i++) X.rect(ctx, 128 + i * 15, 42, 6, 30, P.bone);
-      X.rect(ctx, 114, 30, 92, 5, P.bone);
-      X.rect(ctx, 158, 10, 2, 22, P.grey2);
-      X.rect(ctx, 160, 10, 20, 11, P.sky);
-      X.rect(ctx, 160, 14, 20, 2, P.bone);
-    } else if (id === 'clawback') {
-      for (let i = 0; i < 10; i++) {
-        const kept = i < 4;
-        X.rect(ctx, 100 + i * 12, 70 - (kept ? 30 : 14), 9, kept ? 30 : 14, kept ? P.amber : P.slate);
-        if (!kept) X.rect(ctx, 98 + i * 12, 52 - (i % 2) * 4, 13, 2, P.crimson);
-      }
-      X.text(ctx, '40 CENTS', cx, 16, P.amber, { align: 'center' });
-    } else if (id === 'fund') {
-      X.plate(ctx, 136, 14, 48, 64, P.slate2, P.sky, P.ink2);
-      for (let y = 0; y < 5; y++) for (let x = 0; x < 3; x++) X.rect(ctx, 142 + x * 14, 20 + y * 11, 8, 6, P.amber);
-      for (let i = 0; i < 9; i++) X.rect(ctx, 196 + i * 6, 70 - i * 5, 5, 3, P.jade);
-    } else if (id === 'right-early') {
-      const ys = [30, 34, 40, 48, 44, 36, 28, 22, 20, 30, 46, 58, 66];
-      ys.forEach((y, i) => X.rect(ctx, 96 + i * 10, y + 4, 9, 3, i < 4 || i > 8 ? P.crimson : P.jade));
-      X.rect(ctx, 226, 64, 6, 10, P.ink2);
-      X.rect(ctx, 227, 59, 4, 5, P.desk2);
-    } else if (id === 'everything-rally') {
-      for (let i = 0; i < 7; i++) X.rect(ctx, 92 + i * 16, 74 - (20 + i * 6), 11, 20 + i * 6, P.jade);
-      X.plate(ctx, 212, 18, 30, 58, P.bone, P.white, P.plasticD);
-      for (let i = 0; i < 6; i++) X.rect(ctx, 216, 24 + i * 8, 22 - (i % 3) * 4, 2, P.grey);
-      X.rect(ctx, 216, 70, 22, 2, P.crimson);
-    } else if (id === 'lost-decade') {
-      X.rect(ctx, 80, 50, 160, 2, P.grey2);
-      for (let i = 0; i < 10; i++) X.plate(ctx, 88 + i * 15, 20 + (i % 2) * 3, 12, 16, P.bone, P.white, P.plasticD);
-      for (let i = 0; i < 10; i++) X.rect(ctx, 90 + i * 15, 24 + (i % 2) * 3, 8, 2, P.crimsonD);
-    } else {
-      X.plate(ctx, 108, 45, 104, 12, P.desk, P.desk2, P.deskD);
-      X.plate(ctx, 143, 28, 34, 20, P.plastic, P.plastic2, P.plasticD);
-      X.rect(ctx, 148, 33, 24, 10, P.screenGlow);
-      X.rect(ctx, 122, 34, 12, 14, P.bone);
-      X.rect(ctx, 124, 36, 8, 3, P.deskD);
+    }
+    // The street: sidewalk and curb, road, lane marks, streetlamps.
+    R(ctx, 0, 132, V.w, 48, P.ink);
+    R(ctx, 0, 132, V.w, 6, cold ? P.slate : P.slate2); R(ctx, 0, 132, V.w, 1, cold ? P.sky : paper ? P.bone : light ? P.amberD : P.grey); R(ctx, 0, 138, V.w, 1, P.ink2);
+    for (let x = 6; x < V.w; x += 24) R(ctx, x, 158, 12, 1, P.slate2);
+    for (const lx of [24, 296]) {
+      R(ctx, lx, 104, 2, 29, P.slate2); R(ctx, lx - 1, 131, 4, 2, P.slate); c1(ctx, lx - 3, 101, 8, 4, P.slate2, P.grey2, P.slate, P.ink);
+      R(ctx, lx - 1, 105, 4, 1, lit); ctx.save(); ctx.globalAlpha = light ? 0.08 : 0.14; for (let k = 0; k < 26; k += 2) R(ctx, lx + 1 - (k >> 1), 106 + k, k + 2, 2, lit); ctx.restore();
+    }
+    if (light) X.dither(ctx, 0, 139, V.w, 18, P.ink, P.amberD, 0.3);
+    else {
+      // Rain in short slants, and the streetlights doubled in the wet road.
+      ctx.save(); ctx.globalAlpha = 0.5;
+      for (let k = 0; k < 90; k++) { const x = (k * 37) % V.w, y = (k * 53) % 128; R(ctx, x, y, 1, 3, P.grey2); R(ctx, x + 1, y + 3, 1, 2, P.grey2); }
+      ctx.restore();
+      X.dither(ctx, 0, 139, V.w, 14, P.ink, P.slate, 0.2);
+      for (const lx of [24, 296]) { R(ctx, lx - 1, 142, 4, 1, lit); R(ctx, lx, 145, 2, 1, lit); R(ctx, lx, 148, 2, 1, P.slate2); }
     }
   }
+
+  // Small sprites for the props. Keys are js/art/palette.js characters.
+  const BOX = ['.111111111111111.', '1eeeeeeeeeeeeeee1', '1ee1111111111ee.1', '1eeeeeeeeeeeeeeD1', '1eeeeeeeeeeeeeeD1', '1eeeeeeeeeeeeeeD1', '1DDDDDDDDDDDDDDD1', '.111111111111111.'];
+  const LEAF = ['..j..j..', '.jJj.jJ.', 'jJjjjJjj', '.jJjjJj.', '..jjJj..', '...11...'];
+  const FLASH = ['...9...', '...9...', '..999..', '9999999', '..999..', '...9...', '...9...'];
+  const BAG = ['...1111...', '..1....1..', '1111111111', '1DDDDDDDD1', '1DeeeeeeD1', '1DDDDDDDD1', '1DDDDDDDD1', '1111111111'];
+  const GAVEL = ['1111111...', '1eeeeee1..', '1DDDDDD1..', '1111111...', '...1D1....', '...1D1....', '...1D1....', '..1DDD1...'];
+  const FIG = ['.11.', '1221', '1221', '.11.', '1221', '1221', '1221', '1..1'];
+  const COIN = ['.111.', '1aaa1', '1aAa1', '1aaa1', '.111.'];
+
+  function endingDetail(ctx, id, p) {
+    const cx = 160;
+    if (id === 'wiped') { // the book's charts, falling off the desk
+      for (let i = 0; i < 6; i++) {
+        const drop = Math.round(p * i * 2), x = 112 + i * 7, y = 20 + i * 8 + drop;
+        c1(ctx, x, y, 70 - i * 4, 11, P.bone, P.white, P.putty2);
+        for (let k = 0; k < 6; k++) R(ctx, x + 4 + k * 5, y + 3 + (i > 2 ? k : 5 - k), 3, 1, i > 2 ? P.crimson : P.sky);
+      }
+    } else if (id === 'fired') { // the box: a plant, a mug, PERSONAL
+      spr(ctx, LEAF, 130, 24); R(ctx, 133, 30, 2, 8, P.deskD);
+      c1(ctx, 170, 28, 12, 11, P.bone, P.white, P.putty2); R(ctx, 182, 31, 2, 5, P.ink2);
+      c1(ctx, 120, 38, 80, 34, P.desk2, P.putty2, P.desk); c1(ctx, 116, 34, 88, 7, P.desk, P.desk2, P.deskD);
+      c1(ctx, 136, 48, 48, 13, P.bone, P.white, P.putty2); X.text(ctx, 'PERSONAL', cx, 51, P.ink, { align: 'center' });
+    } else if (id === 'perp') { // the car at the curb, the flashes
+      c1(ctx, 108, 46, 104, 20, P.bone, P.white, P.grey2, P.ink); R(ctx, 111, 54, 98, 4, P.ink2); c1(ctx, 128, 34, 62, 14, P.bone, P.white, P.grey2, P.ink);
+      R(ctx, 132, 37, 24, 8, P.sky); R(ctx, 160, 37, 26, 8, P.sky); R(ctx, 158, 37, 2, 8, P.ink2); c1(ctx, 140, 29, 28, 6, P.ink2, null, null, P.ink); R(ctx, 142, 30, 11, 4, P.crimson); R(ctx, 155, 30, 11, 4, P.sky);
+      c1(ctx, 116, 60, 16, 14, P.ink2, P.slate2, P.ink, P.ink); c1(ctx, 188, 60, 16, 14, P.ink2, P.slate2, P.ink, P.ink); R(ctx, 122, 66, 4, 2, P.grey); R(ctx, 194, 66, 4, 2, P.grey);
+      if (p > 0.3) { spr(ctx, FLASH, 88, 18); spr(ctx, FLASH, 222, 26); }
+      if (p > 0.6) { ctx.save(); ctx.globalAlpha = 0.25; R(ctx, 70, 10, 180, 66, P.white); ctx.restore(); }
+    } else if (id === 'master') { // the yacht, off somewhere warm
+      c1(ctx, 86, 56, 150, 10, P.white, P.white, P.putty2); R(ctx, 92, 66, 138, 4, P.bone);
+      c1(ctx, 122, 40, 70, 18, P.white, P.white, P.putty2); for (let i = 0; i < 5; i++) R(ctx, 128 + i * 12, 45, 8, 4, P.slate);
+      R(ctx, 158, 16, 2, 26, P.slate2); R(ctx, 160, 18, 20, 7, P.amber); R(ctx, 160, 18, 20, 1, P.white);
+      X.dither(ctx, 0, 72, 320, 18, P.screen, P.sky, 0.35); for (let i = 0; i < 8; i++) R(ctx, 96 + i * 18, 74 + (i % 2) * 3, 10, 1, P.white);
+    } else if (id === 'whistle') { // the file and the front page
+      for (let i = 0; i < 4; i++) c1(ctx, 100 + i * 5, 22 + i * 7, 96, 20, P.bone, P.white, P.putty2);
+      c1(ctx, 126, 50, 44, 11, P.bone, null, null, P.crimsonD); X.text(ctx, 'LEAKED', 148, 53, P.crimsonD, { align: 'center' });
+      c1(ctx, 196, 30, 34, 44, P.putty2, P.white, P.plasticD); R(ctx, 200, 34, 26, 4, P.ink); for (let k = 0; k < 5; k++) R(ctx, 200, 42 + k * 5, 22 - (k % 2) * 6, 1, P.grey);
+    } else if (id === 'revolving') { // the door between the two buildings
+      c1(ctx, 90, 22, 140, 8, P.bone, P.white, P.putty2);
+      for (let i = 0; i < 5; i++) c1(ctx, 100 + i * 28, 30, 10, 42, P.bone, P.white, P.putty2);
+      c1(ctx, 144, 42, 32, 30, P.sky, P.white, P.slate2); R(ctx, 159, 42, 2, 30, P.slate2); R(ctx, 146, 56, 28, 1, P.slate2);
+      R(ctx, 86, 72, 148, 4, P.slate2); X.text(ctx, 'PRIVATE / PUBLIC', cx, 12, P.amber, { align: 'center' });
+    } else if (id === 'depression') { // shuttered fronts and a queue
+      for (let i = 0; i < 6; i++) { const x = 70 + i * 32; c1(ctx, x, 26, 28, 46, P.ink2, P.slate, P.ink, P.ink); for (let k = 0; k < 6; k++) R(ctx, x + 2, 34 + k * 6, 24, 1, P.slate2); if (i % 2) { c1(ctx, x + 4, 28, 20, 6, P.crimsonD, P.crimson, P.ink2, P.ink); } }
+      for (let i = 0; i < 9; i++) spr(ctx, FIG, 78 + i * 18, 66);
+      R(ctx, 54, 74, 212, 3, P.crimsonD);
+    } else if (id === 'soft') { // a street with its lights back on
+      for (let i = 0; i < 7; i++) { const x = 66 + i * 28, h = 34 + (i % 2) * 9; c1(ctx, x, 74 - h, 24, h, P.slate, P.slate2, P.ink2); for (let w = 0; w < 2; w++) for (let r = 0; r < 2; r++) c1(ctx, x + 4 + w * 9, 74 - h + 6 + r * 12, 6, 6, P.amber, P.white, P.amberD); }
+      for (const tx of [84, 176, 232]) spr(ctx, LEAF, tx, 60);
+      R(ctx, 52, 74, 216, 3, P.jade);
+    } else if (id === 'quiet') { // one window lit on a dark tower
+      c1(ctx, 108, 14, 104, 64, P.ink2, P.slate, P.ink, P.ink);
+      for (let y = 0; y < 5; y++) for (let x = 0; x < 7; x++) { const on = x === 4 && y === 2; R(ctx, 116 + x * 13, 20 + y * 11, 7, 6, on ? P.amber : P.screenD); if (on) rings(ctx, 171, 45, [12], P.amber, 0.15); }
+    } else if (id === 'replaced') { // the racks that took the desk
+      for (let i = 0; i < 4; i++) { const x = 98 + i * 34; c1(ctx, x, 20, 28, 56, P.ink2, P.slate, P.ink); for (let r = 0; r < 5; r++) { R(ctx, x + 4, 26 + r * 9, 20, 5, P.screenD); R(ctx, x + 6 + (i * 3 + r) % 12, 27 + r * 9, 2, 2, (i + r) % 3 ? P.phosphor : P.sky); } }
+    } else if (id === 'exit') { // an open door, the light beyond it, a bag
+      c1(ctx, 136, 16, 48, 62, P.deskD, P.desk, P.ink2); R(ctx, 142, 22, 36, 56, P.bone); X.dither(ctx, 142, 22, 36, 56, P.bone, P.amber, 0.3);
+      rings(ctx, 160, 60, [36, 22], P.amber, 0.1);
+      c1(ctx, 190, 60, 34, 16, P.deskD, P.desk, P.ink2); R(ctx, 196, 55, 2, 6, P.ink2); R(ctx, 214, 55, 2, 6, P.ink2); R(ctx, 196, 55, 20, 2, P.ink2); R(ctx, 192, 66, 30, 1, P.desk2);
+    } else if (id === 'nobody') { // every screen says the same thing
+      for (let i = 0; i < 5; i++) { const x = 90 + i * 28; c1(ctx, x, 22, 24, 40, P.slate, P.slate2, P.ink); R(ctx, x + 3, 25, 18, 30, P.screenD); R(ctx, x + 11, 29, 3, 16, P.crimson); R(ctx, x + 7, 43, 11, 3, P.crimson); R(ctx, x + 9, 46, 7, 3, P.crimson); R(ctx, x + 10, 62, 4, 8, P.slate); }
+      X.text(ctx, 'SELL SELL SELL SELL SELL', cx, 12, P.crimson, { align: 'center' });
+    } else if (id === 'fall-guy') { // a signature that was never yours
+      c1(ctx, 116, 26, 88, 48, P.bone, P.white, P.putty2);
+      R(ctx, 124, 34, 52, 2, P.grey); R(ctx, 124, 40, 62, 2, P.grey); R(ctx, 124, 64, 70, 1, P.ink);
+      X.text(ctx, 'NOT MINE', cx, 50, P.crimsonD, { align: 'center' });
+      for (let k = 0; k < 8; k++) R(ctx, 170 + k * 3, 60 - (k % 3), 3, 1, P.slate);
+      spr(ctx, GAVEL, 210, 60);
+    } else if (id === 'cassandra') { // the warnings nobody opened
+      for (let i = 0; i < 6; i++) c1(ctx, 94 + i * 3, 50 - i * 4, 62, 24, P.bone, P.white, P.putty2);
+      R(ctx, 102, 32, 34, 5, P.crimsonD); X.text(ctx, 'UNREAD', 126, 41, P.ink, { align: 'center' });
+      c1(ctx, 176, 24, 52, 50, P.amberD, P.amber, P.deskD); R(ctx, 176, 22, 22, 4, P.amberD);
+      c1(ctx, 182, 30, 40, 22, P.bone, P.white, P.putty2); X.text(ctx, 'FILED', 202, 33, P.ink, { align: 'center' }); X.text(ctx, 'WEEK 3', 202, 43, P.crimson, { align: 'center' });
+    } else if (id === 'acquirer') { // two banks, one sign going up
+      c1(ctx, 86, 34, 50, 40, P.slate, P.slate2, P.ink); for (let i = 0; i < 4; i++) R(ctx, 91 + i * 12, 42, 4, 32, P.slate2);
+      c1(ctx, 184, 34, 50, 40, P.crimsonD, P.crimson, P.ink); for (let i = 0; i < 4; i++) R(ctx, 189 + i * 12, 42, 4, 32, P.crimson);
+      R(ctx, 158, 6, 2, 26, P.amberD); R(ctx, 130, 6, 60, 2, P.amberD); R(ctx, 170, 8, 1, 14, P.grey);
+      c1(ctx, 140, 22, 60, 14, P.amber, P.white, P.amberD); X.text(ctx, 'HLST', 170, 26, P.ink, { align: 'center' });
+    } else if (id === 'ward') { // a public building and its flag
+      c1(ctx, 112, 30, 96, 8, P.bone, P.white, P.putty2); c1(ctx, 118, 38, 84, 36, P.slate2, P.grey2, P.slate);
+      for (let i = 0; i < 5; i++) c1(ctx, 124 + i * 16, 40, 8, 34, P.bone, P.white, P.putty2);
+      R(ctx, 158, 8, 2, 22, P.grey2); c1(ctx, 160, 8, 24, 12, P.sky, P.bone, P.slate2); R(ctx, 161, 13, 22, 2, P.bone);
+    } else if (id === 'clawback') { // forty cents on the dollar
+      for (let i = 0; i < 10; i++) { const kept = i < 4, h = kept ? 6 : 3; for (let k = 0; k < h; k++) spr(ctx, COIN, 100 + i * 12, 68 - k * 4); if (!kept) R(ctx, 98 + i * 12, 54, 11, 2, P.crimson); }
+      X.text(ctx, '40 CENTS', cx, 16, P.amber, { align: 'center' });
+    } else if (id === 'fund') { // your name on a glass tower
+      c1(ctx, 132, 12, 56, 66, P.slate2, P.sky, P.ink2); for (let y = 0; y < 5; y++) for (let x = 0; x < 3; x++) c1(ctx, 138 + x * 16, 18 + y * 12, 10, 8, P.amber, P.white, P.amberD);
+      for (let i = 0; i < 9; i++) R(ctx, 196 + i * 6, 70 - i * 5, 5, 3, P.jade); R(ctx, 244, 26, 6, 6, P.jade);
+    } else if (id === 'right-early') { // correct, eventually
+      const ys = [30, 34, 40, 48, 44, 36, 28, 22, 20, 30, 46, 58, 66];
+      ys.forEach((y, i) => { const up = i < 4 || i > 8; c1(ctx, 94 + i * 10, y + 2, 10, 5, up ? P.crimson : P.jade, P.white, up ? P.crimsonD : P.jadeD); });
+      spr(ctx, FIG, 228, 64);
+    } else if (id === 'everything-rally') { // the portfolio and the grocery bill
+      for (let i = 0; i < 7; i++) c1(ctx, 90 + i * 16, 74 - (20 + i * 6), 13, 20 + i * 6, P.jade, P.phosphor, P.jadeD);
+      c1(ctx, 210, 16, 32, 60, P.bone, P.white, P.putty2); for (let i = 0; i < 6; i++) R(ctx, 214, 22 + i * 7, 22 - (i % 3) * 4, 1, P.grey);
+      R(ctx, 214, 66, 24, 2, P.crimson); for (let k = 0; k < 8; k++) R(ctx, 210 + k * 4, 75 + (k % 2), 3, 1, P.bone);
+    } else if (id === 'lost-decade') { // ten calendars on a line
+      R(ctx, 78, 20, 164, 1, P.grey2);
+      for (let i = 0; i < 10; i++) { const x = 84 + i * 15, y = 22 + (i % 2) * 2; c1(ctx, x, y, 13, 18, P.bone, P.white, P.putty2); R(ctx, x + 1, y + 1, 11, 4, P.crimsonD); R(ctx, x + 5, y - 2, 2, 3, P.grey); }
+      R(ctx, 78, 74, 164, 2, P.slate2);
+    } else { // still standing: the desk, the monitor, the coffee
+      c1(ctx, 104, 46, 112, 12, P.desk, P.desk2, P.deskD); R(ctx, 110, 58, 4, 16, P.deskD); R(ctx, 206, 58, 4, 16, P.deskD);
+      c1(ctx, 140, 22, 40, 26, P.plasticD, P.plastic2, P.ink2); R(ctx, 145, 27, 30, 16, P.screenGlow); R(ctx, 148, 31, 18, 1, P.phosphor); R(ctx, 148, 35, 12, 1, P.sky);
+      c1(ctx, 118, 34, 12, 13, P.bone, P.white, P.putty2); R(ctx, 120, 36, 8, 2, P.deskD); R(ctx, 130, 38, 2, 5, P.ink2);
+    }
+  }
+
 
   // ---------- scene scripts ----------
 
