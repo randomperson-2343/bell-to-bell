@@ -224,6 +224,48 @@
     59: { flag:'BREAKING', when:'1H AGO', head:'Worst session in the history of the index', text:'The guarantee is in force and the buyers are not. Every venue, every sector, all day.', stats:['12K','48K','71K'], reply:['@Quant_Kween','Same counterparty on the other side of all of it.'] }
   };
 
+  // Sqwak Memory links posts that already exist in the campaign. The day/time
+  // gate keeps a thread from showing a future post during a session or after
+  // restoring a mid-day save. This is presentation only: no market or ending
+  // calculation reads these labels.
+  const THREADS = [
+    { id: 'ridgeway', title: 'Ridgeway buyout', sym: 'RDGW', fact: 'DENIED', price: 'HYPE FADED', posts: [
+      [5, 125, '@DiamondHandsDiane', 'CLAIM'],
+      [5, 160, '@FloorTalk', 'EVIDENCE'],
+      [5, 240, '@PromptAndPray', 'OUTCOME']
+    ] },
+    { id: 'auction', title: 'CASCADE auction', sym: 'HLST', fact: 'ZERO BID', price: 'GREEN NEXT DAY', posts: [
+      [23, 100, '@BondVigilante', 'CLAIM'],
+      [23, 150, '@FloorTalk', 'EVIDENCE'],
+      [23, 220, '@CallsOnlyCarl', 'ATTENTION'],
+      [24, 60, '@DiamondHandsDiane', 'OUTCOME']
+    ] },
+    { id: 'loop', title: 'The model loop', sym: 'CRVS', fact: 'MODEL SELLING', price: 'INTRADAY BOUNCE', posts: [
+      [30, 40, '@Quant_Kween', 'CLAIM'],
+      [30, 110, '@FloorTalk', 'EVIDENCE'],
+      [30, 190, '@DiamondHandsDiane', 'ATTENTION'],
+      [31, 60, '@FloorTalk', 'OUTCOME']
+    ] }
+  ];
+  const threadPosts = {};
+  for (const thread of THREADS) for (const [day, t, src, stage] of thread.posts) {
+    const post = INTRADAY[day].find((p) => p[0] === t && p[1] === src);
+    if (!post) throw new Error(`Missing Sqwak thread post: ${thread.id} day ${day + 1} minute ${t}`);
+    threadPosts[`${day}|${t}|${src}`] = { id: thread.id, stage };
+  }
+  function threadAt(id, day, minute) {
+    const thread = THREADS.find((x) => x.id === id);
+    if (!thread) return null;
+    const posts = thread.posts.filter(([d, t]) => d < day || (d === day && t <= minute)).map(([d, t, src, stage]) => {
+      const source = INTRADAY[d].find((p) => p[0] === t && p[1] === src);
+      return { day: d, t, src, text: source[2], stage };
+    });
+    return posts.length ? { id, title: thread.title, sym: thread.sym, posts, stage: posts[posts.length - 1].stage,
+      fact: posts.some((p) => p.stage === 'EVIDENCE') ? thread.fact : 'UNVERIFIED',
+      reach: posts.some((p) => p.stage === 'ATTENTION' || p.stage === 'OUTCOME') ? 'AMPLIFIED' : 'BUILDING',
+      price: posts.some((p) => p.stage === 'OUTCOME') ? thread.price : 'STILL OPEN' } : null;
+  }
+
   // Extra accounts that only appear in the story.
   Object.assign(B.Sqwak.ACCOUNTS, {
     '@SanaFerreira': { name: 'Sana Ferreira', followers: 240000, acc: 0.93, col: 'violet' },
@@ -266,7 +308,9 @@
     // Interleave so the phone reads like a feed, not a list of one kind.
     day.feed = keep.slice(0, 1).concat(add.slice(0, 2), keep.slice(1), add.slice(2));
 
-    const posts = (INTRADAY[d] || []).map((p) => Object.assign(D.chirp(p[0], p[2], p[1]), p[3] === 'fake' ? { fake: true } : {}));
+    const posts = (INTRADAY[d] || []).map((p) => Object.assign(D.chirp(p[0], p[2], p[1]), p[3] === 'fake' ? { fake: true } : {},
+      threadPosts[`${d}|${p[0]}|${p[1]}`] ? { threadId: threadPosts[`${d}|${p[0]}|${p[1]}`].id,
+        threadStage: threadPosts[`${d}|${p[0]}|${p[1]}`].stage } : {}));
     const scen = day.scen;
     day.scen = (S) => {
       const sc = scen(S);
@@ -275,5 +319,5 @@
     };
   });
 
-  B.SqwakStory = { INTRADAY, PREOPEN, POOLS, BREAKING };
+  B.SqwakStory = { INTRADAY, PREOPEN, POOLS, BREAKING, THREADS, threadAt };
 })(window.BTB);

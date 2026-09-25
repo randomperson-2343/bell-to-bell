@@ -15,6 +15,7 @@
     g: null,
     sel: 'INDX',
     feedTab: 'wire',
+    threadOpen: null,
     btTab: 'positions',
     feed: { wire: [], chirp: [], inbox: [] },
     unread: 0,
@@ -44,6 +45,8 @@
       }));
       // Sqwak: tapping a $TICKER in a post or the trending strip jumps the chart.
       onPress($('feed-list'), (e) => {
+        const thread = e.target.closest('[data-thread]');
+        if (thread) { e.preventDefault(); this.threadOpen = this.threadOpen === thread.dataset.thread ? null : thread.dataset.thread; this.renderFeed(); return; }
         const rq = e.target.closest('[data-rq]');
         if (rq) { e.preventDefault(); this.resqwak(rq.dataset.rq); return; }
         const tag = e.target.closest('[data-sym]');
@@ -284,6 +287,7 @@
         item.id = (B.hashSeed(`${e.t}|${item.src}|${e.text}`) >>> 0).toString(36);
         if (e.fake) item.fake = true;
         if (e.truth) item.truth = true;
+        if (e.threadId) { item.threadId = e.threadId; item.threadStage = e.threadStage; }
       }
       this.feed[kind].unshift(item);
       if (this.feed[kind].length > 120) this.feed[kind].pop();
@@ -303,13 +307,14 @@
     // would lose the whole narrative thread of the day.
     snapshotFeed() {
       const trim = (a) => a.slice(0, 60);
-      return { wire: trim(this.feed.wire), chirp: trim(this.feed.chirp), inbox: trim(this.feed.inbox), unread: this.unread };
+      return { wire: trim(this.feed.wire), chirp: trim(this.feed.chirp), inbox: trim(this.feed.inbox), unread: this.unread, threadOpen: this.threadOpen };
     },
 
     restoreFeed(f) {
       if (!f) return;
       this.feed = { wire: f.wire || [], chirp: f.chirp || [], inbox: f.inbox || [] };
       this.unread = f.unread || 0;
+      this.threadOpen = f.threadOpen || null;
       this.updateBadge();
       this.renderFeed();
     },
@@ -321,7 +326,7 @@
 
     renderFeed() {
       const list = this.feed[this.feedTab];
-      const head = this.feedTab === 'chirp' ? this.sqwakTrending() : '';
+      const head = this.feedTab === 'chirp' ? this.sqwakTrending() + this.sqwakMemory() : '';
       if (!list.length) { $('feed-list').innerHTML = head + '<div class="empty">Nothing yet.</div>'; return; }
       $('feed-list').innerHTML = head + list.slice(0, 80).map((n) => {
         if (n.kind === 'sep') return `<div class="news sep">${B.esc(n.text)}</div>`;
@@ -345,7 +350,25 @@
       return `<div class="news chirp sq-post"><span class="sq-av" style="--av:var(--c-${a.col})">${B.esc(B.Sqwak.initials(a))}</span>
         <div class="sq-body"><div class="sq-who"><b>${B.esc(a.name)}</b>${big ? '<i class="sq-v" title="1M+ followers">&#10004;</i>' : ''}<span>${B.esc(a.handle)} · ${B.Calendar.fmtTime(n.t || 0)}</span></div>
         <div class="txt">${this.sqwakText(n.text)}</div>
+        ${n.threadId ? `<button class="sq-thread-link" data-thread="${B.esc(n.threadId)}">${B.esc(n.threadStage || 'THREAD')} · VIEW THREAD</button>` : ''}
         <div class="sq-stats"><span>&#9633; ${k(m.replies)}</span>${n.id ? `<button class="sq-rq${n.rq ? ' on' : ''}" data-rq="${n.id}" ${n.rq ? 'disabled aria-pressed="true"' : ''} title="${n.rq ? 'You resqwaked this. It cannot be taken back.' : 'Resqwak: share this with your followers'}">&#8644; ${k(m.resqwaks + (n.rq ? 1 : 0))}${n.rq ? ' resqwaked' : ''}</button>` : `<span>&#8644; ${k(m.resqwaks)}</span>`}<span>&#9825; ${k(m.likes)}</span></div></div></div>`;
+    },
+
+    // Historical posts use the existing campaign text. The current session
+    // reveals each entry only after its market minute, including on a replayed
+    // save. Attention counts are synthetic Sqwak engagement, never a truth cue.
+    sqwakMemory() {
+      if (!this.g || this.g.mode.kind !== 'story' || !B.SqwakStory) return '';
+      const day = this.g.day, minute = this.g.market ? this.g.market.t : 0;
+      const threads = B.SqwakStory.THREADS.map((x) => B.SqwakStory.threadAt(x.id, day, minute)).filter(Boolean);
+      if (!threads.length) return '';
+      const selected = threads.find((x) => x.id === this.threadOpen);
+      const links = threads.map((thread) => `<button class="sq-memory-link${selected && selected.id === thread.id ? ' on' : ''}" data-thread="${B.esc(thread.id)}" aria-expanded="${!!selected && selected.id === thread.id}">${B.esc(thread.title)} <span>${B.esc(thread.stage)}</span></button>`).join('');
+      const detail = selected ? `<div class="sq-memory-detail"><div class="sq-memory-title">$${B.esc(selected.sym)} · ${B.esc(selected.title)}</div>
+        <div class="sq-memory-readout"><span>FACT <b>${B.esc(selected.fact)}</b></span><span>REACH <b>${B.esc(selected.reach)}</b></span><span>PRICE <b>${B.esc(selected.price)}</b></span></div>
+        ${selected.posts.map((post) => `<div class="sq-memory-row"><b>${B.esc(post.stage)}</b><span>SESSION ${post.day + 1} · ${B.Calendar.fmtTime(post.t)} · ${B.esc(post.src)}</span><p>${this.sqwakText(post.text)}</p></div>`).join('')}
+        <div class="sq-memory-note">Reach is not proof. A correct claim does not guarantee a profitable trade.</div></div>` : '';
+      return `<section class="sq-memory" aria-label="Sqwak thread memory"><div class="sq-memory-heading">THREAD MEMORY</div><div class="sq-memory-links">${links}</div>${detail}</section>`;
     },
 
     // Resqwak: amplify a post under your own name. There is no undo, because

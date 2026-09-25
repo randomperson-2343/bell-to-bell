@@ -22,6 +22,7 @@ No install and no build. Open `index.html` in any modern browser.
 - **Circuit breakers**: the whole market halts at -7% and -13% and closes for the day at -20%. Single stocks halt after a sudden 10% move.
 - Two feeds carry news. The **Wire** is real news. **Sqwak** is rumour, and a post from a big account can move a stock for a few minutes whether it is true or not.
 - **Sqwak** runs through every career session: authored market-hours posts for all 61 sessions, a Sqwak-styled pre-open phone, and a breaking-news phone insert after the 4:00 bell on the eight biggest days. Every account has a hidden accuracy record: rumours that come true come from sharp accounts, fake ones from hype accounts.
+- **Sqwak Memory** links the existing Ridgeway buyout, CASCADE auction, and model-loop posts into threads on the comms monitor. Posts unlock at their original market minute and remain readable in later sessions. The feed keeps attention, evidence, and price reaction separate; this patch uses original fictional game writing rather than copied forum posts.
 - **Phone tips are unreliable on purpose.** A tip resolves one of four ways: it pays, it's true but already in the price, it runs your way just long enough to get you to size up and then reverses, or it's simply false. Roughly one in three pays. Acting on every call is how you go broke.
 - **Stress 2.0** rises with losses, leverage, margin calls, ringing phones and a looming close. It escalates through visible Loaded, Tunnel and Critical impairment. Panic attacks now last under four real seconds at normal speed and an A/S/D grounding sequence ends them immediately. Recovery creates temporary resistance and a cooldown; one true market catastrophe can bypass it. Fat-finger risk is capped and can no longer add a zero.
 - **Desk quotas escalate by market regime.** A missed mandate adds one permanent career strike, logged once for that session. The thirtieth strike ends the run. The exact mandate, percentage of book, overnight increase and strike count are visible in the briefing, inbox, closing memo, HUD and debug overlay.
@@ -93,6 +94,12 @@ js/tests/               test suite + headless runners
   node js/tests/render-run.js            # native canvas hashes and frame evidence
   node js/tests/browser-run.js           # Chromium viewport, mobile and flow checks
   ```
+
+To review every cinematic panel as PNGs, install `@napi-rs/canvas` in your
+Node environment and run `node js/tests/export-storyboard.js <output-dir>`.
+The export writes 640x360 frames, a manifest and contact sheets for the
+morning news, weekends, endings, decisions and housing variants. It refreshes
+its generated frame folders on each run.
 
 Alongside the usual engine tests, the suite checks that:
 

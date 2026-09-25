@@ -286,6 +286,54 @@
     X.rect(ctx, 0, 250, V.w, 110, P.slate);
   }
 
+  // The underlying set pieces have 320-pixel silhouettes. These fine marks
+  // live on the 640-pixel canvas, giving glass, paper and architecture their
+  // own scale without changing a storyboard's subject or blocking its caption.
+  function finePass(ctx, day, r, phase) {
+    const signal = R.colors(B.clamp(Math.ceil((day + 1) / 15), 1, 4)).signal;
+    const top = phase === 'detail' ? 19 : 12;
+    if (r.shot === 'insert' && phase === 'detail') return; // native documents already have fine linework
+    ctx.save();
+    ctx.globalAlpha = 0.5;
+    if (r.shot === 'floor' || r.shot === 'dark' || r.shot === 'place') {
+      for (let i = 0; i < 8; i++) {
+        const x = 82 + i * 69 + ((day * 11) % 17);
+        X.rect(ctx, x, 119 + (i % 3) * 5, 1, 61, P.grey2);
+        X.rect(ctx, x + 8, 202 + (i % 2) * 7, 22, 1, signal);
+      }
+      X.rect(ctx, 0, 245, V.w, 1, P.grey2);
+      for (let i = 0; i < 19; i++) X.rect(ctx, i * 37 + (day % 7), 247 + i % 3, 13, 1, P.slate2);
+    } else if (r.shot === 'elevator') {
+      for (let i = 0; i < 9; i++) X.rect(ctx, 199 + i * 28, 58, 1, 178, P.bone);
+      X.rect(ctx, 187, 245, 266, 1, signal);
+      X.rect(ctx, 308, 28, 24, 1, P.amber);
+    } else if (r.shot === 'tableau' || r.shot === 'tv') {
+      for (let y = 48; y < 239; y += 8) X.rect(ctx, 14, y, 1, 2, signal);
+      for (let y = 48; y < 239; y += 8) X.rect(ctx, V.w - 15, y, 1, 2, signal);
+      X.rect(ctx, 14, 241, 74, 1, P.grey2);
+      X.rect(ctx, V.w - 88, 241, 74, 1, P.grey2);
+    } else if (r.shot === 'skyline') {
+      for (let i = 0; i < 18; i++) {
+        const x = 17 + i * 35, y = 62 + ((i * 29 + day * 7) % 63);
+        X.rect(ctx, x, y, 1, 1, P.bone);
+      }
+      X.rect(ctx, 0, 259, V.w, 1, signal);
+    } else if (r.shot === 'racks') {
+      for (let i = 0; i < 8; i++) {
+        X.rect(ctx, 34 + i * 76, 53, 1, 186, P.grey2);
+        for (let j = 0; j < 8; j++) X.rect(ctx, 73 + i * 76, 58 + j * 22, 2, 1, j > 3 ? P.crimson : P.sky);
+      }
+    } else if (r.shot === 'bell') {
+      for (let i = 0; i < 12; i++) X.rect(ctx, 217 + i * 17, 218 - i % 3, 9, 1, P.amber);
+    }
+    ctx.globalAlpha = 0.65;
+    X.rect(ctx, 16, top, 38, 1, signal);
+    X.rect(ctx, 16, top, 1, 10, signal);
+    X.rect(ctx, V.w - 54, top, 38, 1, signal);
+    X.rect(ctx, V.w - 17, top, 1, 10, signal);
+    ctx.restore();
+  }
+
   function shotFrame(ctx, day, r, title) {
     switch (r.shot) {
       case 'tv': return at2x(ctx, (c) => { SH.apartment(c, 0.7); SH.tvSet(c, 40, 50, 104, 68, r.arg || title, act(day), 0); }, day);
@@ -369,6 +417,16 @@
     X.rect(ctx, 0, 0, V.w, V.h, P.ink);
     X.gradient(ctx, 0, 0, V.w, 250, night ? L.wall : L.wall2, night ? P.ink2 : L.wall, 10);
     X.rect(ctx, 0, 250, V.w, 110, L.floor);
+    // Skirting, flooring and a receding seam make the space read as a room,
+    // not two flat colour fields. The same apartment ages with the season.
+    X.rect(ctx, 0, 244, V.w, 3, night ? P.slate2 : P.putty2);
+    X.rect(ctx, 0, 248, V.w, 2, P.deskD);
+    for (let i = 0; i < 9; i++) {
+      const x = 22 + i * 81;
+      X.rect(ctx, x, 251, 1, 109, P.deskD);
+      X.rect(ctx, x + 28, 273, 20, 1, P.desk2);
+    }
+    X.rect(ctx, 0, 24, V.w, 2, night ? P.ink2 : P.putty2);
     // The window grows with the rent. What is outside it changes too.
     const ww = Math.round(V.w * L.win), wx = V.w - ww - 36, wy = 40, wh = L.win > 0.8 ? 200 : 150;
     X.inset(ctx, wx, wy, ww, wh, P.slate, P.ink2, P.ink);
@@ -399,12 +457,58 @@
     else if (home.id === 'share') { X.rect(ctx, 30, 236, 200, 24, P.bone); X.rect(ctx, 30, 256, 200, 6, P.deskD); X.plate(ctx, 250, 150, 70, 110, P.plasticD, P.plastic, P.ink2); }
     else { X.plate(ctx, 40, 214, 230, 48, P.slate, P.slate2, P.ink); if (L.win > 0.5) X.plate(ctx, 300, 226, 90, 30, P.deskD, P.desk2, P.ink); }
     if (home.id === 'studio') for (let i = 0; i < 6; i++) X.rect(ctx, 48 + i * 10, 150, 6, 50, P.plasticD);
+    // Practical objects vary by week and housing tier. They have no plot
+    // content of their own, but keep a dozen weekends from sharing one still.
+    const lampX = home.id === 'couch' || home.id === 'share' ? 300 : 281;
+    X.plate(ctx, lampX - 12, 215, 80, 12, P.deskD, P.desk2, P.ink2);
+    X.rect(ctx, lampX + 18, 177, 3, 38, P.plastic2);
+    X.rect(ctx, lampX, 172, 39, 5, P.bone);
+    X.rect(ctx, lampX + 6, 162, 27, 11, night ? P.amberD : P.putty2);
+    if (night) {
+      ctx.save(); ctx.globalAlpha = 0.12;
+      X.rect(ctx, lampX - 56, 178, 138, 72, P.amber);
+      ctx.restore();
+    }
+    X.plate(ctx, lampX + 44, 192, 38, 24, P.plasticD, P.plastic2, P.ink);
+    X.rect(ctx, lampX + 48, 196, 30, 15, P.screen);
+    X.rect(ctx, lampX + 51, 199, 22 - week % 5, 1, P.sky);
+    X.rect(ctx, lampX + 51, 204, 15 + week % 7, 1, P.phosphorD);
+    if (week % 3 === 0) {
+      X.plate(ctx, 52, 191, 48, 20, P.bone, P.white, P.plasticD);
+      X.rect(ctx, 59, 198, 27, 2, P.grey);
+      X.rect(ctx, 59, 203, 17, 1, P.grey2);
+    } else if (week % 3 === 1) {
+      X.rect(ctx, 44, 181, 38, 29, P.slate2);
+      X.rect(ctx, 49, 186, 28, 18, P.screen);
+      X.rect(ctx, 54, 193, 17, 1, P.phosphor);
+    } else {
+      X.plate(ctx, 51, 191, 53, 18, P.desk2, P.putty2, P.ink);
+      X.rect(ctx, 58, 195, 37, 1, P.grey2);
+    }
     // The week number on a paper calendar, and the phone that never stops.
     X.plate(ctx, 40, 70, 64, 72, P.bone, P.white, P.plasticD);
     X.rect(ctx, 40, 70, 64, 14, P.crimsonD);
     big(ctx, String(week), 72, 96, P.ink, 3, 'center');
     X.plate(ctx, 150, 244, 30, 16, P.ink2, P.slate2, P.ink);
     X.rect(ctx, 154, 247, 22, 10, night ? P.screenGlow : P.screen);
+    // The seven established weekend beats have distinct physical traces.
+    if (day === 9 || day === 54) {
+      for (let i = 0; i < (day === 54 ? 4 : 1); i++) {
+        X.plate(ctx, 188 + i * 22, 236 - (i % 2) * 4, 36, 21, P.bone, P.white, P.plasticD);
+        X.rect(ctx, 193 + i * 22, 242 - (i % 2) * 4, 22, 2, day === 54 ? P.crimsonD : P.amberD);
+      }
+    } else if (day === 19 || day === 34) {
+      X.plate(ctx, 184, 219, 74, 37, P.ink2, P.slate2, P.ink);
+      X.rect(ctx, 191, 226, 60, 21, P.screen);
+      for (let i = 0; i < 4; i++) X.rect(ctx, 198, 230 + i * 4, 42 - i * 5, 1, day === 34 ? P.amber : P.sky);
+    } else if (day === 44 || day === 49) {
+      X.plate(ctx, 194, 232, 60, 21, P.bone, P.white, P.plasticD);
+      X.rect(ctx, 199, 237, 42, 2, day === 49 ? P.crimsonD : P.amberD);
+      X.rect(ctx, 199, 243, 32, 1, P.grey2);
+    } else if (day === 59) {
+      X.rect(ctx, 183, 242, 100, 1, P.sky);
+      for (let i = 0; i < 9; i++) X.rect(ctx, 190 + i * 10, 238 - (i * 7 % 12), 3, 2, i > 5 ? P.crimson : P.phosphorD);
+    }
     // Money trouble shows up at the door, where you can see it over the caption:
     // envelopes on the mat, and after three late weeks a red notice on the door.
     const late = w ? w.lateWeeks | 0 : 0;
@@ -425,6 +529,17 @@
     if (night) { ctx.save(); ctx.globalAlpha = 0.28; X.rect(ctx, 0, 0, V.w, V.h, P.ink); ctx.restore(); }
     X.scanlines(ctx, 0, 0, V.w, V.h, P.ink, 0.05);
   }
+  function sundayShot(ctx, day, home, w) {
+    // A closer Sunday camera holds on the phone and the unread material.
+    // Monday's alarm is already intruding on the private room.
+    ctx.save();
+    ctx.translate(-72, -104);
+    ctx.scale(1.38, 1.38);
+    apartmentShot(ctx, day, home, true, w);
+    ctx.restore();
+    X.rect(ctx, 0, 0, 5, 276, P.ink2);
+    X.rect(ctx, 0, 0, 44, 2, P.amberD);
+  }
 
   function story(o) { const g = o && o.game; return g && g.mode && g.mode.S; }
   B.Scenes.weekend = function (o) {
@@ -435,7 +550,7 @@
     const sat = w && w.weeks && w.weeks[week] ? `WEEK ${week} · ${home.name.toUpperCase()} · PAYSLIP ${B.fmt.money(w.weeks[week].net, true)}` : `WEEK ${week} · SATURDAY · ${home.name.toUpperCase()}`;
     const beats = [
       R.beat('weekend', `${key}:sat`, 1.7, (c) => apartmentShot(c, day, home, false, w), sat, { sfx: 'apartment', transition: 'fade', informative: !story }),
-      R.beat('weekend', `${key}:sun`, 1.8, (c) => apartmentShot(c, day, home, true, w), story$ || 'SUNDAY NIGHT. THE ALARM IS SET FOR 5:58.', { sfx: 'apartment', informative: !!story$ })
+      R.beat('weekend', `${key}:sun`, 1.8, (c) => sundayShot(c, day, home, w), story$ || 'SUNDAY NIGHT. THE ALARM IS SET FOR 5:58.', { sfx: 'apartment', informative: !!story$ })
     ];
     // Two weekends get a second room: Treasury with every light on, and the
     // whip's phones the night before the vote.
@@ -456,9 +571,9 @@
     const beats = [];
     if (r.weight === 'XL' && actTurns(day)) beats.push(R.beat('news', `${day}:act`, 1.7, (c) => actCard(c, day), act(day), { sfx: 'broadcast', transition: 'fade' }));
     const v = r.arg && variant(day, story(o)) ? ':' + r.arg : '';
-    beats.push(R.beat('news', `${day}${v}:establish`, n === 1 ? 2.4 : 1.7, (c) => { framed(c, day, r, title); tell(c, day); }, n === 1 ? title : date,
+    beats.push(R.beat('news', `${day}${v}:establish`, n === 1 ? 2.4 : 1.7, (c) => { framed(c, day, r, title); finePass(c, day, r, 'establish'); tell(c, day); }, n === 1 ? title : date,
       { sfx: r.shot === 'tv' ? 'room' : r.shot === 'floor' || r.shot === 'dark' ? 'office' : 'apartment', transition: beats.length ? 'cut' : 'fade', informative: n === 1 }));
-    if (n >= 2) beats.push(R.beat('news', `${day}${v}:detail`, 2.3, (c) => detailFrame(c, day, r, title), title, { sfx: 'broadcast', informative: true }));
+    if (n >= 2) beats.push(R.beat('news', `${day}${v}:detail`, 2.3, (c) => { detailFrame(c, day, r, title); finePass(c, day, r, 'detail'); }, title, { sfx: 'broadcast', informative: true }));
     if (n >= 3) beats.push(R.beat('news', `${day}${v}:hold`, 1.1, (c) => { shotFrame(c, day, r, title); c.save(); c.globalAlpha = 0.18; X.rect(c, 0, 0, V.w, V.h, P.ink); c.restore(); }, '', {}));
     return beats;
   };
@@ -479,10 +594,13 @@
       beats[0] = Object.assign({}, beats[0], {
         cache: false,
         line: silent ? '4:00 PM. NOBODY RINGS IT.' : day === 8 ? '4:00 PM. IT RINGS FOURTEEN TIMES.' : beats[0].line,
-        draw: (c, v, p) => at2x(c, (cc) => {
-          SH.bellScene(cc, silent ? 1 : bellSwing(day, p == null ? 1 : p), day >= 38);
-          if (silent) { cc.save(); cc.globalAlpha = 0.45; X.rect(cc, 0, 0, 320, 180, P.ink); cc.restore(); }
-        }, day)
+        draw: (c, v, p) => {
+          at2x(c, (cc) => {
+            SH.bellScene(cc, silent ? 1 : bellSwing(day, p == null ? 1 : p), day >= 38);
+            if (silent) { cc.save(); cc.globalAlpha = 0.45; X.rect(cc, 0, 0, 320, 180, P.ink); cc.restore(); }
+          }, day);
+          finePass(c, day, { shot: 'bell' }, 'establish');
+        }
       });
     }
     // The report says the one number the desk cares about.
@@ -495,7 +613,7 @@
   function endingWorld(ctx, o, p, card) {
     at2x(ctx, (c) => {
       X.rect(c, 0, 0, 320, 180, P.ink);
-      SH.endingShot(c, o.dark ? 'dark' : 'light');
+      SH.endingShot(c, o.dark ? 'dark' : 'light', o.id);
       c.save(); c.translate(0, 8); SH.endingDetail(c, o.id || 'grind', p); c.restore();
       if (card) {
         c.save(); c.globalAlpha = 0.5; X.rect(c, 0, 96, 320, 40, P.ink); c.restore();
@@ -504,6 +622,26 @@
         X.text(c, 'ENDING REACHED', 160, 117, P.grey2, { align: 'center' });
       }
     }, 60);
+    const index = Math.max(0, R.endingIds.indexOf(o.id));
+    const signal = ['wiped','fired','perp','fall-guy','ward','replaced','depression','nobody'].includes(o.id) ? P.sky
+      : ['whistle','cassandra','revolving','clawback','lost-decade'].includes(o.id) ? P.bone : P.amber;
+    // Native 640-pixel street detail and a quiet signature for each ending.
+    // The large prop remains unobstructed in the middle of the composition.
+    ctx.save(); ctx.globalAlpha = 0.68;
+    for (let i = 0; i < 14; i++) {
+      const xx = 18 + i * 47;
+      X.rect(ctx, xx, 260 + (i * 7 + index) % 6, 29, 1, i % 4 === 0 ? signal : P.slate2);
+      X.rect(ctx, xx + 6, 252, 1, 5, P.grey2);
+    }
+    for (let i = 0; i < 6; i++) {
+      X.rect(ctx, 14 + i * 10, 24 + (i * 11 + index * 3) % 28, 2, 2, signal);
+      X.rect(ctx, V.w - 74 + i * 10, 32 + (i * 13 + index * 5) % 22, 2, 2, signal);
+    }
+    X.rect(ctx, 14, 14, 58, 1, signal);
+    X.rect(ctx, V.w - 72, 14, 58, 1, signal);
+    X.rect(ctx, 14, 14, 1, 11, signal);
+    X.rect(ctx, V.w - 15, 14, 1, 11, signal);
+    ctx.restore();
   }
   // Whatever happened, the last picture is the morning after: the city at
   // first light, or, if you pulled the plug, the rack room in the dark.
