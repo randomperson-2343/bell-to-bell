@@ -395,7 +395,7 @@
           this.cash += intr * 100 * o.qty;
           const realized = (intr - o.avg) * 100 * o.qty;
           out.expired.push({ label: B.Options.label(o), intr, realized });
-          this.trades.push({ t: B.DAY_MIN, day, sym: B.Options.label(o), qty: -o.qty, price: intr, realized, tag: 'EXPIRED', opt: true });
+          this.trades.push({ t: B.DAY_MIN, day, sym: B.Options.label(o), qty: -o.qty, price: intr, realized, tag: 'EXPIRED', opt: true, closed: true });
           this.opts = this.opts.filter((x) => x !== o);
         }
       }

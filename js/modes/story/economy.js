@@ -253,7 +253,7 @@
     let stress = 0;
     if (w.lateWeeks > 0) {
       const stage = Math.min(w.lateWeeks, EVICT_STAGES.length - 1);
-      lines.push(`<b>${EVICT_STAGES[stage]}</b> Rent owed: ${B.fmt.money(w.arrears)}.`);
+      lines.push(`<b>${EVICT_STAGES[stage]}</b> ${stage >= EVICT_STAGES.length - 1 ? 'Overdue rent moved to your card' : 'Rent owed'}: ${B.fmt.money(w.arrears)}.`);
       stress = [0, 4, 8, 12, 16][stage];
       if (stage >= EVICT_STAGES.length - 1) {
         w.card += w.arrears;
@@ -268,7 +268,7 @@
     // Eviction warnings stay out in the open.
     const billsOut = fixed + round(rent * part) + planOut + interest;
     const owe = [w.card > 0 ? `${B.fmt.money(w.card)} on the card` : '', w.arrears > 0 ? `${B.fmt.money(w.arrears)} of rent` : ''].filter(Boolean).join(' and ');
-    const summary = `<b>Payday:</b> ${B.fmt.money(net)} in, ${B.fmt.money(billsOut)} of bills out. You have ${B.fmt.money(w.cash)}${owe ? ` and owe ${owe}` : ''}.`;
+    const summary = `<b>Payday:</b> ${B.fmt.money(net)} in, ${B.fmt.money(billsOut)} billed this week. You have ${B.fmt.money(w.cash)}${owe ? ` and owe ${owe}` : ''}.`;
     const warn = lines.filter((l) => EVICT_STAGES.some((st) => st && l.indexOf(st) >= 0));
     const detail = lines.filter((l) => warn.indexOf(l) < 0);
     const folded = `<details class="payslip"><summary>Payslip details</summary>${detail.map((l) => `<p>${l}</p>`).join('')}</details>`;
