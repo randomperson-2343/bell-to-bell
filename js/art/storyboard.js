@@ -526,8 +526,60 @@
       X.rect(ctx, 248, 186, 12, 18, P.screenGlow);
       ctx.save(); ctx.globalAlpha = 0.25; X.rect(ctx, 224, 160, 30, 26, P.screenGlow); ctx.restore();
     }
+    petShot(ctx, w);
     if (night) { ctx.save(); ctx.globalAlpha = 0.28; X.rect(ctx, 0, 0, V.w, V.h, P.ink); ctx.restore(); }
     X.scanlines(ctx, 0, 0, V.w, V.h, P.ink, 0.05);
+  }
+  // The pet from the adoption beat, in the sprite DSL (js/art/palette.js keys):
+  // 1 outline, a/A amber coat, 8 bone, h eyes, 0 pupils, D/d/e dog browns and
+  // r for the collar, which is blue for Rosco and red for Jemma. Neglect is
+  // purely visual: a matted coat, no collar, dull eyes, a tipped bowl.
+  const PET = {
+    cat: ['..1.....1.......', '.1a1...1a1......', '.1aa111aa1......', '.1aAaaaAa1......', '.1ah0a0ha1......', '.1aa8r8aa1......',
+      '..1a888a1.......', '..1rrarr1....11.', '.1aaaaaaa1..1a1.', '.1aA888Aaa1..1A1', '1aaA8888aAa1.1a1', '1aa88888aaAa11a1',
+      '1aA88888aaaAaa1.', '1aa8888aaAaaa1..', '.1aaaaaaaaaa1...', '..1111111111....'],
+    dog: ['...1111111..........', '..1DDDDDDD1.........', '.1dDDDDDDDd1........', '1ddD0DDD0Ddd1.......', '1ddDDDDDDDdd1.......',
+      '1ddDeeeeeDdd1.......', '.1d1eee0ee1d1.......', '..1.1eeee1.1........', '....1rrarr1......11.', '...1DDDDDDD1....1D1.',
+      '..1DDeeeeDDD1...1D1.', '.1DDeeeeeeDDD1..1D1.', '.1DDeeeeeeDDDD11DD1.', '.1DDeeeeeDDDDDDDD1..', '.1De1eee1eDDDDDD1...',
+      '..1111111111111.....']
+  };
+  function petRows(pet, cared) {
+    const coat = pet.kind === 'cat' ? 'a' : 'D', collar = pet.sex === 'girl' ? 'r' : 'b';
+    return PET[pet.kind].map((r, y) => {
+      if (!cared) r = r.replace('rrarr', coat.repeat(5));
+      return r.split('').map((ch, x) => {
+        if (ch === 'r') return cared ? collar : coat;
+        if (cared) return ch;
+        if (ch === 'h') return 'H';
+        if (ch === '8') return (x + y) % 2 ? '7' : '6';
+        if (ch === coat && (x * 3 + y) % 4 === 0) return '6';
+        if (ch === 'e' && (x + y) % 3 === 0) return '6';
+        return ch;
+      }).join('');
+    });
+  }
+  function petShot(ctx, w) {
+    const pet = w && w.pet;
+    if (!pet || !PET[pet.kind]) return;
+    const cared = w.vet !== 'neglected';
+    const sp = X.sprite(petRows(pet, cared)), s = 3, fx = 420, floor = 276, fy = floor - sp.h * s - (cared ? 6 : 0);
+    if (cared) { // a round cushion bed
+      X.rect(ctx, fx - 10, floor - 8, sp.w * s + 14, 10, P.carpetD);
+      X.rect(ctx, fx - 6, floor - 10, sp.w * s + 6, 4, P.carpet);
+      X.rect(ctx, fx - 4, floor - 8, sp.w * s + 2, 2, P.carpet2);
+    } else { ctx.save(); ctx.globalAlpha = 0.25; X.rect(ctx, fx + 2, floor - 2, sp.w * s - 4, 3, P.ink); ctx.restore(); }
+    ctx.save(); ctx.translate(fx, fy); ctx.scale(s, s); X.drawSprite(ctx, sp, 0, 0); ctx.restore();
+    const bx = fx - 56, by = floor - 18;
+    if (cared) { // full bowl and a toy
+      X.rect(ctx, bx, by + 6, 30, 9, P.crimsonD); X.rect(ctx, bx + 3, by + 6, 24, 2, P.crimson);
+      X.rect(ctx, bx + 4, by + 2, 22, 4, P.desk2); X.rect(ctx, bx + 7, by + 1, 6, 2, P.deskD); X.rect(ctx, bx + 16, by + 1, 5, 2, P.deskD);
+      X.rect(ctx, fx + sp.w * s + 14, floor - 10, 9, 9, P.sky); X.rect(ctx, fx + sp.w * s + 16, floor - 8, 3, 3, P.white);
+    } else { // tipped, empty, crumbs and fur on the boards
+      X.rect(ctx, bx + 4, by + 9, 26, 7, P.crimsonD); X.rect(ctx, bx + 6, by + 9, 22, 2, P.slate2);
+      for (const [a, b] of [[-8, 13], [-16, 15], [-4, 16]]) X.rect(ctx, bx + a, by + b, 3, 2, P.desk2);
+      const tuft = pet.kind === 'cat' ? P.amberD : P.deskD;
+      for (const [a, b] of [[-70, 262], [70, 258], [92, 268], [-20, 254], [120, 262]]) { X.rect(ctx, fx + a, b, 5, 2, tuft); X.rect(ctx, fx + a + 1, b - 1, 2, 1, tuft); }
+    }
   }
   function sundayShot(ctx, day, home, w) {
     // A closer Sunday camera holds on the phone and the unread material.
@@ -548,7 +600,8 @@
     const day = o.day || 0, week = Math.floor(day / 5) + 1, w = wallet(o), home = homeOf(w), S = story(o);
     const pulled = !!(S && S.f && S.f.pulledPlug);
     const story$ = day === 59 && pulled ? '3:17 AM. FOR THE FIRST TIME IN YEARS, NOTHING IS TRADING.' : WEEKENDS[day];
-    const key = `${week}:${home.id}:${w ? Math.min(3, w.lateWeeks | 0) : 0}:${pulled ? 'p' : ''}`;
+    const pet = w && w.pet ? `${w.pet.kind}-${w.pet.sex}-${w.vet === 'neglected' ? 'n' : 'c'}` : '';
+    const key = `${week}:${home.id}:${w ? Math.min(3, w.lateWeeks | 0) : 0}:${pulled ? 'p' : ''}:${pet}`;
     const sat = w && w.weeks && w.weeks[week] ? `WEEK ${week} · ${home.name.toUpperCase()} · PAYSLIP ${B.fmt.money(w.weeks[week].net, true)}` : `WEEK ${week} · SATURDAY · ${home.name.toUpperCase()}`;
     const beats = [
       R.beat('weekend', `${key}:sat`, 1.7, (c) => apartmentShot(c, day, home, false, w), sat, { sfx: 'apartment', transition: 'fade', informative: !story }),
@@ -564,7 +617,7 @@
     return beats;
   };
 
-  B.Storyboard = { SHEET, DOCS, ANOMALY_DAYS, row, variant, lit, actTurns, HOMES, WEEKENDS, insertShot, shotFrame };
+  B.Storyboard = { PET, petRows, SHEET, DOCS, ANOMALY_DAYS, row, variant, lit, actTurns, HOMES, WEEKENDS, insertShot, shotFrame };
 
   B.Scenes.news = function (o) {
     const day = o.day || 0, r = row(day, story(o)), n = WEIGHTS[r.weight] || 2;

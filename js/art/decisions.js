@@ -13,7 +13,8 @@
   // Which room each decision happens in. Ids are StoryData.CHOICES and B.Life.
   const ROOMS = {
     c1: 'office', c3: 'hearing', c5: 'treasury', c6: 'office', c7: 'officeNight', c8: 'vote', c9: 'stairwell', c10: 'racks',
-    rentHike: 'lobby', advance: 'dinner', dadBill: 'call', perry: 'voicemail', pension: 'letter'
+    rentHike: 'lobby', advance: 'dinner', dadBill: 'call', perry: 'voicemail', pension: 'letter',
+    adopt: 'lobby', dentist: 'voicemail', vetCheck: 'letter', toothache: 'call', vetER: 'call'
   };
 
   // ---- rooms (640x360; keep what matters above y=276, clear of the caption) ----

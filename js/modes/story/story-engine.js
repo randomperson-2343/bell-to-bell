@@ -738,6 +738,16 @@
         if (W$.perryLoan) extras.push(S.m.stability >= 45 ? 'Perry paid back the six thousand in March, with a note.' : 'Perry never paid back the six thousand. You never asked.');
         if (W$.perryRefused) extras.push('Perry stopped answering your texts sometime in the spring.');
         if (W$.dadUnpaid) extras.push("Your father's surgery bill went to collections. Your mother never mentioned it again.");
+        else if (W$.dad) extras.push('Your father walks to the mailbox without the cane by spring.');
+        // Household beats: cosmetic lines only, read from the wallet.
+        if (W$.pet) {
+          const pn = W$.pet.name, pr = W$.pet.sex === 'girl' ? 'she' : 'he';
+          extras.push(P.couch ? `${pn} lives at your mother's now. She says ${pr} is better company than you were.`
+            : W$.vet === 'neglected' ? `${pn} got better on ${pr === 'she' ? 'her' : 'his'} own, slower than ${pr} should have. The vet's postcard is still on the fridge.`
+              : `${pn} still sleeps on your feet, whatever the tape did that day.`);
+        }
+        if (W$.teeth === 'sore') extras.push('You chew on the left side now.');
+        else if (W$.teeth === 'fixed') extras.push('The crown on your back molar cost more than your first suit.');
         const tail = extras.length ? ' ' + extras.join(' ') : '';
         const epilogue0 = special[e.id] ? `Personally: ${special[e.id]}`
           : P.band === 'broke'

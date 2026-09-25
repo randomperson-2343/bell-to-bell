@@ -39,7 +39,8 @@
     lateFee: 100,
     living: 300,            // food, transit, phone, utilities: every week
     loan: 150,              // student loan: every week
-    mom: 100                // what you send home: every week
+    mom: 100,               // what you send home: every week
+    petFood: 35             // pet food once you adopt: every week
   };
 
   // Where you live. Rent is weekly. `carry` scales how much stress follows you
@@ -216,7 +217,8 @@
     // Bills scale with the days in the week: the lone final Monday is one fifth.
     const part = o.sessions / 5;
     const momWeek = P.mom + (w.momExtra || 0);
-    const fixed = round((P.living + P.loan + momWeek) * part);
+    const pet = w.pet ? P.petFood : 0;
+    const fixed = round((P.living + P.loan + momWeek + pet) * part);
     const unpaid = spend(w, fixed);
     const rent = round(T.rent * (w.rentMult || 1));
     const rentDue = round(rent * part) + w.arrears;
@@ -249,7 +251,7 @@
       pl.left--;
       planLines.push(`${pl.label} ${B.fmt.money(pl.amt)}${pl.left ? ` (${pl.left} left)` : ' (last one)'}`);
     }
-    lines.push(`<b>Bills:</b> ${T.name} rent ${B.fmt.money(round(rent * part))}, living ${B.fmt.money(P.living * part)}, student loan ${B.fmt.money(P.loan * part)}, home to Mom ${B.fmt.money(momWeek * part)}${planLines.length ? ', ' + planLines.join(', ') : ''}${interest ? `, card interest ${B.fmt.money(interest)}` : ''}${paid ? `. Paid ${B.fmt.money(paid)} off the card` : ''}.`);
+    lines.push(`<b>Bills:</b> ${T.name} rent ${B.fmt.money(round(rent * part))}, living ${B.fmt.money(P.living * part)}, student loan ${B.fmt.money(P.loan * part)}, home to Mom ${B.fmt.money(momWeek * part)}${pet ? `, ${w.pet.name}'s food ${B.fmt.money(pet * part)}` : ''}${planLines.length ? ', ' + planLines.join(', ') : ''}${interest ? `, card interest ${B.fmt.money(interest)}` : ''}${paid ? `. Paid ${B.fmt.money(paid)} off the card` : ''}.`);
     let stress = 0;
     if (w.lateWeeks > 0) {
       const stage = Math.min(w.lateWeeks, EVICT_STAGES.length - 1);
@@ -298,7 +300,7 @@
   }
 
   // All-in weekly cost of living somewhere.
-  const weekly = (t, w) => round(t.rent * ((w && w.rentMult) || 1)) + P.living + P.loan + P.mom + ((w && w.momExtra) || 0);
+  const weekly = (t, w) => round(t.rent * ((w && w.rentMult) || 1)) + P.living + P.loan + P.mom + ((w && w.momExtra) || 0) + (w && w.pet ? P.petFood : 0);
 
   function band(w) {
     const n = netWorth(w);
