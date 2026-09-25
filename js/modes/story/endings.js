@@ -49,7 +49,7 @@
       headline: 'Missing Trader Surfaces in Port Solace',
       deck: 'Photographed beyond the reach of federal prosecutors.',
       story: (c) => [
-        'The photographs, taken with a long lens from a fishing boat, show the trader on the deck of a 140-foot yacht in the harbour of Port Solace, a country with no extradition treaty.',
+        'The photographs, taken with a long lens from a fishing boat, show the trader on the deck of a 140-foot yacht in the harbor of Port Solace, a country with no extradition treaty.',
         `Sources estimate the trader left with roughly ${B.fmt.compact(c.wealth)}, converted to cash in the final hours before a subpoena was issued.`,
         c.S.m.stability < 30
           ? 'Back home, unemployment just hit 11%. The trader has reportedly been posting sunset photographs.'

@@ -180,6 +180,38 @@
     const ending = LIST.find((e) => e.id === id);
     if (ending) ending.dark = true;
   });
+  // Front-page furniture for the Daily Ledger: the section kicker above the
+  // headline and a pull quote lifted from the ending's own story text.
+  const PAGE = {
+    wiped: ['Careers', 'Treated leverage like a personality.'],
+    fired: ['Careers', (c) => c.firedBy === 'boss' ? 'It was never about the numbers.' : 'We pay for results.'],
+    nobody: ['Markets', 'No system rebelled.'],
+    master: ['World', 'Beyond the reach of federal prosecutors.'],
+    whistle: ['Washington', 'They say they sleep fine.'],
+    revolving: ['Washington', 'I\'m a public servant now.'],
+    perp: ['Courts', 'The trader wore a gym hoodie.'],
+    'fall-guy': ['Courts', 'Signatures were not rare. Defendants were.'],
+    cassandra: ['Washington', 'None changed a vote.'],
+    acquirer: ['Deals', 'The liabilities did not disappear. They only changed logos.'],
+    ward: ['Washington', 'The institution survived. The word private did not.'],
+    clawback: ['Pay', 'The pension fund did not recover sixty percent.'],
+    fund: ['Deals', 'The fee section was less skeptical.'],
+    'right-early': ['Markets', 'Markets do not pay for being correct.'],
+    'everything-rally': ['Economy', 'Wages did not follow the portfolio.'],
+    'lost-decade': ['Economy', 'The crisis ended on official calendars.'],
+    soft: ['Economy', 'Boring. Beautiful.'],
+    quiet: ['Markets', 'They were right, told nobody.'],
+    replaced: ['Careers', 'The memo used the word exciting twice.'],
+    depression: ['Economy', 'The trader already knows.'],
+    exit: ['Careers', (c) => c.S.f.pulledPlug ? 'That was not a punishment.' : 'The opening bell rang the following morning without them.'],
+    grind: ['Careers', 'No headline, no subpoena, no book deal.']
+  };
+  LIST.forEach((e) => {
+    const p = PAGE[e.id];
+    if (!p) return;
+    e.section = p[0];
+    e.pull = typeof p[1] === 'function' ? p[1] : () => p[1];
+  });
 
   B.StoryEndings = {
     list: LIST,

@@ -247,18 +247,23 @@
       [31, 60, '@FloorTalk', 'OUTCOME']
     ] }
   ];
-  const threadPosts = {};
-  for (const thread of THREADS) for (const [day, t, src, stage] of thread.posts) {
-    const post = INTRADAY[day].find((p) => p[0] === t && p[1] === src);
-    if (!post) throw new Error(`Missing Sqwak thread post: ${thread.id} day ${day + 1} minute ${t}`);
-    threadPosts[`${day}|${t}|${src}`] = { id: thread.id, stage };
+  // A thread whose post was edited away is dropped with a warning rather than
+  // stopping the game from loading. The test suite still requires every link.
+  const find = (day, t, src) => (INTRADAY[day] || []).find((p) => p[0] === t && p[1] === src);
+  for (let i = THREADS.length - 1; i >= 0; i--) {
+    const missing = THREADS[i].posts.find(([day, t, src]) => !find(day, t, src));
+    if (missing) {
+      if (typeof console !== 'undefined') console.warn(`Sqwak thread "${THREADS[i].id}" skipped: no post at session ${missing[0] + 1}, minute ${missing[1]}`);
+      THREADS.splice(i, 1);
+    }
   }
+  const threadPosts = {};
+  for (const thread of THREADS) for (const [day, t, src, stage] of thread.posts) threadPosts[`${day}|${t}|${src}`] = { id: thread.id, stage };
   function threadAt(id, day, minute) {
     const thread = THREADS.find((x) => x.id === id);
     if (!thread) return null;
     const posts = thread.posts.filter(([d, t]) => d < day || (d === day && t <= minute)).map(([d, t, src, stage]) => {
-      const source = INTRADAY[d].find((p) => p[0] === t && p[1] === src);
-      return { day: d, t, src, text: source[2], stage };
+      return { day: d, t, src, text: find(d, t, src)[2], stage };
     });
     return posts.length ? { id, title: thread.title, sym: thread.sym, posts, stage: posts[posts.length - 1].stage,
       fact: posts.some((p) => p.stage === 'EVIDENCE') ? thread.fact : 'UNVERIFIED',

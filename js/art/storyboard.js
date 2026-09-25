@@ -533,8 +533,10 @@
     // A closer Sunday camera holds on the phone and the unread material.
     // Monday's alarm is already intruding on the private room.
     ctx.save();
-    ctx.translate(-72, -104);
-    ctx.scale(1.38, 1.38);
+    // Framed so the wall calendar and most of the window (the housing tier
+    // reads through its size) stay in shot.
+    ctx.translate(-36, -50);
+    ctx.scale(1.18, 1.18);
     apartmentShot(ctx, day, home, true, w);
     ctx.restore();
     X.rect(ctx, 0, 0, 5, 276, P.ink2);

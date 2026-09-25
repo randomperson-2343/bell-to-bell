@@ -16,6 +16,7 @@
     sel: 'INDX',
     feedTab: 'wire',
     threadOpen: null,
+    memoryOpen: false,
     btTab: 'positions',
     feed: { wire: [], chirp: [], inbox: [] },
     unread: 0,
@@ -45,8 +46,21 @@
       }));
       // Sqwak: tapping a $TICKER in a post or the trending strip jumps the chart.
       onPress($('feed-list'), (e) => {
+        // Thread Memory stays one line tall until asked for, so live posts
+        // keep the monitor. A post's VIEW THREAD opens it and scrolls up to it.
+        const mem = e.target.closest('[data-memory]');
+        if (mem) { e.preventDefault(); this.memoryOpen = !this.memoryOpen; if (!this.memoryOpen) this.threadOpen = null; this.renderFeed(); return; }
         const thread = e.target.closest('[data-thread]');
-        if (thread) { e.preventDefault(); this.threadOpen = this.threadOpen === thread.dataset.thread ? null : thread.dataset.thread; this.renderFeed(); return; }
+        if (thread) {
+          e.preventDefault();
+          const fromPost = !!thread.closest('.sq-post');
+          const id = thread.dataset.thread;
+          this.threadOpen = fromPost || this.threadOpen !== id ? id : null;
+          this.memoryOpen = true;
+          this.renderFeed();
+          if (fromPost) $('feed-list').scrollTop = 0;
+          return;
+        }
         const rq = e.target.closest('[data-rq]');
         if (rq) { e.preventDefault(); this.resqwak(rq.dataset.rq); return; }
         const tag = e.target.closest('[data-sym]');
@@ -236,6 +250,9 @@
       const label = g.mode.kind === 'story' ? B.Calendar.storyLabel(g.day) : d.label;
       $('wall-date').textContent = label;
       this.applyNarrativeSkin(g);
+      // Each session opens with Thread Memory folded away.
+      this.threadOpen = null;
+      this.memoryOpen = false;
       const sep = { kind: 'sep', text: `— ${label} · OPENING BELL —` };
       this.feed.wire.unshift(sep);
       this.feed.chirp.unshift(sep);
@@ -307,7 +324,7 @@
     // would lose the whole narrative thread of the day.
     snapshotFeed() {
       const trim = (a) => a.slice(0, 60);
-      return { wire: trim(this.feed.wire), chirp: trim(this.feed.chirp), inbox: trim(this.feed.inbox), unread: this.unread, threadOpen: this.threadOpen };
+      return { wire: trim(this.feed.wire), chirp: trim(this.feed.chirp), inbox: trim(this.feed.inbox), unread: this.unread, threadOpen: this.threadOpen, memoryOpen: this.memoryOpen };
     },
 
     restoreFeed(f) {
@@ -315,6 +332,7 @@
       this.feed = { wire: f.wire || [], chirp: f.chirp || [], inbox: f.inbox || [] };
       this.unread = f.unread || 0;
       this.threadOpen = f.threadOpen || null;
+      this.memoryOpen = !!f.memoryOpen;
       this.updateBadge();
       this.renderFeed();
     },
@@ -362,13 +380,16 @@
       const day = this.g.day, minute = this.g.market ? this.g.market.t : 0;
       const threads = B.SqwakStory.THREADS.map((x) => B.SqwakStory.threadAt(x.id, day, minute)).filter(Boolean);
       if (!threads.length) return '';
+      const count = `${threads.length} THREAD${threads.length === 1 ? '' : 'S'}`;
+      const toggle = `<button class="sq-memory-heading" data-memory="1" aria-expanded="${this.memoryOpen}">THREAD MEMORY <span>${count} ${this.memoryOpen ? '&#9662;' : '&#9656;'}</span></button>`;
+      if (!this.memoryOpen) return `<section class="sq-memory closed" aria-label="Sqwak thread memory">${toggle}</section>`;
       const selected = threads.find((x) => x.id === this.threadOpen);
       const links = threads.map((thread) => `<button class="sq-memory-link${selected && selected.id === thread.id ? ' on' : ''}" data-thread="${B.esc(thread.id)}" aria-expanded="${!!selected && selected.id === thread.id}">${B.esc(thread.title)} <span>${B.esc(thread.stage)}</span></button>`).join('');
       const detail = selected ? `<div class="sq-memory-detail"><div class="sq-memory-title">$${B.esc(selected.sym)} · ${B.esc(selected.title)}</div>
         <div class="sq-memory-readout"><span>FACT <b>${B.esc(selected.fact)}</b></span><span>REACH <b>${B.esc(selected.reach)}</b></span><span>PRICE <b>${B.esc(selected.price)}</b></span></div>
         ${selected.posts.map((post) => `<div class="sq-memory-row"><b>${B.esc(post.stage)}</b><span>SESSION ${post.day + 1} · ${B.Calendar.fmtTime(post.t)} · ${B.esc(post.src)}</span><p>${this.sqwakText(post.text)}</p></div>`).join('')}
         <div class="sq-memory-note">Reach is not proof. A correct claim does not guarantee a profitable trade.</div></div>` : '';
-      return `<section class="sq-memory" aria-label="Sqwak thread memory"><div class="sq-memory-heading">THREAD MEMORY</div><div class="sq-memory-links">${links}</div>${detail}</section>`;
+      return `<section class="sq-memory" aria-label="Sqwak thread memory">${toggle}<div class="sq-memory-links">${links}</div>${detail}</section>`;
     },
 
     // Resqwak: amplify a post under your own name. There is no undo, because
@@ -548,7 +569,7 @@
           <div class="panic-seq" id="panic-seq">${(lock.seq || ['a', 's', 'd']).map((k, i) => `<button data-panic="${k}" aria-label="Ground with ${k.toUpperCase()}"><kbd>${k.toUpperCase()}</kbd><span>${['BREATHE', 'FOCUS', 'GROUND'][i]}</span></button>`).join('')}</div>
           <div class="panic-progress" id="panic-progress"><i></i><i></i><i></i></div>`,
         coffee: '<h2>COFFEE BREAK</h2><p>You step away from the screens. Your positions are still live. Try not to look.</p>',
-        audit: '<h2>EXAMINERS</h2><p>Two people in grey suits are at your desk asking for your trade blotter. Your account is frozen until they leave.</p>'
+        audit: '<h2>EXAMINERS</h2><p>Two people in gray suits are at your desk asking for your trade blotter. Your account is frozen until they leave.</p>'
       }[lock.kind] || `<h2>LOCKED</h2><p>${B.esc(lock.reason)}</p>`;
       o.innerHTML = `<div class="lock-box">${msg}<div class="lock-pnl" id="lock-pnl"></div><div class="muted" id="lock-left"></div></div>`;
       if (lock.kind === 'panic') this.panicProgress(lock, true);

@@ -117,7 +117,7 @@
         sectors: { defense: { gap: 0.02, target: 0.035 }, power: { gap: 0.015, target: 0.03 } },
         events: [
           ev(35, 'Shipping halted through the Kavro Strait after overnight incident', [['sector', 'power', 0.04, 0.3], ['sector', 'defense', 0.03, 0.2], ['market', '', -0.006]]),
-          ev(120, 'Rare-earth export licences suspended pending "security review"', [['sector', 'chip', -0.035, 0.3]], { rumor: R(11, 'export licences getting pulled. chips are cooked', '@FlopsPerDollar') }),
+          ev(120, 'Rare-earth export licenses suspended pending "security review"', [['sector', 'chip', -0.035, 0.3]], { rumor: R(11, 'export licences getting pulled. chips are cooked', '@FlopsPerDollar') }),
           ev(310, 'Filings show Fairline Credit CEO sold 40% of his personal stake last month', [['ticker', 'FRLN', -0.07, 0.3]], { rumor: R(12, 'Fairline CEO dumping shares?? the form 4s are wild rn', '@TheTapeReader') })
         ]
       }),
@@ -249,7 +249,7 @@
             ev(t1, 'FLASH CRASH: correlated model selling cascades across the tape', [['market', '', -0.055 * sev, 0.25], ['sector', 'chip', -0.04 * sev]], { big: true, rumor: R(6, 'every fund runs the same model and they are all selling at once', '@Quant_Kween') }),
             ev(t1 + 22, 'Exchanges say systems are functioning normally; no plans to halt', [['market', '', -0.012 * sev]]),
             ev(t1 + 70, 'Buyers step in at the lows; violent reversal off the bottom', [['market', '', 0.035 * sev, 0.4]]),
-            ev(300, 'Regulator opens review into automated execution behaviour', [['sector', 'ai', -0.02]]),
+            ev(300, 'Regulator opens review into automated execution behavior', [['sector', 'ai', -0.02]]),
             chirp(320, 'the machines are front-running the machines and we all agreed this was fine', '@PromptAndPray')
           ]
         };
@@ -508,7 +508,7 @@
       day: 5, speaker: 'Sen. Marcus Thorne', role: 'Chair, Senate Markets Committee', title: 'The Compute Freedom Act',
       kicker: 'DECISION 3',
       text: [
-        'Thorne does not sit down. He stands at the window with his back to you, which you suspect he practised.',
+        'Thorne does not sit down. He stands at the window with his back to you, which you suspect he practiced.',
         '"The Compute Freedom Act raises leverage limits for institutions funding compute infrastructure. My colleagues will vote however the industry tells them to vote, and the industry will say whatever a working trader tells it to say."',
         '"So. You are the working trader. Does it make the system stronger, or does it make it bigger right before it breaks?"'
       ],

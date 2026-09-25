@@ -323,28 +323,47 @@
       const found = Object.keys(tally).length;
       const wealthLabel = e.unpriced ? '<span id="unpriced-value" class="unpriced">$482,119.07</span>' : F.money(e.wealth);
       const returnLabel = e.unpriced ? 'UNPRICED' : F.pct(e.wealth / g.startCapital - 1);
-      scr.innerHTML = `<div class="ending-scroll"><article class="paper">
-        <div class="mast"><h1>The Daily Ledger</h1><div class="row"><span>${B.Calendar.storyLabel(g.day)}</span><span>Final Edition</span><span>$2.00</span></div></div>
-        <div class="hl">${e.headline}</div>
+      const dark = !!e.dark;
+      const body = (e.story || []).slice();
+      // The pull quote sits after the first paragraph so the drop cap leads.
+      const lead = body.map((p, i) => `<p${i === 0 ? ' class="first"' : ''}>${p}</p>`);
+      if (e.pull) lead.splice(1, 0, `<p class="pull">${e.pull}</p>`);
+      const mine = (e.epilogue || '').replace(/^Personally[:,]\s*/, '');
+      const epilogue = mine ? `<p class="personal"><b>Where this leaves you</b>${mine.charAt(0).toUpperCase() + mine.slice(1)}</p>` : '';
+      scr.innerHTML = `<div class="ending-scroll"><article class="paper ${dark ? 'dark' : 'calm'}">
+        <div class="mast">
+          <div class="ear">"All the Prices<br>Fit to Print"</div>
+          <h1>The Daily Ledger</h1>
+          <div class="ear r">${dark ? 'Weather: Margin calls,<br>clearing by evening' : 'Weather: Clear skies,<br>low volatility'}</div>
+        </div>
+        <div class="row"><span>${B.Calendar.storyLabel(g.day)}</span><span>Late City Final</span><span>$2.00</span></div>
+        <div class="splash">
+          <span class="kicker">${B.esc(e.section || 'Markets')}</span>
+          ${dark ? '<div class="stamp">EXTRA!</div>' : ''}
+          <h2 class="hl${e.headline.length > 44 ? ' long' : ''}">${e.headline}</h2>
+        </div>
         <div class="deck">${e.deck}</div>
+        <div class="byline"><span>By the Ledger Markets Desk</span><span>Holloway Stern, 41st Floor</span></div>
         <div class="cols">
-          <div class="lead">${e.story.map((p) => `<p>${p}</p>`).join('')}</div>
+          <div class="lead">${lead.join('')}${epilogue}</div>
           <div class="side">
             <h4>How We Got Here</h4>
             <ul>${(e.timeline || []).map((t) => `<li>${t}</li>`).join('') || '<li>You kept your head down.</li>'}</ul>
             <div class="box">
-              <div><span>ENDING</span><b>${e.title}</b></div>
-              <div><span>Reached</span><b>${tally[e.id] || 1}x</b></div>
-              <div><span>Final book</span><b>${wealthLabel}</b></div>
-              ${e.personal ? `<div><span>Your own money</span><b class="${e.personal.label ? '' : F.cls(e.personal.worth)}">${e.personal.label || F.money(e.personal.worth)}</b></div><div><span>Home</span><span>${e.personal.home}</span></div>` : ''}
-              <div><span>Starting capital</span><span>${F.money(g.startCapital)}</span></div>
-              <div><span>Return</span><b>${returnLabel}</b></div>
-              <div><span>Index, campaign</span><span>${F.pct(e.indexMonth || 0)}</span></div>
-              <div><span>Days traded</span><span>${g.history.length}</span></div>
-              <div><span>Endings found</span><span>${found} / ${B.StoryEndings.list.length}</span></div>
+              <h5>The Final Tally</h5>
+              <div class="ending">${e.title}</div>
+              <div><span>Reached</span><i></i><b>${tally[e.id] || 1}&times;</b></div>
+              <div><span>Final book</span><i></i><b>${wealthLabel}</b></div>
+              ${e.personal ? `<div><span>Your own money</span><i></i><b class="${e.personal.label ? '' : F.cls(e.personal.worth)}">${e.personal.label || F.money(e.personal.worth)}</b></div><div><span>Home</span><i></i><b>${e.personal.home}</b></div>` : ''}
+              <div><span>Starting capital</span><i></i><b>${F.money(g.startCapital)}</b></div>
+              <div><span>Return</span><i></i><b class="${e.unpriced ? '' : F.cls(e.wealth - g.startCapital)}">${returnLabel}</b></div>
+              <div><span>Index, campaign</span><i></i><b class="${F.cls(e.indexMonth || 0)}">${F.pct(e.indexMonth || 0)}</b></div>
+              <div><span>Days traded</span><i></i><b>${g.history.length}</b></div>
+              <div><span>Endings found</span><i></i><b>${found} of ${B.StoryEndings.list.length}</b></div>
             </div>
           </div>
         </div>
+        <div class="foot">Printed on the 41st floor. Corrections will not be issued.</div>
       </article>
       <div class="paper-actions">
         <button class="btn primary" id="end-menu">Main Menu</button>

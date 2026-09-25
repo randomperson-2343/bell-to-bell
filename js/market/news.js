@@ -27,7 +27,7 @@
   ];
   const SECTOR_POS = {
     ai: ['New benchmark results send model labs vertical', 'Enterprise adoption survey: AI budgets up 60%'],
-    chip: ['Foundry yields improve; silicon rips higher', 'Export licences granted for next-gen accelerators'],
+    chip: ['Foundry yields improve; silicon rips higher', 'Export licenses granted for next-gen accelerators'],
     dc: ['Datacenter vacancy hits record low', 'Hyperscale leasing demand described as "insatiable"'],
     power: ['Grid operators approve fast-track interconnects', 'Power prices ease as new capacity comes online'],
     bank: ['Regulators ease bank capital requirements', 'Loan loss provisions come in far below estimates'],

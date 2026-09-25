@@ -916,6 +916,20 @@
     });
   });
 
+  test('Every ending prints a Daily Ledger section and a pull quote from its own copy', () => {
+    for (const e of B.StoryEndings.list) {
+      assert(typeof e.section === 'string' && e.section.length, e.id + ' has no section kicker');
+      for (const extra of [{}, { firedBy: 'boss' }, { pulledPlug: true }]) {
+        const S = B.StoryMode.freshState(250000);
+        if (extra.pulledPlug) S.f.pulledPlug = true;
+        const ctx = Object.assign({ S, wealth: 500000, start: 250000, reason: 'final', days: 61, quotaMet: 30 }, extra);
+        const pull = e.pull(ctx);
+        const copy = [e.headline, e.deck].concat(e.story(ctx)).join(' ');
+        assert(pull && copy.toLowerCase().indexOf(pull.replace(/\.$/, '').toLowerCase()) >= 0, `${e.id} pull quote "${pull}" is not in its own copy`);
+      }
+    }
+  });
+
   test('Sqwak Memory reveals existing posts in order without spoiling later sessions', () => {
     const T = B.SqwakStory;
     assert(T.THREADS.length === 3, 'first slice should include three threads');
