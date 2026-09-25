@@ -606,7 +606,9 @@
       'federal reserve', 'the fed', 'sec', 'securities and exchange commission', 'fdic', 'finra',
       'nasdaq', 'dow jones', 's&p 500', 'nyse', 'wall street journal',
       'covid', 'subprime', '2008', 'great recession', 'dot-com', 'dotcom',
-      'ukraine', 'russia', 'china', 'taiwan', 'israel', 'gaza', 'iran'
+      'ukraine', 'russia', 'china', 'taiwan', 'israel', 'gaza', 'iran',
+      // real places and institutions that crept into story copy
+      'wall street', 'teterboro', 'miami', 'europe', 'washington'
     ];
     // Whole-word matching: "Corvus Intelligence" must not trip on "intel", and
     // "campaign" must not trip on "aig".

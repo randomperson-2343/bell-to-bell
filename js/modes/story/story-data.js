@@ -749,7 +749,7 @@
       text: [
         'Imani finds you in the stairwell at 7 PM with a folder she should not have.',
         '"Enforcement wants someone who was in the room. Not a witness, a participant. They are offering full cooperation terms, and they are offering them today."',
-        '"There is also a car downstairs that Kroll sent, and there is a plane at Teterboro, and there is a man from Treasury who has called you twice. Everyone is offering you something. Pick one, and pick it now, because tomorrow there is only one option left and it is not a good one."'
+        '"There is also a car downstairs that Kroll sent, and there is a plane at a private airfield, and there is a man from Treasury who has called you twice. Everyone is offering you something. Pick one, and pick it now, because tomorrow there is only one option left and it is not a good one."'
       ],
       options: [
         {

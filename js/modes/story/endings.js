@@ -72,7 +72,7 @@
     {
       id: 'revolving', icon: '&#127963;', title: 'The Revolving Door', hint: 'Enough influence, the right friends, and the Treasury job.', lockedHint: 'Government always needs people who know where the bodies are.',
       test: (c) => !!c.S.f.treasury,
-      headline: 'Wall Street Trader Named to Top Treasury Post',
+      headline: 'Holloway Stern Trader Named to Top Treasury Post',
       deck: 'Critics say the architects of the crisis are now in charge of cleaning it up.',
       story: (c) => [
         'In a move that stunned reform advocates, Secretary Adele Venn named the trader Deputy Secretary for Financial Stability on Monday.',

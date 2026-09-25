@@ -9,7 +9,7 @@
 (function (B) {
   'use strict';
 
-  const TIPSTERS = ['Your old college roommate', 'A guy from your gym', 'Your barber', 'Ex-colleague at Calloway', 'Unknown number', 'Your cousin in Miami'];
+  const TIPSTERS = ['Your old college roommate', 'A guy from your gym', 'Your barber', 'Ex-colleague at Calloway', 'Unknown number', 'Your cousin down south'];
   const FAMILY = [
     ['Mom', 'Is the stock market okay? It was on the news. Should I sell my pension? Call me back.'],
     ['Your landlord', 'Rent check bounced. Again. I need it by Friday.'],

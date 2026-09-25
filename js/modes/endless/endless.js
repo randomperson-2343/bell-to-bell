@@ -146,7 +146,7 @@
           const hit = rng.pick(['bank', 'lender', 'tech', 'insurer', 'energy']);
           sc.sectors[hit] = { gap: -0.03 * sev, target: -0.08 * sev };
           const t1 = Math.round(rng.range(60, 300));
-          sc.events.push({ t: t1, text: rng.pick(['FLASH CRASH: algorithms dump everything', 'Major hedge fund implodes; forced selling everywhere', 'Sovereign debt crisis erupts overnight in Europe', 'Surprise emergency Fed statement rattles markets']), big: true, impacts: [{ scope: 'market', id: '', pct: -0.04 * sev, over: 0.25 }] });
+          sc.events.push({ t: t1, text: rng.pick(['FLASH CRASH: algorithms dump everything', 'Major hedge fund implodes; forced selling everywhere', 'Sovereign debt crisis erupts overnight overseas', 'Surprise emergency central bank statement rattles markets']), big: true, impacts: [{ scope: 'market', id: '', pct: -0.04 * sev, over: 0.25 }] });
           sc.events.push({ t: t1 + Math.round(rng.range(30, 80)), text: 'Dip buyers step in; bounce off the lows', impacts: [{ scope: 'market', id: '', pct: 0.02 * sev, over: 0.4 }] });
         }
         const bias = reg.mu > 0 ? 0.6 : reg.mu < 0 ? 0.4 : 0.5;
