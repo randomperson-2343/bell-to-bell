@@ -412,119 +412,201 @@
     const t = w && E ? E.tier(w) : { id: 'studio', name: 'Midtown studio' };
     return { id: t.id, name: t.name, look: HOMES[t.id] || HOMES.studio };
   }
+  // ---- the apartment, drawn to the pet's rules ----
+  // Every prop sits on a 3px grid with an ink outline, light on the top and
+  // left edges and shade on the bottom and right, so furniture, story props
+  // and the pet read as one set.
+  const U = 3;
+  function box(ctx, x, y, w, h, base, hi, sh, out) {
+    X.rect(ctx, x, y, w, h, out || P.ink2);
+    X.rect(ctx, x + U, y + U, w - 2 * U, h - 2 * U, base);
+    if (hi) { X.rect(ctx, x + U, y + U, w - 2 * U, U, hi); X.rect(ctx, x + U, y + U, U, h - 2 * U, hi); }
+    if (sh) { X.rect(ctx, x + U, y + h - 2 * U, w - 2 * U, U, sh); X.rect(ctx, x + w - 2 * U, y + 2 * U, U, h - 3 * U, sh); }
+  }
+  function blit(ctx, rows, x, y) { ctx.save(); ctx.translate(x, y); ctx.scale(U, U); X.drawSprite(ctx, X.sprite(rows), 0, 0); ctx.restore(); }
+  // 3x5 clock digits on a 2px grid: the alarm is always set for 5:58.
+  const CLOCK = { '5': ['111', '100', '111', '001', '111'], '8': ['111', '101', '111', '101', '111'], ':': ['0', '1', '0', '1', '0'] };
+  function clockFace(ctx, x, y, col) {
+    let cx = x;
+    for (const ch of '5:58') { CLOCK[ch].forEach((row, j) => row.split('').forEach((b, i) => { if (b === '1') X.rect(ctx, cx + i * 2, y + j * 2, 2, 2, col); })); cx += ch === ':' ? 4 : 8; }
+  }
+  const LAMP = ['....111111....', '...18888881...', '..1888888881..', '.188888888871.', '18888888888771', '11111111111111'];
+  // You, up late, hood up, face lit by the phone.
+  const FIGURE = ['....1111......', '...122221.....', '..12222221....', '..122gg221....', '..12gggg21....', '...12gg21.....',
+    '..1222222111..', '.122222222hh1.', '.12222222hHh1.', '.1222222221111', '.122222222221.', '.122222222221.', '.111111111111.'];
+  const PLANT = ['...1..1..1....', '..1j11j11j1...', '.1jJj1jJ1jj1..', '.1jJjjJjjJj1..', '..1jJjJjJj1...', '...11J1J11....', '....1ddd1.....', '...1DDDDD1....', '...1DeDDD1....', '...1DDDDd1....', '....11111.....'];
+  // Where the bed or couch ends and the nightstand stands, per home.
+  const LAYOUT = {
+    couch: { stand: 309 }, share: { stand: 255 }, studio: { stand: 255 },
+    onebed: { stand: 255 }, loft: { stand: 255, plant: 327 }, penthouse: { stand: 255, plant: 327 }
+  };
+
   function apartmentShot(ctx, day, home, night, w) {
-    const L = home.look, week = Math.floor(day / 5) + 1;
+    const L = home.look, week = Math.floor(day / 5) + 1, s = R.season(day), lay = LAYOUT[home.id] || LAYOUT.studio;
+    const late = w ? w.lateWeeks | 0 : 0;
     X.rect(ctx, 0, 0, V.w, V.h, P.ink);
-    X.gradient(ctx, 0, 0, V.w, 250, night ? L.wall : L.wall2, night ? P.ink2 : L.wall, 10);
-    X.rect(ctx, 0, 250, V.w, 110, L.floor);
-    // Skirting, flooring and a receding seam make the space read as a room,
-    // not two flat colour fields. The same apartment ages with the season.
-    X.rect(ctx, 0, 244, V.w, 3, night ? P.slate2 : P.putty2);
-    X.rect(ctx, 0, 248, V.w, 2, P.deskD);
-    for (let i = 0; i < 9; i++) {
-      const x = 22 + i * 81;
-      X.rect(ctx, x, 251, 1, 109, P.deskD);
-      X.rect(ctx, x + 28, 273, 20, 1, P.desk2);
+    // Wall: the tier's paint, a quiet stripe, a picture rail.
+    X.gradient(ctx, 0, 0, V.w, 240, night ? L.wall : L.wall2, night ? P.ink2 : L.wall, 10);
+    ctx.save(); ctx.globalAlpha = 0.18; for (let x = 0; x < V.w; x += 24) X.dither(ctx, x, 30, 6, 210, L.wall, P.plasticD, 0.35); ctx.restore();
+    X.rect(ctx, 0, 24, V.w, U, night ? P.ink2 : P.putty2); X.rect(ctx, 0, 27, V.w, U, P.plasticD);
+    // Floor: staggered boards, or carpet where the tier is carpeted.
+    X.rect(ctx, 0, 249, V.w, 111, L.floor);
+    if (L.floor === P.carpet || L.floor === P.carpetD) {
+      X.dither(ctx, 0, 252, V.w, 108, L.floor, L.floor === P.carpet ? P.carpet2 : P.carpet, 0.18);
+      X.rect(ctx, 0, 252, V.w, U, P.ink2);
+    } else {
+      for (let row = 0; row < 7; row++) {
+        const y = 252 + row * 15, off = (row % 3) * 57;
+        X.rect(ctx, 0, y, V.w, U, P.deskD);
+        for (let x = -off; x < V.w; x += 171) {
+          X.rect(ctx, x, y, U, 15, P.deskD);
+          if (Math.round(x / 171 + row) % 3 === 0) { ctx.save(); ctx.globalAlpha = 0.25; X.rect(ctx, x + U, y + U, 168, 12, P.desk2); ctx.restore(); }
+        }
+      }
     }
-    X.rect(ctx, 0, 24, V.w, 2, night ? P.ink2 : P.putty2);
+    box(ctx, -U, 237, V.w + 2 * U, 15, night ? P.slate2 : P.putty2, night ? P.grey : P.bone, night ? P.slate : P.putty);
+
     // The window grows with the rent. What is outside it changes too.
-    const ww = Math.round(V.w * L.win), wx = V.w - ww - 36, wy = 40, wh = L.win > 0.8 ? 200 : 150;
-    X.inset(ctx, wx, wy, ww, wh, P.slate, P.ink2, P.ink);
-    ctx.save(); ctx.beginPath(); ctx.rect(wx + 3, wy + 3, ww - 6, wh - 6); ctx.clip();
+    const ww = Math.round(V.w * L.win / U) * U, wx = V.w - ww - 36, wy = 42, wh = L.win > 0.8 ? 198 : 150;
+    ctx.save(); ctx.beginPath(); ctx.rect(wx, wy, ww, wh); ctx.clip();
     X.gradient(ctx, wx, wy, ww, wh, night ? P.ink2 : P.sky, night ? P.ink : P.slate2, 8);
-    const s = R.season(day);
     if (!night) X.dither(ctx, wx, wy + wh / 2, ww, wh / 2, P.slate2, s.dawn, s.glow);
     if (L.view === 'shaft' || L.view === 'wall') {
       X.rect(ctx, wx, wy, ww, wh, L.view === 'shaft' ? P.deskD : P.slate);
-      for (let yy = wy; yy < wy + wh; yy += 8) for (let xx = wx + ((yy / 8) % 2) * 8; xx < wx + ww; xx += 16) X.rect(ctx, xx, yy, 15, 1, P.ink2);
+      for (let yy = wy; yy < wy + wh; yy += 9) for (let xx = wx + ((yy / 9) % 2) * 9; xx < wx + ww; xx += 18) X.rect(ctx, xx, yy, 15, U, P.ink2);
     } else {
-      const lights = night ? lit(day) : 0;
-      const n = Math.ceil(ww / 22);
+      const lights = night ? lit(day) : 0, n = Math.ceil(ww / 24);
       for (let i = 0; i < n; i++) {
-        const bw = 12 + ((i * 17 + week) % 12), bh = (L.view === 'suburb' ? 18 : 40) + ((i * 41 + week * 7) % (L.view === 'suburb' ? 24 : 110));
-        const bx = wx + i * 22, by = wy + wh - bh;
-        X.rect(ctx, bx, by, bw, bh, i % 3 ? P.ink2 : P.slate);
-        for (let yy = 5; yy < bh - 4; yy += 9) for (let xx = 3; xx < bw - 3; xx += 6) if (((i * 13 + xx + yy + week) % 100) / 100 < lights) X.rect(ctx, bx + xx, by + yy, 2, 2, P.amber);
+        const bw = 15 + ((i * 17 + week) % 12), bh = (L.view === 'suburb' ? 21 : 42) + ((i * 41 + week * 7) % (L.view === 'suburb' ? 24 : 105));
+        const bx = wx + i * 24, by = wy + wh - bh;
+        X.rect(ctx, bx, by, bw, bh, P.ink2); X.rect(ctx, bx, by, bw, U, i % 2 ? P.slate2 : P.slate); X.rect(ctx, bx + bw - U, by, U, bh, P.ink);
+        for (let yy = 6; yy < bh - 6; yy += 9) for (let xx = 3; xx < bw - 6; xx += 6) if (((i * 13 + xx + yy + week) % 100) / 100 < lights) X.rect(ctx, bx + xx, by + yy, U, U, P.amber);
       }
-      if (L.view === 'bridges') { X.rect(ctx, wx, wy + wh - 48, ww, 3, P.grey); for (let i = 0; i < 6; i++) X.rect(ctx, wx + 20 + i * (ww / 6), wy + wh - 72, 3, 26, P.grey); }
+      if (L.view === 'bridges') { X.rect(ctx, wx, wy + wh - 48, ww, U, P.grey); for (let i = 0; i < 6; i++) X.rect(ctx, wx + 21 + Math.round(i * ww / 6 / U) * U, wy + wh - 72, U, 24, P.grey); }
       if (L.view === 'park') X.rect(ctx, wx, wy + wh - 30, ww, 30, s.snow ? P.bone : s.id === 'autumn' ? P.amberD : P.jadeD);
     }
     R.weather(ctx, wx, wy, ww, wh, day);
     ctx.restore();
-    if (s.wreath) { X.rect(ctx, wx + ww / 2 - 14, wy - 10, 28, 6, P.jadeD); X.rect(ctx, wx + ww / 2 - 3, wy - 6, 6, 6, P.crimson); }
-    // Furniture: the couch you sleep on, or the bed you paid for.
-    if (home.id === 'couch') { X.plate(ctx, 40, 212, 250, 52, P.violet, P.sky, P.slate); X.rect(ctx, 60, 204, 120, 12, P.bone); }
-    else if (home.id === 'share') { X.rect(ctx, 30, 236, 200, 24, P.bone); X.rect(ctx, 30, 256, 200, 6, P.deskD); X.plate(ctx, 250, 150, 70, 110, P.plasticD, P.plastic, P.ink2); }
-    else { X.plate(ctx, 40, 214, 230, 48, P.slate, P.slate2, P.ink); if (L.win > 0.5) X.plate(ctx, 300, 226, 90, 30, P.deskD, P.desk2, P.ink); }
-    if (home.id === 'studio') for (let i = 0; i < 6; i++) X.rect(ctx, 48 + i * 10, 150, 6, 50, P.plasticD);
-    // Practical objects vary by week and housing tier. They have no plot
-    // content of their own, but keep a dozen weekends from sharing one still.
-    const lampX = home.id === 'couch' || home.id === 'share' ? 300 : 281;
-    X.plate(ctx, lampX - 12, 215, 80, 12, P.deskD, P.desk2, P.ink2);
-    X.rect(ctx, lampX + 18, 177, 3, 38, P.plastic2);
-    X.rect(ctx, lampX, 172, 39, 5, P.bone);
-    X.rect(ctx, lampX + 6, 162, 27, 11, night ? P.amberD : P.putty2);
-    if (night) {
-      ctx.save(); ctx.globalAlpha = 0.12;
-      X.rect(ctx, lampX - 56, 178, 138, 72, P.amber);
-      ctx.restore();
+    const fr = night ? P.slate2 : P.plastic2, frH = night ? P.grey : P.white, frS = night ? P.slate : P.plasticD;
+    box(ctx, wx - 9, wy - 9, ww + 18, 12, fr, frH, frS); box(ctx, wx - 9, wy + wh - 3, ww + 18, 12, fr, frH, frS);
+    box(ctx, wx - 9, wy, 12, wh, fr, frH, frS); box(ctx, wx + ww - 3, wy, 12, wh, fr, frH, frS);
+    if (L.win > 0.5) { const panes = Math.round(ww / 132); for (let k = 1; k < panes; k++) box(ctx, wx + Math.round(k * ww / panes / U) * U - 6, wy, 12, wh, fr, frH, frS); }
+    else { box(ctx, wx + Math.round(ww / 2 / U) * U - 6, wy, 12, wh, fr, frH, frS); box(ctx, wx, wy + Math.round(wh / 2 / U) * U - 6, ww, 9, fr, frH, frS); }
+    box(ctx, wx - 12, wy + wh + 6, ww + 24, 12, fr, frH, frS);
+    // Curtains on a rod, in the tier's fabric, where the wall has room.
+    const cur = home.id === 'couch' ? [P.crimsonD, P.crimson] : home.id === 'loft' || home.id === 'penthouse' ? [P.putty, P.bone] : home.id === 'share' ? [P.slate, P.slate2] : [P.carpet, P.carpet2];
+    X.rect(ctx, wx - 36, wy - 21, ww + 72, U * 2, P.ink2); X.rect(ctx, wx - 36, wy - 21, ww + 72, U, P.grey);
+    for (const cx of [wx - 33, wx + ww + 3].filter((c) => c > 0 && c + 30 <= V.w)) {
+      box(ctx, cx, wy - 15, 30, wh + 30, cur[0], cur[1], P.ink2);
+      for (let k = 9; k < 27; k += 9) X.rect(ctx, cx + k, wy - 12, U, wh + 24, cur[1]);
     }
-    X.plate(ctx, lampX + 44, 192, 38, 24, P.plasticD, P.plastic2, P.ink);
-    X.rect(ctx, lampX + 48, 196, 30, 15, P.screen);
-    X.rect(ctx, lampX + 51, 199, 22 - week % 5, 1, P.sky);
-    X.rect(ctx, lampX + 51, 204, 15 + week % 7, 1, P.phosphorD);
-    if (week % 3 === 0) {
-      X.plate(ctx, 52, 191, 48, 20, P.bone, P.white, P.plasticD);
-      X.rect(ctx, 59, 198, 27, 2, P.grey);
-      X.rect(ctx, 59, 203, 17, 1, P.grey2);
-    } else if (week % 3 === 1) {
-      X.rect(ctx, 44, 181, 38, 29, P.slate2);
-      X.rect(ctx, 49, 186, 28, 18, P.screen);
-      X.rect(ctx, 54, 193, 17, 1, P.phosphor);
-    } else {
-      X.plate(ctx, 51, 191, 53, 18, P.desk2, P.putty2, P.ink);
-      X.rect(ctx, 58, 195, 37, 1, P.grey2);
-    }
-    // The week number on a paper calendar, and the phone that never stops.
-    X.plate(ctx, 40, 70, 64, 72, P.bone, P.white, P.plasticD);
-    X.rect(ctx, 40, 70, 64, 14, P.crimsonD);
-    big(ctx, String(week), 72, 96, P.ink, 3, 'center');
-    X.plate(ctx, 150, 244, 30, 16, P.ink2, P.slate2, P.ink);
-    X.rect(ctx, 154, 247, 22, 10, night ? P.screenGlow : P.screen);
-    // The seven established weekend beats have distinct physical traces.
-    if (day === 9 || day === 54) {
-      for (let i = 0; i < (day === 54 ? 4 : 1); i++) {
-        X.plate(ctx, 188 + i * 22, 236 - (i % 2) * 4, 36, 21, P.bone, P.white, P.plasticD);
-        X.rect(ctx, 193 + i * 22, 242 - (i % 2) * 4, 22, 2, day === 54 ? P.crimsonD : P.amberD);
-      }
-    } else if (day === 19 || day === 34) {
-      X.plate(ctx, 184, 219, 74, 37, P.ink2, P.slate2, P.ink);
-      X.rect(ctx, 191, 226, 60, 21, P.screen);
-      for (let i = 0; i < 4; i++) X.rect(ctx, 198, 230 + i * 4, 42 - i * 5, 1, day === 34 ? P.amber : P.sky);
-    } else if (day === 44 || day === 49) {
-      X.plate(ctx, 194, 232, 60, 21, P.bone, P.white, P.plasticD);
-      X.rect(ctx, 199, 237, 42, 2, day === 49 ? P.crimsonD : P.amberD);
-      X.rect(ctx, 199, 243, 32, 1, P.grey2);
-    } else if (day === 59) {
-      X.rect(ctx, 183, 242, 100, 1, P.sky);
-      for (let i = 0; i < 9; i++) X.rect(ctx, 190 + i * 10, 238 - (i * 7 % 12), 3, 2, i > 5 ? P.crimson : P.phosphorD);
-    }
-    // Money trouble shows up at the door, where you can see it over the caption:
-    // envelopes on the mat, and after three late weeks a red notice on the door.
-    const late = w ? w.lateWeeks | 0 : 0;
+    if (s.wreath) { box(ctx, wx + Math.round(ww / 2 / U) * U - 18, wy - 30, 36, 12, P.jadeD, P.jade, P.ink2); box(ctx, wx + Math.round(ww / 2 / U) * U - 6, wy - 24, 12, 12, P.crimson, P.white, P.crimsonD); }
+    // The studio's radiator knocks under the window.
+    if (home.id === 'studio') { box(ctx, wx + 12, 207, 84, 30, P.plasticD, P.plastic, P.ink2); for (let x = wx + 21; x < wx + 90; x += 12) X.rect(ctx, x, 213, U, 18, P.ink2); }
+
+    // The week number on a paper calendar, on a nail, with rings.
+    X.rect(ctx, 69, 60, U, U, P.ink2);
+    box(ctx, 39, 66, 66, 78, P.bone, P.white, P.putty2);
+    box(ctx, 39, 66, 66, 18, P.crimsonD, P.crimson, P.crimsonD);
+    for (const kx of [51, 69, 87]) { X.rect(ctx, kx, 63, U * 2, 9, P.grey2); X.rect(ctx, kx, 63, U * 2, U, P.white); }
+    for (let x = 42; x < 102; x += 6) X.rect(ctx, x, 138, U, U, P.putty);
+    ctx.save(); ctx.scale(5, 5); X.text(ctx, String(week), 14, 19, P.ink, { align: 'center' }); ctx.restore();
+
+    // Money trouble shows up at the door: the door behind the bed, envelopes
+    // slid across the floor in front of it, a red notice after three late weeks.
     if (late > 0) {
-      X.plate(ctx, 116, 100, 72, 152, P.deskD, P.desk2, P.ink2);
-      X.rect(ctx, 176, 176, 6, 6, P.amber);
-      X.rect(ctx, 104, 244, 96, 10, P.carpetD);
-      for (let i = 0; i < Math.min(5, late * 2); i++) X.plate(ctx, 110 + i * 16, 236 - (i % 2) * 5, 30, 14, P.bone, P.white, P.plasticD);
-      if (late >= 3) { X.plate(ctx, 130, 120, 44, 50, P.bone, P.white, P.crimsonD); X.rect(ctx, 136, 128, 32, 6, P.crimson); X.rect(ctx, 136, 140, 28, 2, P.grey); X.rect(ctx, 136, 146, 30, 2, P.grey); }
+      box(ctx, 120, 99, 75, 150, P.deskD, P.desk, P.ink2);
+      box(ctx, 132, 111, 51, 48, P.deskD, P.desk, P.ink2);
+      X.rect(ctx, 180, 174, 6, 6, P.amber);
+      if (late >= 3) { box(ctx, 135, 117, 45, 42, P.bone, P.white, P.crimsonD); X.rect(ctx, 141, 123, 33, 6, P.crimson); X.rect(ctx, 141, 135, 27, U, P.grey); X.rect(ctx, 141, 141, 30, U, P.grey); }
     }
+
+    // Lamplight at night: three hard-edged rings on the wall and floor, drawn
+    // behind the furniture so objects sit in the light, not under a haze.
+    if (night) {
+      const lx = lay.stand + 21, ly = 186;
+      for (const [rad, a] of [[120, 0.07], [78, 0.08], [42, 0.1]]) {
+        ctx.save(); ctx.globalAlpha = a; ctx.fillStyle = P.amber;
+        for (let y = ly - rad; y < Math.min(282, ly + rad); y += U) {
+          const half = Math.floor(Math.sqrt(Math.max(0, rad * rad - (y - ly) * (y - ly))) * 1.35 / U) * U;
+          ctx.fillRect(lx - half, y, half * 2, U);
+        }
+        ctx.restore();
+      }
+    }
+
+    // Furniture: Mom's couch, a mattress on a shared floor, or a bed you pay for.
+    const V1 = '#b4a7d0', V2 = '#76699a';
+    let top = 204; // where things on the bed sit
+    if (home.id === 'couch') {
+      box(ctx, 42, 180, 246, 42, P.violet, V1, V2);
+      for (let i = 0; i < 3; i++) box(ctx, 63 + i * 69, 216, 72, 30, P.violet, V1, V2);
+      box(ctx, 30, 198, 36, 60, P.violet, V1, V2); box(ctx, 264, 198, 36, 60, P.violet, V1, V2);
+      for (const lx of [39, 282]) box(ctx, lx, 255, 9, 12, P.deskD, P.desk, P.ink2);
+      box(ctx, 69, 204, 45, 21, P.white, P.white, P.putty2); box(ctx, 120, 213, 138, 33, P.sky, '#9cbbdb', P.slate2);
+      top = 210;
+    } else if (home.id === 'share') {
+      box(ctx, 30, 234, 210, 27, P.bone, P.white, P.putty2);
+      box(ctx, 36, 225, 48, 18, P.white, P.white, P.putty2);
+      box(ctx, 96, 228, 144, 30, P.slate, P.slate2, P.ink2); X.rect(ctx, 99, 237, 138, U, P.ink2);
+      box(ctx, 327, 99, 90, 153, P.plasticD, P.plastic, P.ink2); X.rect(ctx, 369, 102, U, 147, P.ink2); X.rect(ctx, 360, 168, 6, 6, P.grey2); X.rect(ctx, 375, 168, 6, 6, P.grey2);
+      top = 252;
+    } else {
+      box(ctx, 36, 171, 24, 96, P.deskD, P.desk, P.ink2); box(ctx, 57, 234, 192, 21, P.desk, P.desk2, P.deskD);
+      for (const lx of [60, 234]) X.rect(ctx, lx, 255, 9, 12, P.ink2);
+      box(ctx, 57, 210, 192, 30, P.bone, P.white, P.putty2);
+      box(ctx, 63, 198, 51, 24, P.white, P.white, P.putty2);
+      const bl = home.id === 'penthouse' ? [P.crimsonD, P.crimson, P.ink2] : home.id === 'loft' ? [P.jadeD, P.jade, P.ink2] : [P.slate, P.slate2, P.ink2];
+      box(ctx, 117, 204, 132, 39, bl[0], bl[1], bl[2]); X.rect(ctx, 120, 216, 126, U, bl[1]); X.rect(ctx, 120, 219, 126, U, P.ink2);
+      for (let k = 129; k < 240; k += 18) X.rect(ctx, k, 228, 9, U, bl[1]);
+    }
+    if (lay.plant) blit(ctx, PLANT, lay.plant, 258 - PLANT.length * U);
+
+    // What is on the bed this week, or what the story left there.
+    const bx = home.id === 'share' ? 132 : 150, by = top - 24;
+    if (day === 9 || day === 54) {
+      for (let i = 0; i < (day === 54 ? 4 : 1); i++) { box(ctx, bx + i * 21, by + 6 - (i % 2) * 3, 36, 21, P.bone, P.white, P.putty2); X.rect(ctx, bx + 6 + i * 21, by + 12 - (i % 2) * 3, 21, U, day === 54 ? P.crimsonD : P.amberD); }
+    } else if (day === 44 || day === 49) {
+      box(ctx, bx, by + 3, 60, 24, P.bone, P.white, P.putty2); X.rect(ctx, bx + 6, by + 9, 42, U, day === 49 ? P.crimsonD : P.amberD); X.rect(ctx, bx + 6, by + 15, 30, U, P.grey2);
+    } else if (day === 59) {
+      box(ctx, bx, by - 3, 54, 30, P.plasticD, P.plastic2, P.ink2); X.rect(ctx, bx + 6, by + 3, 42, 18, night ? P.screenGlow : P.screen);
+      for (let i = 0; i < 9; i++) X.rect(ctx, bx + 9 + i * 4, by + 15 - (i * 7 % 9), 2, 2, i > 5 ? P.crimson : P.phosphorD);
+      box(ctx, bx - 6, by + 24, 66, 9, P.plastic, P.plastic2, P.plasticD);
+    } else if (day === 19 || day === 34 || week % 3 === 0) {
+      box(ctx, bx, by - 3, 54, 30, P.plasticD, P.plastic2, P.ink2); X.rect(ctx, bx + 6, by + 3, 42, 18, night ? P.screenGlow : P.screen);
+      const c = day === 34 ? P.amber : P.sky;
+      if (day === 19 || day === 34) for (let i = 0; i < 4; i++) X.rect(ctx, bx + 9, by + 6 + i * 4, 33 - i * 6, 2, c);
+      else { X.rect(ctx, bx + 9, by + 9, 24 - week % 5, U, P.sky); X.rect(ctx, bx + 9, by + 15, 15 + week % 7, U, P.phosphorD); }
+      box(ctx, bx - 6, by + 24, 66, 9, P.plastic, P.plastic2, P.plasticD);
+    } else if (week % 3 === 1) {
+      for (let i = 0; i < 3; i++) box(ctx, bx + i * 6, by + 9 - i * 3, 45, 18, P.bone, P.white, P.putty2);
+      X.rect(ctx, bx + 18, by + 9, 27, U, P.grey);
+    } else {
+      box(ctx, bx, by + 6, 39, 24, P.bone, P.white, P.putty2); X.rect(ctx, bx + 6, by + 12, 27, U, P.crimsonD);
+      box(ctx, bx + 42, by + 12, 18, 18, P.crimsonD, P.crimson, P.ink2);
+    }
+
+    // Nightstand: a drawer, a shaded lamp and the 5:58 alarm.
+    const nx = lay.stand;
+    box(ctx, nx, 213, 60, 51, P.desk, P.desk2, P.deskD); X.rect(ctx, nx + 6, 234, 48, U, P.deskD); X.rect(ctx, nx + 27, 240, 6, U, P.amber);
+    box(ctx, nx + 12, 201, 18, 15, P.slate, P.slate2, P.ink2); X.rect(ctx, nx + 19, 177, U, 24, P.grey);
+    blit(ctx, LAMP, nx, 162);
+    if (night) X.rect(ctx, nx + 3, 180, 36, U, P.amber);
+    box(ctx, nx + 33, 198, 27, 18, P.ink2, P.slate, P.ink); clockFace(ctx, nx + 37, 202, P.crimson);
+
+    // The door's envelopes, where you can see them over the caption.
+    if (late > 0) for (let i = 0; i < Math.min(5, late * 2); i++) box(ctx, 105 + i * 21, 258 - (i % 2) * 3, 30, 15, P.bone, P.white, P.putty2);
+    // Your phone, face up on the floor. It never stops.
+    box(ctx, 213, 261, 33, 15, P.ink2, P.slate2, P.ink); X.rect(ctx, 219, 264, 21, 6, night ? P.screenGlow : P.screen);
+    // A rug where the pet sleeps.
+    box(ctx, 372, 258, 234, 27, P.carpetD, P.carpet, P.ink2); for (let x = 384; x < 600; x += 18) X.rect(ctx, x, 264, 9, U, P.carpet2);
+
     // Sunday night on the couch, or any night the rent is late: you, sitting
     // up, lit by the phone. Your mother calls on Sundays.
     if (night && (home.id === 'couch' || late > 0)) {
-      X.rect(ctx, 214, 176, 34, 40, P.ink); X.rect(ctx, 220, 156, 22, 22, P.ink2); X.rect(ctx, 220, 156, 22, 6, P.ink);
-      X.rect(ctx, 248, 186, 12, 18, P.screenGlow);
-      ctx.save(); ctx.globalAlpha = 0.25; X.rect(ctx, 224, 160, 30, 26, P.screenGlow); ctx.restore();
+      const fy = home.id === 'share' ? 213 : 180;
+      blit(ctx, FIGURE, 207, fy);
+      ctx.save(); ctx.globalAlpha = 0.18; X.rect(ctx, 213, fy + 6, 36, 24, P.screenGlow); ctx.restore();
     }
     petShot(ctx, w);
     if (night) { ctx.save(); ctx.globalAlpha = 0.28; X.rect(ctx, 0, 0, V.w, V.h, P.ink); ctx.restore(); }
