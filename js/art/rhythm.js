@@ -88,27 +88,48 @@
   const celIn = (ctx, x, y, w, h, base, hi, sh) => X.cel(ctx, x, y, w, h, base, sh, hi, P.ink2, 3);
   // A commuter or colleague in outline: coat with a lit edge, collar, head,
   // hair, and an eye on the side they face. Scale s is the pixel size.
-  // Outlined three-quarter figure, lit from the top left like the pet sprite.
-  // Each sprite pixel is 2*scale; row 10 (the collar) sits at y.
-  const FIGURE = [
-    '....000000....', '...01111110...', '..0111111110..', '..0111111ee0..',
-    '..011eeeeee0..', '..01eeeee0e0..', '..01eeeeeeD0..', '..0eeeeeeeD0..',
-    '...0eeeeDD0...', '....0DDDD0....', '..00038R83100.', '.0333388R82210',
-    '03332228R22210', '03312222R22110', '03312222222110', '03312222222110',
-    '03312222222110', '03312222222110', '03312222222110', '03312222222110',
-    '03312222222110', '03312222222110', '03312222222110', '03312222222110',
-    '03312222222110', '0ee02222220DD0', '.000222222000.', '...02211220...',
-    '...02211220...', '...02211220...', '...02211220...', '...00000000...'
+  // Outlined three-quarter figures, lit from the top left like the pet sprite.
+  // Each sprite pixel is 2*scale; row 10 (the collar) sits at y. Templates use
+  // stand-in letters (H hair, S skin, K coat, T tie, W shirt, L trousers) that
+  // each cast member swaps for palette keys, so you are always the same person
+  // and the strangers around you are not.
+  const HEADS = {
+    short: ['.....000000.....', '....0hhHHHH0....', '...0hHHHHHHH0...', '...0HHHHHHSS0...', '...0HHSSSSSS0...',
+            '...0HsSSSS0S0...', '...0SSSSSSSSs0..', '...0SSSSSSSs0...', '....0SSSSSs0....', '.....0ssss0.....'],
+    long:  ['.....000000.....', '....0hhHHHH0....', '...0hHHHHHHH0...', '..0hHHHHHHSS0...', '..0HHHHSSSSS0...',
+            '..0HHHsSSS0S0...', '..0HHHSSSSSSs0..', '..0HHHSSSSSs0...', '..0HHH0SSSs0....', '..0HHH00ss0.....'],
+    bald:  ['.....000000.....', '....0SSSSSS0....', '...0SSSSSSSS0...', '...0HHSSSSSS0...', '...0HHSSSSSS0...',
+            '...0HsSSSS0S0...', '...0SSSSSSSSs0..', '...0SSSSSSSs0...', '....0SSSSSs0....', '.....0ssss0.....']
+  };
+  const BODY = [
+    '....00WWTW00....', '..00kkWWTWKx00..', '.0kkkKkWTWKKxx0.', '0kkkKKKkTkKKKxx0', '0kkxKKKKTKKKxxx0',
+    '0kkxKKKKTKKKxxx0', '0kkxKKKKKKKKxxx0', '0kkxKKKK0KKKxxx0', '0kkxKKKKKKKKxxx0', '0kkxKKKKKKKKxxx0',
+    '0kkxKKKK0KKKxxx0', '0kkxKKKKKKKKxxx0', '0kkxKkkKKKKKxxx0', '0kkxKKKKKKKKxxx0', '0kkxKKKKKKKxxxx0',
+    '0SS0KKKKKKKx0ss0', '.00.0xxxxxxx000.', '....0lLL0lLL0...', '....0lLL0lLL0...', '....0lLL0lLL0...',
+    '....0lLL0lLL0...', '....0000000000..'
   ];
-  const FIG_LATE = FIGURE.map((r) => r.replace(/[123eD7]/g, (ch) => ({ 1: '2', 2: '3', 3: '4', e: 'D', D: 'd', 7: 'e' })[ch]));
+  const CAST = [
+    { head: 'short', H: '1', h: '2', S: 'e', s: 'D', K: '2', k: '3', x: '1', W: '8', T: 'r', L: '1', l: '2' },
+    { head: 'long',  H: 'A', h: 'a', S: 'e', s: 'D', K: 'C', k: 'v', x: 'c', W: '8', T: '8', L: '1', l: '2' },
+    { head: 'bald',  H: '4', h: '5', S: 'e', s: 'D', K: 'd', k: 'D', x: '1', W: '8', T: 'J', L: '2', l: '3' },
+    { head: 'short', H: '1', h: '3', S: 'D', s: 'd', K: '4', k: '5', x: '2', W: '9', T: 'b', L: '1', l: '2' }
+  ];
   const FIG_SP = {};
-  function person(ctx, x, y, scale, act, face) {
-    const s = scale || 1, key = act > 2 ? 'late' : 'early';
-    const sp = FIG_SP[key] || (FIG_SP[key] = X.sprite(act > 2 ? FIG_LATE : FIGURE));
+  function figureSprite(who, late) {
+    const key = who + (late ? 'L' : '');
+    if (FIG_SP[key]) return FIG_SP[key];
+    const m = Object.assign({}, CAST[who]);
+    if (late && who === 0) Object.assign(m, { K: '3', k: '4', x: '2' });
+    const rows = HEADS[m.head].concat(BODY).map((r) => r.replace(/[HhSsKkxWTLl]/g, (ch) => m[ch]));
+    return (FIG_SP[key] = X.sprite(rows));
+  }
+  // who: 0 is you; 1-3 are the strangers on your commute.
+  function person(ctx, x, y, scale, act, face, who) {
+    const s = scale || 1;
     ctx.save();
     ctx.translate(x, y - 20 * s);
     ctx.scale((face < 0 ? -2 : 2) * s, 2 * s);
-    X.drawSprite(ctx, sp, -7, 0);
+    X.drawSprite(ctx, figureSprite(who || 0, act > 2), -8, 0);
     ctx.restore();
   }
   function monitor(ctx, x, y, w, h, headline, act) {
@@ -172,7 +193,7 @@
     } else if (sb.place === 'rideshare') {
       X.rect(ctx, 0, 0, V.w, 360, P.ink2); skyline(ctx, sb.act, sb.day, 210, sb.day);
       X.rect(ctx, 0, 214, V.w, 146, P.ink);
-      person(ctx, 74, 250, 2, sb.act, 1); person(ctx, 574, 250, 2, sb.act, -1);
+      person(ctx, 74, 250, 2, sb.act, 1, 1 + sb.day % 3); person(ctx, 574, 250, 2, sb.act, -1, 1 + (sb.day + 1) % 3);
       X.rect(ctx, 0, 202, V.w, 5, P.slate);
       cel3(ctx, 254, 236, 132, 24, P.slate, P.slate2, P.ink2);
       X.rect(ctx, 269, 242, 102, 10, P.screen);
@@ -187,7 +208,7 @@
     }
     const mx = B.clamp(70 + shift, 24, 330), my = detail ? 56 : 76, mw = detail ? 300 : 250, mh = detail ? 170 : 142;
     monitor(ctx, mx, my, mw, mh, headline, sb.act);
-    if (!detail) person(ctx, B.clamp(470-shift/2,380,560), 244, 2, sb.act, -1);
+    if (!detail) person(ctx, B.clamp(470-shift/2,380,560), 244, 2, sb.act, -1, 1 + (sb.day + 2) % 3);
     // Observable composition markers: framing and subject position vary by camera.
     if (sb.camera === 'insert') cel3(ctx, 468, 86, 116, 82, P.bone, P.white, P.plasticD);
     if (sb.camera === 'over-shoulder') { person(ctx, 576, 234, 3, sb.act, -1); X.rect(ctx, 516, 278, 124, 82, P.ink2); }

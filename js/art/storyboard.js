@@ -129,9 +129,36 @@
   }
 
   // ---- Close-ups: the day's one number, on the document it came from ----
+  // Wood planks under the day's paper: ink seams, a lit top edge and a shaded
+  // bottom edge on each board, grain in 3px strokes, and the desk lamp's pool
+  // stepped in rings from the top left, fading to shadow at the bottom right.
+  function steppedDisc(ctx, cx, cy, r, col, a) {
+    ctx.save(); ctx.globalAlpha = a;
+    for (let y = -r; y < r; y += 3) {
+      const w = Math.round(Math.sqrt(r * r - y * y) / 3) * 3;
+      X.rect(ctx, cx - w, cy + y, w * 2, 3, col);
+    }
+    ctx.restore();
+  }
   function deskUnder(ctx) {
     X.rect(ctx, 0, 0, V.w, V.h, P.desk);
-    X.gradient(ctx, 0, 0, V.w, V.h, P.desk2, P.deskD, 10);
+    for (let k = 0, top = -18; top < V.h; k++, top += 72) {
+      for (let i = 0; i < 16; i++) {
+        const gx = (i * 97 + k * 211) % V.w, gy = top + 12 + ((i * 29 + k * 13) % 48), len = 30 + ((i * 53 + k * 7) % 90);
+        X.rect(ctx, gx, gy, len, 3, i % 4 ? P.deskD : P.desk2);
+        if (i % 5 === 0) X.rect(ctx, gx + len, gy + 3, 24, 3, P.deskD);
+      }
+      const kx = (k * 263 + 120) % (V.w - 60) + 30, ky = top + 36;
+      X.rect(ctx, kx - 6, ky - 3, 12, 3, P.deskD); X.rect(ctx, kx - 9, ky, 18, 3, P.deskD); X.rect(ctx, kx - 3, ky, 6, 3, P.ink2); X.rect(ctx, kx - 6, ky + 3, 12, 3, P.deskD);
+      X.rect(ctx, 0, top + 66, V.w, 3, P.deskD);
+      X.rect(ctx, 0, top + 69, V.w, 3, P.ink2);
+      X.rect(ctx, 0, top + 72, V.w, 3, P.desk2);
+      for (let j = 0; j < 3; j++) { const jx = ((k + j) * 331 + 90) % V.w; X.rect(ctx, jx, top + 3, 3, 66, P.ink2); X.rect(ctx, jx + 3, top + 3, 3, 66, P.desk2); }
+    }
+    steppedDisc(ctx, 60, 20, 420, P.desk2, 0.1);
+    steppedDisc(ctx, 60, 20, 300, P.desk2, 0.1);
+    steppedDisc(ctx, 60, 20, 180, P.putty2, 0.08);
+    ctx.save(); ctx.globalAlpha = 0.14; X.rect(ctx, 0, V.h - 30, V.w, 30, P.ink); X.rect(ctx, V.w - 30, 0, 30, V.h, P.ink); ctx.restore();
   }
   function paper(ctx, x, y, w, h, label) {
     X.rect(ctx, x + 6, y + 6, w, h, P.deskD);
