@@ -9,7 +9,7 @@
   // Weekly quota: on top of the daily mandate, the desk wants the whole week
   // to clear the sum of its daily quotas plus a margin. It resets every
   // Monday. A missed week is one more career strike, logged at Friday's close.
-  // A made week wipes one missed day from that same week: make it back.
+  // A made week wipes up to two missed days from that same week: make it back.
   const WEEK_MULT = 1.15;
   // How many missed days a made week wipes. The week is the real mandate: a
   // trader who is wrong one day in three but makes the week keeps the seat.
@@ -105,7 +105,7 @@
         if (!S.f.defected && (d >= 1 || this.bossMood().warn)) {
           const mood = this.bossMood();
           const canFire = d < BOSS_FIRE_LAST;
-          rules.push(`${mood.warn && canFire ? '<b>' : ''}${D.boss(S)} ${mood.label} (${mood.value}/100).${mood.warn && canFire ? ' At zero he fires you.</b>' : ''} Answering his calls, working client orders and making quota keep him on side.`);
+          rules.push(`${mood.warn && canFire ? '<b>' : ''}${D.boss(S)} ${mood.label} (${mood.value}/100).${mood.warn && canFire ? ' At zero he fires you.</b>' : ''} Answering his calls, working client orders and making quota keep him on your side.`);
         }
         const T = E.tier(W$);
         if (d >= 2) rules.push(`Your money: ${B.fmt.money(W$.cash)} cash${W$.card > 0 ? `, ${B.fmt.money(-W$.card)} on the card` : ''}. ${T.name}${T.rent ? `, ${B.fmt.money(T.rent * (W$.rentMult || 1))} rent due Friday` : ''}.${W$.arrears > 0 ? ` <b>${B.fmt.money(W$.arrears)} rent overdue.</b>` : ''}`);
@@ -751,7 +751,8 @@
         return {
           id: e.id, title: e.title, headline: e.headline,
           deck: firedBy === 'boss' && e.id === 'fired' ? 'Firm cites "a breakdown of trust" as the crisis claims another desk.' : e.deck,
-          story: e.story(ctx).concat(epilogue), wealth: e.wealth(ctx), personal: P,
+          story: e.story(ctx), epilogue, wealth: e.wealth(ctx), personal: P,
+          section: e.section || 'Markets', pull: e.pull ? e.pull(ctx) : '',
           dark: !!e.dark || ['wiped', 'fired', 'perp', 'depression', 'replaced'].indexOf(e.id) >= 0,
           unpriced: !!e.unpriced,
           timeline: S.log.map((l) => `<b>W${D.weekOf(l.day)} ${D.dowOf(l.day)}:</b> ${l.text}`),

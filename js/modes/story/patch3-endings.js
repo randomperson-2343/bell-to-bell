@@ -142,8 +142,8 @@
     test:(c)=>!!c.S.f.pulledPlug || (!!c.S.f.quiet && c.S.m.integrity >= 60 && c.quotaMet < c.days / 2),
     headline:'Former Trader Leaves Finance Without Comment', deck:'No book deal, no subpoena, no next desk.',
     story:(c)=>c.S.f.pulledPlug ? [
-      'The automated stack died before the open. The forced unwind erased the book at the worst available prices, but independent bids returned before the close.',
-      'The trader left with almost nothing and with proof that the market was still capable of producing a human price.',
+      'The automated stack died before the open. The forced unwind erased the book at the worst available prices, and the exchange shut the market for the day.',
+      'Human bids came back on Tuesday. The trader left with almost nothing and with proof that the market was still capable of producing a human price.',
       'There was no next job on the street. That was not a punishment.'
     ] : [
       'There was no announcement. The badge stopped working and the résumé did not go to another bank.',
@@ -179,6 +179,38 @@
   ['nobody','fall-guy','ward','clawback','lost-decade','cassandra'].forEach((id) => {
     const ending = LIST.find((e) => e.id === id);
     if (ending) ending.dark = true;
+  });
+  // Front-page furniture for the Daily Ledger: the section kicker above the
+  // headline and a pull quote lifted from the ending's own story text.
+  const PAGE = {
+    wiped: ['Careers', 'Treated leverage like a personality.'],
+    fired: ['Careers', (c) => c.firedBy === 'boss' ? 'It was never about the numbers.' : 'We pay for results.'],
+    nobody: ['Markets', 'No system rebelled.'],
+    master: ['World', 'Beyond the reach of federal prosecutors.'],
+    whistle: ['Politics', 'They say they sleep fine.'],
+    revolving: ['Politics', 'I\'m a public servant now.'],
+    perp: ['Courts', 'The trader wore a gym hoodie.'],
+    'fall-guy': ['Courts', 'Signatures were not rare. Defendants were.'],
+    cassandra: ['Politics', 'None changed a vote.'],
+    acquirer: ['Deals', 'The liabilities did not disappear. They only changed logos.'],
+    ward: ['Politics', 'The institution survived. The word private did not.'],
+    clawback: ['Pay', 'The pension fund did not recover sixty percent.'],
+    fund: ['Deals', 'The fee section was less skeptical.'],
+    'right-early': ['Markets', 'Markets do not pay for being correct.'],
+    'everything-rally': ['Economy', 'Wages did not follow the portfolio.'],
+    'lost-decade': ['Economy', 'The crisis ended on official calendars.'],
+    soft: ['Economy', 'Boring. Beautiful.'],
+    quiet: ['Markets', 'They were right, told nobody.'],
+    replaced: ['Careers', 'The memo used the word exciting twice.'],
+    depression: ['Economy', 'The trader already knows.'],
+    exit: ['Careers', (c) => c.S.f.pulledPlug ? 'That was not a punishment.' : 'The opening bell rang the following morning without them.'],
+    grind: ['Careers', 'No headline, no subpoena, no book deal.']
+  };
+  LIST.forEach((e) => {
+    const p = PAGE[e.id];
+    if (!p) return;
+    e.section = p[0];
+    e.pull = typeof p[1] === 'function' ? p[1] : () => p[1];
   });
 
   B.StoryEndings = {

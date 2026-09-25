@@ -445,6 +445,9 @@
     const last = B.StoryData.DAYS[60].scen(S);
     assert(last.market.gap === -.40, 'pull-the-plug opening must be -40%');
     assert(last.events.some((e) => e.script === 'pullFlatten'), 'pull-the-plug liquidation event missing');
+    // The choice and The Exit both say the exchange shuts for the day at the open.
+    const pm = mkMarket(last, 'pull');
+    assert(pm.step(0.25).some((e) => e.type === 'breaker' && e.level === 3) && pm.status === 'closed', 'pull-the-plug open must trip the level 3 breaker');
   });
 
   test('Pre-open feed snowballs and contracts in the final sessions', () => {
@@ -606,7 +609,9 @@
       'federal reserve', 'the fed', 'sec', 'securities and exchange commission', 'fdic', 'finra',
       'nasdaq', 'dow jones', 's&p 500', 'nyse', 'wall street journal',
       'covid', 'subprime', '2008', 'great recession', 'dot-com', 'dotcom',
-      'ukraine', 'russia', 'china', 'taiwan', 'israel', 'gaza', 'iran'
+      'ukraine', 'russia', 'china', 'taiwan', 'israel', 'gaza', 'iran',
+      // real places and institutions that crept into story copy
+      'wall street', 'teterboro', 'miami', 'europe', 'washington'
     ];
     // Whole-word matching: "Corvus Intelligence" must not trip on "intel", and
     // "campaign" must not trip on "aig".
@@ -914,6 +919,20 @@
       const titles = day.feed.map((it) => it.title);
       assert(new Set(titles).size === titles.length, 'session ' + (d + 1) + ' repeats a pre-open item');
     });
+  });
+
+  test('Every ending prints a Daily Ledger section and a pull quote from its own copy', () => {
+    for (const e of B.StoryEndings.list) {
+      assert(typeof e.section === 'string' && e.section.length, e.id + ' has no section kicker');
+      for (const extra of [{}, { firedBy: 'boss' }, { pulledPlug: true }]) {
+        const S = B.StoryMode.freshState(250000);
+        if (extra.pulledPlug) S.f.pulledPlug = true;
+        const ctx = Object.assign({ S, wealth: 500000, start: 250000, reason: 'final', days: 61, quotaMet: 30 }, extra);
+        const pull = e.pull(ctx);
+        const copy = [e.headline, e.deck].concat(e.story(ctx)).join(' ');
+        assert(pull && copy.toLowerCase().indexOf(pull.replace(/\.$/, '').toLowerCase()) >= 0, `${e.id} pull quote "${pull}" is not in its own copy`);
+      }
+    }
   });
 
   test('Sqwak Memory reveals existing posts in order without spoiling later sessions', () => {
