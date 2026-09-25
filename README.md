@@ -1,6 +1,6 @@
 # Bell to Bell
 
-A stressful present-day Wall Street simulator rendered in timeless 16-bit pixel art. The opening bell rings at 9:30 and the closing bell at 4:00. Your only job is to make as much money as humanly possible in between.
+A stressful present-day trading simulator rendered in timeless 16-bit pixel art. The opening bell rings at 9:30 and the closing bell at 4:00. Your only job is to make as much money as humanly possible in between.
 
 You sit at a desk on the 41st floor with two CRT monitors: the left one trades, the right one is the phone, the newswire and the rumour mill. A trading day takes about **three real minutes**.
 
