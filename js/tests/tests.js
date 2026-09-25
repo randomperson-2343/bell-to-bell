@@ -1286,6 +1286,29 @@
     }
   });
 
+  test('Decision rooms show the props for their own beat, never a borrowed one', () => {
+    const A = B.DecisionArt, room = (id) => A.ROOMS[id] || [];
+    const props = (id) => JSON.stringify(room(id)[1] || {});
+    // Every beat that reuses a room type says its own thing.
+    assert(room('perry')[0] === 'voicemail' && /PERRY/.test(props('perry')), 'Perry leaves the voicemail');
+    assert(room('dentist')[0] === 'voicemail' && /DENTIST/.test(props('dentist')) && !/PERRY/.test(props('dentist')), 'the dentist voicemail must not say Perry');
+    assert(/14,200/.test(props('dadBill')) && /MOM/.test(props('dadBill')), "Dad's bill is Mom calling about $14,200");
+    assert(/RIVERBEND/.test(props('pension')), 'the pension letter is from Riverbend');
+    assert(room('toothache')[0] === 'clinic' && /1,400/.test(props('toothache')) && !/14,200|MOM/.test(props('toothache')), 'the toothache bill is $1,400 at the dentist');
+    assert(room('vetER')[0] === 'clinic' && /900/.test(props('vetER')) && /vet/.test(props('vetER')), 'the vet emergency bill is $900 at the vet');
+    assert(room('vetCheck')[1] && room('vetCheck')[1].postcard && !/RIVERBEND/.test(props('vetCheck')), 'the vet checkup is a postcard, not the pension letter');
+    assert(room('adopt')[0] === 'shelter' && room('rentHike')[0] === 'lobby', 'the shelter is not the landlord lobby');
+    // Each amount a room prints matches a price in that beat's own choices.
+    for (const id of ['dadBill', 'toothache', 'vetER']) {
+      const amt = (props(id).match(/\$[\d,]+/) || [''])[0];
+      const labels = B.Life.byId(id).options.map((o) => o.label).join(' ');
+      assert(amt && labels.includes(amt), `${id} room shows ${amt}, which is not a price in its choices`);
+    }
+    // Every room draws without throwing, with or without a pet in the wallet.
+    const ctx = { save() {}, restore() {}, translate() {}, scale() {}, beginPath() {}, rect() {}, clip() {}, fillRect() {}, fillText() {}, set fillStyle(v) {}, set globalAlpha(v) {}, set font(v) {}, set textAlign(v) {}, set textBaseline(v) {}, measureText: () => ({ width: 6 }) };
+    for (const id of Object.keys(A.ROOMS)) for (const S of [null, { f: {}, wallet: { pet: { kind: 'cat', sex: 'boy', name: 'Rosco' } } }]) A.room(ctx, id, 20, true, S);
+  });
+
   test('Pet food is billed weekly and the pet shows up in the weekend art', () => {
     const E = B.Economy, W = Object.assign(E.fresh(), { cash: 5000, peakEq: 250000 });
     const t = E.tier(W);

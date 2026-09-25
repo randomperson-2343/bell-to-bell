@@ -417,12 +417,7 @@
   // left edges and shade on the bottom and right, so furniture, story props
   // and the pet read as one set.
   const U = 3;
-  function box(ctx, x, y, w, h, base, hi, sh, out) {
-    X.rect(ctx, x, y, w, h, out || P.ink2);
-    X.rect(ctx, x + U, y + U, w - 2 * U, h - 2 * U, base);
-    if (hi) { X.rect(ctx, x + U, y + U, w - 2 * U, U, hi); X.rect(ctx, x + U, y + U, U, h - 2 * U, hi); }
-    if (sh) { X.rect(ctx, x + U, y + h - 2 * U, w - 2 * U, U, sh); X.rect(ctx, x + w - 2 * U, y + 2 * U, U, h - 3 * U, sh); }
-  }
+  const box = (ctx, x, y, w, h, base, hi, sh, out) => X.cel(ctx, x, y, w, h, base, hi, sh, out, U);
   function blit(ctx, rows, x, y) { ctx.save(); ctx.translate(x, y); ctx.scale(U, U); X.drawSprite(ctx, X.sprite(rows), 0, 0); ctx.restore(); }
   // 3x5 clock digits on a 2px grid: the alarm is always set for 5:58.
   const CLOCK = { '5': ['111', '100', '111', '001', '111'], '8': ['111', '101', '111', '101', '111'], ':': ['0', '1', '0', '1', '0'] };
