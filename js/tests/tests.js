@@ -445,6 +445,9 @@
     const last = B.StoryData.DAYS[60].scen(S);
     assert(last.market.gap === -.40, 'pull-the-plug opening must be -40%');
     assert(last.events.some((e) => e.script === 'pullFlatten'), 'pull-the-plug liquidation event missing');
+    // The choice and The Exit both say the exchange shuts for the day at the open.
+    const pm = mkMarket(last, 'pull');
+    assert(pm.step(0.25).some((e) => e.type === 'breaker' && e.level === 3) && pm.status === 'closed', 'pull-the-plug open must trip the level 3 breaker');
   });
 
   test('Pre-open feed snowballs and contracts in the final sessions', () => {

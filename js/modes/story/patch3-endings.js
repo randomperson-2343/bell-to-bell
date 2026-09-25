@@ -142,8 +142,8 @@
     test:(c)=>!!c.S.f.pulledPlug || (!!c.S.f.quiet && c.S.m.integrity >= 60 && c.quotaMet < c.days / 2),
     headline:'Former Trader Leaves Finance Without Comment', deck:'No book deal, no subpoena, no next desk.',
     story:(c)=>c.S.f.pulledPlug ? [
-      'The automated stack died before the open. The forced unwind erased the book at the worst available prices, but independent bids returned before the close.',
-      'The trader left with almost nothing and with proof that the market was still capable of producing a human price.',
+      'The automated stack died before the open. The forced unwind erased the book at the worst available prices, and the exchange shut the market for the day.',
+      'Human bids came back on Tuesday. The trader left with almost nothing and with proof that the market was still capable of producing a human price.',
       'There was no next job on the street. That was not a punishment.'
     ] : [
       'There was no announcement. The badge stopped working and the résumé did not go to another bank.',
