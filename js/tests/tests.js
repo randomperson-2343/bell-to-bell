@@ -496,8 +496,8 @@
       assert(A.ROOMS[c.id], c.id + ' has no room');
       const beats = B.Scenes.decision({ id: c.id, day: c.day, speaker: c.speaker, role: c.role, title: c.title, S: B.StoryMode.freshState(250000) });
       assert(beats.length === 2 && beats[1].informative && beats.every((b) => b.view.w === 640), c.id + ' decision beats');
-      // Voices off-screen (a landlord, a voicemail, the shelter, the dentist, the vet) have no portrait.
-      if (!['Your landlord', 'Harbor Street Animal Shelter', 'Your dentist', 'Your vet'].includes(c.speaker) && c.id !== 'perry') assert(B.Portraits.has(c.speaker), 'no portrait for ' + c.speaker);
+      // Every voice has a face now, household ones and the landlord's screen included.
+      assert(B.Portraits.has(c.speaker), 'no portrait for ' + c.speaker);
     }
     // The aftermath is one popup with the room in it, not a second cutscene.
     assert(!B.Scenes.decisionAfter && typeof A.still === 'function', 'aftermath still belongs in the popup');
@@ -1273,6 +1273,17 @@
     B.Life.byId('adopt').options.find((o) => o.id === 'dog-boy').apply(null, W0, E);
     assert(W0.pet.name === 'Rosco', 'a boy is named Rosco');
     assert(B.Life.byId('dadBill').day < 36, "Dad's surgery should land before most careers end");
+  });
+
+  test('Portraits: every face is a full 48x48 sprite in the palette, outlined like the pet', () => {
+    for (const name of Object.keys(B.Portraits.CAST)) {
+      const sp = B.Portraits.sprite(name);
+      assert(sp.h === 48 && sp.rows.every((r) => r.length === 48), name + ' is not 48x48');
+      const cells = sp.rows.join('');
+      assert(cells.split('').every((ch) => ch === '.' || B.PalKeys[ch]), name + ' uses a colour outside the palette');
+      assert(cells.replace(/\./g, '').length > 700, name + ' is missing most of its pixels');
+      assert(cells.includes('1'), name + ' has no ink outline');
+    }
   });
 
   test('Pet food is billed weekly and the pet shows up in the weekend art', () => {
