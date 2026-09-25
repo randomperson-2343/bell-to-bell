@@ -135,7 +135,7 @@
   }
   function paper(ctx, x, y, w, h, label) {
     X.rect(ctx, x + 6, y + 6, w, h, P.deskD);
-    X.plate(ctx, x, y, w, h, P.bone, P.white, P.plasticD);
+    X.cel(ctx, x, y, w, h, P.bone, P.white, P.plasticD, P.ink2, 3);
     X.rect(ctx, x + 16, y + 18, w - 32, 2, P.grey);
     R.text(ctx, label, x + 20, y + 26, P.ink);
   }
@@ -156,7 +156,7 @@
       X.rect(ctx, 84, ly - 7, 290, 2, P.crimson); X.rect(ctx, 84, ly + 7, 290, 2, P.crimson);
       X.rect(ctx, 82, ly - 5, 2, 12, P.crimson); X.rect(ctx, 374, ly - 5, 2, 12, P.crimson);
       X.rect(ctx, 376, ly, 60, 2, P.crimson);
-      X.plate(ctx, 440, 70, 180, 150, P.amber, P.bone, P.amberD);
+      X.cel(ctx, 440, 70, 180, 150, P.amber, P.bone, P.amberD, P.ink2, 3);
       valueLines(value, 80).forEach((ln, i) => big(ctx, ln, 530, 110 + i * 26, P.ink, 2, 'center'));
     },
     rating(ctx, day, value, c) {
@@ -169,7 +169,7 @@
     },
     post(ctx, day, value, c) {
       X.rect(ctx, 0, 0, V.w, V.h, P.ink); R.skyline(ctx, Math.ceil((day + 1) / 15), day * 5, 300, day);
-      X.plate(ctx, 190, 16, 260, 300, P.ink2, P.slate2, P.ink);
+      X.cel(ctx, 190, 16, 260, 300, P.ink2, P.slate2, P.ink, P.ink2, 3);
       X.rect(ctx, 200, 28, 240, 276, P.screenD);
       big(ctx, 'sqwak', 320, 36, P.bone, 2, 'center');
       X.rect(ctx, 208, 60, 224, 150, P.screen);
@@ -192,7 +192,7 @@
     },
     ticket(ctx, day, value) {
       X.rect(ctx, 0, 0, V.w, V.h, P.ink); X.gradient(ctx, 0, 0, V.w, V.h, P.ink2, P.ink, 8);
-      X.plate(ctx, 60, 20, 520, 256, P.plastic, P.plastic2, P.plasticD);
+      X.cel(ctx, 60, 20, 520, 256, P.plastic, P.plastic2, P.plasticD, P.ink2, 3);
       X.crt(ctx, 74, 34, 492, 214, true);
       R.text(ctx, LABELS.ticket, 90, 46, P.phosphorD);
       R.text(ctx, 'BID', 150, 66, P.jade, 'center'); R.text(ctx, 'ASK', 490, 66, P.crimson, 'center');
@@ -205,7 +205,7 @@
     },
     vote(ctx, day, value) {
       X.rect(ctx, 0, 0, V.w, V.h, P.deskD); X.gradient(ctx, 0, 0, V.w, V.h, P.desk, P.deskD, 8);
-      X.plate(ctx, 40, 20, 560, 256, P.ink, P.slate2, P.ink2);
+      X.cel(ctx, 40, 20, 560, 256, P.ink, P.slate2, P.ink2, P.ink2, 3);
       R.text(ctx, LABELS.vote, 320, 32, P.amber, 'center');
       // Two banks of lamps, yea and nay.
       for (let r = 0; r < 6; r++) for (let k = 0; k < 18; k++) {
@@ -216,7 +216,7 @@
     },
     voicemail(ctx, day, value) {
       X.rect(ctx, 0, 0, V.w, V.h, P.ink); ctx.save(); ctx.globalAlpha = 0.14; X.rect(ctx, 170, 0, 300, 300, P.screenGlow); ctx.restore();
-      X.plate(ctx, 200, 14, 240, 290, P.ink2, P.slate2, P.ink);
+      X.cel(ctx, 200, 14, 240, 290, P.ink2, P.slate2, P.ink, P.ink2, 3);
       X.rect(ctx, 212, 28, 216, 262, P.screen);
       R.text(ctx, LABELS.voicemail, 320, 40, P.grey2, 'center');
       for (let i = 0; i < 34; i++) { const h = 4 + ((i * 37 + day) % 36); X.rect(ctx, 224 + i * 5.8, 110 - h / 2, 3, h, i < 12 ? P.phosphor : P.slate2); }
@@ -247,7 +247,7 @@
       c.save();
       c.translate(Math.round(160 - 119 * z), Math.round(ty - 153 * z)); c.scale(z, z);
       SH.deskCloseup(c, 1, { crash: R.marketDown(day - 1), ticker: ['INDX', 'CRVS', 'FRLN', 'MRDN', 'BSTN'][day % 5] });
-      X.plate(c, 90, 138, 58, 30, P.bone, P.white, P.plasticD);
+      X.cel(c, 90, 138, 58, 30, P.bone, P.white, P.putty, P.ink, 1);
       X.rect(c, 94, 142, 50, 1, P.grey);
       X.rect(c, 94, 148, 50, 7, r.doc === 'rating' || r.doc === 'vote' ? P.sky : r.doc === 'chart' ? P.crimsonD : P.amberD);
       X.text(c, R.clean(r.arg || '').slice(0, 9), 95, 158, P.ink);
@@ -280,7 +280,7 @@
   function racksShot(ctx, day) {
     X.rect(ctx, 0, 0, V.w, V.h, P.ink);
     for (let i = 0; i < 8; i++) {
-      X.plate(ctx, 30 + i * 76, 40, 60, 210, P.ink2, P.slate, P.ink);
+      X.cel(ctx, 30 + i * 76, 40, 60, 210, P.ink2, P.slate, P.ink, P.ink2, 3);
       for (let k = 8; k < 200; k += 12) X.rect(ctx, 36 + i * 76, 40 + k, 48, 6, P.screenD);
     }
     X.rect(ctx, 0, 250, V.w, 110, P.slate);
@@ -417,12 +417,7 @@
   // left edges and shade on the bottom and right, so furniture, story props
   // and the pet read as one set.
   const U = 3;
-  function box(ctx, x, y, w, h, base, hi, sh, out) {
-    X.rect(ctx, x, y, w, h, out || P.ink2);
-    X.rect(ctx, x + U, y + U, w - 2 * U, h - 2 * U, base);
-    if (hi) { X.rect(ctx, x + U, y + U, w - 2 * U, U, hi); X.rect(ctx, x + U, y + U, U, h - 2 * U, hi); }
-    if (sh) { X.rect(ctx, x + U, y + h - 2 * U, w - 2 * U, U, sh); X.rect(ctx, x + w - 2 * U, y + 2 * U, U, h - 3 * U, sh); }
-  }
+  const box = (ctx, x, y, w, h, base, hi, sh, out) => X.cel(ctx, x, y, w, h, base, hi, sh, out, U);
   function blit(ctx, rows, x, y) { ctx.save(); ctx.translate(x, y); ctx.scale(U, U); X.drawSprite(ctx, X.sprite(rows), 0, 0); ctx.restore(); }
   // 3x5 clock digits on a 2px grid: the alarm is always set for 5:58.
   const CLOCK = { '5': ['111', '100', '111', '001', '111'], '8': ['111', '101', '111', '101', '111'], ':': ['0', '1', '0', '1', '0'] };

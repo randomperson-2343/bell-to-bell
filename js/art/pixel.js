@@ -151,6 +151,17 @@
       return lines;
     },
 
+    // A lit cel: an ink outline, light on the top and left edges, shade on
+    // the bottom and right, on a grid of u pixels (3 by default). The
+    // apartment, the pet's props and the decision rooms all draw with it.
+    cel(ctx, x, y, w, h, base, hi, sh, out, u) {
+      u = u || 3;
+      this.rect(ctx, x, y, w, h, out || P.ink2);
+      this.rect(ctx, x + u, y + u, w - 2 * u, h - 2 * u, base);
+      if (hi) { this.rect(ctx, x + u, y + u, w - 2 * u, u, hi); this.rect(ctx, x + u, y + u, u, h - 2 * u, hi); }
+      if (sh) { this.rect(ctx, x + u, y + h - 2 * u, w - 2 * u, u, sh); this.rect(ctx, x + w - 2 * u, y + 2 * u, u, h - 3 * u, sh); }
+    },
+
     // ---- sprites ----
     // rows: array of strings using js/art/palette.js key characters. '.' = transparent.
     sprite(rows) {
