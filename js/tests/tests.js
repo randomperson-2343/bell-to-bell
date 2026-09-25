@@ -225,6 +225,8 @@
     b.endOfDay(0);
     near(b.cash - cash0, 20 * 200, 0.01, 'settles intrinsic');
     assert(!b.opts.length, 'expired option removed');
+    const closed = b.dayTrades().filter((x) => x.closed);
+    assert(closed.length === 1 && closed[0].tag === 'EXPIRED' && closed[0].realized > 0, 'expiry should count as a closed trade in the end-of-day report');
   });
 
   // ---------- Market ----------
@@ -518,6 +520,20 @@
     assert(pay(3, [{ id: 'margin', zero: true }]) === none, 'a margin call zeroes quota pay');
     const w = E.fresh(); E.settle(w, { equity: 250000, capital: 250000, weekMade: false, breaches: [], metDays: 5, sessions: 5 });
     assert(w.deficit === E.P.drawPerSession * 5, 'quota pay never repays or reduces unearned draw');
+  });
+
+  test('Payday summary distinguishes bills from payments and agrees with eviction debt', () => {
+    const E = B.Economy, terms = { equity: 250000, capital: 250000, weekMade: false, breaches: [], metDays: 0, sessions: 5 };
+    const w = E.fresh();
+    w.cash = 0; w.card = 2000; w.arrears = 500;
+    const low = E.settle(w, terms);
+    assert(low.lines[0].includes('billed this week') && !low.lines[0].includes('bills out'), 'unpaid charges must not be described as money spent');
+    assert(low.lines[0].includes(B.fmt.money(w.card)) && low.lines[0].includes(B.fmt.money(w.arrears)), 'summary must show outstanding debt');
+    const evicted = E.fresh();
+    evicted.cash = 0; evicted.arrears = 500; evicted.lateWeeks = 3;
+    const final = E.settle(evicted, terms);
+    assert(evicted.arrears === 0 && evicted.card > 0, 'eviction should transfer rent debt to the card');
+    assert(final.lines[1].includes('moved to your card') && final.lines[0].includes(B.fmt.money(evicted.card)), 'visible eviction warning must match the wallet');
   });
 
   test('Seasons run October to January across the thirteen weeks', () => {
