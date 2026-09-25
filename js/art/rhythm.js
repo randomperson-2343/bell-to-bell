@@ -83,16 +83,37 @@
     }
     if (s) weather(ctx, 0, 0, V.w, y - 20, day);
   }
+  // Lit cels on the 3px grid, shared with the apartment and the rooms.
+  const cel3 = (ctx, x, y, w, h, base, hi, sh) => X.cel(ctx, x, y, w, h, base, hi, sh, P.ink2, 3);
+  const celIn = (ctx, x, y, w, h, base, hi, sh) => X.cel(ctx, x, y, w, h, base, sh, hi, P.ink2, 3);
+  // A commuter or colleague in outline: coat with a lit edge, collar, head,
+  // hair, and an eye on the side they face. Scale s is the pixel size.
+  // Outlined three-quarter figure, lit from the top left like the pet sprite.
+  // Each sprite pixel is 2*scale; row 10 (the collar) sits at y.
+  const FIGURE = [
+    '....000000....', '...01111110...', '..0111111110..', '..0111111ee0..',
+    '..011eeeeee0..', '..01eeeee0e0..', '..01eeeeeeD0..', '..0eeeeeeeD0..',
+    '...0eeeeDD0...', '....0DDDD0....', '..00038R83100.', '.0333388R82210',
+    '03332228R22210', '03312222R22110', '03312222222110', '03312222222110',
+    '03312222222110', '03312222222110', '03312222222110', '03312222222110',
+    '03312222222110', '03312222222110', '03312222222110', '03312222222110',
+    '03312222222110', '0ee02222220DD0', '.000222222000.', '...02211220...',
+    '...02211220...', '...02211220...', '...02211220...', '...00000000...'
+  ];
+  const FIG_LATE = FIGURE.map((r) => r.replace(/[123eD7]/g, (ch) => ({ 1: '2', 2: '3', 3: '4', e: 'D', D: 'd', 7: 'e' })[ch]));
+  const FIG_SP = {};
   function person(ctx, x, y, scale, act, face) {
-    const s = scale || 1, dir = face < 0 ? -1 : 1;
-    X.rect(ctx, x - 11*s, y, 22*s, 45*s, P.ink2);
-    X.rect(ctx, x - 7*s, y - 15*s, 14*s, 17*s, act > 2 ? P.deskD : P.desk2);
-    X.rect(ctx, x - 8*s, y - 18*s, 16*s, 5*s, P.ink);
-    X.rect(ctx, x + dir*5*s, y - 8*s, 2*s, 2*s, P.ink);
+    const s = scale || 1, key = act > 2 ? 'late' : 'early';
+    const sp = FIG_SP[key] || (FIG_SP[key] = X.sprite(act > 2 ? FIG_LATE : FIGURE));
+    ctx.save();
+    ctx.translate(x, y - 20 * s);
+    ctx.scale((face < 0 ? -2 : 2) * s, 2 * s);
+    X.drawSprite(ctx, sp, -7, 0);
+    ctx.restore();
   }
   function monitor(ctx, x, y, w, h, headline, act) {
     const c = colors(act);
-    X.plate(ctx, x-5, y-5, w+10, h+10, P.plastic, P.plastic2, P.plasticD);
+    cel3(ctx, x-5, y-5, w+10, h+10, P.plastic, P.plastic2, P.plasticD);
     X.crt(ctx, x, y, w, h, true);
     X.rect(ctx, x+3, y+h-48, w-6, 45, c.signal);
     text(ctx, 'OVERNIGHT WIRE', x+10, y+h-42, P.bone);
@@ -114,7 +135,7 @@
     X.rect(ctx, 0, 252, V.w, 108, sb.place === 'street' || sb.place === 'platform' ? P.ink2 : P.carpetD);
     if (sb.place === 'subway' || sb.place === 'platform') {
       X.rect(ctx, 0, 26, V.w, 226, P.plasticD);
-      for (let i=0;i<7;i++) X.inset(ctx, 18+i*94, 52, 76, 92, P.screenD, P.plastic2, P.plasticD);
+      for (let i=0;i<7;i++) celIn(ctx, 18+i*94, 52, 76, 92, P.screenD, P.plastic2, P.plasticD);
       X.rect(ctx, 0, 252, V.w, 108, P.carpetD);
       // Platform LEDs, bench ends and rails establish a current transit stop.
       X.rect(ctx, 0, 246, V.w, 3, P.amberD);
@@ -128,32 +149,32 @@
       for (let i=0;i<10;i++) X.rect(ctx, i*68, 0, 2, 278, P.plastic);
       X.rect(ctx, 0, 278, V.w, 82, P.slate);
       for (let i=0;i<8;i++) X.rect(ctx, i*93, 273, 75, 1, P.bone);
-      X.plate(ctx, 516, 68, 74, 96, P.plasticD, P.plastic2, P.ink2);
+      cel3(ctx, 516, 68, 74, 96, P.plasticD, P.plastic2, P.ink2);
       X.rect(ctx, 526, 84, 54, 56, P.screenD);
       for (let i=0;i<4;i++) X.rect(ctx, 534, 92+i*11, 40-i*6, 2, P.sky);
     } else if (sb.place === 'kitchen' || sb.place === 'breakroom') {
       X.gradient(ctx, 0, 0, V.w, 255, P.putty2, P.putty, 9);
       X.rect(ctx, 0, 255, V.w, 105, P.desk);
-      for (let i=0;i<9;i++) X.plate(ctx, 12+i*72, 52, 62, 52, P.plastic, P.plastic2, P.plasticD);
-      X.plate(ctx, 0, 207, V.w, 21, P.deskD, P.desk2, P.ink2);
-      X.inset(ctx, 420, 213, 94, 11, P.plastic2, P.bone, P.plasticD);
+      for (let i=0;i<9;i++) cel3(ctx, 12+i*72, 52, 62, 52, P.plastic, P.plastic2, P.plasticD);
+      cel3(ctx, 0, 207, V.w, 21, P.deskD, P.desk2, P.ink2);
+      celIn(ctx, 420, 213, 94, 11, P.plastic2, P.bone, P.plasticD);
       X.rect(ctx, 524, 192, 3, 24, P.plastic2);
       X.rect(ctx, 526, 191, 22, 2, P.plastic2);
-      X.plate(ctx, 570, 192, 24, 24, P.bone, P.white, P.plasticD);
+      cel3(ctx, 570, 192, 24, 24, P.bone, P.white, P.plasticD);
     } else if (sb.place === 'desk') {
       X.gradient(ctx, 0, 0, V.w, 226, P.putty2, P.putty, 9);
       X.rect(ctx, 0, 226, V.w, 134, P.desk);
       chart(ctx, 374+shift/3, 66, 198, 130, sb.day, marketDown(sb.day - 1));
       X.rect(ctx, 0, 219, V.w, 4, P.deskD);
       for (let i=0;i<7;i++) X.rect(ctx, 398+i*23, 232, 15, 1, P.grey2);
-      X.plate(ctx, 554, 230, 33, 26, P.plastic2, P.bone, P.plasticD);
+      cel3(ctx, 554, 230, 33, 26, P.plastic2, P.bone, P.plasticD);
       X.rect(ctx, 561, 237, 20, 1, P.grey);
     } else if (sb.place === 'rideshare') {
       X.rect(ctx, 0, 0, V.w, 360, P.ink2); skyline(ctx, sb.act, sb.day, 210, sb.day);
       X.rect(ctx, 0, 214, V.w, 146, P.ink);
       person(ctx, 74, 250, 2, sb.act, 1); person(ctx, 574, 250, 2, sb.act, -1);
       X.rect(ctx, 0, 202, V.w, 5, P.slate);
-      X.plate(ctx, 254, 236, 132, 24, P.slate, P.slate2, P.ink2);
+      cel3(ctx, 254, 236, 132, 24, P.slate, P.slate2, P.ink2);
       X.rect(ctx, 269, 242, 102, 10, P.screen);
       X.rect(ctx, 280, 246, 36, 2, P.sky);
       X.rect(ctx, 324, 246, 28, 2, P.amber);
@@ -168,7 +189,7 @@
     monitor(ctx, mx, my, mw, mh, headline, sb.act);
     if (!detail) person(ctx, B.clamp(470-shift/2,380,560), 244, 2, sb.act, -1);
     // Observable composition markers: framing and subject position vary by camera.
-    if (sb.camera === 'insert') X.plate(ctx, 468, 86, 116, 82, P.bone, P.white, P.plasticD);
+    if (sb.camera === 'insert') cel3(ctx, 468, 86, 116, 82, P.bone, P.white, P.plasticD);
     if (sb.camera === 'over-shoulder') { person(ctx, 576, 234, 3, sb.act, -1); X.rect(ctx, 516, 278, 124, 82, P.ink2); }
     if (sb.camera === 'close') { person(ctx, 516, 205, 4, sb.act, -1); }
     X.scanlines(ctx, 0, 0, V.w, V.h, P.ink, .08);
@@ -225,20 +246,20 @@
     if (down == null) down = marketDown(day - 1);
     X.rect(ctx,0,0,V.w,V.h,P.putty); X.gradient(ctx,0,0,V.w,235,P.putty2,P.putty,10); X.rect(ctx,0,235,V.w,125,P.desk);
     // A strip of windows: the season outside the forty-first floor.
-    for(let i=0;i<6;i++){const wx=18+i*104;X.inset(ctx,wx,16,90,44,P.slate2,P.putty2,P.plasticD);sky(ctx,wx+2,18,86,40,day,P.sky);
+    for(let i=0;i<6;i++){const wx=18+i*104;celIn(ctx,wx,16,90,44,P.slate2,P.putty2,P.plasticD);sky(ctx,wx+2,18,86,40,day,P.sky);
       for(let b=0;b<5;b++){const bh=8+((i*5+b*11+day)%20);X.rect(ctx,wx+4+b*17,58-bh,13,bh,P.slate);if(s.snow)X.rect(ctx,wx+4+b*17,58-bh,13,1,P.bone);}
       weather(ctx,wx+2,18,86,30,day+i);}
     const dead=sb.act-1;
-    for(let i=0;i<5;i++){const x=24+i*124,off=i>=5-dead;X.plate(ctx,x,78,104,126,P.plastic,P.plastic2,P.plasticD);
+    for(let i=0;i<5;i++){const x=24+i*124,off=i>=5-dead;cel3(ctx,x,78,104,126,P.plastic,P.plastic2,P.plasticD);
       if(off){X.rect(ctx,x+10,92,84,78,P.screenD);X.rect(ctx,x+20,176,64,3,P.plasticD);}else chart(ctx,x+10,92,84,78,day+i,down);}
-    X.plate(ctx,196,242,248,30,P.plasticD,P.plastic2,P.ink2);
+    cel3(ctx,196,242,248,30,P.plasticD,P.plastic2,P.ink2);
     for(let i=0;i<12;i++) X.rect(ctx,208+i*18,250,12,5,i%4?P.slate:P.slate2);
     if(detail){
       const st=S&&S.m?S.m.stability:100, slip=Math.round((100-st)/12), f=(S&&S.f)||{};
-      for(let i=0;i<4;i++){const x=58+i*4+(i>1?slip:0),y=250-i*9;X.rect(ctx,x+4,y+4,110,16,P.deskD);X.plate(ctx,x,y,110,16,P.bone,P.white,P.plasticD);X.rect(ctx,x+6,y+5,40,2,i>1&&st<60?P.crimsonD:P.sky);X.rect(ctx,x+6,y+10,80,1,P.grey);}
+      for(let i=0;i<4;i++){const x=58+i*4+(i>1?slip:0),y=250-i*9;X.rect(ctx,x+4,y+4,110,16,P.deskD);cel3(ctx,x,y,110,16,P.bone,P.white,P.plasticD);X.rect(ctx,x+6,y+5,40,2,i>1&&st<60?P.crimsonD:P.sky);X.rect(ctx,x+6,y+10,80,1,P.grey);}
       text(ctx,'CASCADE',64,216,c.signal);
       if(st<40){X.rect(ctx,176+slip,262,8,4,P.crimson);X.rect(ctx,188+slip,266,5,3,P.crimsonD);}
-      if(S&&S.m&&(S.m.heat>=50||f.insiderTraded||f.raid)){X.plate(ctx,470,236,56,34,P.crimsonD,P.crimson,P.ink);text(ctx,'HOLD',498,246,P.white,'center');text(ctx,'FILES',498,256,P.bone,'center');}
+      if(S&&S.m&&(S.m.heat>=50||f.insiderTraded||f.raid)){cel3(ctx,470,236,56,34,P.crimsonD,P.crimson,P.ink);text(ctx,'HOLD',498,246,P.white,'center');text(ctx,'FILES',498,256,P.bone,'center');}
       chart(ctx,540,218,86,50,day,down);
     }
   }

@@ -25,114 +25,118 @@
 
   // ---------- reusable set pieces ----------
 
+  // Set pieces are drawn to the pet sprite's rules at the 320 grid: an ink
+  // outline, light on the top and left, shade on the bottom and right.
+  const k1 = (ctx, x, y, w, h, base, hi, sh, out) => X.cel(ctx, x, y, w, h, base, hi, sh, out || P.ink, 1);
+  // A seated or standing figure seen from behind, in outline.
+  const BACK = ['..1111..', '.122221.', '.122221.', '..1221..', '.111111.', '12222221', '12222221', '12222221', '12222221'];
+  const WALKER = ['.111.', '1dD11', '1DD1.', '.11..', '1221.', '12211', '12211', '1221.', '1.1..', '1.1..'];
+  const tint = (rows, map) => rows.map((r) => r.replace(/[2dD]/g, (ch) => map[ch] || ch));
+  function stepGlow(ctx, cx, cy, radii, col, a) {
+    for (const rad of radii) {
+      ctx.save(); ctx.globalAlpha = a; ctx.fillStyle = col;
+      for (let y = cy - rad; y < cy + rad; y++) { const h = Math.floor(Math.sqrt(Math.max(0, rad * rad - (y - cy) * (y - cy))) * 1.25); ctx.fillRect(cx - h, y, h * 2, 1); }
+      ctx.restore();
+    }
+  }
+
   // Pre-dawn apartment: one window, a TV throwing light on the far wall.
   function apartment(ctx, glow) {
     X.rect(ctx, 0, 0, V.w, V.h, P.ink);
-    X.gradient(ctx, 0, 0, V.w, 120, P.ink2, P.ink, 6);
-    // window with a dead-blue city outside
-    X.inset(ctx, 214, 24, 74, 56, P.slate, P.ink2, P.ink);
-    X.gradient(ctx, 216, 26, 70, 52, P.slate2, P.ink2, 5);
-    if (SEASON) X.dither(ctx, 216, 52, 70, 26, P.ink2, SEASON.dawn, SEASON.glow);
+    X.gradient(ctx, 0, 0, V.w, 140, P.ink2, P.ink, 6);
+    for (let x = 6; x < V.w; x += 24) X.rect(ctx, x, 0, 1, 138, P.ink);
+    // Window: frame, cross, sill, a dead-blue city.
+    k1(ctx, 212, 22, 78, 60, P.slate, P.slate2, P.ink2);
+    X.gradient(ctx, 215, 25, 72, 54, P.slate2, P.ink2, 5);
+    if (SEASON) X.dither(ctx, 215, 52, 72, 27, P.ink2, SEASON.dawn, SEASON.glow);
     for (let i = 0; i < 7; i++) {
-      const bx = 218 + i * 10, bh = 14 + ((i * 37) % 26);
-      X.rect(ctx, bx, 78 - bh, 8, bh, P.ink2);
-      for (let wy = 0; wy < bh - 3; wy += 4) {
-        for (let wx = 0; wx < 6; wx += 3) {
-          if (((i * 7 + wy + wx) % 5) < 2) X.rect(ctx, bx + 1 + wx, 78 - bh + 2 + wy, 2, 2, P.amberD);
-        }
-      }
+      const bx = 217 + i * 10, bh = 14 + ((i * 37) % 26);
+      X.rect(ctx, bx, 79 - bh, 8, bh, P.ink2); X.rect(ctx, bx + 7, 79 - bh, 1, bh, P.ink); X.rect(ctx, bx, 79 - bh, 8, 1, P.slate);
+      for (let wy = 0; wy < bh - 3; wy += 4) for (let wx = 0; wx < 6; wx += 3) if (((i * 7 + wy + wx) % 5) < 2) X.rect(ctx, bx + 1 + wx, 79 - bh + 2 + wy, 2, 2, P.amberD);
     }
-    windowWeather(ctx, 216, 26, 70, 52, 3);
-    // TV light spill on the floor and wall
-    if (glow > 0) {
-      X.dither(ctx, 0, 96, V.w, 84, P.ink, P.screenGlow, 0.22 * glow);
-      X.dither(ctx, 10, 60, 120, 60, P.ink, P.slate, 0.3 * glow);
-    }
-    // couch + floor line
-    X.rect(ctx, 0, 140, V.w, 40, P.ink2);
-    X.rect(ctx, 0, 140, V.w, 1, P.slate);
-    X.plate(ctx, 150, 118, 130, 30, P.slate, P.slate2, P.ink);
+    windowWeather(ctx, 215, 25, 72, 54, 3);
+    X.rect(ctx, 250, 25, 2, 54, P.slate); X.rect(ctx, 215, 51, 72, 2, P.slate);
+    k1(ctx, 208, 81, 86, 5, P.slate2, P.grey, P.slate);
+    k1(ctx, 202, 18, 10, 72, P.carpetD, P.carpet, P.ink2); k1(ctx, 290, 18, 10, 72, P.carpetD, P.carpet, P.ink2);
+    // The TV's light, in steps across the wall and floor.
+    if (glow > 0) stepGlow(ctx, 92, 96, [96, 64, 36], P.screenGlow, 0.06 * glow);
+    // Floor and a low rug.
+    X.rect(ctx, 0, 140, V.w, 40, P.ink2); X.rect(ctx, 0, 140, V.w, 1, P.slate);
+    for (let x = 0; x < V.w; x += 40) X.rect(ctx, x, 141, 1, 39, P.ink);
+    // The couch: back, two cushions, arms, legs.
+    k1(ctx, 150, 104, 132, 22, P.slate, P.slate2, P.ink2);
+    k1(ctx, 158, 118, 58, 16, P.slate, P.slate2, P.ink2); k1(ctx, 216, 118, 58, 16, P.slate, P.slate2, P.ink2);
+    k1(ctx, 144, 112, 12, 26, P.slate, P.slate2, P.ink2); k1(ctx, 276, 112, 12, 26, P.slate, P.slate2, P.ink2);
+    X.rect(ctx, 150, 138, 3, 4, P.ink); X.rect(ctx, 280, 138, 3, 4, P.ink);
     // Blinds cut the television glow into hard, tired bands.
-    ctx.save();
-    ctx.globalAlpha = 0.24 * glow;
+    ctx.save(); ctx.globalAlpha = 0.24 * glow;
     for (let i = 0; i < 6; i++) X.rect(ctx, 0, 73 + i * 9, 184 - i * 9, 2, P.sky);
     ctx.restore();
-    // Phone and alarm clock keep the setting contemporary without naming a year.
-    X.plate(ctx, 158, 112, 24, 10, P.ink, P.slate, P.ink2);
-    X.text(ctx, '5:58', 170, 114, P.crimson, { align: 'center' });
-    X.plate(ctx, 190, 116, 12, 21, P.ink2, P.slate2, P.ink);
-    X.rect(ctx, 192, 119, 8, 14, P.screenGlow);
-    X.rect(ctx, 195, 121, 2, 2, P.sky);
-    // The player stays anonymous: a foreground shoulder makes the shot feel
-    // observed rather than diagrammed.
-    X.rect(ctx, 0, 126, 34, 54, P.ink);
-    X.rect(ctx, 8, 112, 18, 19, P.ink2);
-    X.rect(ctx, 11, 108, 12, 9, P.slate);
-    X.rect(ctx, 12, 108, 10, 3, P.ink);
+    // The alarm and the phone on the couch arm, both awake.
+    k1(ctx, 157, 106, 26, 11, P.ink2, P.slate, P.ink);
+    X.text(ctx, '5:58', 170, 108, P.crimson, { align: 'center' });
+    k1(ctx, 190, 110, 12, 20, P.ink2, P.slate2, P.ink); X.rect(ctx, 192, 113, 8, 13, P.screenGlow); X.rect(ctx, 194, 115, 2, 2, P.sky);
+    // The player, anonymous: a shoulder and the back of a head in the foreground.
+    ctx.save(); ctx.translate(-4, 96); ctx.scale(4, 4); X.drawSprite(ctx, X.sprite(tint(BACK, { 2: 'c' })), 0, 0); ctx.restore();
   }
 
   // The TV itself, with whatever headline is running under it.
   function tvSet(ctx, x, y, w, h, headline, kicker, statics) {
-    X.plate(ctx, x - 6, y - 6, w + 12, h + 18, P.plastic, P.plastic2, P.plasticD);
+    k1(ctx, x - 7, y - 7, w + 14, h + 20, P.plastic, P.plastic2, P.plasticD);
+    for (let i = 0; i < 6; i++) X.rect(ctx, x + w - 20 + i * 3, y + h + 5, 1, 4, P.plasticD);
+    X.rect(ctx, x + 8, y + h + 13, 6, 4, P.ink); X.rect(ctx, x + w - 14, y + h + 13, 6, 4, P.ink);
     X.crt(ctx, x, y, w, h, true);
     if (statics > 0.02) {
       X.speckle(ctx, x + 2, y + 2, w - 4, h - 4, P.putty, 0.35 * statics, 1);
       X.speckle(ctx, x + 2, y + 2, w - 4, h - 4, P.slate2, 0.25 * statics, 2);
     }
     if (statics < 0.9) {
-      // anchor silhouette behind a desk
       X.rect(ctx, x + 2, y + 2, w - 4, h - 4, P.screen);
       X.gradient(ctx, x + 2, y + 2, w - 4, h - 18, P.screenGlow, P.screen, 4);
       const cx = x + w / 2 | 0;
-      X.rect(ctx, cx - 7, y + 14, 14, 16, P.ink2);       // shoulders
-      X.rect(ctx, cx - 5, y + 6, 10, 10, P.slate);        // head
-      X.rect(ctx, cx - 5, y + 6, 10, 3, P.ink2);          // hair
-      X.rect(ctx, x + 2, y + h - 18, w - 4, 16, P.ink);   // desk
-      // lower third
-      X.rect(ctx, x + 3, y + h - 16, w - 6, 8, P.crimsonD);
+      // The anchor: head, hair, shoulders, collar, all outlined.
+      k1(ctx, cx - 9, y + 14, 18, 16, P.slate2, P.grey, P.slate); X.rect(ctx, cx - 2, y + 14, 4, 5, P.bone); X.rect(ctx, cx - 1, y + 16, 2, 6, P.crimsonD);
+      k1(ctx, cx - 6, y + 4, 12, 12, P.desk2, P.putty2, P.desk); X.rect(ctx, cx - 5, y + 4, 10, 3, P.ink2); X.rect(ctx, cx - 3, y + 9, 1, 1, P.ink); X.rect(ctx, cx + 2, y + 9, 1, 1, P.ink);
+      X.rect(ctx, x + 2, y + h - 18, w - 4, 16, P.ink);
+      X.rect(ctx, x + 3, y + h - 16, w - 6, 8, P.crimsonD); X.rect(ctx, x + 3, y + h - 16, w - 6, 1, P.crimson);
       X.text(ctx, (kicker || 'MARKET WATCH').slice(0, 26), x + 6, y + h - 14, P.white);
       const lines = X.wrap(headline || '', w - 12).slice(0, 2);
       // One line: a second one would print on the bezel.
       lines.slice(0, 1).forEach((ln, i) => X.text(ctx, ln, x + 6, y + h - 6 + i * 8, P.amber));
       X.scanlines(ctx, x + 2, y + 2, w - 4, h - 4, P.ink, 0.2);
     }
-    // standby light
     X.rect(ctx, x + w - 4, y + h + 8, 2, 2, statics > 0.5 ? P.crimson : P.jade);
   }
 
   // Lobby elevator. `open` 0..1 slides the doors apart.
   function elevator(ctx, open, floor) {
-    // lobby wall + carpet
     X.rect(ctx, 0, 0, V.w, V.h, P.ink2);
     X.gradient(ctx, 0, 0, V.w, 132, P.slate, P.ink2, 7);
+    // Stone panels either side.
+    for (const px of [6, 40, 234, 268]) { k1(ctx, px, 14, 32, 114, P.slate, P.slate2, P.ink2); X.dither(ctx, px + 2, 16, 28, 110, P.slate, P.slate2, 0.12); }
     X.rect(ctx, 0, 132, V.w, V.h - 132, P.carpetD);
-    X.speckle(ctx, 0, 132, V.w, V.h - 132, P.carpet, 0.05, 11);
-    // the car behind the doors: lit ceiling, back wall, handrail, floor
+    X.dither(ctx, 0, 133, V.w, V.h - 133, P.carpetD, P.carpet, 0.12); X.rect(ctx, 0, 132, V.w, 1, P.ink);
+    // The car behind the doors: lit ceiling, back wall, handrail, floor.
     X.rect(ctx, 96, 24, 128, 108, P.slate);
     X.gradient(ctx, 96, 24, 128, 108, P.slate2, P.ink2, 6);
-    X.rect(ctx, 96, 24, 128, 4, P.bone);              // ceiling light
-    X.rect(ctx, 100, 74, 120, 2, P.plastic);          // handrail
-    X.rect(ctx, 96, 124, 128, 8, P.carpet);           // car floor
-    // floor indicator above the doors
-    X.plate(ctx, 134, 8, 52, 14, P.plastic, P.plastic2, P.plasticD);
-    X.inset(ctx, 137, 11, 46, 8, P.ink, P.plastic2, P.screenD);
-    X.text(ctx, String(floor || 41), 160, 12, P.amber, { align: 'center' });
-    // doors, with brushed panel lines and a seam handle
+    X.rect(ctx, 96, 24, 128, 4, P.bone); stepGlow(ctx, 160, 30, [60, 36], P.white, 0.05);
+    k1(ctx, 100, 72, 120, 4, P.plastic, P.plastic2, P.plasticD);
+    X.rect(ctx, 96, 124, 128, 8, P.carpet);
+    // Floor indicator and the call button.
+    k1(ctx, 132, 6, 56, 16, P.plastic, P.plastic2, P.plasticD);
+    k1(ctx, 136, 9, 48, 10, P.ink, P.screenD, P.ink, P.ink2);
+    X.text(ctx, String(floor || 41), 160, 11, P.amber, { align: 'center' });
+    k1(ctx, 232, 66, 10, 18, P.plastic, P.plastic2, P.plasticD); X.rect(ctx, 235, 70, 4, 4, P.amber); X.rect(ctx, 235, 77, 4, 4, P.slate2);
+    // Doors: brushed steel, a seam, outlined.
     const slide = Math.round(open * 62);
     const door = (x) => {
-      X.plate(ctx, x, 24, 62, 108, P.plastic, P.plastic2, P.plasticD);
-      for (let i = 4; i < 62; i += 6) X.rect(ctx, x + i, 26, 1, 104, P.plastic2);
-      X.rect(ctx, x + 3, 30, 56, 1, P.plastic2);
-      X.rect(ctx, x + 3, 126, 56, 1, P.plasticD);
+      k1(ctx, x, 24, 62, 108, P.plastic, P.plastic2, P.plasticD);
+      for (let i = 6; i < 58; i += 6) X.rect(ctx, x + i, 27, 1, 102, P.plastic2);
     };
     door(96 - slide);
     door(162 + slide);
-    X.rect(ctx, 158 - slide, 24, 2, 108, P.plasticD);
-    X.rect(ctx, 160 + slide, 24, 2, 108, P.plasticD);
-    // door frame
-    X.rect(ctx, 92, 20, 4, 116, P.plasticD);
-    X.rect(ctx, 224, 20, 4, 116, P.plasticD);
-    X.rect(ctx, 92, 20, 136, 4, P.plasticD);
+    // The frame.
+    k1(ctx, 90, 18, 8, 118, P.plasticD, P.plastic, P.slate2); k1(ctx, 222, 18, 8, 118, P.plasticD, P.plastic, P.slate2); k1(ctx, 90, 18, 140, 8, P.plasticD, P.plastic, P.slate2);
   }
 
   // Wide shot of the trading floor. `zoom` 0..1 pushes toward your desk.
@@ -142,36 +146,37 @@
     const sx = (v) => Math.round(cx + (v - cx) * z);
     const sy = (v) => Math.round(cy + (v - cy) * z);
     const sw = (v) => Math.max(1, Math.round(v * z));
+    // Outline only when the piece is big enough to carry one.
+    const kk = (x, y, w, h, base, hi, sh) => (w > 4 && h > 4 ? k1(ctx, x, y, w, h, base, hi, sh, P.ink2) : X.rect(ctx, x, y, w, h, base));
 
-    // wall + windows behind the floor
+    // Wall, ceiling tracks, windows.
     X.rect(ctx, 0, 0, V.w, V.h, P.putty);
     X.gradient(ctx, 0, 0, V.w, sy(70), P.putty2, P.putty, 6);
-    // Fluorescent ceiling tracks converge toward the desk and strengthen the
-    // one-point composition.
     for (let i = 0; i < 5; i++) {
-      const x = sx(32 + i * 64);
-      X.rect(ctx, x, sy(5 + Math.abs(2 - i) * 2), sw(32), Math.max(1, sw(2)), lit ? P.bone : P.slate2);
+      const x = sx(32 + i * 64), y = sy(5 + Math.abs(2 - i) * 2);
+      kk(x, y, sw(32), Math.max(3, sw(3)), lit ? P.bone : P.slate2, lit ? P.white : P.slate2, P.putty);
     }
     for (let i = 0; i < 6; i++) {
       const wx = sx(8 + i * 52), wy = sy(14), ww = sw(40), wh = sw(48);
       if (wx + ww < 0 || wx > V.w) continue;
-      X.inset(ctx, wx, wy, ww, wh, P.slate2, P.putty2, P.plasticD);
+      kk(wx - 1, wy - 1, ww + 2, wh + 2, P.plasticD, P.plastic2, P.plasticD);
       const top = !SEASON ? (lit ? P.sky : P.slate) : SEASON.id === 'winter' ? (lit ? P.slate2 : P.ink2) : SEASON.id === 'grey' ? (lit ? P.grey : P.slate) : (lit ? P.sky : P.slate);
       X.gradient(ctx, wx + 1, wy + 1, ww - 2, wh - 2, top, SEASON && SEASON.id === 'autumn' ? P.amber : P.putty, 5);
-      // skyline beyond
       for (let b = 0; b < 4; b++) {
-        const bh = sw(8 + ((i * 5 + b * 11) % 20));
-        X.rect(ctx, wx + 2 + b * sw(9), wy + wh - 1 - bh, sw(7), bh, P.slate);
-        if (SEASON && SEASON.snow) X.rect(ctx, wx + 2 + b * sw(9), wy + wh - 1 - bh, sw(7), 1, P.bone);
+        const bh = sw(8 + ((i * 5 + b * 11) % 20)), bx = wx + 2 + b * sw(9);
+        X.rect(ctx, bx, wy + wh - 1 - bh, sw(7), bh, P.slate); X.rect(ctx, bx + sw(7) - 1, wy + wh - 1 - bh, 1, bh, P.ink2);
+        if (SEASON && SEASON.snow) X.rect(ctx, bx, wy + wh - 1 - bh, sw(7), 1, P.bone);
       }
       if (SEASON && SEASON.snow) X.speckle(ctx, wx + 1, wy + 1, ww - 2, wh - 2, P.bone, 0.02 + SEASON.snow * 0.02, i + 3);
+      X.rect(ctx, wx + (ww >> 1), wy, 1, wh, P.plasticD);
     }
-    // carpet
+    // Carpet, with a baseboard.
     X.rect(ctx, 0, sy(70), V.w, V.h, P.carpet);
     X.gradient(ctx, 0, sy(70), V.w, V.h - sy(70), P.carpet2, P.carpetD, 6);
     X.speckle(ctx, 0, sy(70), V.w, Math.max(1, V.h - sy(70)), P.carpetD, 0.03, seed || 3);
+    X.rect(ctx, 0, sy(70) - sw(2), V.w, sw(2), P.plasticD); X.rect(ctx, 0, sy(70), V.w, 1, P.ink2);
 
-    // rows of desks receding, nearest row last
+    // Rows of desks receding, nearest row last.
     const rows = [[56, 12], [74, 18], [96, 26], [126, 38]];
     for (let r = 0; r < rows.length; r++) {
       const [baseY, deskH] = rows[r];
@@ -180,62 +185,64 @@
       for (let i = -1; i < 12; i++) {
         const x = sx(-10 + i * (34 + r * 10));
         if (x + per < -10 || x > V.w + 10) continue;
-        // monitor pair
-        const mh = Math.max(2, dh - sw(6));
-        X.plate(ctx, x + sw(3), y - mh, per - sw(8), mh, P.plastic, P.plastic2, P.plasticD);
-        X.rect(ctx, x + sw(5), y - mh + sw(2), Math.max(1, per - sw(12)), Math.max(1, mh - sw(4)), P.screen);
+        // The monitor: outlined bezel, a glass with the day on it, a stand.
+        const mh = Math.max(2, dh - sw(6)), mw = per - sw(8);
+        kk(x + sw(3), y - mh, mw, mh, P.plastic, P.plastic2, P.plasticD);
+        const gx = x + sw(3) + (mh > 4 ? 2 : 1), gy = y - mh + (mh > 4 ? 2 : 1), gw = Math.max(1, mw - (mh > 4 ? 4 : 2)), gh = Math.max(1, mh - (mh > 4 ? 5 : 2));
+        X.rect(ctx, gx, gy, gw, gh, P.screen);
         if (r >= 2) {
-          // close enough to show something on the glass
           const late = (seed || 0) >= 45;
           const on = late ? ((i * 7 + r * 3 + seed) % 5) < 2 : ((i * 7 + r * 3) % 5) !== 0;
-          X.dither(ctx, x + sw(5), y - mh + sw(2), Math.max(1, per - sw(12)), Math.max(1, mh - sw(4)),
-            P.screen, on ? P.jadeD : P.crimsonD, 0.4);
-          if (late && !on) X.rect(ctx, x + sw(5), y - mh + sw(2), Math.max(1, per - sw(12)), Math.max(1, mh - sw(4)), P.screenD);
+          X.dither(ctx, gx, gy, gw, gh, P.screen, on ? P.jadeD : P.crimsonD, 0.4);
+          if (late && !on) X.rect(ctx, gx, gy, gw, gh, P.screenD);
         }
-        // desk slab + chair + a person, sometimes
-        X.plate(ctx, x, y, per - sw(4), sw(4), P.desk, P.desk2, P.deskD);
+        // Desk slab, lit on top.
+        kk(x, y, per - sw(4), Math.max(3, sw(4)), P.desk, P.desk2, P.deskD);
         const occupied = (seed || 0) >= 45 ? ((i * 3 + r + seed) % 6) === 0
           : (seed || 0) >= 30 ? ((i * 3 + r + seed) % 4) < 2 : ((i * 3 + r) % 3) !== 0;
         if (occupied) {
-          X.rect(ctx, x + sw(10), y + sw(4), sw(9), sw(10), P.ink2);
-          X.rect(ctx, x + sw(12), y + sw(1), sw(5), sw(4), P.slate2);
+          // A trader from behind: shoulders, head, hair.
+          kk(x + sw(9), y + sw(3), sw(11), sw(11), P.ink2, P.slate, P.ink2);
+          kk(x + sw(11), y - sw(1), sw(7), sw(6), P.desk2, P.putty2, P.desk);
+          X.rect(ctx, x + sw(11), y - sw(1), sw(7), Math.max(1, sw(2)), P.ink2);
         } else if (r >= 2) {
-          X.rect(ctx, x + sw(12), y + sw(6), sw(10), sw(7), P.ink2);
-          X.rect(ctx, x + sw(13), y + sw(12), sw(8), Math.max(1, sw(2)), P.slate2);
+          // An empty chair, pushed in.
+          kk(x + sw(11), y + sw(5), sw(11), sw(8), P.ink2, P.slate, P.ink2);
+          X.rect(ctx, x + sw(15), y + sw(13), sw(3), Math.max(1, sw(3)), P.slate2);
         }
       }
     }
-    // Foreground figures crop into frame as the camera pushes forward.
+    // Foreground colleagues crop into frame as the camera pushes forward.
     if (zoom > 0.12) {
       const a = B.clamp((zoom - 0.12) * 2, 0, 1);
       ctx.save(); ctx.globalAlpha = a;
-      X.rect(ctx, 0, 111, 31, 69, P.ink2);
-      X.rect(ctx, 8, 98, 17, 19, P.slate);
-      X.rect(ctx, 10, 95, 13, 7, P.ink);
-      X.rect(ctx, 287, 116, 33, 64, P.ink2);
-      X.rect(ctx, 296, 103, 16, 18, P.deskD);
-      X.rect(ctx, 295, 100, 18, 7, P.ink);
+      ctx.save(); ctx.translate(-6, 95); ctx.scale(4, 4); X.drawSprite(ctx, X.sprite(tint(BACK, { 2: '3' })), 0, 0); ctx.restore();
+      ctx.save(); ctx.translate(286, 100); ctx.scale(4, 4); X.drawSprite(ctx, X.sprite(tint(BACK, { 2: 'd' })), 0, 0); ctx.restore();
       ctx.restore();
     }
   }
 
   // Your own desk, filling the frame. This is the shot the live HUD takes over from.
+  const MUG1 = ['.1111..', '188881.', '1d88811', '188881.1', '188881.1', '1888811', '188881.', '.1111..'];
   function deskCloseup(ctx, p, o) {
     const lit = o && o.dim ? P.slate : P.putty;
     X.rect(ctx, 0, 0, V.w, V.h, lit);
     X.gradient(ctx, 0, 0, V.w, 70, P.putty2, lit, 5);
+    // The desk: a lit front edge, then the surface.
     X.rect(ctx, 0, 132, V.w, 48, P.desk);
-    X.gradient(ctx, 0, 132, V.w, 48, P.desk2, P.deskD, 5);
-    // two monitors
+    X.gradient(ctx, 0, 134, V.w, 46, P.desk2, P.deskD, 5);
+    X.rect(ctx, 0, 132, V.w, 2, P.desk2); X.rect(ctx, 0, 131, V.w, 1, P.ink2);
+    // Two monitors on stands.
     const mon = (x, w, label, fill) => {
-      X.plate(ctx, x, 26, w, 104, P.plastic, P.plastic2, P.plasticD);
-      X.crt(ctx, x + 5, 31, w - 10, 84, true);
-      X.text(ctx, label, x + w / 2, 119, P.plasticD, { align: 'center' });
-      X.plate(ctx, x + w / 2 - 9, 130, 18, 6, P.plasticD, P.plastic, P.ink2);
-      if (fill) fill(x + 6, 32, w - 12, 82);
+      k1(ctx, x + w / 2 - 12, 128, 24, 6, P.plasticD, P.plastic, P.ink2);
+      X.rect(ctx, x + w / 2 - 3, 122, 6, 8, P.plasticD);
+      k1(ctx, x, 24, w, 104, P.plastic, P.plastic2, P.plasticD, P.ink2);
+      X.crt(ctx, x + 5, 30, w - 10, 84, true);
+      X.text(ctx, label, x + w / 2, 118, P.plasticD, { align: 'center' });
+      X.rect(ctx, x + w - 10, 119, 3, 3, P.jade);
+      if (fill) fill(x + 6, 31, w - 12, 82);
     };
     mon(10, 176, 'TRADE', (x, y, w, h) => {
-      // a little candle chart, so the screen isn't dead
       let v = h * 0.6;
       for (let i = 0; i < w - 4; i += 3) {
         v += (((i * 37) % 11) - 5) * 0.8 - (o && o.crash ? 0.7 : -0.25);
@@ -253,95 +260,89 @@
         X.rect(ctx, x + 3, y + 9 + i * 13, ((i * 17) % (w - 26)) + 8, 2, P.phosphorD);
       }
     });
-    // desk clutter
-    X.plate(ctx, 20, 140, 16, 18, P.bone, P.white, P.plasticD);      // coffee
-    X.rect(ctx, 22, 142, 12, 3, P.deskD);
-    X.plate(ctx, 250, 142, 48, 20, P.ink2, P.slate, P.ink);          // phone
-    for (let i = 0; i < 3; i++) X.rect(ctx, 254 + i * 14, 152, 10, 6, P.slate2);
-    X.rect(ctx, 96, 146, 40, 12, P.bone);                             // paper
-    X.rect(ctx, 98, 149, 36, 1, P.grey);
-    X.rect(ctx, 98, 152, 28, 1, P.grey);
-    // Keyboard, hands and a CASCADE briefing sheet anchor the point of view.
-    X.plate(ctx, 135, 148, 76, 16, P.plasticD, P.plastic2, P.ink2);
-    for (let ky = 0; ky < 2; ky++) for (let kx = 0; kx < 9; kx++) X.rect(ctx, 140 + kx * 7, 151 + ky * 5, 5, 3, P.slate);
-    X.rect(ctx, 116, 158, 19, 12, P.desk2);
-    X.rect(ctx, 210, 157, 19, 13, P.desk2);
-    for (let i = 0; i < 4; i++) X.rect(ctx, 101 + i * 2, 155 - i * 2, 25 - i * 2, 2, i < 2 ? P.sky : P.crimsonD);
+    // Coffee, the desk phone, the briefing sheet.
+    ctx.save(); ctx.translate(20, 140); ctx.scale(2, 2); X.drawSprite(ctx, X.sprite(MUG1), 0, 0); ctx.restore();
+    k1(ctx, 248, 140, 52, 22, P.ink2, P.slate, P.ink);
+    k1(ctx, 252, 136, 20, 8, P.ink2, P.slate2, P.ink);
+    for (let i = 0; i < 3; i++) for (let j = 0; j < 2; j++) X.rect(ctx, 276 + i * 7, 145 + j * 6, 5, 4, P.slate2);
+    k1(ctx, 94, 144, 44, 16, P.bone, P.white, P.putty2);
+    X.rect(ctx, 98, 148, 34, 1, P.grey); X.rect(ctx, 98, 151, 26, 1, P.grey);
+    for (let i = 0; i < 4; i++) X.rect(ctx, 100 + i * 2, 156 - i, 22 - i * 2, 1, i < 2 ? P.sky : P.crimsonD);
+    // Keyboard and your hands on it.
+    k1(ctx, 134, 146, 80, 18, P.plasticD, P.plastic2, P.ink2);
+    for (let ky = 0; ky < 2; ky++) for (let kx = 0; kx < 10; kx++) { X.rect(ctx, 138 + kx * 7, 149 + ky * 6, 6, 4, P.slate); X.rect(ctx, 138 + kx * 7, 149 + ky * 6, 6, 1, P.slate2); }
+    k1(ctx, 114, 156, 22, 16, P.desk2, P.putty2, P.desk); k1(ctx, 210, 155, 22, 17, P.desk2, P.putty2, P.desk);
+    X.rect(ctx, 114, 168, 22, 12, P.slate); X.rect(ctx, 210, 168, 22, 12, P.slate);
   }
 
   // Closing bell on the wall, with the floor emptying out below it.
   function bellScene(ctx, swing, empty) {
     X.rect(ctx, 0, 0, V.w, V.h, P.putty);
     X.gradient(ctx, 0, 0, V.w, 132, P.putty2, P.putty, 7);
-    X.rect(ctx, 0, 126, V.w, 6, '#a29c8e');            // chair rail
+    k1(ctx, -1, 124, V.w + 2, 8, P.plastic, P.plastic2, P.plasticD, P.ink2);
     X.rect(ctx, 0, 132, V.w, V.h - 132, P.carpet);
     X.gradient(ctx, 0, 132, V.w, V.h - 132, P.carpet2, P.carpetD, 4);
 
-    // wall clock, stuck on four o'clock
-    X.plate(ctx, 30, 24, 30, 30, P.plastic, P.plastic2, P.plasticD);
-    X.inset(ctx, 33, 27, 24, 24, P.bone, P.plastic2, P.plasticD);
-    X.rect(ctx, 44, 29, 2, 11, P.ink);                 // minute hand to 12
-    X.rect(ctx, 46, 39, 7, 2, P.ink);                  // hour hand to 4
+    // Wall clock, stuck on four o'clock.
+    k1(ctx, 28, 22, 34, 34, P.plastic, P.plastic2, P.plasticD);
+    k1(ctx, 32, 26, 26, 26, P.bone, P.white, P.putty2, P.plasticD);
+    for (const [tx, ty] of [[44, 28], [44, 48], [34, 38], [54, 38]]) X.rect(ctx, tx, ty, 2, 2, P.grey);
+    X.rect(ctx, 44, 29, 2, 11, P.ink);
+    X.rect(ctx, 46, 39, 7, 2, P.ink);
     X.rect(ctx, 44, 38, 2, 2, P.crimson);
 
-    // A window: at four o'clock it is daylight in October, sunset by
-    // mid-November and full dark in December.
+    // A window: daylight in October, sunset by mid-November, dark in December.
     if (SEASON) {
-      X.inset(ctx, 232, 14, 64, 44, P.slate2, P.putty2, P.plasticD);
+      k1(ctx, 230, 12, 68, 48, P.plasticD, P.plastic2, P.plasticD);
       const late = SEASON.week >= 8, dark = SEASON.week >= 11;
-      X.gradient(ctx, 234, 16, 60, 40, dark ? P.ink : late ? P.violet : P.sky, dark ? P.ink2 : late ? P.crimson : P.putty2, 5);
+      X.gradient(ctx, 233, 15, 62, 42, dark ? P.ink : late ? P.violet : P.sky, dark ? P.ink2 : late ? P.crimson : P.putty2, 5);
       for (let b = 0; b < 5; b++) {
         const bh = 8 + ((b * 13) % 18);
-        X.rect(ctx, 236 + b * 12, 56 - bh, 10, bh, dark ? P.ink2 : P.slate);
-        if (dark || late) for (let wy = 3; wy < bh - 2; wy += 5) X.rect(ctx, 238 + b * 12 + (wy % 4), 56 - bh + wy, 2, 2, P.amber);
+        X.rect(ctx, 235 + b * 12, 57 - bh, 10, bh, dark ? P.ink2 : P.slate); X.rect(ctx, 244 + b * 12, 57 - bh, 1, bh, P.ink);
+        if (dark || late) for (let wy = 3; wy < bh - 2; wy += 5) X.rect(ctx, 237 + b * 12 + (wy % 4), 57 - bh + wy, 2, 2, P.amber);
       }
-      windowWeather(ctx, 234, 16, 60, 40, 9);
-      X.rect(ctx, 263, 14, 2, 44, P.plasticD);
+      windowWeather(ctx, 233, 15, 62, 42, 9);
+      X.rect(ctx, 263, 15, 2, 42, P.plasticD);
     }
 
-    // the bell: bracket, yoke, flared body, rim, clapper
+    // The bell: bracket, yoke, flared body with an ink outline, rim, clapper.
     const a = Math.round(Math.sin(swing * Math.PI * 7) * (1 - swing) * 6);
     const bx = 160 + a;
-    X.rect(ctx, 146, 14, 28, 4, P.plasticD);
+    k1(ctx, 144, 12, 32, 6, P.plasticD, P.plastic, P.slate2, P.ink2);
     X.rect(ctx, 158, 18, 4, 8, P.plasticD);
-    X.rect(ctx, bx - 4, 24, 8, 4, P.amberD);
-    for (let i = 0; i < 26; i++) {                     // flared body
+    k1(ctx, bx - 6, 22, 12, 7, P.amberD, P.amber, P.deskD);
+    for (let i = 0; i < 26; i++) {
       const w = 10 + Math.round(i * 0.85);
+      X.rect(ctx, bx - w - 1, 28 + i, 1, 1, P.ink); X.rect(ctx, bx + w, 28 + i, 1, 1, P.ink);
       X.rect(ctx, bx - w, 28 + i, w * 2, 1, i < 4 ? P.bone : P.amber);
+      X.rect(ctx, bx - w + 2, 28 + i, 2, 1, i < 4 ? P.white : P.bone);
+      X.rect(ctx, bx + w - 6, 28 + i, 5, 1, P.amberD);
     }
-    X.rect(ctx, bx - 23, 54, 46, 5, P.amberD);         // rim
-    X.rect(ctx, bx - 23, 54, 46, 1, P.bone);
-    X.rect(ctx, bx - 2, 59, 4, 6, P.deskD);            // clapper
-    // sound rings
+    X.rect(ctx, bx - 10, 27, 20, 1, P.ink);
+    k1(ctx, bx - 25, 53, 50, 7, P.amberD, P.amber, P.deskD);
+    k1(ctx, bx - 3, 59, 6, 8, P.deskD, P.desk, P.ink2);
     for (let i = 0; i < 3; i++) {
       const r = 30 + i * 13 + Math.round(swing * 28);
       if (1 - swing - i * 0.22 <= 0.05) continue;
-      X.rect(ctx, bx - r, 42 - i * 3, 5, 2, P.bone);
-      X.rect(ctx, bx + r - 5, 42 - i * 3, 5, 2, P.bone);
+      X.rect(ctx, bx - r, 42 - i * 3, 5, 2, P.bone); X.rect(ctx, bx - r - 2, 44 - i * 3, 3, 2, P.bone);
+      X.rect(ctx, bx + r - 5, 42 - i * 3, 5, 2, P.bone); X.rect(ctx, bx + r - 1, 44 - i * 3, 3, 2, P.bone);
     }
 
-    // desks, high enough to stay clear of the caption box
+    // Desks, high enough to stay clear of the caption box.
     for (let i = 0; i < 5; i++) {
       const x = 10 + i * 62;
-      X.plate(ctx, x, 84, 50, 26, P.plastic, P.plastic2, P.plasticD);
-      X.rect(ctx, x + 3, 87, 44, 18, empty ? P.screenD : P.screen);
-      if (!empty) X.dither(ctx, x + 3, 87, 44, 18, P.screen, i % 2 ? P.crimsonD : P.jadeD, 0.45);
-      X.plate(ctx, x - 3, 110, 56, 5, P.desk, P.desk2, P.deskD);
-      X.rect(ctx, x + 6, 115, 3, 11, P.deskD);
-      X.rect(ctx, x + 41, 115, 3, 11, P.deskD);
+      k1(ctx, x, 82, 50, 28, P.plastic, P.plastic2, P.plasticD, P.ink2);
+      X.rect(ctx, x + 4, 86, 42, 18, empty ? P.screenD : P.screen);
+      if (!empty) X.dither(ctx, x + 4, 86, 42, 18, P.screen, i % 2 ? P.crimsonD : P.jadeD, 0.45);
+      k1(ctx, x - 4, 109, 58, 7, P.desk, P.desk2, P.deskD, P.ink2);
+      X.rect(ctx, x + 6, 116, 3, 10, P.deskD); X.rect(ctx, x + 41, 116, 3, 10, P.deskD);
     }
 
-    // people walking out between the desk rows, once the floor empties.
-    // They sit above y=132 so the caption box never swallows them.
+    // People walking out between the desk rows once the floor empties.
     if (empty) {
       for (let i = 0; i < 4; i++) {
         const px = 58 + i * 62 + Math.round(swing * 14);
-        X.rect(ctx, px, 106, 9, 18, P.ink2);           // coat
-        X.rect(ctx, px + 2, 99, 5, 7, P.slate2);       // head
-        X.rect(ctx, px + 2, 99, 5, 2, P.ink);          // hair
-        X.rect(ctx, px + 9, 113, 5, 4, P.deskD);       // bag
-        X.rect(ctx, px + 1, 124, 3, 4, P.ink);         // legs
-        X.rect(ctx, px + 5, 124, 3, 4, P.ink);
+        ctx.save(); ctx.translate(px, 96); ctx.scale(2, 2); X.drawSprite(ctx, X.sprite(tint(WALKER, { 2: i % 2 ? '1' : '2', d: 'e', D: 'D' })), 0, 0); ctx.restore();
       }
     }
   }
