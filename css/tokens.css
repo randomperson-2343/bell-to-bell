@@ -69,10 +69,15 @@
   --institution: var(--c-sky);
 
   /* --- type --- */
-  --pixel: "Pixelify Sans", "Cascadia Mono", monospace;
-  --mono: "IBM Plex Mono", "Cascadia Mono", "SF Mono", Consolas, Menlo, monospace;
-  --ui: "IBM Plex Sans Condensed", "Arial Narrow", sans-serif;
-  --narrative: "IBM Plex Sans Condensed", "Arial Narrow", sans-serif;
+  /* All three faces are pixel fonts. Their cap heights differ a lot (VT323 is
+     tiny for its size), so html sets font-size-adjust to one cap height and
+     every existing font-size keeps meaning the same visual size. Canvas text
+     ignores that property, so it multiplies by --mono-canvas-scale instead. */
+  --pixel: "Silkscreen", "Cascadia Mono", monospace;
+  --mono: "VT323", "Cascadia Mono", "SF Mono", Consolas, Menlo, monospace;
+  --ui: "Tiny5", "Arial Narrow", sans-serif;
+  --narrative: "Tiny5", "Arial Narrow", sans-serif;
+  --mono-canvas-scale: 1.25;
   --sans: var(--ui);
 
   /* --- pixel grid: everything snaps to 4px --- */
