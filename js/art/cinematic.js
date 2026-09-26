@@ -26,17 +26,14 @@
 
     layout() {
       if (!this.canvas) return;
+      // Fill the screen: the largest 16:9 box that fits, at any scale.
+      // Whole-number scaling kept pixels perfectly even but left a wide
+      // border on most window sizes (a 1440x900 screen got a 1280x720 box).
       const vw = 640, vh = 360;
       const availW = window.innerWidth || vw, availH = window.innerHeight || vh;
-      const integer = Math.floor(Math.min(availW / vw, availH / vh));
-      if (integer >= 1) {
-        this.canvas.style.width = (vw * integer) + 'px';
-        this.canvas.style.height = (vh * integer) + 'px';
-      } else {
-        const fit = Math.min(availW / vw, availH / vh);
-        this.canvas.style.width = Math.floor(vw * fit) + 'px';
-        this.canvas.style.height = Math.floor(vh * fit) + 'px';
-      }
+      const fit = Math.min(availW / vw, availH / vh);
+      this.canvas.style.width = Math.floor(vw * fit) + 'px';
+      this.canvas.style.height = Math.floor(vh * fit) + 'px';
     },
 
     mode() {
