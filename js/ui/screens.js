@@ -207,7 +207,7 @@
             label: 'Save & Quit',
             onClick: () => {
               if (g.saveNow()) { B.UI.toast(`Saved to slot ${g.slot + 1}.`, 'good'); g.quit(); }
-              else { B.UI.toast('No free save slot. Free one up from Load Game.', 'bad'); back(); }
+              else { B.UI.toast('No free save slot. Free one up from Continue on the main menu.', 'bad'); back(); }
             }
           },
           { label: 'Back to Briefing', cls: 'primary', onClick: back }
@@ -469,12 +469,23 @@
             </select><output></output></div>
         </div>
         <div class="fieldset" style="margin-top:14px">
+          <h3>Game</h3>
+          <div class="set-links">
+            <button class="btn small" id="set-howto">How to Play</button>
+            <button class="btn small" id="set-endings">Endings Gallery</button>
+          </div>
+        </div>
+        <div class="fieldset" style="margin-top:14px">
           <h3>Data</h3>
           <button class="btn small danger" id="set-reset">Delete all saves, endings and leaderboards</button>
         </div>`;
       $('set-fx').value = s.effects;
       $('set-cine').value = s.cinematics;
       $('set-dl').value = String(s.storyDayLength);
+      // Both pages come back here rather than to the menu.
+      const backToSettings = () => { this.renderSettings(); this.show('settings'); };
+      $('set-howto').addEventListener('click', () => { this.backTo = backToSettings; this.show('howto'); });
+      $('set-endings').addEventListener('click', () => { this.backTo = backToSettings; this.showEndings(); });
       $('set-sound').addEventListener('change', (e) => B.Settings.set('sound', e.target.checked));
       $('set-vol').addEventListener('input', (e) => { B.Settings.set('volume', +e.target.value); $('set-vol-o').textContent = Math.round(e.target.value * 100) + '%'; });
       $('set-music').addEventListener('change', (e) => { B.Settings.set('music', e.target.checked); if (e.target.checked) B.Music.play('menu', true); });

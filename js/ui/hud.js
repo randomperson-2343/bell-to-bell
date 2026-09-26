@@ -147,7 +147,7 @@
       if (!g) return;
       if (g.slot == null && B.Save.firstEmpty() < 0) {
         B.Screens.confirm('All six slots are full',
-          'Free one up on the Load Game screen, then come back and save.', 'OK', () => {});
+          'Free one up from Continue on the main menu, then come back and save.', 'OK', () => {});
         return;
       }
       const ok = g.saveNow();
@@ -166,7 +166,7 @@
       const meta = g.slot != null ? B.Save.meta(g.slot) : null;
       el.textContent = meta
         ? `Slot ${g.slot + 1} · ${meta.name} · last saved ${B.timeAgo(meta.ts)}`
-        : B.Save.firstEmpty() >= 0 ? 'Not saved yet. Saving will use the first free slot.' : 'Not saved yet, and all six slots are full. Free one from Load Game to save this run.';
+        : B.Save.firstEmpty() >= 0 ? 'Not saved yet. Saving will use the first free slot.' : 'Not saved yet, and all six slots are full. Free one from Continue on the main menu to save this run.';
     },
 
     key(e) {

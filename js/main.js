@@ -147,7 +147,11 @@
     $('btn-endless').addEventListener('click', () => { B.SFX.unlock(); Main.openEndless(); });
     $('btn-load').addEventListener('click', () => { B.SFX.unlock(); B.Slots.open(); });
     $('btn-settings').addEventListener('click', () => { B.Screens.renderSettings(); B.Screens.show('settings'); });
-    document.querySelectorAll('[data-back]').forEach((b) => b.addEventListener('click', () => B.Screens.goMenu()));
+    document.querySelectorAll('[data-back]').forEach((b) => b.addEventListener('click', () => {
+      const back = B.Screens.backTo;
+      B.Screens.backTo = null;
+      if (back) back(); else B.Screens.goMenu();
+    }));
 
     if (/[?&]debug=1/.test(location.search) && B.Debug) B.Debug.init();
   });
