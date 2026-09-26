@@ -104,17 +104,6 @@
       });
       $('btn-coffee').addEventListener('click', () => this.g && this.g.coffee());
       $('btn-pause').addEventListener('click', () => this.g && this.g.togglePause());
-      const touch = () => window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
-      $('btn-focus').addEventListener('click', () => {
-        const on = document.body.classList.toggle('focus');
-        // Touch devices have no Esc key: never bring Focus mode back uninvited.
-        B.Settings.set('focusMode', on && !touch());
-      });
-      $('btn-focus-exit').addEventListener('click', () => {
-        document.body.classList.remove('focus');
-        B.Settings.set('focusMode', false);
-      });
-      $('btn-focus-menu').addEventListener('click', () => this.g && this.g.togglePause());
       $('btn-mute').addEventListener('click', () => {
         const s = B.Settings.get();
         const mute = !!(s.sound || s.music);
@@ -224,10 +213,10 @@
       this.unread = 0;
       this.updateBadge();
       this.lastPx = {};
-      document.body.classList.toggle('focus', !!B.Settings.get().focusMode);
       $('wall-date').textContent = g.mode.kind === 'story' ? B.Calendar.storyLabel(g.day) : B.Calendar.dayInfo(g.day).label;
       this.applyNarrativeSkin(g);
       this.renderMute();
+      B.Ticket.reset();
       B.Screens.show('game');
       this.select('INDX');
     },

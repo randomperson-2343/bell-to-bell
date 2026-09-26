@@ -10,8 +10,7 @@
     music: true, musicVolume: 0.45,
     effects: 'full',        // full | reduced | off
     cinematics: 'full',     // full | short | off
-    storyDayLength: 180,
-    focusMode: false
+    storyDayLength: 180
   };
 
   B.Settings = {
