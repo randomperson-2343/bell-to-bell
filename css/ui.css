@@ -90,9 +90,18 @@ input[type=checkbox] { accent-color: var(--c-amber); width: 15px; height: 15px; 
 #screen-game.active { display: block; overflow: hidden; }
 
 /* ---- Boot / disclaimer ---- */
-#screen-boot { background: var(--c-ink); display: none; }
-#screen-boot.active { display: flex; align-items: center; justify-content: center; }
-.boot-wrap { text-align: center; max-width: 520px; padding: 24px; }
+#screen-boot, #screen-exit { background: var(--c-ink); display: none; }
+#screen-boot.active, #screen-exit.active { display: flex; align-items: center; justify-content: center; }
+.boot-wrap { text-align: center; max-width: 640px; padding: 24px; }
+/* The splash runs 5s: a stepped 1s fade in, a hold, then js/main.js adds
+   .leaving for a 1s fade out before the menu. The bar fills across all 5s. */
+#screen-boot .boot-wrap { animation: boot-in 1s steps(6) both; }
+#screen-boot.leaving .boot-wrap { animation: boot-out 1s steps(6) forwards; }
+@keyframes boot-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes boot-out { from { opacity: 1; } to { opacity: 0; } }
+.boot-bar { width: 240px; height: 12px; margin: 0 auto; padding: 2px; background: var(--c-ink2); border: 2px solid var(--c-slate); }
+.boot-bar i { display: block; height: 100%; width: 0; background: var(--c-amber); box-shadow: inset 0 -2px 0 var(--c-amber-d); animation: boot-fill 5s steps(20) forwards; }
+@keyframes boot-fill { to { width: 100%; } }
 .brand-mark { width: 84px; height: 42px; margin: 0 auto 16px; position: relative; }
 .brand-mark i { display: block; position: absolute; height: 7px; background: var(--c-amber); box-shadow: 2px 2px 0 var(--c-amber-d); }
 .brand-mark i:nth-child(1) { width: 54px; left: 7px; top: 0; }
@@ -103,8 +112,7 @@ input[type=checkbox] { accent-color: var(--c-amber); width: 15px; height: 15px; 
 .boot-logo { font-family: var(--pixel); font-size: clamp(22px, 5vw, 38px); letter-spacing: .024em; }
 .boot-logo span { color: var(--c-bone); }
 .boot-logo em { color: var(--c-amber); font-style: normal; font-size: .6em; margin: 0 .4em; }
-.boot-sub { color: var(--c-crimson); letter-spacing: .7em; margin: 10px 0 30px; padding-left: .7em; font-size: 14px; }
-.boot-note { color: var(--muted); font-size: 11px; line-height: 1.9; margin-bottom: 28px; }
+.boot-note { color: var(--c-putty2); font-size: 16px; line-height: 1.9; margin: 28px 0; }
 
 /* ---- Menu ---- */
 #screen-menu { background: var(--c-ink); }
@@ -126,15 +134,9 @@ input[type=checkbox] { accent-color: var(--c-amber); width: 15px; height: 15px; 
 .logo { font-family: var(--pixel); font-size: clamp(34px, 7.2vw, 68px); font-weight: 700; margin: 0; letter-spacing: .014em; line-height: 1.08; }
 .logo span { color: var(--c-bone); text-shadow: 3px 3px 0 var(--c-ink2); }
 .logo em { color: var(--c-amber); font-style: normal; font-size: .5em; vertical-align: middle; margin: 0 .3em; }
-.tagline { color: var(--muted); font-size: 13px; line-height: 1.75; margin: 22px auto 36px; max-width: 580px; }
-.menu-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; text-align: left; }
-.menu-card {
-  background: var(--c-ink2); padding: 20px; display: flex; flex-direction: column; gap: 10px;
-  border: 2px solid; border-color: var(--c-slate) var(--c-ink) var(--c-ink) var(--c-slate);
-}
-.menu-card h2 { margin: 0; font-family: var(--pixel); font-size: 20px; font-weight: 650; color: var(--c-amber); letter-spacing: .02em; }
-.menu-card p { color: var(--muted); margin: 0 0 8px; line-height: 1.75; flex: 1; font-size: 13px; }
-.menu-row { display: flex; gap: 10px; justify-content: center; margin-top: 22px; flex-wrap: wrap; }
+.menu-list { display: flex; flex-direction: column; gap: 12px; width: min(280px, 100%); margin: 40px auto 0; }
+.set-links { display: flex; gap: 10px; flex-wrap: wrap; }
+.menu-list .btn { width: 100%; padding: 12px 16px; font-size: 16px; }
 .fine { color: var(--dim); font-size: 10px; margin-top: 22px; line-height: 1.8; }
 
 /* ---- Pages ---- */
@@ -586,7 +588,7 @@ input.short { width: 60px; }
 
 /* ---- Responsive (non-game screens) ---- */
 @media (max-width: 960px) {
-  .menu-cols, .form-grid { grid-template-columns: 1fr; }
+  .form-grid { grid-template-columns: 1fr; }
   .briefing-layout { grid-template-columns: 1fr; }
   .preopen-device { margin: 0 auto; }
   .presets { grid-template-columns: repeat(2, 1fr); }

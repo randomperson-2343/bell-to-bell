@@ -20,7 +20,8 @@ const assert = (value, message) => { if (!value) throw new Error(message); };
   const browser = await chromium.launch({ headless: true, executablePath: chromium.executablePath() });
   const page = await browser.newPage({ viewport: { width: 1280, height: 720 }, deviceScaleFactor: 1 });
   await page.goto(`http://127.0.0.1:${port}/index.html`, { waitUntil: 'domcontentloaded' });
-  await page.click('#btn-boot');
+  await page.keyboard.press('Enter');
+  await page.waitForSelector('#screen-menu.active', { timeout: 10000 });
   await page.evaluate(() => {
     BTB.Settings.set('sound', false); BTB.Settings.set('music', false); BTB.Settings.set('cinematics', 'full');
     BTB.Cinematic.startChain && BTB.Cinematic.startChain('qa');

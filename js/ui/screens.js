@@ -202,12 +202,12 @@
         body: '<p>You are between trading days. Saving now keeps your progress up to the last closing bell.</p>',
         buttons: [
           { label: 'Quit to Menu', cls: 'ghost', onClick: () => g.quit() },
-          { label: 'How to Play', onClick: () => this.howtoModal(back) },
+          { label: 'Settings', onClick: () => this.settingsModal(() => this.pauseFromBriefing(g, b, onGo)) },
           {
             label: 'Save & Quit',
             onClick: () => {
               if (g.saveNow()) { B.UI.toast(`Saved to slot ${g.slot + 1}.`, 'good'); g.quit(); }
-              else { B.UI.toast('No free save slot. Free one up from Load Game.', 'bad'); back(); }
+              else { B.UI.toast('No free save slot. Free one up from Continue on the main menu.', 'bad'); back(); }
             }
           },
           { label: 'Back to Briefing', cls: 'primary', onClick: back }
@@ -421,24 +421,39 @@
     },
 
     showEndings() {
+      $('endings-list').innerHTML = this.endingsHTML();
+      this.show('endings');
+    },
+
+    endingsHTML() {
       const tally = B.Save.careerTally();
       const found = Object.keys(tally).length;
       const total = B.StoryEndings.list.length;
       const runs = B.Save.totalRuns();
-      $('endings-list').innerHTML =
-        `<p class="endings-summary">${found} of ${total} endings found across ${runs} finished ${runs === 1 ? 'career' : 'careers'}.</p>` +
+      return `<p class="endings-summary">${found} of ${total} endings found across ${runs} finished ${runs === 1 ? 'career' : 'careers'}.</p>` +
         B.StoryEndings.list.map((e) => {
           const n = tally[e.id] || 0;
           return `<div class="ending-row ${n ? '' : 'locked'}"><div class="ico">${n ? e.icon : '&#128274;'}</div>
             <div><b>${n ? e.title : '???'}</b><span>${n ? e.hint : e.lockedHint}</span></div>
             <div class="count">${n ? '&times;' + n : ''}</div></div>`;
         }).join('');
-      this.show('endings');
     },
 
-    renderSettings() {
+    // Settings over the pause menu, as a modal so the paused game stays put.
+    // How to Play and the gallery open as modals that come back here; the
+    // Data section (delete everything) stays on the main-menu page only.
+    settingsModal(onClose) {
+      this.settingsClose = onClose;
+      $('settings-form').innerHTML = '';
+      const done = () => onClose && onClose();
+      this.modal({ title: 'Settings', body: '<div id="settings-modal-form"></div>', wide: true, dismissible: true, onDismiss: done,
+        buttons: [{ label: 'Done', cls: 'primary', onClick: done }] });
+      this.renderSettings($('settings-modal-form'), true);
+    },
+
+    renderSettings(target, inGame) {
       const s = B.Settings.get();
-      $('settings-form').innerHTML = `
+      (target || $('settings-form')).innerHTML = `
         <div class="fieldset">
           <h3>Audio</h3>
           <div class="check"><input type="checkbox" id="set-sound" ${s.sound ? 'checked' : ''}><label for="set-sound">Sound effects</label><span></span></div>
@@ -469,21 +484,40 @@
             </select><output></output></div>
         </div>
         <div class="fieldset" style="margin-top:14px">
+          <h3>Game</h3>
+          <div class="set-links">
+            <button class="btn small" id="set-howto">How to Play</button>
+            <button class="btn small" id="set-endings">Endings Gallery</button>
+          </div>
+        </div>
+        ${inGame ? '' : `<div class="fieldset" style="margin-top:14px">
           <h3>Data</h3>
           <button class="btn small danger" id="set-reset">Delete all saves, endings and leaderboards</button>
-        </div>`;
+        </div>`}`;
       $('set-fx').value = s.effects;
       $('set-cine').value = s.cinematics;
       $('set-dl').value = String(s.storyDayLength);
+      // Both pages come back here rather than to the menu.
+      if (inGame) {
+        const reopen = () => this.settingsModal(this.settingsClose);
+        $('set-howto').addEventListener('click', () => this.howtoModal(reopen));
+        $('set-endings').addEventListener('click', () => this.modal({ title: 'Endings Gallery', body: this.endingsHTML(), wide: true, dismissible: true, onDismiss: reopen,
+          buttons: [{ label: 'Back', cls: 'primary', onClick: reopen }] }));
+      } else {
+        // Both pages come back here rather than to the menu.
+        const backToSettings = () => { this.renderSettings(); this.show('settings'); };
+        $('set-howto').addEventListener('click', () => { this.backTo = backToSettings; this.show('howto'); });
+        $('set-endings').addEventListener('click', () => { this.backTo = backToSettings; this.showEndings(); });
+      }
       $('set-sound').addEventListener('change', (e) => B.Settings.set('sound', e.target.checked));
       $('set-vol').addEventListener('input', (e) => { B.Settings.set('volume', +e.target.value); $('set-vol-o').textContent = Math.round(e.target.value * 100) + '%'; });
-      $('set-music').addEventListener('change', (e) => { B.Settings.set('music', e.target.checked); if (e.target.checked) B.Music.play('menu', true); });
+      $('set-music').addEventListener('change', (e) => { B.Settings.set('music', e.target.checked); if (e.target.checked && !inGame) B.Music.play('menu', true); });
       $('set-mvol').addEventListener('input', (e) => { B.Settings.set('musicVolume', +e.target.value); $('set-mvol-o').textContent = Math.round(e.target.value * 100) + '%'; });
       $('set-test').addEventListener('click', () => { B.SFX.unlock(); B.SFX.bell(); });
       $('set-fx').addEventListener('change', (e) => B.Settings.set('effects', e.target.value));
       $('set-cine').addEventListener('change', (e) => B.Settings.set('cinematics', e.target.value));
       $('set-dl').addEventListener('change', (e) => B.Settings.set('storyDayLength', +e.target.value));
-      $('set-reset').addEventListener('click', () => this.confirm('Delete everything?', 'Removes every save slot, the endings tally and all leaderboards. This can\'t be undone.', 'Delete', () => {
+      if (!inGame) $('set-reset').addEventListener('click', () => this.confirm('Delete everything?', 'Removes every save slot, the endings tally and all leaderboards. This can\'t be undone.', 'Delete', () => {
         B.Save.wipe();
         B.UI.toast('All progress deleted.', 'warn');
         this.renderSettings();
