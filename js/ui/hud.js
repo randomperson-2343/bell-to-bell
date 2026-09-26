@@ -134,7 +134,7 @@
             this.g.quit();
           });
       });
-      $('btn-howto-ingame').addEventListener('click', () => B.Screens.howtoModal());
+      $('btn-settings-ingame').addEventListener('click', () => B.Screens.settingsModal());
       onPress($('lock-overlay'), (e) => {
         const btn = e.target.closest('button[data-panic]');
         if (btn && this.g) { e.preventDefault(); this.g.panicInput(btn.dataset.panic); }
