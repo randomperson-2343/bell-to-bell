@@ -50,7 +50,7 @@ The visual tone is colourful but washed out. Every hue should feel filtered thro
 - A physical phone extraction between each news tableau and interactive pre-open notification feed.
 - Weekend interludes after Friday sessions that preserve calendar rhythm without adding story events.
 - Persistent quota slips, a calibrated thirty-strike career ledger and a visibly fragmenting CASCADE stack on the desk as institutional stability falls.
-- Pixelify Sans for display moments, IBM Plex Sans Condensed for interface copy and IBM Plex Mono for tables and financial data.
+- Silkscreen for display moments and controls, Tiny5 for interface and story copy and VT323 for tables and financial data, all normalised to one cap height with font-size-adjust.
 - Pixel-styled scrollbars that keep every scrollable surface inside the game's visual language.
 - Trading music that fades between score and office ambience in stress-responsive phrases.
 

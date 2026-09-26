@@ -146,7 +146,7 @@ body[data-heat="high"] .act-plate::after { content: " · PRESERVE RECORDS"; colo
 .strike-hud .v { color: var(--c-putty2); }
 .strike-hud.warning { background: #392e1d !important; border-left-color: var(--c-amber); }
 .strike-hud.final-warning { background: #421922 !important; border-left-color: var(--c-crimson); animation: blink 1.1s steps(2) infinite; }
-.strike-warning { color: var(--c-crimson); font: 7px var(--pixel); letter-spacing: .06em; }
+.strike-warning { color: var(--c-crimson); font: 7px var(--pixel); letter-spacing: .024em; }
 .desk-btn.muted-audio { border-color: var(--c-crimson); }
 
 #watch { grid-area: watch; }

@@ -1,7 +1,7 @@
 // Canvas candlestick chart for the selected ticker.
 (function (B) {
   'use strict';
-  let cv, ctx, W = 0, H = 0, dpr = 1, MONO = 'monospace';
+  let cv, ctx, W = 0, H = 0, dpr = 1, MONO = 'monospace', MONO_PX = 11;
   const P = B.Pal;
 
   function resize() {
@@ -30,7 +30,9 @@
     init(canvas) {
       cv = canvas;
       ctx = cv.getContext('2d');
-      MONO = getComputedStyle(document.documentElement).getPropertyValue('--mono').trim() || 'monospace';
+      const root = getComputedStyle(document.documentElement);
+      MONO = root.getPropertyValue('--mono').trim() || 'monospace';
+      MONO_PX = Math.round(11 * (parseFloat(root.getPropertyValue('--mono-canvas-scale')) || 1));
       if (window.ResizeObserver) new ResizeObserver(resize).observe(cv);
       window.addEventListener('resize', resize);
       resize();
@@ -74,7 +76,7 @@
       const x = (i) => i * bw + bw / 2 + jx;
 
       // grid + axis
-      ctx.font = '11px ' + MONO;
+      ctx.font = MONO_PX + 'px ' + MONO;
       ctx.fillStyle = P.phosphorD;
       ctx.strokeStyle = '#182622';
       ctx.lineWidth = 1;
@@ -153,7 +155,7 @@
       ctx.fillStyle = upDay ? P.jade : P.crimson;
       ctx.fillRect(plotW + 1, ly - 9, padR - 2, 18);
       ctx.fillStyle = P.ink;
-      ctx.font = 'bold 11px ' + MONO;
+      ctx.font = 'bold ' + MONO_PX + 'px ' + MONO;
       ctx.fillText((upDay ? '▲ ' : '▼ ') + B.fmt.price(tk.last), plotW + 5, ly + 4);
     }
   };
