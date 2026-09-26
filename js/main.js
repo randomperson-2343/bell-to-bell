@@ -7,7 +7,7 @@
     refreshMenu() {
       const used = B.Save.index().filter(Boolean).length;
       const btn = $('btn-load');
-      btn.textContent = used ? `Load Game (${used}/${B.Save.SLOTS})` : 'Load Game';
+      btn.textContent = used ? `Continue (${used}/${B.Save.SLOTS})` : 'Continue';
       btn.disabled = !used;
     },
 
@@ -111,19 +111,42 @@
     Main.refreshMenu();
     window.addEventListener('resize', () => Main.skyline());
 
-    // The first click is also what unlocks WebAudio in every browser.
-    $('btn-boot').addEventListener('click', () => {
+    // Splash: 1s fade in, hold, 1s fade out, menu at 5s. Any click or key
+    // skips to the fade out.
+    const boot = $('screen-boot');
+    let bootTimers = [];
+    const leaveBoot = () => {
+      if (!boot.classList.contains('active') || boot.classList.contains('leaving')) return;
+      bootTimers.forEach(clearTimeout);
+      boot.classList.add('leaving');
+      bootTimers = [setTimeout(() => { boot.classList.remove('leaving'); B.Screens.show('menu'); }, 1000)];
+    };
+    bootTimers.push(setTimeout(leaveBoot, 4000));
+    boot.addEventListener('pointerdown', leaveBoot);
+    document.addEventListener('keydown', (e) => { if (boot.classList.contains('active')) { e.preventDefault(); leaveBoot(); } });
+
+    // Browsers keep audio locked until the first click or key press, so the
+    // menu music waits for that.
+    const unlockAudio = () => {
+      document.removeEventListener('pointerdown', unlockAudio, true);
+      document.removeEventListener('keydown', unlockAudio, true);
       B.SFX.unlock();
-      B.Music.play('menu');
-      B.Screens.show('menu');
+      if (!B.UI.g) B.Music.play('menu');
+    };
+    document.addEventListener('pointerdown', unlockAudio, true);
+    document.addEventListener('keydown', unlockAudio, true);
+
+    // A page may only close a window a script opened, so in a normal tab
+    // this falls through to the goodbye screen.
+    $('btn-exit').addEventListener('click', () => {
+      window.close();
+      setTimeout(() => { B.Music.stop(); B.Screens.show('exit'); }, 150);
     });
 
     $('btn-story-new').addEventListener('click', () => { B.SFX.unlock(); Main.newStory(); });
     $('btn-endless').addEventListener('click', () => { B.SFX.unlock(); Main.openEndless(); });
     $('btn-load').addEventListener('click', () => { B.SFX.unlock(); B.Slots.open(); });
-    $('btn-howto').addEventListener('click', () => B.Screens.show('howto'));
     $('btn-settings').addEventListener('click', () => { B.Screens.renderSettings(); B.Screens.show('settings'); });
-    $('btn-endings').addEventListener('click', () => B.Screens.showEndings());
     document.querySelectorAll('[data-back]').forEach((b) => b.addEventListener('click', () => B.Screens.goMenu()));
 
     if (/[?&]debug=1/.test(location.search) && B.Debug) B.Debug.init();

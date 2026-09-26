@@ -19,13 +19,12 @@
       <div class="boot-wrap">
         <div class="brand-mark" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
         <div class="boot-logo"><span>BELL</span><em>to</em><span>BELL</span></div>
-        <div class="boot-sub">OPEN TO CLOSE</div>
         <p class="boot-note">
           Every company, person, instrument, agency, country and event in this game is
           invented. Any resemblance to a real firm, a real person or a real event is
           coincidence, not intention.
         </p>
-        <button class="btn primary" id="btn-boot">Press Start</button>
+        <div class="boot-bar" aria-hidden="true"><i></i></div>
       </div>
     </section>
 
@@ -36,26 +35,24 @@
         <div class="ticker-tape" id="menu-tape"></div>
         <div class="brand-mark menu-mark" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
         <h1 class="logo"><span>BELL</span> <em>to</em> <span>BELL</span></h1>
-        <p class="tagline">9:30 AM to 4:00 PM. Make as much money as humanly possible. Try not to have a breakdown.</p>
-        <div class="menu-cols">
-          <div class="menu-card">
-            <h2>Career</h2>
-            <p>Sixty-one trading sessions. A compute bubble built on CASCADE notes, a war you only see on the tape, and ten decisions that reshape the market and you.</p>
-            <button class="btn primary" id="btn-story-new">New Career</button>
-          </div>
-          <div class="menu-card">
-            <h2>Endless</h2>
-            <p>No script. Pick your poison: volatility, leverage, fake rumors, crash odds, and exactly how you want it to end.</p>
-            <button class="btn primary" id="btn-endless">Configure Run</button>
-          </div>
-        </div>
-        <div class="menu-row">
-          <button class="btn" id="btn-load">Load Game</button>
-          <button class="btn ghost" id="btn-howto">How to Play</button>
-          <button class="btn ghost" id="btn-settings">Settings</button>
-          <button class="btn ghost" id="btn-endings">Endings</button>
-        </div>
+        <nav class="menu-list" aria-label="Main menu">
+          <button class="btn primary" id="btn-story-new">New Career</button>
+          <button class="btn" id="btn-load">Continue</button>
+          <button class="btn" id="btn-endless">Endless</button>
+          <button class="btn" id="btn-settings">Settings</button>
+          <button class="btn" id="btn-exit">Exit Game</button>
+        </nav>
         <p class="fine">All companies, people and events are fictional.</p>
+      </div>
+    </section>
+
+    <!-- EXIT (browsers won't let a page close its own tab) -->
+    <section id="screen-exit" class="screen">
+      <div class="boot-wrap">
+        <div class="brand-mark" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+        <div class="boot-logo"><span>MARKET</span><em>is</em><span>CLOSED</span></div>
+        <p class="boot-note">You can close this tab now.</p>
+        <button class="btn" data-back>Back to Menu</button>
       </div>
     </section>
 
