@@ -29,6 +29,7 @@
     init() {
       B.Chart.init($('chart'));
       B.Ticket.init();
+      window.addEventListener('resize', () => this.placeNote());
 
       onPress($('watch-list'), (e) => {
         const row = e.target.closest('.wl-row');
@@ -441,11 +442,27 @@
       }
       el.innerHTML = `<b>${B.esc(n.from)}</b><span>${B.esc(n.text)}</span>`;
       el.hidden = false;
+      this.placeNote();
       this.noteOn = true;
       B.SFX.news();
       // Long enough to read: about 55ms a character, never under five seconds.
       clearTimeout(this.noteTimer);
       this.noteTimer = setTimeout(() => this.nextNote(), Math.max(5000, n.text.length * 55));
+    },
+    // On a desk layout the note sits at the foot of the comms monitor, over
+    // the oldest feed items, so it never covers positions or the chart.
+    // Phones keep the CSS placement: there the comms monitor is off screen.
+    placeNote() {
+      const el = document.getElementById('mentor-note');
+      if (!el || el.hidden) return;
+      const scr = document.querySelector('#mon-right .screen');
+      const r = scr && scr.getBoundingClientRect();
+      const docked = r && r.width > 0 && !window.matchMedia('(max-width: 820px)').matches;
+      el.classList.toggle('docked', !!docked);
+      if (!docked) { el.style.left = el.style.width = el.style.bottom = ''; return; }
+      el.style.left = Math.round(r.left + 8) + 'px';
+      el.style.width = Math.round(r.width - 16) + 'px';
+      el.style.bottom = Math.round(window.innerHeight - r.bottom + 8) + 'px';
     },
     clearNotes() {
       this.noteQueue = [];

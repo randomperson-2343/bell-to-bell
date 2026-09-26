@@ -544,7 +544,8 @@
                 notes.push(`<b>Weekly quota missed:</b> ${B.fmt.money(made, true)} against ${B.fmt.money(W.target)}. Career strike ${S.quotaStrikes} of ${QUOTA_STRIKE_LIMIT}.${strikeWarning()} The week resets Monday.`);
               }
             }
-          } else {
+          } else if (!(r.earlyEnd === 'wiped' || r.equity < capital * 0.1)) {
+            // A wiped-out book ends the career tonight: no week left to plan for.
             const need = W.target - made;
             const left = W.end - g.day;
             notes.push(need > 0

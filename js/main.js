@@ -86,7 +86,8 @@
         }
       }
       // The CASCADE mark begins aligned and slips as it falls toward the skyline.
-      for (let i = 0; i < 6; i++) {
+      // Below 560px wide it would land behind the menu buttons, so it sits out.
+      if (window.innerWidth >= 560) for (let i = 0; i < 6; i++) {
         const y = 113 + i * 8;
         X.rect(ctx, 384 + i * 3, y, 54 - i * 4, 4, i < 2 ? P.amberD : i < 4 ? P.sky : P.crimsonD);
       }
