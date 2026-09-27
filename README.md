@@ -79,7 +79,7 @@ js/game.js              day lifecycle, player actions, snapshot/restore
 js/ui/                  chart, order ticket, HUD, screens, save slots, debug overlay
 js/modes/story/         61 sessions, pre-open feeds, 10 decisions, story engine, 22 endings
 js/modes/endless/       presets, config screen, regimes, end conditions, leaderboard
-js/tests/               test suite + headless runners
+js/tests/               test suite, headless runners and their shared loader
 ```
 
 ## Testing

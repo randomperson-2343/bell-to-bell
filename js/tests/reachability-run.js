@@ -1,25 +1,8 @@
 // Fast chronological ending reachability harness.
 // It advances the real StoryMode through all 61 sessions, applies the shipped
 // choice functions on their actual dates, and resolves through onDayEnd.
-const fs = require('fs');
-const path = require('path');
-const vm = require('vm');
-const root = path.join(__dirname, '..', '..');
-const ctx = { console, Math, Date, JSON, Intl, performance: { now: () => Date.now() }, setTimeout: () => 0, setInterval: () => 0, clearInterval: () => {} };
-ctx.window = ctx;
-ctx.localStorage = { getItem: () => null, setItem: () => {}, removeItem: () => {} };
-vm.createContext(ctx);
-const load = (f) => vm.runInContext(fs.readFileSync(path.join(root, f), 'utf8'), ctx, { filename: f });
-[
-  'js/core/util.js','js/core/rng.js','js/core/events.js','js/core/storage.js','js/core/save.js','js/core/clock.js',
-  'js/market/tickers.js','js/market/engine.js','js/market/news.js','js/market/sqwak.js','js/trading/options.js','js/trading/broker.js'
-].forEach(load);
-vm.runInContext(`
-  const B=window.BTB;
-  B.Settings={get:()=>({storyDayLength:180}),set:()=>{}};
-  B.UI=new Proxy({}, {get:()=>()=>{}}); B.SFX=new Proxy({}, {get:()=>()=>{}}); B.Music=new Proxy({}, {get:()=>()=>{}});
-`,ctx);
-['js/modes/story/story-data.js','js/modes/story/sqwak-story.js','js/modes/story/endings.js','js/modes/story/economy.js','js/modes/story/life.js','js/modes/story/mentor.js','js/modes/story/story-engine.js'].forEach(load);
+const { load, STUBS } = require('./harness');
+const ctx = load({ groups: ['core', 'market', 'trading', 'story'], setup: STUBS.story });
 const B=ctx.BTB, D=B.StoryData;
 const ORDER=Object.keys(D.CHOICES).sort((a,b)=>D.CHOICES[a].day-D.CHOICES[b].day);
 const clone=(o)=>JSON.parse(JSON.stringify(o));
