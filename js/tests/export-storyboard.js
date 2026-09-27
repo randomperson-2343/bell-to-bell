@@ -16,7 +16,7 @@ function load(file) { vm.runInContext(fs.readFileSync(path.join(root, file), 'ut
   'js/art/scenes.js', 'js/art/rhythm.js', 'js/art/storyboard.js', 'js/art/decisions.js',
   'js/market/tickers.js', 'js/market/sqwak.js',
   'js/modes/story/story-data.js', 'js/modes/story/sqwak-story.js',
-  'js/modes/story/endings.js', 'js/modes/story/patch3-endings.js',
+  'js/modes/story/endings.js', 
   'js/modes/story/economy.js', 'js/modes/story/life.js'
 ].forEach(load);
 const B = context.BTB, V = B.Rhythm.view, manifest = [], previews = {};
