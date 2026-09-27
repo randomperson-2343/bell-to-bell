@@ -448,7 +448,6 @@ input.short { width: 72px; }
 .quota-order { border: 2px solid var(--c-amber-d); background: rgba(210, 168, 92, .07); padding: 10px 12px; margin: 0 0 14px; }
 .quota-order > span { color: var(--c-amber); font-family: var(--pixel); font-size: 10px; letter-spacing: .048em; }
 .quota-order p { color: var(--c-bone); font-family: var(--mono); font-size: 13px; line-height: 1.6; margin: 7px 0 0; }
-.anomaly-help { border-left: 3px solid var(--c-violet); padding: 7px 10px; background: rgba(150,136,182,.08); color: var(--c-putty); font-family: var(--mono); font-size: 10px; }
 .eod-big { font-size: 36px; font-weight: 800; text-align: center; margin: 6px 0; }
 .stamp { display: inline-block; font-weight: 700; letter-spacing: .12em; padding: 4px 10px; border: 3px solid; font-size: 12px; }
 .stamp.good { color: var(--up); }

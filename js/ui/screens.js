@@ -156,14 +156,13 @@
         ${b.weekQuota ? `<div class="stat quota-stat week-stat"><div class="l">Weekly quota</div><div class="v">${F.money(b.weekQuota.target)}</div><div class="quota-delta">${F.money(b.weekQuota.made, true)} so far · ${b.weekQuota.left} session${b.weekQuota.left === 1 ? '' : 's'} left</div></div>` : ''}
         ${b.quotaStrikes ? `<div class="stat strike-stat"><div class="l">Career strikes</div><div class="v">${b.quotaStrikes.count} / ${b.quotaStrikes.limit}</div></div>` : ''}
       </div>`;
-      const anomalyHelp = b.anomalyCount == null ? '' : '<p class="anomaly-help"><b>Anomalies</b> are unusual details hidden in pre-open items. Open a suspicious item to inspect it. Enough verified anomalies can unlock the final systems decision.</p>';
       const mandate = b.quotaMeta ? `<div class="quota-order"><span>DESK MANDATE</span><p>${B.esc(b.quotaMeta.memo)}</p></div>` : '';
       B.Music.play('brief');
       const opened = new Set();
       const el = this.modal({
         kicker: `${b.kicker || ''} ${dateLabel}`,
         title: b.title,
-        body: `<div class="briefing-layout">${phone}<div class="briefing-dossier">${stats + anomalyHelp + mandate + (b.html || '') + rules}</div></div>`,
+        body: `<div class="briefing-layout">${phone}<div class="briefing-dossier">${stats + mandate + (b.html || '') + rules}</div></div>`,
         wide: true,
         buttons: [
           { label: 'Menu', onClick: () => this.pauseFromBriefing(g, b, onGo), cls: 'ghost' },

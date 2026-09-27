@@ -553,11 +553,16 @@
               : `Week so far: ${B.fmt.money(made, true)}. Weekly quota of ${B.fmt.money(W.target)} already cleared. Hold it through Friday.`);
           }
         }
-        notes.push(...this.payroll(g, r));
-        if (r.earlyEnd === 'wiped' || r.equity < capital * 0.1) return { notes, ending: this.buildEnding(g, 'wiped') };
-        if (S.quotaStrikes >= QUOTA_STRIKE_LIMIT) return { notes, ending: this.buildEnding(g, 'fired') };
+        const wiped = r.earlyEnd === 'wiped' || r.equity < capital * 0.1;
+        const fired = S.quotaStrikes >= QUOTA_STRIKE_LIMIT;
         // Kroll can fire you, but not in the final week: by then the ending is yours.
-        if (!S.f.defected && S.rel.kroll <= 0 && g.day < BOSS_FIRE_LAST) return { notes, ending: this.buildEnding(g, 'fired', 'boss') };
+        const bossFired = !S.f.defected && S.rel.kroll <= 0 && g.day < BOSS_FIRE_LAST;
+        // On the career's last night there is no next week for a bonus cut to land in.
+        const final = wiped || fired || bossFired || g.day === D.DAYS.length - 1;
+        notes.push(...this.payroll(g, r, final));
+        if (wiped) return { notes, ending: this.buildEnding(g, 'wiped') };
+        if (fired) return { notes, ending: this.buildEnding(g, 'fired') };
+        if (bossFired) return { notes, ending: this.buildEnding(g, 'fired', 'boss') };
         const mood = this.bossMood();
         if (!S.f.defected && mood.warn && g.day < BOSS_FIRE_LAST) notes.push(`<b>${D.boss(S)} is losing patience with you (${mood.value}/100).</b> Missed calls and blown client orders cost you with him. At zero, you are out.`);
         if (g.day % 5 === 4 && g.day < D.DAYS.length - 1) {
@@ -593,7 +598,7 @@
         return r.riskReview;
       },
 
-      payroll(g, r) {
+      payroll(g, r, final) {
         const out = [];
         const b = g.broker;
         const rv = this.riskReview(g, r);
@@ -606,7 +611,7 @@
           W$.peakEq = Math.max(W$.peakEq, r.equity, b.dayPeak || 0);
         }
         r.riskReview = rv;
-        out.push(E.reviewNote(rv));
+        out.push(E.reviewNote(rv, final));
         const last = g.day === D.DAYS.length - 1;
         if (g.day % 5 !== 4 && !last) return out;
         const wk = D.weekOf(g.day);

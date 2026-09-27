@@ -139,14 +139,15 @@
     return Math.max(0, 1 - n * P.breachCut);
   }
 
-  function reviewNote(rv) {
+  // final: the career ends tonight, so name the breaches without the bonus cuts.
+  function reviewNote(rv, final) {
     if (!rv.breaches.length) {
       return rv.hitLimit
         ? '<b>Risk desk review:</b> hit the daily loss limit and stopped. That is the job. No breaches.'
         : '<b>Risk desk review:</b> clean. No breaches.';
     }
     const bare = (t) => t.replace(/\.$/, '');
-    const items = rv.breaches.map((b) => b.zero ? `${bare(b.text)}. <b>No bonus this week.</b>` : `${bare(b.text)}: <b>-${Math.round(P.breachCut * 100)}% bonus this week and next.</b>`);
+    const items = rv.breaches.map((b) => final ? `${bare(b.text)}.` : b.zero ? `${bare(b.text)}. <b>No bonus this week.</b>` : `${bare(b.text)}: <b>-${Math.round(P.breachCut * 100)}% bonus this week and next.</b>`);
     return `<b>Risk desk review:</b> ${items.join(' ')}`;
   }
 
