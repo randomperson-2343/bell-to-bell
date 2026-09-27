@@ -220,20 +220,6 @@ body[data-act="endless"] #story-art { display: none; }
               rgba(160, 30, 48, calc(var(--stress) * var(--fx) * 0.20));
 }
 
-/* ---------- focus mode: strip the furniture ---------- */
-body.focus #wall,
-body.focus #desk { display: none; }
-body.focus #office { grid-template-rows: minmax(0, 1fr); }
-body.focus #desk-top { padding: 4px; gap: 4px; }
-body.focus .monitor { border-width: 2px; box-shadow: none; padding: 2px 2px 0; }
-body.focus .bezel-top,
-body.focus .bezel-bottom { display: none; }
-#focus-bar { display: none; }
-body.focus #focus-bar {
-  display: flex; gap: 6px; position: fixed; right: 8px; bottom: 8px; z-index: 45;
-}
-body.focus #focus-bar .desk-btn { min-height: 36px; box-shadow: 2px 2px 0 rgba(0, 0, 0, .35); }
-
 /* ---------- responsive ---------- */
 @media (max-width: 1240px) {
   #desk-top { grid-template-columns: minmax(0, 1fr) 290px; }
@@ -252,6 +238,9 @@ body.focus #focus-bar .desk-btn { min-height: 36px; box-shadow: 2px 2px 0 rgba(0
   .wall-clock { font-size: 16px; }
   .act-plate { display: none; }
   #story-art { width: 128px; }
+  #term-stats .st { padding: 4px 7px; }
+  #term-stats .st.big { min-width: 118px; }
+  #term-stats .st.meter { min-width: 108px; }
 }
 @media (max-width: 820px) {
   html, body { overflow: auto; }

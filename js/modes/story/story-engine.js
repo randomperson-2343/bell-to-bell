@@ -21,6 +21,8 @@
   const CASCADE_NAMES = ['BSTN', 'HLST', 'RDGW', 'FRLN', 'AMVL'];
   // Your boss can fire you through session 57. After that he can only shout.
   const BOSS_FIRE_LAST = 57;
+  // The Ledger costs $30 a week on day one and follows the quota curve up.
+  const LEDGER_BASE = 30;
   // A loss-limit stop can excuse a missed quota once a week, if it comes before 3:00 PM.
   const EXCUSE_BEFORE = 330;
 
@@ -125,8 +127,77 @@
           weekQuota: g && g.broker ? (this.openWeek(g), this.weekQuota(g)) : null,
           quota: this.quota(d, g),
           quotaMeta: qm,
+          ledger: this.ledger(d),
           rules
         };
+      },
+
+      // ---- The Ledger: a paid morning desk note ----
+      // Optional foresight, paid from your own money. The price follows the
+      // quota curve up and never comes back down: the edge gets dearer as the
+      // story gets worse. It never touches the book, the story or the endings.
+      ledgerPrice(d) {
+        let peak = 0;
+        for (let i = 0; i <= Math.min(d, D.QUOTAS.length - 1); i++) peak = Math.max(peak, D.QUOTAS[i]);
+        return Math.round(LEDGER_BASE * peak / D.QUOTAS[0] / 5) * 5;
+      },
+      // The share of a week's price owed from session d to that week's end.
+      ledgerCharge(d) {
+        const first = (D.weekOf(d) - 1) * 5;
+        const left = Math.min(first + 5, D.DAYS.length) - d;
+        return Math.max(1, Math.round(this.ledgerPrice(d) * left / 5));
+      },
+      ledgerAccess(d) { return !!W$.ledgerSub || W$.ledgerPaidWeek === D.weekOf(d); },
+      ledger(d) {
+        return {
+          price: this.ledgerPrice(d), charge: this.ledgerCharge(d),
+          subscribed: !!W$.ledgerSub, access: this.ledgerAccess(d),
+          cash: W$.cash, note: this.ledgerAccess(d) ? this.ledgerNote(d) : null
+        };
+      },
+      ledgerSubscribe(g) {
+        const d = g.day;
+        if (W$.ledgerSub) return this.ledger(d);
+        // Still inside a week already paid for: resume without paying twice.
+        if (W$.ledgerPaidWeek !== D.weekOf(d)) {
+          const amt = this.ledgerCharge(d);
+          E.charge(W$, amt);
+          W$.ledgerPaidWeek = D.weekOf(d);
+          W$.ledgerSpent = (W$.ledgerSpent || 0) + amt;
+        }
+        W$.ledgerSub = { since: d };
+        S.log.push({ day: d, text: 'Subscribed to The Ledger' });
+        return this.ledger(d);
+      },
+      ledgerCancel(g) {
+        W$.ledgerSub = null;
+        return this.ledger(g.day);
+      },
+      // Built from the session's own authored schedule, so it is true and it
+      // replays identically: which way the tape leans and the one or two
+      // biggest scheduled moves, with the name, the direction and an hour.
+      ledgerNote(d) {
+        const sc = D.DAYS[d].scen(S);
+        const target = (sc.market && sc.market.target) || 0;
+        const lean = target > 0.002 ? 'Our desk leans <b>higher</b> into the close.'
+          : target < -0.002 ? 'Our desk leans <b>lower</b> into the close.'
+          : 'Our desk expects <b>little net change</b> by the close.';
+        const main = (e) => e.impacts.reduce((a, b) => (Math.abs(b.pct) > Math.abs(a.pct) ? b : a));
+        const picks = (sc.events || [])
+          .filter((e) => e.t > 0 && e.kind !== 'chirp' && e.impacts && e.impacts.length)
+          .sort((a, b) => Math.abs(main(b).pct) - Math.abs(main(a).pct) || a.t - b.t)
+          .slice(0, 2)
+          .sort((a, b) => a.t - b.t);
+        const lines = picks.map((e) => {
+          const im = main(e);
+          const tk = im.scope === 'ticker' && B.TICKERS.find((t) => t.sym === im.id);
+          const who = tk ? `${tk.name} (${tk.sym})` : im.scope === 'sector' ? `${(B.SECTORS[im.id] || { name: im.id }).name} names` : 'The whole market';
+          const size = Math.abs(im.pct) >= 0.05 ? 'sharply ' : Math.abs(im.pct) < 0.01 ? 'slightly ' : '';
+          const from = Math.max(0, Math.floor((e.t - 30) / 15) * 15);
+          const to = Math.min(B.DAY_MIN, from + 60);
+          return `${who} should trade ${size}<b>${im.pct > 0 ? 'higher' : 'lower'}</b> between ${B.Calendar.fmtTime(from)} and ${B.Calendar.fmtTime(to)}.`;
+        });
+        return { title: 'Desk note: what our traders expect today', lines: [lean].concat(lines.length ? lines : ['No scheduled catalyst. Trade the tape, not the calendar.']) };
       },
 
       rules(d) {
@@ -544,7 +615,8 @@
                 notes.push(`<b>Weekly quota missed:</b> ${B.fmt.money(made, true)} against ${B.fmt.money(W.target)}. Career strike ${S.quotaStrikes} of ${QUOTA_STRIKE_LIMIT}.${strikeWarning()} The week resets Monday.`);
               }
             }
-          } else {
+          } else if (!(r.earlyEnd === 'wiped' || r.equity < capital * 0.1)) {
+            // A wiped-out book ends the career tonight: no week left to plan for.
             const need = W.target - made;
             const left = W.end - g.day;
             notes.push(need > 0
@@ -552,11 +624,16 @@
               : `Week so far: ${B.fmt.money(made, true)}. Weekly quota of ${B.fmt.money(W.target)} already cleared. Hold it through Friday.`);
           }
         }
-        notes.push(...this.payroll(g, r));
-        if (r.earlyEnd === 'wiped' || r.equity < capital * 0.1) return { notes, ending: this.buildEnding(g, 'wiped') };
-        if (S.quotaStrikes >= QUOTA_STRIKE_LIMIT) return { notes, ending: this.buildEnding(g, 'fired') };
+        const wiped = r.earlyEnd === 'wiped' || r.equity < capital * 0.1;
+        const fired = S.quotaStrikes >= QUOTA_STRIKE_LIMIT;
         // Kroll can fire you, but not in the final week: by then the ending is yours.
-        if (!S.f.defected && S.rel.kroll <= 0 && g.day < BOSS_FIRE_LAST) return { notes, ending: this.buildEnding(g, 'fired', 'boss') };
+        const bossFired = !S.f.defected && S.rel.kroll <= 0 && g.day < BOSS_FIRE_LAST;
+        // On the career's last night there is no next week for a bonus cut to land in.
+        const final = wiped || fired || bossFired || g.day === D.DAYS.length - 1;
+        notes.push(...this.payroll(g, r, final));
+        if (wiped) return { notes, ending: this.buildEnding(g, 'wiped') };
+        if (fired) return { notes, ending: this.buildEnding(g, 'fired') };
+        if (bossFired) return { notes, ending: this.buildEnding(g, 'fired', 'boss') };
         const mood = this.bossMood();
         if (!S.f.defected && mood.warn && g.day < BOSS_FIRE_LAST) notes.push(`<b>${D.boss(S)} is losing patience with you (${mood.value}/100).</b> Missed calls and blown client orders cost you with him. At zero, you are out.`);
         if (g.day % 5 === 4 && g.day < D.DAYS.length - 1) {
@@ -592,7 +669,7 @@
         return r.riskReview;
       },
 
-      payroll(g, r) {
+      payroll(g, r, final) {
         const out = [];
         const b = g.broker;
         const rv = this.riskReview(g, r);
@@ -605,7 +682,7 @@
           W$.peakEq = Math.max(W$.peakEq, r.equity, b.dayPeak || 0);
         }
         r.riskReview = rv;
-        out.push(E.reviewNote(rv));
+        out.push(E.reviewNote(rv, final));
         const last = g.day === D.DAYS.length - 1;
         if (g.day % 5 !== 4 && !last) return out;
         const wk = D.weekOf(g.day);
@@ -626,6 +703,15 @@
         W$.weeks[wk] = { net: res.net, bonus: res.bonus, draw: res.draw };
         W$.stressNext = (W$.stressNext || 0) + res.stress;
         r.payslip = res;
+        // The Ledger renews on Friday for the week ahead, at next week's price.
+        if (W$.ledgerSub && !last && !final) {
+          const amt = this.ledgerCharge(g.day + 1);
+          E.charge(W$, amt);
+          W$.ledgerPaidWeek = D.weekOf(g.day + 1);
+          W$.ledgerSpent = (W$.ledgerSpent || 0) + amt;
+          const up = this.ledgerPrice(g.day + 1) - this.ledgerPrice(g.day);
+          res.lines.push(`<b>The Ledger:</b> ${B.fmt.money(amt)} for next week's desk notes${up > 0 ? `, up ${B.fmt.money(up)} a week` : ''}. Cancel from the morning phone.`);
+        }
         return out.concat(res.lines);
       },
 

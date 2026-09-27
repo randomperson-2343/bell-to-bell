@@ -10,8 +10,7 @@
     music: true, musicVolume: 0.45,
     effects: 'full',        // full | reduced | off
     cinematics: 'full',     // full | short | off
-    storyDayLength: 180,
-    focusMode: false
+    storyDayLength: 180
   };
 
   B.Settings = {
@@ -123,7 +122,7 @@
       const rules = b.rules && b.rules.length ? `<div class="rules-list">${b.rules.map((r) => `<div>&#9656; ${r}</div>`).join('')}</div>` : '';
       // Sqwak posts show as posts (avatar, name, handle); everything else keeps
       // its channel label. Reply text stays hidden until the item is opened.
-      const feed = (b.feed || []).map((item, i) => {
+      const feedHTML = () => (b.feed || []).map((item, i) => {
         const kind = B.esc(item.kind || 'wire');
         const src = item.src || (item.kind === 'chirp' ? item.source : null);
         if (src && B.Sqwak && String(src).charAt(0) === '@') {
@@ -135,18 +134,43 @@
             <p hidden>${B.esc(item.text || '')}</p>
           </button>`;
         }
+        const paywalled = item.locked && !(b.ledger && b.ledger.access);
+        const text = !item.locked ? item.text
+          : b.ledger && b.ledger.access ? 'Subscriber piece. The trading read is in this morning\'s desk note, top of the feed.'
+          : b.ledger ? 'Behind The Ledger\'s paywall. Subscribe from the desk note at the top of the feed.' : item.text;
         return `<button class="preopen-item ${kind}" data-feed-item="${i}">
-        <span><b>${B.esc(item.source || 'THE WIRE')}</b>${item.locked ? ' · PAYWALLED' : ''}</span>
+        <span><b>${B.esc(item.source || 'THE WIRE')}</b>${paywalled ? ' · PAYWALLED' : ''}</span>
         <strong>${B.esc(item.title || 'Before the bell')}</strong>
-        <p hidden>${B.esc(item.text || '')}</p>
+        <p hidden>${B.esc(text || '')}</p>
       </button>`;
       }).join('');
+      // The Ledger's desk note always leads the phone: locked with an offer,
+      // or open with the day's read once you pay for it.
+      const ledgerHTML = (L, open) => {
+        if (!L) return '';
+        const price = `${F.money(L.price)}/week`;
+        let body;
+        if (L.access) {
+          body = L.note.lines.map((x) => `<p>${x}</p>`).join('') + (L.subscribed
+            ? `<div class="ledger-act"><span>Subscribed · ${price} · renews Friday</span><button class="btn ghost" data-ledger="cancel">Cancel</button></div>`
+            : `<div class="ledger-act"><span>Cancelled · reads until Friday</span><button class="btn" data-ledger="sub">Resubscribe</button></div>`);
+        } else {
+          body = `<p>Every morning: which way the tape leans, and the day's biggest scheduled moves with the name, the direction and the hour.</p>
+            <p>${price} from your own money${L.charge !== L.price ? `, ${F.money(L.charge)} for the rest of this week` : ''}. The price rises as the story goes on. You have ${F.money(L.cash)}.</p>
+            <div class="ledger-act"><span>Not advice. Usually right.</span><button class="btn primary" data-ledger="sub">Subscribe · ${F.money(L.charge)}</button></div>`;
+        }
+        return `<div class="preopen-item ledger${open ? ' opened' : ''}">
+          <button class="ledger-head" data-ledger="toggle"><span><b>THE LEDGER</b>${L.access ? ' · SUBSCRIBER' : ' · PAYWALLED'}</span><strong>${L.access ? B.esc(L.note.title) : 'Desk note: what our traders expect today'}</strong></button>
+          <div class="ledger-body"${open ? '' : ' hidden'}>${body}</div>
+        </div>`;
+      };
+      const feed = b.feed && b.feed.length ? feedHTML() : '';
       const phone = feed ? `<section class="preopen-device" aria-label="Pre-open phone feed">
         <div class="preopen-speaker" aria-hidden="true"></div>
         <div class="preopen-screen">
           <div class="preopen-status"><span>6:38</span><i></i><span>LTE&nbsp;▮▮▮</span></div>
           <div class="preopen-top"><span class="sq-logo">sqwak</span>${b.anomalyCount == null ? '<b>NOTIFICATIONS</b>' : `<b>ANOMALIES: ${b.anomalyCount}</b>`}</div>
-          <div class="preopen-scroll">${feed}</div>
+          <div class="preopen-scroll">${ledgerHTML(b.ledger, false) + feed}</div>
         </div>
         <div class="preopen-home" aria-hidden="true"></div>
       </section>` : '';
@@ -157,14 +181,13 @@
         ${b.weekQuota ? `<div class="stat quota-stat week-stat"><div class="l">Weekly quota</div><div class="v">${F.money(b.weekQuota.target)}</div><div class="quota-delta">${F.money(b.weekQuota.made, true)} so far · ${b.weekQuota.left} session${b.weekQuota.left === 1 ? '' : 's'} left</div></div>` : ''}
         ${b.quotaStrikes ? `<div class="stat strike-stat"><div class="l">Career strikes</div><div class="v">${b.quotaStrikes.count} / ${b.quotaStrikes.limit}</div></div>` : ''}
       </div>`;
-      const anomalyHelp = b.anomalyCount == null ? '' : '<p class="anomaly-help"><b>Anomalies</b> are unusual details hidden in pre-open items. Open a suspicious item to inspect it. Enough verified anomalies can unlock the final systems decision.</p>';
       const mandate = b.quotaMeta ? `<div class="quota-order"><span>DESK MANDATE</span><p>${B.esc(b.quotaMeta.memo)}</p></div>` : '';
       B.Music.play('brief');
       const opened = new Set();
       const el = this.modal({
         kicker: `${b.kicker || ''} ${dateLabel}`,
         title: b.title,
-        body: `<div class="briefing-layout">${phone}<div class="briefing-dossier">${stats + anomalyHelp + mandate + (b.html || '') + rules}</div></div>`,
+        body: `<div class="briefing-layout">${phone}<div class="briefing-dossier">${stats + mandate + (b.html || '') + rules}</div></div>`,
         wide: true,
         buttons: [
           { label: 'Menu', onClick: () => this.pauseFromBriefing(g, b, onGo), cls: 'ghost' },
@@ -179,7 +202,31 @@
           } }
         ]
       });
-      el.querySelectorAll('[data-feed-item]').forEach((node) => node.addEventListener('click', () => {
+      const scrollEl = el.querySelector('.preopen-scroll');
+      let ledgerOpen = false;
+      const rerender = () => {
+        scrollEl.innerHTML = ledgerHTML(b.ledger, ledgerOpen) + feedHTML();
+        scrollEl.querySelectorAll('[data-feed-item]').forEach((n) => { if (opened.has(+n.dataset.feedItem)) n.classList.add('opened'); });
+      };
+      if (scrollEl) scrollEl.addEventListener('click', (e) => {
+        const act = e.target.closest('[data-ledger]');
+        if (act && g.mode.ledgerSubscribe) {
+          B.SFX.click();
+          const a = act.dataset.ledger;
+          if (a === 'toggle') ledgerOpen = !ledgerOpen;
+          else if (a === 'sub') {
+            b.ledger = g.mode.ledgerSubscribe(g); ledgerOpen = true; B.SFX.news();
+            // Keep the briefing's money line honest about what was just paid.
+            el.querySelectorAll('.rules-list > div').forEach((row) => {
+              row.innerHTML = row.innerHTML.replace(/Your money: [^ ]+ cash/, () => `Your money: ${F.money(b.ledger.cash)} cash`);
+            });
+          }
+          else if (a === 'cancel') b.ledger = g.mode.ledgerCancel(g);
+          rerender();
+          return;
+        }
+        const node = e.target.closest('[data-feed-item]');
+        if (!node) return;
         B.SFX.click();
         const i = +node.dataset.feedItem;
         const item = b.feed[i];
@@ -192,7 +239,7 @@
           const count = el.querySelector('.preopen-top b');
           if (count && item.anomalyId) count.textContent = `ANOMALIES: ${g.mode.S.anomalies}`;
         }
-      }));
+      });
     },
 
     pauseFromBriefing(g, b, onGo) {

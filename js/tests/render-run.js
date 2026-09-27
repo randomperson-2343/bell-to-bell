@@ -1,16 +1,14 @@
 // Native canvas snapshot and perceptual-regression harness.
 // NODE_PATH=<runtime node_modules> node js/tests/render-run.js
-const fs=require('fs'),path=require('path'),vm=require('vm'),crypto=require('crypto');
+const fs=require('fs'),path=require('path'),crypto=require('crypto');
+const {load}=require('./harness');
 const {createCanvas}=require('@napi-rs/canvas');
 const root=process.env.PROJECT_ROOT||path.join(__dirname,'..','..');
 const evidence=process.env.EVIDENCE_DIR||path.join(root,'qa','evidence');
 const prefix=process.env.EVIDENCE_PREFIX||'after';
 const captureOnly=process.argv.includes('--capture-only');
 fs.mkdirSync(evidence,{recursive:true});
-const ctx={console,Math,Date,JSON,Intl,performance};ctx.window=ctx;vm.createContext(ctx);
-const load=(f)=>vm.runInContext(fs.readFileSync(path.join(root,f),'utf8'),ctx,{filename:f});
-['js/core/util.js','js/core/rng.js','js/core/clock.js','js/art/palette.js','js/art/pixel.js','js/art/portraits.js','js/art/scenes.js','js/art/rhythm.js','js/art/storyboard.js','js/art/decisions.js'].forEach(load);
-const B=ctx.BTB;
+const B=load({groups:['core','art']}).BTB;
 function render(beat,opts){const v=beat.view||B.Scenes.V,cv=createCanvas(v.w,v.h),c=cv.getContext('2d');c.imageSmoothingEnabled=false;beat.draw(c,v,1,opts||{});return cv;}
 function digest(cv){const c=cv.getContext('2d'),d=c.getImageData(0,0,cv.width,cv.height).data;return crypto.createHash('sha256').update(Buffer.from(d)).digest('hex').slice(0,20);}
 const titleBeat=(o)=>{const bs=B.Scenes.news(o);return bs.find((b)=>b.informative)||bs[bs.length-1];};

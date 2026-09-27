@@ -1,24 +1,14 @@
 // Export every authored storyboard beat at its native 640x360 resolution.
 // NODE_PATH=<runtime node_modules> node js/tests/export-storyboard.js <output dir>
-const fs = require('fs'), path = require('path'), vm = require('vm');
+const fs = require('fs'), path = require('path');
+const { load } = require('./harness');
 const { createCanvas } = require('@napi-rs/canvas');
 const root = path.join(__dirname, '..', '..');
 const output = path.resolve(process.argv[2] || path.join(root, 'qa', 'storyboard-export'));
 fs.mkdirSync(output, { recursive: true });
 for (const group of ['news', 'phone', 'close', 'weekends', 'endings', 'decisions', 'variants', 'housing'])
   fs.rmSync(path.join(output, group), { recursive: true, force: true });
-const context = { console, Math, Date, JSON, Intl, performance };
-context.window = context; vm.createContext(context);
-function load(file) { vm.runInContext(fs.readFileSync(path.join(root, file), 'utf8'), context, { filename: file }); }
-[
-  'js/core/util.js', 'js/core/rng.js', 'js/core/clock.js',
-  'js/art/palette.js', 'js/art/pixel.js', 'js/art/portraits.js',
-  'js/art/scenes.js', 'js/art/rhythm.js', 'js/art/storyboard.js', 'js/art/decisions.js',
-  'js/market/tickers.js', 'js/market/sqwak.js',
-  'js/modes/story/story-data.js', 'js/modes/story/patch3-data.js', 'js/modes/story/sqwak-story.js',
-  'js/modes/story/endings.js', 'js/modes/story/patch3-endings.js',
-  'js/modes/story/economy.js', 'js/modes/story/life.js'
-].forEach(load);
+const context = load({ groups: ['core', 'art', 'market', 'story'] });
 const B = context.BTB, V = B.Rhythm.view, manifest = [], previews = {};
 const safe = value => String(value).replace(/[^a-zA-Z0-9_-]+/g, '-').replace(/^-|-$/g, '').slice(0, 64);
 function save(group, name, beat, opts) {

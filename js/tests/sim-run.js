@@ -1,29 +1,12 @@
 // Headless full-game simulation: node js/tests/sim-run.js
 // Plays complete Story and Endless runs with a bot trader to catch runtime errors and check endings.
-const fs = require('fs');
-const path = require('path');
-const vm = require('vm');
+const { load: loadGame, STUBS } = require('./harness');
 
-const root = path.join(__dirname, '..', '..');
+// Screens record the closing memos and answer every decision from a policy.
 function load() {
-  const store = {};
-  const ctx = {
-    console, Math, Date, JSON, Intl, performance: { now: () => Date.now() },
-    localStorage: { getItem: (k) => (k in store ? store[k] : null), setItem: (k, v) => { store[k] = String(v); }, removeItem: (k) => { delete store[k]; } }
-  };
-  ctx.window = ctx;
-  vm.createContext(ctx);
-  ctx.setInterval = () => 0; ctx.clearInterval = () => {}; ctx.setTimeout = () => 0;
-  const files = ['js/core/util.js', 'js/core/rng.js', 'js/core/events.js', 'js/core/storage.js', 'js/core/save.js', 'js/core/clock.js',
-    'js/market/tickers.js', 'js/market/engine.js', 'js/market/news.js', 'js/market/sqwak.js', 'js/trading/options.js', 'js/trading/broker.js',
-    'js/stress.js', 'js/audio/sfx.js', 'js/audio/music.js', 'js/interrupts.js', 'js/game.js'];
-  for (const f of files) vm.runInContext(fs.readFileSync(path.join(root, f), 'utf8'), ctx, { filename: f });
-  vm.runInContext(`
-    const B = window.BTB;
-    B.Settings = {
-      get: () => ({ storyDayLength: 180, effects: 'off', cinematics: 'off' }),
-      set: () => {}, fx: () => 0, motion: () => false, apply: () => {}
-    };
+  return loadGame({
+    groups: ['core', 'market', 'trading', 'game', 'story', 'endless'],
+    setup: `${STUBS.SETTINGS}
     const noop = () => {};
     B.UI = new Proxy({}, { get: (t, k) => (k === 'snapshotFeed' ? () => ({}) : noop) });
     B.Cinematic = { running: false, play: (n, o, cb) => cb && cb() };
@@ -34,12 +17,8 @@ function load() {
       aftermath(t, x, cb) { cb(); },
       ending(g, e) { this.result = e; },
       closeModal() {},
-      log: [] };
-  `, ctx);
-  for (const f of ['js/modes/story/story-data.js', 'js/modes/story/patch3-data.js', 'js/modes/story/sqwak-story.js', 'js/modes/story/endings.js', 'js/modes/story/patch3-endings.js', 'js/modes/story/economy.js', 'js/modes/story/life.js', 'js/modes/story/mentor.js', 'js/modes/story/story-engine.js', 'js/modes/endless/endless.js']) {
-    vm.runInContext(fs.readFileSync(path.join(root, f), 'utf8'), ctx, { filename: f });
-  }
-  return ctx.BTB;
+      log: [] };`
+  }).BTB;
 }
 
 function bot(B, g, rng, style) {

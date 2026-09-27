@@ -37,6 +37,20 @@
       $('op-exp').addEventListener('change', () => this.renderChain(true));
     },
 
+    // A new or loaded game starts from a clean ticket, so a size, stop or
+    // take-profit typed in the last run never rides along on the next order.
+    reset() {
+      $('tk-qty').value = 100;
+      $('tk-type').value = 'market';
+      $('tk-price').value = '';
+      $('tk-price').disabled = true;
+      $('tk-sl').value = '';
+      $('tk-tp').value = '';
+      $('op-n').value = 5;
+      const stock = document.querySelector('.tk-tabs button[data-tk="stock"]');
+      if (stock && this.tab !== 'stock') stock.click();
+    },
+
     qty() { return Math.max(0, Math.trunc(+$('tk-qty').value || 0)); },
 
     sizePct(pct, side) {

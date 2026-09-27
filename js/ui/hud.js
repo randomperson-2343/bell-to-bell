@@ -29,6 +29,7 @@
     init() {
       B.Chart.init($('chart'));
       B.Ticket.init();
+      window.addEventListener('resize', () => this.placeNote());
 
       onPress($('watch-list'), (e) => {
         const row = e.target.closest('.wl-row');
@@ -104,17 +105,6 @@
       });
       $('btn-coffee').addEventListener('click', () => this.g && this.g.coffee());
       $('btn-pause').addEventListener('click', () => this.g && this.g.togglePause());
-      const touch = () => window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
-      $('btn-focus').addEventListener('click', () => {
-        const on = document.body.classList.toggle('focus');
-        // Touch devices have no Esc key: never bring Focus mode back uninvited.
-        B.Settings.set('focusMode', on && !touch());
-      });
-      $('btn-focus-exit').addEventListener('click', () => {
-        document.body.classList.remove('focus');
-        B.Settings.set('focusMode', false);
-      });
-      $('btn-focus-menu').addEventListener('click', () => this.g && this.g.togglePause());
       $('btn-mute').addEventListener('click', () => {
         const s = B.Settings.get();
         const mute = !!(s.sound || s.music);
@@ -224,10 +214,10 @@
       this.unread = 0;
       this.updateBadge();
       this.lastPx = {};
-      document.body.classList.toggle('focus', !!B.Settings.get().focusMode);
       $('wall-date').textContent = g.mode.kind === 'story' ? B.Calendar.storyLabel(g.day) : B.Calendar.dayInfo(g.day).label;
       this.applyNarrativeSkin(g);
       this.renderMute();
+      B.Ticket.reset();
       B.Screens.show('game');
       this.select('INDX');
     },
@@ -452,11 +442,27 @@
       }
       el.innerHTML = `<b>${B.esc(n.from)}</b><span>${B.esc(n.text)}</span>`;
       el.hidden = false;
+      this.placeNote();
       this.noteOn = true;
       B.SFX.news();
       // Long enough to read: about 55ms a character, never under five seconds.
       clearTimeout(this.noteTimer);
       this.noteTimer = setTimeout(() => this.nextNote(), Math.max(5000, n.text.length * 55));
+    },
+    // On a desk layout the note sits at the foot of the comms monitor, over
+    // the oldest feed items, so it never covers positions or the chart.
+    // Phones keep the CSS placement: there the comms monitor is off screen.
+    placeNote() {
+      const el = document.getElementById('mentor-note');
+      if (!el || el.hidden) return;
+      const scr = document.querySelector('#mon-right .screen');
+      const r = scr && scr.getBoundingClientRect();
+      const docked = r && r.width > 0 && !window.matchMedia('(max-width: 820px)').matches;
+      el.classList.toggle('docked', !!docked);
+      if (!docked) { el.style.left = el.style.width = el.style.bottom = ''; return; }
+      el.style.left = Math.round(r.left + 8) + 'px';
+      el.style.width = Math.round(r.width - 16) + 'px';
+      el.style.bottom = Math.round(window.innerHeight - r.bottom + 8) + 'px';
     },
     clearNotes() {
       this.noteQueue = [];

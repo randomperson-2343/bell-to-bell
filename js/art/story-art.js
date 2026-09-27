@@ -38,13 +38,14 @@
         X.rect(ctx, 49 + slip, 26, 2, 2, P.crimsonD);
       }
 
-      let x = 46;
+      // Props sit 28px apart so a full row still clears the quota note at 128.
+      let x = 44;
       if (f.leaked || f.reported || f.goPublic || f.fraud) {
         X.plate(ctx, x, 5, 27, 20, P.putty2, P.white, P.plasticD);
         X.rect(ctx, x + 4, 9, 18, 1, P.grey);
         X.rect(ctx, x + 4, 13, 16, 1, P.grey);
         X.rect(ctx, x + 4, 18, 19, 3, f.fraud ? P.crimson : P.violet);
-        x += 31;
+        x += 28;
       }
       if (f.regulation || f.dereg || f.whipped || f.whippedAgainst) {
         X.rect(ctx, x + 2, 7, 22, 17, P.sky);
@@ -53,7 +54,7 @@
         X.rect(ctx, x + 11, 11, 3, 11, P.bone);
         X.rect(ctx, x + 17, 11, 3, 11, P.bone);
         X.rect(ctx, x + 3, 8, 20, 2, f.dereg || f.whippedAgainst ? P.crimson : P.bone);
-        x += 31;
+        x += 28;
       }
       if (S.m.heat >= 50 || f.insiderTraded || f.raid) {
         X.plate(ctx, x, 5, 28, 21, P.crimsonD, P.crimson, P.ink);
@@ -63,11 +64,12 @@
 
       // A clipped quota strip turns the rising campaign target into physical
       // pressure on the desk, not just a meter in the terminal.
-      const qx = 136;
-      X.plate(ctx, qx, 1, 24, 24, P.putty2, P.white, P.plasticD);
-      X.rect(ctx, qx + 8, 0, 8, 3, P.slate2);
-      X.text(ctx, 'FLOOR', qx + 12, 5, P.ink2, { align: 'center' });
-      X.text(ctx, ((B.StoryData.QUOTAS[g.day] || 0) * 100).toFixed(1) + '%', qx + 12, 14, P.crimsonD, { align: 'center' });
+      // 32px wide so the 29px FLOOR label sits inside the note, not off its edge.
+      const qx = 128;
+      X.plate(ctx, qx, 1, 32, 24, P.putty2, P.white, P.plasticD);
+      X.rect(ctx, qx + 12, 0, 8, 3, P.slate2);
+      X.text(ctx, 'FLOOR', qx + 16, 5, P.ink2, { align: 'center' });
+      X.text(ctx, ((B.StoryData.QUOTAS[g.day] || 0) * 100).toFixed(1) + '%', qx + 16, 14, P.crimsonD, { align: 'center' });
     }
   };
 })(window.BTB);

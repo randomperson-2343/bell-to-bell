@@ -81,11 +81,14 @@
       ctx.strokeStyle = '#182622';
       ctx.lineWidth = 1;
       const steps = 5;
+      // The last-price tag is 18px tall; an axis label under it would print
+      // through, so labels that close to it give way.
+      const ly = y(tk.last);
       for (let i = 0; i <= steps; i++) {
         const v = lo + (hi - lo) * (i / steps);
         const yy = Math.round(y(v)) + 0.5;
         ctx.beginPath(); ctx.moveTo(0, yy); ctx.lineTo(plotW, yy); ctx.stroke();
-        ctx.fillText(B.fmt.price(v), plotW + 6, yy + 4);
+        if (Math.abs(yy - ly) > 14) ctx.fillText(B.fmt.price(v), plotW + 6, yy + 4);
       }
       // session separator + time labels
       if (tf !== 1 && sepIdx > 0) {
@@ -150,7 +153,6 @@
       }
 
       // last price tag
-      const ly = y(tk.last);
       const upDay = tk.last >= tk.prevClose;
       ctx.fillStyle = upDay ? P.jade : P.crimson;
       ctx.fillRect(plotW + 1, ly - 9, padR - 2, 18);

@@ -1131,6 +1131,44 @@
     assert(legacy.S.wallet && legacy.S.wallet.cash === B.Economy.P.startCash, 'a pre-economy save did not get a fresh wallet');
   });
 
+  test('The Ledger: price follows the quota curve up, bills your own money, renews Friday, tells the truth', () => {
+    const D = B.StoryData;
+    const mode = B.StoryMode(), S = mode.S, W = S.wallet;
+    let prev = 0;
+    for (let d = 0; d < D.DAYS.length; d++) {
+      const p = mode.ledgerPrice(d);
+      assert(p >= prev, 'the Ledger got cheaper on session ' + (d + 1));
+      prev = p;
+    }
+    assert(mode.ledgerPrice(0) === 30 && prev > mode.ledgerPrice(0) * 3, 'price should start at $30 and end well above it: ' + prev);
+    assert(mode.ledger(0).note === null && !mode.ledger(0).access, 'the desk note leaked before paying');
+    // Subscribing midweek pays only for the rest of the week, from the wallet.
+    const broker = { cash: 250000, equity: () => 250000, posQty: () => 0, opts: [], dayTrades: () => [], rules: { maxLev: 4 },
+      dayRisk: { trough: 250000, breachT: null, mc: 0, liq: 0, peakLev: 1 } };
+    const g = { day: 2, history: [], broker, market: { events: [], bySym: { INDX: { last: 500 } } }, indexStart: 500 };
+    const cash0 = W.cash;
+    const L = mode.ledgerSubscribe(g);
+    assert(L.access && L.note && cash0 - W.cash === Math.round(mode.ledgerPrice(2) * 3 / 5), 'a Wednesday subscription should cost three fifths of a week');
+    mode.ledgerSubscribe(g);
+    assert(cash0 - W.cash === Math.round(mode.ledgerPrice(2) * 3 / 5), 'subscribing twice charged twice');
+    // Cancelled: still readable through Friday, gone on Monday, no refund.
+    mode.ledgerCancel(g);
+    assert(mode.ledgerAccess(4) && !mode.ledgerAccess(5), 'a cancelled subscription should read to the end of the paid week only');
+    mode.ledgerSubscribe(g);
+    assert(cash0 - W.cash === Math.round(mode.ledgerPrice(2) * 3 / 5), 'resubscribing inside a paid week charged again');
+    // Friday renews once for next week at next week's price, never from the book.
+    g.day = 4;
+    const r = () => ({ day: 4, date: 'x', pnl: 3000, equity: 250000, start: 247000, quota: 1000, quotaMet: true, eod: { forced: [] } });
+    const v = mode.onDayEnd(g, r());
+    assert(v.notes.some((n) => /The Ledger:/.test(n)) && mode.ledgerAccess(5), 'Friday should renew the Ledger for next week');
+    mode.onDayEnd(g, r());
+    assert(v.notes.filter((n) => /The Ledger:/.test(n)).length === 1 && broker.cash === 250000, 'renewal repeated or touched the book');
+    // The note names the session's real scheduled moves: Fairline files on session 12.
+    const n = mode.ledgerNote(11);
+    assert(n.lines.some((x) => /Fairline Credit \(FRLN\)/.test(x) && /lower/.test(x)), 'session 12 note should call Fairline lower: ' + n.lines.join(' | '));
+    assert(JSON.stringify(mode.ledgerNote(30)) === JSON.stringify(mode.ledgerNote(30)), 'the desk note must replay identically');
+  });
+
   test('Risk desk edge cases: flips open risk, fat fingers and sharp rumours do not breach, options can chase', () => {
     const E = B.Economy;
     const m = new B.Market({ seed: 'econ-edge' });

@@ -3,24 +3,10 @@
 // StoryMode payroll, then checks that the personal economy rewards discipline:
 // a careful average trader must out-earn a reckless one with the same skill,
 // and a trader who makes nothing must be squeezed out of their flat.
-const fs = require('fs');
-const path = require('path');
-const vm = require('vm');
+const { load: loadGame, STUBS } = require('./harness');
 
-const root = path.join(__dirname, '..', '..');
 function load() {
-  const ctx = { console, Math, Date, JSON, Intl, performance: { now: () => Date.now() } };
-  ctx.window = ctx;
-  ctx.localStorage = { getItem: () => null, setItem: () => {}, removeItem: () => {} };
-  ctx.setInterval = () => 0; ctx.clearInterval = () => {}; ctx.setTimeout = () => 0;
-  vm.createContext(ctx);
-  const run = (f) => vm.runInContext(fs.readFileSync(path.join(root, f), 'utf8'), ctx, { filename: f });
-  ['js/core/util.js', 'js/core/rng.js', 'js/core/events.js', 'js/core/storage.js', 'js/core/save.js', 'js/core/clock.js',
-    'js/market/tickers.js', 'js/market/engine.js', 'js/market/news.js', 'js/market/sqwak.js', 'js/trading/options.js', 'js/trading/broker.js'].forEach(run);
-  vm.runInContext('const B = window.BTB; B.Settings = { get: () => ({ storyDayLength: 180 }), set: () => {} }; B.UI = new Proxy({}, { get: () => () => {} }); B.Screens = {};', ctx);
-  ['js/modes/story/story-data.js', 'js/modes/story/patch3-data.js', 'js/modes/story/sqwak-story.js', 'js/modes/story/endings.js',
-    'js/modes/story/patch3-endings.js', 'js/modes/story/economy.js', 'js/modes/story/life.js', 'js/modes/story/mentor.js', 'js/modes/story/story-engine.js'].forEach(run);
-  return ctx.BTB;
+  return loadGame({ groups: ['core', 'market', 'trading', 'story'], setup: STUBS.story }).BTB;
 }
 const B = load();
 const D = B.StoryData, E = B.Economy;
