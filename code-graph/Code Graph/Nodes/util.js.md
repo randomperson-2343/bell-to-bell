@@ -1,0 +1,136 @@
+---
+type: "file"
+source_file: "js/core/util.js"
+line: 1
+community: "Cinematics and Stress"
+tags:
+  - graph/file
+  - community/Cinematics-and-Stress
+---
+
+# util.js
+
+**File** in `js/core/util.js` line 1. Group: [[_COMMUNITY_Cinematics and Stress|Cinematics and Stress]].
+
+## Points to
+- [contains:: [[util.js · cls()]]] _(line 36)_
+- [contains:: [[util.js · compact()]]] _(line 23)_
+- [contains:: [[util.js · money()]]] _(line 15)_
+- [contains:: [[util.js · money2()]]] _(line 19)_
+- [contains:: [[util.js · pct()]]] _(line 31)_
+- [contains:: [[util.js · price()]]] _(line 30)_
+- [contains:: [[util.js · qty()]]] _(line 35)_
+- [creates:: [[BTB namespace (window.BTB)]]] _(line 2)_
+- [publishes to:: [[BTB namespace (window.BTB)]]] _(BTB.DAY_MIN, BTB.clamp, BTB.el, BTB.esc, BTB.fmt, BTB.lerp, BTB.timeAgo)_
+
+## Pointed to by
+- called by ← [[broker.js · Broker.attachBracket()]] _(BTB.clamp · line 182)_
+- called by ← [[cinematic.js · draw()]] _(BTB.clamp · line 116)_
+- called by ← [[debug.js · act()]] _(BTB.clamp · line 37)_
+- called by ← [[economy.js]] _(BTB.clamp · line 61)_
+- called by ← [[endless.js]] _(BTB.clamp · line 82)_
+- called by ← [[endless.js · bind()]] _(BTB.clamp · line 302)_
+- called by ← [[endless.js · briefing()]] _(BTB.esc · line 119)_
+- called by ← [[endless.js · render()]] _(BTB.esc · line 257)_
+- called by ← [[endless.js · summary()]] _(BTB.esc · line 326)_
+- called by ← [[engine.js · Market.fearMult()]] _(BTB.clamp · line 267)_
+- called by ← [[engine.js · Market.priceFor()]] _(BTB.clamp · line 135)_
+- called by ← [[hud.js · lock()]] _(BTB.esc · line 579)_
+- called by ← [[hud.js · nextNote()]] _(BTB.esc · line 443)_
+- called by ← [[hud.js · phoneOpen()]] _(BTB.esc · line 507)_
+- called by ← [[hud.js · phoneRing()]] _(BTB.esc · line 480)_
+- called by ← [[hud.js · refreshPauseSlot()]] _(BTB.timeAgo · line 158)_
+- called by ← [[hud.js · render()]] _(BTB.clamp · line 679)_
+- called by ← [[hud.js · renderBottom()]] _(BTB.esc · line 819)_
+- called by ← [[hud.js · renderFeed()]] _(BTB.esc · line 340)_
+- called by ← [[hud.js · renderTasks()]] _(BTB.esc · line 527)_
+- called by ← [[hud.js · renderWatch()]] _(BTB.esc · line 777)_
+- called by ← [[hud.js · sqwakCard()]] _(BTB.esc · line 358)_
+- called by ← [[hud.js · sqwakMemory()]] _(BTB.esc · line 377)_
+- called by ← [[hud.js · sqwakText()]] _(BTB.esc · line 349)_
+- called by ← [[main.js · newStory()]] _(BTB.esc · line 25)_
+- called by ← [[music.js · fadePresence()]] _(BTB.clamp · line 124)_
+- called by ← [[music.js · setIntensity()]] _(BTB.clamp · line 171)_
+- called by ← [[palette.js]] _(BTB.clamp · line 48)_
+- called by ← [[pixel.js · dither()]] _(BTB.clamp · line 85)_
+- called by ← [[rhythm.js · chart()]] _(BTB.clamp · line 147)_
+- called by ← [[rhythm.js · placeFrame()]] _(BTB.clamp · line 209)_
+- called by ← [[saveslots.js · act()]] _(BTB.esc · line 60)_
+- called by ← [[saveslots.js · row()]] _(BTB.esc · line 32)_
+- called by ← [[scenes.js · close()]] _(BTB.clamp · line 747)_
+- called by ← [[scenes.js · deskCloseup()]] _(BTB.clamp · line 249)_
+- called by ← [[scenes.js · ending()]] _(BTB.clamp · line 764)_
+- called by ← [[scenes.js · news()]] _(BTB.clamp · line 648)_
+- called by ← [[scenes.js · office()]] _(BTB.clamp · line 682)_
+- called by ← [[scenes.js · tradingFloor()]] _(BTB.clamp · line 217)_
+- called by ← [[screens.js · briefing()]] _(BTB.esc · line 126)_
+- called by ← [[screens.js · choice()]] _(BTB.esc · line 329)_
+- called by ← [[screens.js · endlessEnding()]] _(BTB.esc · line 460)_
+- called by ← [[screens.js · prompt()]] _(BTB.esc · line 103)_
+- called by ← [[screens.js · storyEnding()]] _(BTB.esc · line 388)_
+- called by ← [[sfx.js · heartbeat()]] _(BTB.clamp · line 101)_
+- called by ← [[sqwak.js · hype()]] _(BTB.clamp · line 97)_
+- called by ← [[story-data.js]] _(BTB.clamp · line 16)_
+- called by ← [[story-engine.js · onDayEnd()]] _(BTB.clamp · line 641)_
+- called by ← [[story-engine.js · onResqwak()]] _(BTB.clamp · line 312)_
+- called by ← [[storyboard.js · actCard()]] _(BTB.clamp · line 260)_
+- called by ← [[storyboard.js · chart()]] _(BTB.clamp · line 213)_
+- called by ← [[storyboard.js · finePass()]] _(BTB.clamp · line 320)_
+- called by ← [[storyboard.js · insertShot()]] _(BTB.clamp · line 254)_
+- called by ← [[storyboard.js · skylineShot()]] _(BTB.clamp · line 112)_
+- called by ← [[stress.js · Stress.spike()]] _(BTB.clamp · line 29)_
+- called by ← [[stress.js · Stress.startDay()]] _(BTB.clamp · line 19)_
+- called by ← [[stress.js · Stress.update()]] _(BTB.clamp · line 47)_
+- used by ← [[balance-run.js · simulate()]] _(BTB.DAY_MIN · line 44)_
+- used by ← [[broker.js · Broker.endOfDay()]] _(BTB.DAY_MIN · line 398)_
+- used by ← [[chart.js · draw()]] _(BTB.DAY_MIN · line 53)_
+- used by ← [[debug.js]] _(BTB.el · line 4)_
+- used by ← [[debug.js · act()]] _(BTB.DAY_MIN · line 21)_
+- used by ← [[economy-run.js · career()]] _(BTB.DAY_MIN · line 46)_
+- used by ← [[endless.js]] _(BTB.el · line 4)_
+- used by ← [[engine.js]] _(BTB.DAY_MIN · line 8)_
+- used by ← [[game.js · Game.rate()]] _(BTB.DAY_MIN · line 48)_
+- used by ← [[game.js · Game.tick()]] _(BTB.DAY_MIN · line 182)_
+- used by ← [[game.js · Game.warmup()]] _(BTB.DAY_MIN · line 43)_
+- used by ← [[hud.js]] _(BTB.el · line 4)_
+- used by ← [[main.js]] _(BTB.el · line 4)_
+- used by ← [[options.js · T()]] _(BTB.DAY_MIN · line 42)_
+- used by ← [[saveslots.js]] _(BTB.el · line 7)_
+- used by ← [[screens.js]] _(BTB.el · line 4)_
+- used by ← [[story-engine.js · ledgerNote()]] _(BTB.DAY_MIN · line 197)_
+- used by ← [[tests.js]] _(BTB.DAY_MIN · line 569)_
+- used by ← [[tests.js · runDay()]] _(BTB.DAY_MIN · line 27)_
+- used by ← [[ticket.js]] _(BTB.el · line 4)_
+- needed by ← [[balance-run.js]] _(via BTB.DAY_MIN)_
+- needed by ← [[broker.js]] _(via BTB.DAY_MIN, BTB.clamp)_
+- needed by ← [[chart.js]] _(via BTB.DAY_MIN, BTB.fmt)_
+- needed by ← [[cinematic.js]] _(via BTB.clamp)_
+- needed by ← [[debug.js]] _(via BTB.DAY_MIN, BTB.clamp, BTB.el)_
+- needed by ← [[economy-run.js]] _(via BTB.DAY_MIN)_
+- needed by ← [[economy.js]] _(via BTB.clamp, BTB.fmt)_
+- needed by ← [[endings.js]] _(via BTB.fmt)_
+- needed by ← [[endless.js]] _(via BTB.clamp, BTB.el, BTB.esc, BTB.fmt)_
+- needed by ← [[engine.js]] _(via BTB.DAY_MIN, BTB.clamp)_
+- needed by ← [[game.js]] _(via BTB.DAY_MIN, BTB.fmt)_
+- needed by ← [[hud.js]] _(via BTB.clamp, BTB.el, BTB.esc, BTB.fmt, BTB.timeAgo)_
+- needed by ← [[interrupts.js]] _(via BTB.fmt)_
+- needed by ← [[life.js]] _(via BTB.fmt)_
+- needed by ← [[main.js]] _(via BTB.el, BTB.esc, BTB.fmt)_
+- needed by ← [[music.js]] _(via BTB.clamp)_
+- needed by ← [[options.js]] _(via BTB.DAY_MIN)_
+- needed by ← [[palette.js]] _(via BTB.clamp)_
+- needed by ← [[pixel.js]] _(via BTB.clamp)_
+- needed by ← [[rhythm.js]] _(via BTB.clamp, BTB.fmt)_
+- needed by ← [[saveslots.js]] _(via BTB.el, BTB.esc, BTB.fmt, BTB.timeAgo)_
+- needed by ← [[scenes.js]] _(via BTB.clamp, BTB.fmt)_
+- needed by ← [[screens.js]] _(via BTB.el, BTB.esc, BTB.fmt)_
+- needed by ← [[sfx.js]] _(via BTB.clamp)_
+- needed by ← [[sqwak.js]] _(via BTB.clamp)_
+- needed by ← [[story-data.js]] _(via BTB.clamp)_
+- needed by ← [[story-engine.js]] _(via BTB.DAY_MIN, BTB.clamp, BTB.fmt)_
+- needed by ← [[storyboard.js]] _(via BTB.clamp, BTB.fmt)_
+- needed by ← [[stress.js]] _(via BTB.clamp)_
+- needed by ← [[tests.js]] _(via BTB.DAY_MIN, BTB.fmt)_
+- needed by ← [[ticket.js]] _(via BTB.el, BTB.fmt)_
+- loaded by ← [[index.html]] _(load step 1)_
+- loaded by ← [[tests.html]] _(load step 1)_

@@ -1,0 +1,136 @@
+---
+type: "file"
+source_file: "js/tests/tests.js"
+line: 1
+community: "Boot, Menus and Save Slots"
+tags:
+  - graph/file
+  - community/Boot-Menus-and-Save-Slots
+---
+
+# tests.js
+
+**File** in `js/tests/tests.js` line 1. Group: [[_COMMUNITY_Boot, Menus and Save Slots|Boot, Menus and Save Slots]].
+
+## Points to
+- [contains:: [[tests.js · assert()]]] _(line 9)_
+- [contains:: [[tests.js · beginPath()]]] _(line 1346)_
+- [contains:: [[tests.js · clip()]]] _(line 1346)_
+- [contains:: [[tests.js · clone()]]] _(line 683)_
+- [contains:: [[tests.js · ctx()]]] _(line 841)_
+- [contains:: [[tests.js · fillRect()]]] _(line 1346)_
+- [contains:: [[tests.js · fillStyle()]]] _(line 1346)_
+- [contains:: [[tests.js · fillText()]]] _(line 1346)_
+- [contains:: [[tests.js · font()]]] _(line 1346)_
+- [contains:: [[tests.js · globalAlpha()]]] _(line 1346)_
+- [contains:: [[tests.js · isFlat()]]] _(line 1377)_
+- [contains:: [[tests.js · mkBroker()]]] _(line 31)_
+- [contains:: [[tests.js · mkGame()]]] _(line 320)_
+- [contains:: [[tests.js · mkMarket()]]] _(line 20)_
+- [contains:: [[tests.js · near()]]] _(line 10)_
+- [contains:: [[tests.js · rect()]]] _(line 1346)_
+- [contains:: [[tests.js · restore()]]] _(line 1346)_
+- [contains:: [[tests.js · run()]]] _(line 777)_
+- [contains:: [[tests.js · runDay()]]] _(line 25)_
+- [contains:: [[tests.js · save()]]] _(line 1346)_
+- [contains:: [[tests.js · scale()]]] _(line 1346)_
+- [contains:: [[tests.js · test()]]] _(line 5)_
+- [contains:: [[tests.js · textAlign()]]] _(line 1346)_
+- [contains:: [[tests.js · textBaseline()]]] _(line 1346)_
+- [contains:: [[tests.js · translate()]]] _(line 1346)_
+- [contains:: [[tests.js · walk()]]] _(line 808)_
+- [calls:: [[economy.js · fresh()]]] _(BTB.Economy.fresh · line 644)_
+- [calls:: [[endings.js · resolve()]]] _(BTB.StoryEndings.resolve · line 793)_
+- [calls:: [[endless.js · outlookOf()]]] _(BTB.Endless.outlookOf · line 1441)_
+- [calls:: [[mentor.js · tick()]]] _(BTB.Mentor.tick · line 1380)_
+- [calls:: [[options.js · bs()]]] _(BTB.Options.bs · line 210)_
+- [calls:: [[portraits.js · sprite()]]] _(BTB.Portraits.sprite · line 1318)_
+- [calls:: [[rng.js]]] _(BTB.RNG · line 40)_
+- [calls:: [[save.js · careerTally()]]] _(BTB.Save.careerTally · line 1429)_
+- [calls:: [[save.js · clear()]]] _(BTB.Save.clear · line 387)_
+- [calls:: [[save.js · discovered()]]] _(BTB.Save.discovered · line 410)_
+- [calls:: [[save.js · finish()]]] _(BTB.Save.finish · line 396)_
+- [calls:: [[save.js · firstEmpty()]]] _(BTB.Save.firstEmpty · line 388)_
+- [calls:: [[save.js · meta()]]] _(BTB.Save.meta · line 390)_
+- [calls:: [[save.js · migrateV2Snapshot()]]] _(BTB.Save.migrateV2Snapshot · line 551)_
+- [calls:: [[save.js · read()]]] _(BTB.Save.read · line 393)_
+- [calls:: [[save.js · recordEnding()]]] _(BTB.Save.recordEnding · line 405)_
+- [calls:: [[save.js · recordEndless()]]] _(BTB.Save.recordEndless · line 1431)_
+- [calls:: [[save.js · rename()]]] _(BTB.Save.rename · line 394)_
+- [calls:: [[save.js · tally()]]] _(BTB.Save.tally · line 408)_
+- [calls:: [[save.js · totalRuns()]]] _(BTB.Save.totalRuns · line 409)_
+- [calls:: [[save.js · write()]]] _(BTB.Save.write · line 389)_
+- [calls:: [[scenes.js · ending()]]] _(BTB.Scenes.ending · line 510)_
+- [calls:: [[scenes.js · news()]]] _(BTB.Scenes.news · line 464)_
+- [calls:: [[sqwak.js · hype()]]] _(BTB.Sqwak.hype · line 894)_
+- [calls:: [[sqwak.js · metrics()]]] _(BTB.Sqwak.metrics · line 908)_
+- [calls:: [[storage.js · get()]]] _(BTB.storage.get · line 1427)_
+- [calls:: [[storage.js · remove()]]] _(BTB.storage.remove · line 404)_
+- [calls:: [[storage.js · set()]]] _(BTB.storage.set · line 1428)_
+- [calls:: [[story-engine.js]]] _(BTB.StoryMode · line 354)_
+- [calls:: [[story-engine.js · freshState()]]] _(BTB.StoryMode.freshState · line 436)_
+- [calls:: [[story-engine.js · votePasses()]]] _(BTB.StoryMode.votePasses · line 883)_
+- [calls:: [[util.js · money()]]] _(BTB.fmt.money · line 535)_
+- [uses:: [[broker.js · Broker]]] _(BTB.Broker.validateBracket · line 163 · inferred, 0.95)_
+- [uses:: [[decisions.js]]] _(BTB.DecisionArt · line 491)_
+- [uses:: [[economy.js]]] _(BTB.Economy · line 519)_
+- [uses:: [[endings.js]]] _(BTB.StoryEndings.list · line 670)_
+- [uses:: [[hud.js]]] _(BTB.UI · line 13)_
+- [uses:: [[hud.js · inbox()]]] _(BTB.UI.inbox · line 1373)_
+- [uses:: [[hud.js · snapshotFeed()]]] _(BTB.UI.snapshotFeed · line 18)_
+- [uses:: [[life.js]]] _(BTB.Life.LIFE · line 493)_
+- [uses:: [[mentor.js]]] _(BTB.Mentor · line 639)_
+- [uses:: [[news.js]]] _(BTB.News.HANDLES · line 634)_
+- [uses:: [[palette.js]]] _(BTB.PalKeys · line 1321)_
+- [uses:: [[portraits.js]]] _(BTB.Portraits.has · line 500)_
+- [uses:: [[rhythm.js]]] _(BTB.Rhythm.endingIds · line 507)_
+- [uses:: [[rhythm.js · season()]]] _(BTB.Rhythm.season · line 544)_
+- [uses:: [[save.js]]] _(BTB.Save.SLOTS · line 387)_
+- [uses:: [[scenes.js]]] _(BTB.Scenes.phone · line 471)_
+- [uses:: [[sqwak-story.js]]] _(BTB.SqwakStory · line 636)_
+- [uses:: [[sqwak.js]]] _(BTB.Sqwak · line 635)_
+- [uses:: [[story-data.js]]] _(BTB.StoryData.QUOTAS · line 416)_
+- [uses:: [[story-engine.js]]] _(BTB.StoryMode.QUOTA_STRIKE_LIMIT · line 746)_
+- [uses:: [[storyboard.js]]] _(BTB.Storyboard · line 461)_
+- [uses:: [[tickers.js]]] _(BTB.REGIMES · line 234)_
+- [uses:: [[util.js]]] _(BTB.DAY_MIN · line 569)_
+- [instantiates:: [[broker.js · Broker]]] _(BTB.Broker · line 1175)_
+- [instantiates:: [[engine.js · Market]]] _(BTB.Market · line 235)_
+- [instantiates:: [[game.js · Game]]] _(BTB.Game · line 354)_
+- [instantiates:: [[interrupts.js · Interrupts]]] _(BTB.Interrupts · line 573)_
+- [instantiates:: [[stress.js · Stress]]] _(BTB.Stress · line 263)_
+- [depends on:: [[broker.js]]] _(via BTB.Broker)_
+- [depends on:: [[decisions.js]]] _(via BTB.DecisionArt)_
+- [depends on:: [[economy.js]]] _(via BTB.Economy)_
+- [depends on:: [[endings.js]]] _(via BTB.StoryEndings)_
+- [depends on:: [[endless.js]]] _(via BTB.Endless)_
+- [depends on:: [[engine.js]]] _(via BTB.Market)_
+- [depends on:: [[game.js]]] _(via BTB.Game)_
+- [depends on:: [[hud.js]]] _(via BTB.UI)_
+- [depends on:: [[interrupts.js]]] _(via BTB.Interrupts)_
+- [depends on:: [[life.js]]] _(via BTB.Life)_
+- [depends on:: [[mentor.js]]] _(via BTB.Mentor)_
+- [depends on:: [[news.js]]] _(via BTB.News)_
+- [depends on:: [[options.js]]] _(via BTB.Options)_
+- [depends on:: [[palette.js]]] _(via BTB.PalKeys)_
+- [depends on:: [[portraits.js]]] _(via BTB.Portraits)_
+- [depends on:: [[rhythm.js]]] _(via BTB.Rhythm)_
+- [depends on:: [[rng.js]]] _(via BTB.RNG, BTB.hashSeed)_
+- [depends on:: [[save.js]]] _(via BTB.Save)_
+- [depends on:: [[scenes.js]]] _(via BTB.Scenes)_
+- [depends on:: [[sqwak-story.js]]] _(via BTB.SqwakStory)_
+- [depends on:: [[sqwak.js]]] _(via BTB.Sqwak)_
+- [depends on:: [[storage.js]]] _(via BTB.storage)_
+- [depends on:: [[story-data.js]]] _(via BTB.StoryData)_
+- [depends on:: [[story-engine.js]]] _(via BTB.StoryMode)_
+- [depends on:: [[storyboard.js]]] _(via BTB.Storyboard)_
+- [depends on:: [[stress.js]]] _(via BTB.Stress)_
+- [depends on:: [[tickers.js]]] _(via BTB.REGIMES, BTB.SECTORS, BTB.TICKERS)_
+- [depends on:: [[util.js]]] _(via BTB.DAY_MIN, BTB.fmt)_
+- [publishes to:: [[BTB namespace (window.BTB)]]] _(BTB.Tests, BTB.__storyReach)_
+
+## Pointed to by
+- used by ← [[node-run.js]] _(BTB.Tests.results · line 10)_
+- needed by ← [[node-run.js]] _(via BTB.Tests, BTB.__storyReach)_
+- loaded by ← [[tests.html]] _(load step 33)_
+- implements ← [[Everything-is-invented denylist test]]

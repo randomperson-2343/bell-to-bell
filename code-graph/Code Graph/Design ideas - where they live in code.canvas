@@ -1,0 +1,1702 @@
+{
+ "nodes": [
+  {
+   "id": "g_(root)",
+   "type": "group",
+   "label": "(root)",
+   "x": 0,
+   "y": 0,
+   "width": 900,
+   "height": 1070,
+   "color": "6"
+  },
+  {
+   "id": "n_concept_chiptune",
+   "type": "file",
+   "file": "Code Graph/Nodes/Adaptive chiptune score.md",
+   "x": 30,
+   "y": 70,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "n_concept_career_mode",
+   "type": "file",
+   "file": "Code Graph/Nodes/Career mode (61 sessions, 22 endings).md",
+   "x": 320,
+   "y": 70,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "n_concept_cascade_symbol",
+   "type": "file",
+   "file": "Code Graph/Nodes/CASCADE stack symbol.md",
+   "x": 610,
+   "y": 70,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "n_concept_cinematics",
+   "type": "file",
+   "file": "Code Graph/Nodes/Cinematics and storyboard.md",
+   "x": 30,
+   "y": 170,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "n_concept_circuit_breakers",
+   "type": "file",
+   "file": "Code Graph/Nodes/Circuit breakers.md",
+   "x": 320,
+   "y": 170,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "n_concept_quotas_strikes",
+   "type": "file",
+   "file": "Code Graph/Nodes/Desk quotas and career strikes.md",
+   "x": 610,
+   "y": 170,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "n_concept_deterministic_replay",
+   "type": "file",
+   "file": "Code Graph/Nodes/Deterministic replay saves.md",
+   "x": 30,
+   "y": 270,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "n_concept_endless_mode",
+   "type": "file",
+   "file": "Code Graph/Nodes/Endless mode.md",
+   "x": 320,
+   "y": 270,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "n_concept_fiction_denylist",
+   "type": "file",
+   "file": "Code Graph/Nodes/Everything-is-invented denylist test.md",
+   "x": 610,
+   "y": 270,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "n_concept_price_model",
+   "type": "file",
+   "file": "Code Graph/Nodes/Factor price model.md",
+   "x": 30,
+   "y": 370,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "n_concept_faded_power",
+   "type": "file",
+   "file": "Code Graph/Nodes/Faded Power (visual thesis).md",
+   "x": 320,
+   "y": 370,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "n_concept_act_progression",
+   "type": "file",
+   "file": "Code Graph/Nodes/Four-act visual progression.md",
+   "x": 610,
+   "y": 370,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "n_concept_headless_tests",
+   "type": "file",
+   "file": "Code Graph/Nodes/Headless test runners.md",
+   "x": 30,
+   "y": 470,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "n_concept_mentor",
+   "type": "file",
+   "file": "Code Graph/Nodes/Imani's first three sessions.md",
+   "x": 320,
+   "y": 470,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "n_concept_life_beats",
+   "type": "file",
+   "file": "Code Graph/Nodes/Life beats (personal decisions).md",
+   "x": 610,
+   "y": 470,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "n_concept_locked_palette",
+   "type": "file",
+   "file": "Code Graph/Nodes/Locked 32-colour palette.md",
+   "x": 30,
+   "y": 570,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "n_concept_margin_calls",
+   "type": "file",
+   "file": "Code Graph/Nodes/Margin calls and liquidation.md",
+   "x": 320,
+   "y": 570,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "n_concept_personal_economy",
+   "type": "file",
+   "file": "Code Graph/Nodes/Personal economy (wallet, draw, bonus, rent).md",
+   "x": 610,
+   "y": 570,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "n_concept_portraits",
+   "type": "file",
+   "file": "Code Graph/Nodes/Procedural pixel portraits.md",
+   "x": 30,
+   "y": 670,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "n_concept_risk_desk",
+   "type": "file",
+   "file": "Code Graph/Nodes/Risk desk discipline review.md",
+   "x": 320,
+   "y": 670,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "n_concept_options",
+   "type": "file",
+   "file": "Code Graph/Nodes/Simplified options.md",
+   "x": 610,
+   "y": 670,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "n_concept_sqwak",
+   "type": "file",
+   "file": "Code Graph/Nodes/Sqwak rumour network.md",
+   "x": 30,
+   "y": 770,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "n_concept_desk_residue",
+   "type": "file",
+   "file": "Code Graph/Nodes/Story residue on the desk.md",
+   "x": 320,
+   "y": 770,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "n_concept_stress",
+   "type": "file",
+   "file": "Code Graph/Nodes/Stress 2.0 and panic.md",
+   "x": 610,
+   "y": 770,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "n_concept_storage_adapter",
+   "type": "file",
+   "file": "Code Graph/Nodes/Swappable storage adapter.md",
+   "x": 30,
+   "y": 870,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "n_concept_the_ledger",
+   "type": "file",
+   "file": "Code Graph/Nodes/The Ledger subscription.md",
+   "x": 320,
+   "y": 870,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "n_concept_pixel_fonts",
+   "type": "file",
+   "file": "Code Graph/Nodes/Three pixel fonts.md",
+   "x": 610,
+   "y": 870,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "n_concept_anomalies",
+   "type": "file",
+   "file": "Code Graph/Nodes/Twelve hidden anomalies.md",
+   "x": 30,
+   "y": 970,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "n_concept_phone_tips",
+   "type": "file",
+   "file": "Code Graph/Nodes/Unreliable phone tips.md",
+   "x": 320,
+   "y": 970,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "g_css",
+   "type": "group",
+   "label": "css",
+   "x": 1020,
+   "y": 0,
+   "width": 900,
+   "height": 270,
+   "color": "5"
+  },
+  {
+   "id": "n_css_fonts",
+   "type": "file",
+   "file": "Code Graph/Nodes/fonts.css.md",
+   "x": 1050,
+   "y": 70,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "n_css_fonts_silkscreen",
+   "type": "file",
+   "file": "Code Graph/Nodes/Silkscreen (font).md",
+   "x": 1340,
+   "y": 70,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "n_css_fonts_tiny5",
+   "type": "file",
+   "file": "Code Graph/Nodes/Tiny5 (font).md",
+   "x": 1630,
+   "y": 70,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "n_css_tokens",
+   "type": "file",
+   "file": "Code Graph/Nodes/tokens.css.md",
+   "x": 1050,
+   "y": 170,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "n_css_fonts_vt323",
+   "type": "file",
+   "file": "Code Graph/Nodes/VT323 (font).md",
+   "x": 1340,
+   "y": 170,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "g_js",
+   "type": "group",
+   "label": "js",
+   "x": 2040,
+   "y": 0,
+   "width": 900,
+   "height": 270,
+   "color": "1"
+  },
+  {
+   "id": "n_js_game",
+   "type": "file",
+   "file": "Code Graph/Nodes/game.js.md",
+   "x": 2070,
+   "y": 70,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "n_js_interrupts",
+   "type": "file",
+   "file": "Code Graph/Nodes/interrupts.js.md",
+   "x": 2360,
+   "y": 70,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "n_js_main",
+   "type": "file",
+   "file": "Code Graph/Nodes/main.js.md",
+   "x": 2650,
+   "y": 70,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "n_js_stress",
+   "type": "file",
+   "file": "Code Graph/Nodes/stress.js.md",
+   "x": 2070,
+   "y": 170,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "g_js/core",
+   "type": "group",
+   "label": "js/core",
+   "x": 3060,
+   "y": 0,
+   "width": 900,
+   "height": 170,
+   "color": "4"
+  },
+  {
+   "id": "n_js_core_rng",
+   "type": "file",
+   "file": "Code Graph/Nodes/rng.js.md",
+   "x": 3090,
+   "y": 70,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "n_js_core_save",
+   "type": "file",
+   "file": "Code Graph/Nodes/save.js.md",
+   "x": 3380,
+   "y": 70,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "n_js_core_storage",
+   "type": "file",
+   "file": "Code Graph/Nodes/storage.js.md",
+   "x": 3670,
+   "y": 70,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "g_js/art",
+   "type": "group",
+   "label": "js/art",
+   "x": 0,
+   "y": 1190,
+   "width": 900,
+   "height": 370,
+   "color": "3"
+  },
+  {
+   "id": "n_js_art_cinematic",
+   "type": "file",
+   "file": "Code Graph/Nodes/cinematic.js.md",
+   "x": 30,
+   "y": 1260,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "n_js_art_decisions",
+   "type": "file",
+   "file": "Code Graph/Nodes/decisions.js.md",
+   "x": 320,
+   "y": 1260,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "n_js_art_palette",
+   "type": "file",
+   "file": "Code Graph/Nodes/palette.js.md",
+   "x": 610,
+   "y": 1260,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "n_js_art_pixel",
+   "type": "file",
+   "file": "Code Graph/Nodes/pixel.js.md",
+   "x": 30,
+   "y": 1360,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "n_js_art_portraits",
+   "type": "file",
+   "file": "Code Graph/Nodes/portraits.js.md",
+   "x": 320,
+   "y": 1360,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "n_js_art_rhythm",
+   "type": "file",
+   "file": "Code Graph/Nodes/rhythm.js.md",
+   "x": 610,
+   "y": 1360,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "n_js_art_scenes",
+   "type": "file",
+   "file": "Code Graph/Nodes/scenes.js.md",
+   "x": 30,
+   "y": 1460,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "n_js_art_story_art",
+   "type": "file",
+   "file": "Code Graph/Nodes/story-art.js.md",
+   "x": 320,
+   "y": 1460,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "n_js_art_storyboard",
+   "type": "file",
+   "file": "Code Graph/Nodes/storyboard.js.md",
+   "x": 610,
+   "y": 1460,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "g_js/market",
+   "type": "group",
+   "label": "js/market",
+   "x": 1020,
+   "y": 1190,
+   "width": 900,
+   "height": 170,
+   "color": "2"
+  },
+  {
+   "id": "n_js_market_engine",
+   "type": "file",
+   "file": "Code Graph/Nodes/engine.js.md",
+   "x": 1050,
+   "y": 1260,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "n_js_market_sqwak",
+   "type": "file",
+   "file": "Code Graph/Nodes/sqwak.js.md",
+   "x": 1340,
+   "y": 1260,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "n_js_market_tickers",
+   "type": "file",
+   "file": "Code Graph/Nodes/tickers.js.md",
+   "x": 1630,
+   "y": 1260,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "g_js/trading",
+   "type": "group",
+   "label": "js/trading",
+   "x": 2040,
+   "y": 1190,
+   "width": 610,
+   "height": 170,
+   "color": "2"
+  },
+  {
+   "id": "n_js_trading_broker",
+   "type": "file",
+   "file": "Code Graph/Nodes/broker.js.md",
+   "x": 2070,
+   "y": 1260,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "n_js_trading_options",
+   "type": "file",
+   "file": "Code Graph/Nodes/options.js.md",
+   "x": 2360,
+   "y": 1260,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "g_js/audio",
+   "type": "group",
+   "label": "js/audio",
+   "x": 2770,
+   "y": 1190,
+   "width": 610,
+   "height": 170,
+   "color": "5"
+  },
+  {
+   "id": "n_js_audio_music",
+   "type": "file",
+   "file": "Code Graph/Nodes/music.js.md",
+   "x": 2800,
+   "y": 1260,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "n_js_audio_sfx",
+   "type": "file",
+   "file": "Code Graph/Nodes/sfx.js.md",
+   "x": 3090,
+   "y": 1260,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "g_js/ui",
+   "type": "group",
+   "label": "js/ui",
+   "x": 0,
+   "y": 1680,
+   "width": 900,
+   "height": 170,
+   "color": "6"
+  },
+  {
+   "id": "n_js_ui_hud",
+   "type": "file",
+   "file": "Code Graph/Nodes/hud.js.md",
+   "x": 30,
+   "y": 1750,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "n_js_ui_screens",
+   "type": "file",
+   "file": "Code Graph/Nodes/screens.js.md",
+   "x": 320,
+   "y": 1750,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "n_js_ui_ticket",
+   "type": "file",
+   "file": "Code Graph/Nodes/ticket.js.md",
+   "x": 610,
+   "y": 1750,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "g_js/modes/story",
+   "type": "group",
+   "label": "js/modes/story",
+   "x": 1020,
+   "y": 1680,
+   "width": 900,
+   "height": 370,
+   "color": "1"
+  },
+  {
+   "id": "n_js_modes_story_economy",
+   "type": "file",
+   "file": "Code Graph/Nodes/economy.js.md",
+   "x": 1050,
+   "y": 1750,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "n_js_modes_story_endings",
+   "type": "file",
+   "file": "Code Graph/Nodes/endings.js.md",
+   "x": 1340,
+   "y": 1750,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "n_js_modes_story_life",
+   "type": "file",
+   "file": "Code Graph/Nodes/life.js.md",
+   "x": 1630,
+   "y": 1750,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "n_js_modes_story_mentor",
+   "type": "file",
+   "file": "Code Graph/Nodes/mentor.js.md",
+   "x": 1050,
+   "y": 1850,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "n_js_modes_story_sqwak_story",
+   "type": "file",
+   "file": "Code Graph/Nodes/sqwak-story.js.md",
+   "x": 1340,
+   "y": 1850,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "n_js_modes_story_story_data",
+   "type": "file",
+   "file": "Code Graph/Nodes/story-data.js.md",
+   "x": 1630,
+   "y": 1850,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "n_js_modes_story_story_engine",
+   "type": "file",
+   "file": "Code Graph/Nodes/story-engine.js.md",
+   "x": 1050,
+   "y": 1950,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "g_js/modes/endless",
+   "type": "group",
+   "label": "js/modes/endless",
+   "x": 2040,
+   "y": 1680,
+   "width": 320,
+   "height": 170,
+   "color": "3"
+  },
+  {
+   "id": "n_js_modes_endless_endless",
+   "type": "file",
+   "file": "Code Graph/Nodes/endless.js.md",
+   "x": 2070,
+   "y": 1750,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "g_js/tests",
+   "type": "group",
+   "label": "js/tests",
+   "x": 2480,
+   "y": 1680,
+   "width": 900,
+   "height": 370,
+   "color": "4"
+  },
+  {
+   "id": "n_js_tests_balance_run",
+   "type": "file",
+   "file": "Code Graph/Nodes/balance-run.js.md",
+   "x": 2510,
+   "y": 1750,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "n_js_tests_browser_run",
+   "type": "file",
+   "file": "Code Graph/Nodes/browser-run.js.md",
+   "x": 2800,
+   "y": 1750,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "n_js_tests_economy_run",
+   "type": "file",
+   "file": "Code Graph/Nodes/economy-run.js.md",
+   "x": 3090,
+   "y": 1750,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "n_js_tests_harness",
+   "type": "file",
+   "file": "Code Graph/Nodes/harness.js.md",
+   "x": 2510,
+   "y": 1850,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "n_js_tests_node_run",
+   "type": "file",
+   "file": "Code Graph/Nodes/node-run.js.md",
+   "x": 2800,
+   "y": 1850,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "n_js_tests_reachability_run",
+   "type": "file",
+   "file": "Code Graph/Nodes/reachability-run.js.md",
+   "x": 3090,
+   "y": 1850,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "n_js_tests_render_run",
+   "type": "file",
+   "file": "Code Graph/Nodes/render-run.js.md",
+   "x": 2510,
+   "y": 1950,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "n_js_tests_sim_run",
+   "type": "file",
+   "file": "Code Graph/Nodes/sim-run.js.md",
+   "x": 2800,
+   "y": 1950,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "n_js_tests_tests",
+   "type": "file",
+   "file": "Code Graph/Nodes/tests.js.md",
+   "x": 3090,
+   "y": 1950,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "g_docs",
+   "type": "group",
+   "label": "docs",
+   "x": 0,
+   "y": 2170,
+   "width": 610,
+   "height": 170,
+   "color": "6"
+  },
+  {
+   "id": "n_art_direction",
+   "type": "file",
+   "file": "Code Graph/Nodes/ART_DIRECTION.md.md",
+   "x": 30,
+   "y": 2240,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "n_readme",
+   "type": "file",
+   "file": "Code Graph/Nodes/README.md.md",
+   "x": 320,
+   "y": 2240,
+   "width": 260,
+   "height": 70
+  }
+ ],
+ "edges": [
+  {
+   "id": "e0",
+   "fromNode": "n_readme",
+   "toNode": "n_concept_career_mode",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "describes"
+  },
+  {
+   "id": "e1",
+   "fromNode": "n_concept_career_mode",
+   "toNode": "n_js_modes_story_story_engine",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "implemented in"
+  },
+  {
+   "id": "e2",
+   "fromNode": "n_concept_career_mode",
+   "toNode": "n_js_modes_story_story_data",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "implemented in"
+  },
+  {
+   "id": "e3",
+   "fromNode": "n_concept_career_mode",
+   "toNode": "n_js_modes_story_endings",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "implemented in"
+  },
+  {
+   "id": "e4",
+   "fromNode": "n_readme",
+   "toNode": "n_concept_endless_mode",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "describes"
+  },
+  {
+   "id": "e5",
+   "fromNode": "n_concept_endless_mode",
+   "toNode": "n_js_modes_endless_endless",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "implemented in"
+  },
+  {
+   "id": "e6",
+   "fromNode": "n_readme",
+   "toNode": "n_concept_deterministic_replay",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "describes"
+  },
+  {
+   "id": "e7",
+   "fromNode": "n_concept_deterministic_replay",
+   "toNode": "n_js_core_save",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "implemented in"
+  },
+  {
+   "id": "e8",
+   "fromNode": "n_concept_deterministic_replay",
+   "toNode": "n_js_game",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "implemented in"
+  },
+  {
+   "id": "e9",
+   "fromNode": "n_concept_deterministic_replay",
+   "toNode": "n_js_core_rng",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "implemented in"
+  },
+  {
+   "id": "e10",
+   "fromNode": "n_concept_deterministic_replay",
+   "toNode": "n_js_market_engine",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "implemented in"
+  },
+  {
+   "id": "e11",
+   "fromNode": "n_readme",
+   "toNode": "n_concept_price_model",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "describes"
+  },
+  {
+   "id": "e12",
+   "fromNode": "n_concept_price_model",
+   "toNode": "n_js_market_engine",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "implemented in"
+  },
+  {
+   "id": "e13",
+   "fromNode": "n_readme",
+   "toNode": "n_concept_circuit_breakers",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "describes"
+  },
+  {
+   "id": "e14",
+   "fromNode": "n_concept_circuit_breakers",
+   "toNode": "n_js_market_engine",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "implemented in"
+  },
+  {
+   "id": "e15",
+   "fromNode": "n_concept_circuit_breakers",
+   "toNode": "n_js_trading_broker",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "implemented in"
+  },
+  {
+   "id": "e16",
+   "fromNode": "n_readme",
+   "toNode": "n_concept_margin_calls",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "describes"
+  },
+  {
+   "id": "e17",
+   "fromNode": "n_concept_margin_calls",
+   "toNode": "n_js_trading_broker",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "implemented in"
+  },
+  {
+   "id": "e18",
+   "fromNode": "n_readme",
+   "toNode": "n_concept_options",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "describes"
+  },
+  {
+   "id": "e19",
+   "fromNode": "n_concept_options",
+   "toNode": "n_js_trading_options",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "implemented in"
+  },
+  {
+   "id": "e20",
+   "fromNode": "n_concept_options",
+   "toNode": "n_js_ui_ticket",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "implemented in"
+  },
+  {
+   "id": "e21",
+   "fromNode": "n_readme",
+   "toNode": "n_concept_sqwak",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "describes"
+  },
+  {
+   "id": "e22",
+   "fromNode": "n_concept_sqwak",
+   "toNode": "n_js_market_sqwak",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "implemented in"
+  },
+  {
+   "id": "e23",
+   "fromNode": "n_concept_sqwak",
+   "toNode": "n_js_modes_story_sqwak_story",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "implemented in"
+  },
+  {
+   "id": "e24",
+   "fromNode": "n_readme",
+   "toNode": "n_concept_phone_tips",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "describes"
+  },
+  {
+   "id": "e25",
+   "fromNode": "n_concept_phone_tips",
+   "toNode": "n_js_interrupts",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "implemented in"
+  },
+  {
+   "id": "e26",
+   "fromNode": "n_readme",
+   "toNode": "n_concept_stress",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "describes"
+  },
+  {
+   "id": "e27",
+   "fromNode": "n_concept_stress",
+   "toNode": "n_js_stress",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "implemented in"
+  },
+  {
+   "id": "e28",
+   "fromNode": "n_concept_stress",
+   "toNode": "n_js_ui_hud",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "implemented in"
+  },
+  {
+   "id": "e29",
+   "fromNode": "n_readme",
+   "toNode": "n_concept_quotas_strikes",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "describes"
+  },
+  {
+   "id": "e30",
+   "fromNode": "n_concept_quotas_strikes",
+   "toNode": "n_js_modes_story_story_engine",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "implemented in"
+  },
+  {
+   "id": "e31",
+   "fromNode": "n_concept_quotas_strikes",
+   "toNode": "n_js_game",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "implemented in"
+  },
+  {
+   "id": "e32",
+   "fromNode": "n_readme",
+   "toNode": "n_concept_personal_economy",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "describes"
+  },
+  {
+   "id": "e33",
+   "fromNode": "n_concept_personal_economy",
+   "toNode": "n_js_modes_story_economy",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "implemented in"
+  },
+  {
+   "id": "e34",
+   "fromNode": "n_readme",
+   "toNode": "n_concept_the_ledger",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "describes"
+  },
+  {
+   "id": "e35",
+   "fromNode": "n_concept_the_ledger",
+   "toNode": "n_js_modes_story_story_engine",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "implemented in"
+  },
+  {
+   "id": "e36",
+   "fromNode": "n_concept_the_ledger",
+   "toNode": "n_js_ui_screens",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "implemented in"
+  },
+  {
+   "id": "e37",
+   "fromNode": "n_readme",
+   "toNode": "n_concept_mentor",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "describes"
+  },
+  {
+   "id": "e38",
+   "fromNode": "n_concept_mentor",
+   "toNode": "n_js_modes_story_mentor",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "implemented in"
+  },
+  {
+   "id": "e39",
+   "fromNode": "n_readme",
+   "toNode": "n_concept_life_beats",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "describes"
+  },
+  {
+   "id": "e40",
+   "fromNode": "n_concept_life_beats",
+   "toNode": "n_js_modes_story_life",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "implemented in"
+  },
+  {
+   "id": "e41",
+   "fromNode": "n_concept_life_beats",
+   "toNode": "n_js_art_decisions",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "implemented in"
+  },
+  {
+   "id": "e42",
+   "fromNode": "n_readme",
+   "toNode": "n_concept_risk_desk",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "describes"
+  },
+  {
+   "id": "e43",
+   "fromNode": "n_concept_risk_desk",
+   "toNode": "n_js_trading_broker",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "implemented in"
+  },
+  {
+   "id": "e44",
+   "fromNode": "n_concept_risk_desk",
+   "toNode": "n_js_modes_story_economy",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "implemented in"
+  },
+  {
+   "id": "e45",
+   "fromNode": "n_readme",
+   "toNode": "n_concept_anomalies",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "describes"
+  },
+  {
+   "id": "e46",
+   "fromNode": "n_concept_anomalies",
+   "toNode": "n_js_modes_story_story_data",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "implemented in"
+  },
+  {
+   "id": "e47",
+   "fromNode": "n_concept_anomalies",
+   "toNode": "n_js_art_storyboard",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "implemented in"
+  },
+  {
+   "id": "e48",
+   "fromNode": "n_readme",
+   "toNode": "n_concept_cinematics",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "describes"
+  },
+  {
+   "id": "e49",
+   "fromNode": "n_concept_cinematics",
+   "toNode": "n_js_art_cinematic",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "implemented in"
+  },
+  {
+   "id": "e50",
+   "fromNode": "n_concept_cinematics",
+   "toNode": "n_js_art_storyboard",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "implemented in"
+  },
+  {
+   "id": "e51",
+   "fromNode": "n_concept_cinematics",
+   "toNode": "n_js_art_rhythm",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "implemented in"
+  },
+  {
+   "id": "e52",
+   "fromNode": "n_concept_cinematics",
+   "toNode": "n_js_art_scenes",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "implemented in"
+  },
+  {
+   "id": "e53",
+   "fromNode": "n_readme",
+   "toNode": "n_concept_chiptune",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "describes"
+  },
+  {
+   "id": "e54",
+   "fromNode": "n_concept_chiptune",
+   "toNode": "n_js_audio_music",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "implemented in"
+  },
+  {
+   "id": "e55",
+   "fromNode": "n_concept_chiptune",
+   "toNode": "n_js_audio_sfx",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "implemented in"
+  },
+  {
+   "id": "e56",
+   "fromNode": "n_readme",
+   "toNode": "n_concept_fiction_denylist",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "describes"
+  },
+  {
+   "id": "e57",
+   "fromNode": "n_concept_fiction_denylist",
+   "toNode": "n_js_market_tickers",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "implemented in"
+  },
+  {
+   "id": "e58",
+   "fromNode": "n_concept_fiction_denylist",
+   "toNode": "n_js_tests_tests",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "implemented in"
+  },
+  {
+   "id": "e59",
+   "fromNode": "n_readme",
+   "toNode": "n_concept_storage_adapter",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "describes"
+  },
+  {
+   "id": "e60",
+   "fromNode": "n_concept_storage_adapter",
+   "toNode": "n_js_core_storage",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "implemented in"
+  },
+  {
+   "id": "e61",
+   "fromNode": "n_readme",
+   "toNode": "n_concept_headless_tests",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "describes"
+  },
+  {
+   "id": "e62",
+   "fromNode": "n_concept_headless_tests",
+   "toNode": "n_js_tests_harness",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "implemented in"
+  },
+  {
+   "id": "e63",
+   "fromNode": "n_concept_headless_tests",
+   "toNode": "n_js_tests_node_run",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "implemented in"
+  },
+  {
+   "id": "e64",
+   "fromNode": "n_concept_headless_tests",
+   "toNode": "n_js_tests_sim_run",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "implemented in"
+  },
+  {
+   "id": "e65",
+   "fromNode": "n_concept_headless_tests",
+   "toNode": "n_js_tests_balance_run",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "implemented in"
+  },
+  {
+   "id": "e66",
+   "fromNode": "n_concept_headless_tests",
+   "toNode": "n_js_tests_economy_run",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "implemented in"
+  },
+  {
+   "id": "e67",
+   "fromNode": "n_concept_headless_tests",
+   "toNode": "n_js_tests_reachability_run",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "implemented in"
+  },
+  {
+   "id": "e68",
+   "fromNode": "n_concept_headless_tests",
+   "toNode": "n_js_tests_render_run",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "implemented in"
+  },
+  {
+   "id": "e69",
+   "fromNode": "n_concept_headless_tests",
+   "toNode": "n_js_tests_browser_run",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "implemented in"
+  },
+  {
+   "id": "e70",
+   "fromNode": "n_art_direction",
+   "toNode": "n_concept_locked_palette",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "describes"
+  },
+  {
+   "id": "e71",
+   "fromNode": "n_concept_locked_palette",
+   "toNode": "n_js_art_palette",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "implemented in"
+  },
+  {
+   "id": "e72",
+   "fromNode": "n_concept_locked_palette",
+   "toNode": "n_css_tokens",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "implemented in"
+  },
+  {
+   "id": "e73",
+   "fromNode": "n_concept_locked_palette",
+   "toNode": "n_js_art_pixel",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "implemented in"
+  },
+  {
+   "id": "e74",
+   "fromNode": "n_art_direction",
+   "toNode": "n_concept_faded_power",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "describes"
+  },
+  {
+   "id": "e75",
+   "fromNode": "n_concept_faded_power",
+   "toNode": "n_concept_locked_palette",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "implemented in"
+  },
+  {
+   "id": "e76",
+   "fromNode": "n_art_direction",
+   "toNode": "n_concept_cascade_symbol",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "describes"
+  },
+  {
+   "id": "e77",
+   "fromNode": "n_concept_cascade_symbol",
+   "toNode": "n_js_art_story_art",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "implemented in"
+  },
+  {
+   "id": "e78",
+   "fromNode": "n_concept_cascade_symbol",
+   "toNode": "n_js_main",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "implemented in"
+  },
+  {
+   "id": "e79",
+   "fromNode": "n_concept_cascade_symbol",
+   "toNode": "n_js_art_rhythm",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "implemented in"
+  },
+  {
+   "id": "e80",
+   "fromNode": "n_art_direction",
+   "toNode": "n_concept_act_progression",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "describes"
+  },
+  {
+   "id": "e81",
+   "fromNode": "n_concept_act_progression",
+   "toNode": "n_js_art_storyboard",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "implemented in"
+  },
+  {
+   "id": "e82",
+   "fromNode": "n_concept_act_progression",
+   "toNode": "n_js_modes_story_story_data",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "implemented in"
+  },
+  {
+   "id": "e83",
+   "fromNode": "n_art_direction",
+   "toNode": "n_concept_portraits",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "describes"
+  },
+  {
+   "id": "e84",
+   "fromNode": "n_concept_portraits",
+   "toNode": "n_js_art_portraits",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "implemented in"
+  },
+  {
+   "id": "e85",
+   "fromNode": "n_art_direction",
+   "toNode": "n_concept_desk_residue",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "describes"
+  },
+  {
+   "id": "e86",
+   "fromNode": "n_concept_desk_residue",
+   "toNode": "n_js_art_story_art",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "implemented in"
+  },
+  {
+   "id": "e87",
+   "fromNode": "n_art_direction",
+   "toNode": "n_concept_pixel_fonts",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "describes"
+  },
+  {
+   "id": "e88",
+   "fromNode": "n_concept_pixel_fonts",
+   "toNode": "n_css_fonts",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "implemented in"
+  },
+  {
+   "id": "e89",
+   "fromNode": "n_concept_pixel_fonts",
+   "toNode": "n_css_fonts_silkscreen",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "implemented in"
+  },
+  {
+   "id": "e90",
+   "fromNode": "n_concept_pixel_fonts",
+   "toNode": "n_css_fonts_tiny5",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "implemented in"
+  },
+  {
+   "id": "e91",
+   "fromNode": "n_concept_pixel_fonts",
+   "toNode": "n_css_fonts_vt323",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "implemented in"
+  },
+  {
+   "id": "e92",
+   "fromNode": "n_concept_faded_power",
+   "toNode": "n_concept_act_progression",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "related to"
+  },
+  {
+   "id": "e93",
+   "fromNode": "n_concept_cascade_symbol",
+   "toNode": "n_concept_career_mode",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "related to"
+  },
+  {
+   "id": "e94",
+   "fromNode": "n_concept_deterministic_replay",
+   "toNode": "n_concept_storage_adapter",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "related to"
+  }
+ ]
+}

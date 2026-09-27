@@ -1,0 +1,3042 @@
+{
+ "nodes": [
+  {
+   "id": "g_(root)",
+   "type": "group",
+   "label": "(root)",
+   "x": 0,
+   "y": 0,
+   "width": 610,
+   "height": 170,
+   "color": "6"
+  },
+  {
+   "id": "n_index",
+   "type": "file",
+   "file": "Code Graph/Nodes/index.html.md",
+   "x": 30,
+   "y": 70,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "n_tests",
+   "type": "file",
+   "file": "Code Graph/Nodes/tests.html.md",
+   "x": 320,
+   "y": 70,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "g_css",
+   "type": "group",
+   "label": "css",
+   "x": 730,
+   "y": 0,
+   "width": 900,
+   "height": 270,
+   "color": "5"
+  },
+  {
+   "id": "n_css_fonts",
+   "type": "file",
+   "file": "Code Graph/Nodes/fonts.css.md",
+   "x": 760,
+   "y": 70,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "n_css_office",
+   "type": "file",
+   "file": "Code Graph/Nodes/office.css.md",
+   "x": 1050,
+   "y": 70,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "n_css_tokens",
+   "type": "file",
+   "file": "Code Graph/Nodes/tokens.css.md",
+   "x": 1340,
+   "y": 70,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "n_css_ui",
+   "type": "file",
+   "file": "Code Graph/Nodes/ui.css.md",
+   "x": 760,
+   "y": 170,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "g_js",
+   "type": "group",
+   "label": "js",
+   "x": 1750,
+   "y": 0,
+   "width": 900,
+   "height": 270,
+   "color": "1"
+  },
+  {
+   "id": "n_js_game",
+   "type": "file",
+   "file": "Code Graph/Nodes/game.js.md",
+   "x": 1780,
+   "y": 70,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "n_js_interrupts",
+   "type": "file",
+   "file": "Code Graph/Nodes/interrupts.js.md",
+   "x": 2070,
+   "y": 70,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "n_js_main",
+   "type": "file",
+   "file": "Code Graph/Nodes/main.js.md",
+   "x": 2360,
+   "y": 70,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "n_js_stress",
+   "type": "file",
+   "file": "Code Graph/Nodes/stress.js.md",
+   "x": 1780,
+   "y": 170,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "g_js/core",
+   "type": "group",
+   "label": "js/core",
+   "x": 2770,
+   "y": 0,
+   "width": 900,
+   "height": 270,
+   "color": "4"
+  },
+  {
+   "id": "n_js_core_clock",
+   "type": "file",
+   "file": "Code Graph/Nodes/clock.js.md",
+   "x": 2800,
+   "y": 70,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "n_js_core_events",
+   "type": "file",
+   "file": "Code Graph/Nodes/events.js.md",
+   "x": 3090,
+   "y": 70,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "n_js_core_rng",
+   "type": "file",
+   "file": "Code Graph/Nodes/rng.js.md",
+   "x": 3380,
+   "y": 70,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "n_js_core_save",
+   "type": "file",
+   "file": "Code Graph/Nodes/save.js.md",
+   "x": 2800,
+   "y": 170,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "n_js_core_storage",
+   "type": "file",
+   "file": "Code Graph/Nodes/storage.js.md",
+   "x": 3090,
+   "y": 170,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "n_js_core_util",
+   "type": "file",
+   "file": "Code Graph/Nodes/util.js.md",
+   "x": 3380,
+   "y": 170,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "g_js/art",
+   "type": "group",
+   "label": "js/art",
+   "x": 0,
+   "y": 390,
+   "width": 900,
+   "height": 370,
+   "color": "3"
+  },
+  {
+   "id": "n_js_art_cinematic",
+   "type": "file",
+   "file": "Code Graph/Nodes/cinematic.js.md",
+   "x": 30,
+   "y": 460,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "n_js_art_decisions",
+   "type": "file",
+   "file": "Code Graph/Nodes/decisions.js.md",
+   "x": 320,
+   "y": 460,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "n_js_art_palette",
+   "type": "file",
+   "file": "Code Graph/Nodes/palette.js.md",
+   "x": 610,
+   "y": 460,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "n_js_art_pixel",
+   "type": "file",
+   "file": "Code Graph/Nodes/pixel.js.md",
+   "x": 30,
+   "y": 560,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "n_js_art_portraits",
+   "type": "file",
+   "file": "Code Graph/Nodes/portraits.js.md",
+   "x": 320,
+   "y": 560,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "n_js_art_rhythm",
+   "type": "file",
+   "file": "Code Graph/Nodes/rhythm.js.md",
+   "x": 610,
+   "y": 560,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "n_js_art_scenes",
+   "type": "file",
+   "file": "Code Graph/Nodes/scenes.js.md",
+   "x": 30,
+   "y": 660,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "n_js_art_story_art",
+   "type": "file",
+   "file": "Code Graph/Nodes/story-art.js.md",
+   "x": 320,
+   "y": 660,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "n_js_art_storyboard",
+   "type": "file",
+   "file": "Code Graph/Nodes/storyboard.js.md",
+   "x": 610,
+   "y": 660,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "g_js/market",
+   "type": "group",
+   "label": "js/market",
+   "x": 1020,
+   "y": 390,
+   "width": 900,
+   "height": 270,
+   "color": "2"
+  },
+  {
+   "id": "n_js_market_engine",
+   "type": "file",
+   "file": "Code Graph/Nodes/engine.js.md",
+   "x": 1050,
+   "y": 460,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "n_js_market_news",
+   "type": "file",
+   "file": "Code Graph/Nodes/news.js.md",
+   "x": 1340,
+   "y": 460,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "n_js_market_sqwak",
+   "type": "file",
+   "file": "Code Graph/Nodes/sqwak.js.md",
+   "x": 1630,
+   "y": 460,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "n_js_market_tickers",
+   "type": "file",
+   "file": "Code Graph/Nodes/tickers.js.md",
+   "x": 1050,
+   "y": 560,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "g_js/trading",
+   "type": "group",
+   "label": "js/trading",
+   "x": 2040,
+   "y": 390,
+   "width": 610,
+   "height": 170,
+   "color": "2"
+  },
+  {
+   "id": "n_js_trading_broker",
+   "type": "file",
+   "file": "Code Graph/Nodes/broker.js.md",
+   "x": 2070,
+   "y": 460,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "n_js_trading_options",
+   "type": "file",
+   "file": "Code Graph/Nodes/options.js.md",
+   "x": 2360,
+   "y": 460,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "g_js/audio",
+   "type": "group",
+   "label": "js/audio",
+   "x": 2770,
+   "y": 390,
+   "width": 610,
+   "height": 170,
+   "color": "5"
+  },
+  {
+   "id": "n_js_audio_music",
+   "type": "file",
+   "file": "Code Graph/Nodes/music.js.md",
+   "x": 2800,
+   "y": 460,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "n_js_audio_sfx",
+   "type": "file",
+   "file": "Code Graph/Nodes/sfx.js.md",
+   "x": 3090,
+   "y": 460,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "g_js/ui",
+   "type": "group",
+   "label": "js/ui",
+   "x": 0,
+   "y": 880,
+   "width": 900,
+   "height": 270,
+   "color": "6"
+  },
+  {
+   "id": "n_js_ui_chart",
+   "type": "file",
+   "file": "Code Graph/Nodes/chart.js.md",
+   "x": 30,
+   "y": 950,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "n_js_ui_debug",
+   "type": "file",
+   "file": "Code Graph/Nodes/debug.js.md",
+   "x": 320,
+   "y": 950,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "n_js_ui_hud",
+   "type": "file",
+   "file": "Code Graph/Nodes/hud.js.md",
+   "x": 610,
+   "y": 950,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "n_js_ui_saveslots",
+   "type": "file",
+   "file": "Code Graph/Nodes/saveslots.js.md",
+   "x": 30,
+   "y": 1050,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "n_js_ui_screens",
+   "type": "file",
+   "file": "Code Graph/Nodes/screens.js.md",
+   "x": 320,
+   "y": 1050,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "n_js_ui_ticket",
+   "type": "file",
+   "file": "Code Graph/Nodes/ticket.js.md",
+   "x": 610,
+   "y": 1050,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "g_js/modes/story",
+   "type": "group",
+   "label": "js/modes/story",
+   "x": 1020,
+   "y": 880,
+   "width": 900,
+   "height": 370,
+   "color": "1"
+  },
+  {
+   "id": "n_js_modes_story_economy",
+   "type": "file",
+   "file": "Code Graph/Nodes/economy.js.md",
+   "x": 1050,
+   "y": 950,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "n_js_modes_story_endings",
+   "type": "file",
+   "file": "Code Graph/Nodes/endings.js.md",
+   "x": 1340,
+   "y": 950,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "n_js_modes_story_life",
+   "type": "file",
+   "file": "Code Graph/Nodes/life.js.md",
+   "x": 1630,
+   "y": 950,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "n_js_modes_story_mentor",
+   "type": "file",
+   "file": "Code Graph/Nodes/mentor.js.md",
+   "x": 1050,
+   "y": 1050,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "n_js_modes_story_sqwak_story",
+   "type": "file",
+   "file": "Code Graph/Nodes/sqwak-story.js.md",
+   "x": 1340,
+   "y": 1050,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "n_js_modes_story_story_data",
+   "type": "file",
+   "file": "Code Graph/Nodes/story-data.js.md",
+   "x": 1630,
+   "y": 1050,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "n_js_modes_story_story_engine",
+   "type": "file",
+   "file": "Code Graph/Nodes/story-engine.js.md",
+   "x": 1050,
+   "y": 1150,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "g_js/modes/endless",
+   "type": "group",
+   "label": "js/modes/endless",
+   "x": 2040,
+   "y": 880,
+   "width": 320,
+   "height": 170,
+   "color": "3"
+  },
+  {
+   "id": "n_js_modes_endless_endless",
+   "type": "file",
+   "file": "Code Graph/Nodes/endless.js.md",
+   "x": 2070,
+   "y": 950,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "g_js/tests",
+   "type": "group",
+   "label": "js/tests",
+   "x": 2480,
+   "y": 880,
+   "width": 900,
+   "height": 470,
+   "color": "4"
+  },
+  {
+   "id": "n_js_tests_balance_run",
+   "type": "file",
+   "file": "Code Graph/Nodes/balance-run.js.md",
+   "x": 2510,
+   "y": 950,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "n_js_tests_browser_run",
+   "type": "file",
+   "file": "Code Graph/Nodes/browser-run.js.md",
+   "x": 2800,
+   "y": 950,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "n_js_tests_economy_run",
+   "type": "file",
+   "file": "Code Graph/Nodes/economy-run.js.md",
+   "x": 3090,
+   "y": 950,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "n_js_tests_export_storyboard",
+   "type": "file",
+   "file": "Code Graph/Nodes/export-storyboard.js.md",
+   "x": 2510,
+   "y": 1050,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "n_js_tests_harness",
+   "type": "file",
+   "file": "Code Graph/Nodes/harness.js.md",
+   "x": 2800,
+   "y": 1050,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "n_js_tests_node_run",
+   "type": "file",
+   "file": "Code Graph/Nodes/node-run.js.md",
+   "x": 3090,
+   "y": 1050,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "n_js_tests_reachability_run",
+   "type": "file",
+   "file": "Code Graph/Nodes/reachability-run.js.md",
+   "x": 2510,
+   "y": 1150,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "n_js_tests_render_run",
+   "type": "file",
+   "file": "Code Graph/Nodes/render-run.js.md",
+   "x": 2800,
+   "y": 1150,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "n_js_tests_sim_run",
+   "type": "file",
+   "file": "Code Graph/Nodes/sim-run.js.md",
+   "x": 3090,
+   "y": 1150,
+   "width": 260,
+   "height": 70
+  },
+  {
+   "id": "n_js_tests_tests",
+   "type": "file",
+   "file": "Code Graph/Nodes/tests.js.md",
+   "x": 2510,
+   "y": 1250,
+   "width": 260,
+   "height": 70
+  }
+ ],
+ "edges": [
+  {
+   "id": "e0",
+   "fromNode": "n_js_tests_balance_run",
+   "toNode": "n_js_tests_harness",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "imports from"
+  },
+  {
+   "id": "e1",
+   "fromNode": "n_js_tests_economy_run",
+   "toNode": "n_js_tests_harness",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "imports from"
+  },
+  {
+   "id": "e2",
+   "fromNode": "n_js_tests_export_storyboard",
+   "toNode": "n_js_tests_harness",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "imports from"
+  },
+  {
+   "id": "e3",
+   "fromNode": "n_js_tests_node_run",
+   "toNode": "n_js_tests_harness",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "imports from"
+  },
+  {
+   "id": "e4",
+   "fromNode": "n_js_tests_reachability_run",
+   "toNode": "n_js_tests_harness",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "imports from"
+  },
+  {
+   "id": "e5",
+   "fromNode": "n_js_tests_render_run",
+   "toNode": "n_js_tests_harness",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "imports from"
+  },
+  {
+   "id": "e6",
+   "fromNode": "n_js_tests_sim_run",
+   "toNode": "n_js_tests_harness",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "imports from"
+  },
+  {
+   "id": "e7",
+   "fromNode": "n_js_art_cinematic",
+   "toNode": "n_js_art_pixel",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Pixel"
+  },
+  {
+   "id": "e8",
+   "fromNode": "n_js_art_cinematic",
+   "toNode": "n_js_art_palette",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Pal"
+  },
+  {
+   "id": "e9",
+   "fromNode": "n_js_art_cinematic",
+   "toNode": "n_js_ui_screens",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Settings"
+  },
+  {
+   "id": "e10",
+   "fromNode": "n_js_art_cinematic",
+   "toNode": "n_js_art_scenes",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Scenes"
+  },
+  {
+   "id": "e11",
+   "fromNode": "n_js_art_cinematic",
+   "toNode": "n_js_audio_music",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Music"
+  },
+  {
+   "id": "e12",
+   "fromNode": "n_js_art_cinematic",
+   "toNode": "n_js_core_util",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.clamp"
+  },
+  {
+   "id": "e13",
+   "fromNode": "n_js_art_cinematic",
+   "toNode": "n_js_audio_sfx",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.SFX"
+  },
+  {
+   "id": "e14",
+   "fromNode": "n_js_art_decisions",
+   "toNode": "n_js_art_pixel",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Pixel"
+  },
+  {
+   "id": "e15",
+   "fromNode": "n_js_art_decisions",
+   "toNode": "n_js_art_palette",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Pal"
+  },
+  {
+   "id": "e16",
+   "fromNode": "n_js_art_decisions",
+   "toNode": "n_js_art_rhythm",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Rhythm"
+  },
+  {
+   "id": "e17",
+   "fromNode": "n_js_art_decisions",
+   "toNode": "n_js_art_storyboard",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Storyboard"
+  },
+  {
+   "id": "e18",
+   "fromNode": "n_js_art_decisions",
+   "toNode": "n_js_art_portraits",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Portraits"
+  },
+  {
+   "id": "e19",
+   "fromNode": "n_js_art_decisions",
+   "toNode": "n_js_art_scenes",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Scenes"
+  },
+  {
+   "id": "e20",
+   "fromNode": "n_js_art_palette",
+   "toNode": "n_js_core_util",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.clamp"
+  },
+  {
+   "id": "e21",
+   "fromNode": "n_js_art_pixel",
+   "toNode": "n_js_art_palette",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Pal, BTB.PalKeys"
+  },
+  {
+   "id": "e22",
+   "fromNode": "n_js_art_pixel",
+   "toNode": "n_js_core_util",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.clamp"
+  },
+  {
+   "id": "e23",
+   "fromNode": "n_js_art_pixel",
+   "toNode": "n_js_core_rng",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.RNG, BTB.hashSeed"
+  },
+  {
+   "id": "e24",
+   "fromNode": "n_js_art_portraits",
+   "toNode": "n_js_art_pixel",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Pixel"
+  },
+  {
+   "id": "e25",
+   "fromNode": "n_js_art_portraits",
+   "toNode": "n_js_art_palette",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Pal, BTB.PalKeys"
+  },
+  {
+   "id": "e26",
+   "fromNode": "n_js_art_rhythm",
+   "toNode": "n_js_art_pixel",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Pixel"
+  },
+  {
+   "id": "e27",
+   "fromNode": "n_js_art_rhythm",
+   "toNode": "n_js_art_palette",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Pal"
+  },
+  {
+   "id": "e28",
+   "fromNode": "n_js_art_rhythm",
+   "toNode": "n_js_core_rng",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.hashSeed"
+  },
+  {
+   "id": "e29",
+   "fromNode": "n_js_art_rhythm",
+   "toNode": "n_js_modes_story_story_data",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.StoryData"
+  },
+  {
+   "id": "e30",
+   "fromNode": "n_js_art_rhythm",
+   "toNode": "n_js_ui_hud",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.UI"
+  },
+  {
+   "id": "e31",
+   "fromNode": "n_js_art_rhythm",
+   "toNode": "n_js_modes_story_story_engine",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.StoryMode"
+  },
+  {
+   "id": "e32",
+   "fromNode": "n_js_art_rhythm",
+   "toNode": "n_js_core_util",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.clamp, BTB.fmt"
+  },
+  {
+   "id": "e33",
+   "fromNode": "n_js_art_rhythm",
+   "toNode": "n_js_modes_story_sqwak_story",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.SqwakStory"
+  },
+  {
+   "id": "e34",
+   "fromNode": "n_js_art_rhythm",
+   "toNode": "n_js_art_scenes",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Scenes"
+  },
+  {
+   "id": "e35",
+   "fromNode": "n_js_art_rhythm",
+   "toNode": "n_js_core_clock",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Calendar"
+  },
+  {
+   "id": "e36",
+   "fromNode": "n_js_art_scenes",
+   "toNode": "n_js_art_pixel",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Pixel"
+  },
+  {
+   "id": "e37",
+   "fromNode": "n_js_art_scenes",
+   "toNode": "n_js_art_palette",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Pal"
+  },
+  {
+   "id": "e38",
+   "fromNode": "n_js_art_scenes",
+   "toNode": "n_js_art_rhythm",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Rhythm"
+  },
+  {
+   "id": "e39",
+   "fromNode": "n_js_art_scenes",
+   "toNode": "n_js_core_util",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.clamp, BTB.fmt"
+  },
+  {
+   "id": "e40",
+   "fromNode": "n_js_art_story_art",
+   "toNode": "n_js_art_pixel",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Pixel"
+  },
+  {
+   "id": "e41",
+   "fromNode": "n_js_art_story_art",
+   "toNode": "n_js_art_palette",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Pal"
+  },
+  {
+   "id": "e42",
+   "fromNode": "n_js_art_story_art",
+   "toNode": "n_js_modes_story_story_data",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.StoryData"
+  },
+  {
+   "id": "e43",
+   "fromNode": "n_js_art_storyboard",
+   "toNode": "n_js_art_scenes",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Scenes, BTB.Shots"
+  },
+  {
+   "id": "e44",
+   "fromNode": "n_js_art_storyboard",
+   "toNode": "n_js_art_pixel",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Pixel"
+  },
+  {
+   "id": "e45",
+   "fromNode": "n_js_art_storyboard",
+   "toNode": "n_js_art_palette",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Pal"
+  },
+  {
+   "id": "e46",
+   "fromNode": "n_js_art_storyboard",
+   "toNode": "n_js_art_rhythm",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Rhythm"
+  },
+  {
+   "id": "e47",
+   "fromNode": "n_js_art_storyboard",
+   "toNode": "n_js_modes_story_story_data",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.StoryData"
+  },
+  {
+   "id": "e48",
+   "fromNode": "n_js_art_storyboard",
+   "toNode": "n_js_core_util",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.clamp, BTB.fmt"
+  },
+  {
+   "id": "e49",
+   "fromNode": "n_js_art_storyboard",
+   "toNode": "n_js_art_decisions",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.DecisionArt"
+  },
+  {
+   "id": "e50",
+   "fromNode": "n_js_art_storyboard",
+   "toNode": "n_js_modes_story_economy",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Economy"
+  },
+  {
+   "id": "e51",
+   "fromNode": "n_js_art_storyboard",
+   "toNode": "n_js_core_clock",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Calendar"
+  },
+  {
+   "id": "e52",
+   "fromNode": "n_js_audio_music",
+   "toNode": "n_js_audio_sfx",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.SFX"
+  },
+  {
+   "id": "e53",
+   "fromNode": "n_js_audio_music",
+   "toNode": "n_js_core_util",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.clamp"
+  },
+  {
+   "id": "e54",
+   "fromNode": "n_js_audio_sfx",
+   "toNode": "n_js_core_util",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.clamp"
+  },
+  {
+   "id": "e55",
+   "fromNode": "n_js_core_save",
+   "toNode": "n_js_core_storage",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.storage"
+  },
+  {
+   "id": "e56",
+   "fromNode": "n_js_core_save",
+   "toNode": "n_js_modes_story_endings",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.StoryEndings"
+  },
+  {
+   "id": "e57",
+   "fromNode": "n_js_game",
+   "toNode": "n_js_market_engine",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Market"
+  },
+  {
+   "id": "e58",
+   "fromNode": "n_js_game",
+   "toNode": "n_js_trading_broker",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Broker"
+  },
+  {
+   "id": "e59",
+   "fromNode": "n_js_game",
+   "toNode": "n_js_stress",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Stress"
+  },
+  {
+   "id": "e60",
+   "fromNode": "n_js_game",
+   "toNode": "n_js_interrupts",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Interrupts"
+  },
+  {
+   "id": "e61",
+   "fromNode": "n_js_game",
+   "toNode": "n_js_core_rng",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.RNG, BTB.hashSeed"
+  },
+  {
+   "id": "e62",
+   "fromNode": "n_js_game",
+   "toNode": "n_js_core_util",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.DAY_MIN, BTB.fmt"
+  },
+  {
+   "id": "e63",
+   "fromNode": "n_js_game",
+   "toNode": "n_js_ui_hud",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.UI"
+  },
+  {
+   "id": "e64",
+   "fromNode": "n_js_game",
+   "toNode": "n_js_art_cinematic",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Cinematic"
+  },
+  {
+   "id": "e65",
+   "fromNode": "n_js_game",
+   "toNode": "n_js_ui_screens",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Screens"
+  },
+  {
+   "id": "e66",
+   "fromNode": "n_js_game",
+   "toNode": "n_js_audio_music",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Music"
+  },
+  {
+   "id": "e67",
+   "fromNode": "n_js_game",
+   "toNode": "n_js_audio_sfx",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.SFX"
+  },
+  {
+   "id": "e68",
+   "fromNode": "n_js_game",
+   "toNode": "n_js_core_clock",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Calendar"
+  },
+  {
+   "id": "e69",
+   "fromNode": "n_js_game",
+   "toNode": "n_js_modes_story_story_engine",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.StoryMode"
+  },
+  {
+   "id": "e70",
+   "fromNode": "n_js_game",
+   "toNode": "n_js_core_save",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Save"
+  },
+  {
+   "id": "e71",
+   "fromNode": "n_js_interrupts",
+   "toNode": "n_js_core_rng",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.RNG, BTB.hashSeed"
+  },
+  {
+   "id": "e72",
+   "fromNode": "n_js_interrupts",
+   "toNode": "n_js_ui_hud",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.UI"
+  },
+  {
+   "id": "e73",
+   "fromNode": "n_js_interrupts",
+   "toNode": "n_js_market_tickers",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.TICKERS"
+  },
+  {
+   "id": "e74",
+   "fromNode": "n_js_interrupts",
+   "toNode": "n_js_core_util",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.fmt"
+  },
+  {
+   "id": "e75",
+   "fromNode": "n_js_interrupts",
+   "toNode": "n_js_audio_sfx",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.SFX"
+  },
+  {
+   "id": "e76",
+   "fromNode": "n_js_main",
+   "toNode": "n_js_core_util",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.el, BTB.esc, BTB.fmt"
+  },
+  {
+   "id": "e77",
+   "fromNode": "n_js_main",
+   "toNode": "n_js_core_save",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Save"
+  },
+  {
+   "id": "e78",
+   "fromNode": "n_js_main",
+   "toNode": "n_js_game",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Game"
+  },
+  {
+   "id": "e79",
+   "fromNode": "n_js_main",
+   "toNode": "n_js_modes_story_story_engine",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.StoryMode"
+  },
+  {
+   "id": "e80",
+   "fromNode": "n_js_main",
+   "toNode": "n_js_ui_screens",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Screens, BTB.Settings"
+  },
+  {
+   "id": "e81",
+   "fromNode": "n_js_main",
+   "toNode": "n_js_modes_endless_endless",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.EndlessMode, BTB.EndlessSetup"
+  },
+  {
+   "id": "e82",
+   "fromNode": "n_js_main",
+   "toNode": "n_js_art_pixel",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Pixel"
+  },
+  {
+   "id": "e83",
+   "fromNode": "n_js_main",
+   "toNode": "n_js_art_palette",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Pal"
+  },
+  {
+   "id": "e84",
+   "fromNode": "n_js_main",
+   "toNode": "n_js_market_tickers",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.TICKERS"
+  },
+  {
+   "id": "e85",
+   "fromNode": "n_js_main",
+   "toNode": "n_js_ui_hud",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.UI"
+  },
+  {
+   "id": "e86",
+   "fromNode": "n_js_main",
+   "toNode": "n_js_audio_sfx",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.SFX"
+  },
+  {
+   "id": "e87",
+   "fromNode": "n_js_main",
+   "toNode": "n_js_audio_music",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Music"
+  },
+  {
+   "id": "e88",
+   "fromNode": "n_js_main",
+   "toNode": "n_js_ui_saveslots",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Slots"
+  },
+  {
+   "id": "e89",
+   "fromNode": "n_js_main",
+   "toNode": "n_js_ui_debug",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Debug"
+  },
+  {
+   "id": "e90",
+   "fromNode": "n_js_market_engine",
+   "toNode": "n_js_core_util",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.DAY_MIN, BTB.clamp"
+  },
+  {
+   "id": "e91",
+   "fromNode": "n_js_market_engine",
+   "toNode": "n_js_market_tickers",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.REGIMES, BTB.SECTORS, BTB.TICKERS"
+  },
+  {
+   "id": "e92",
+   "fromNode": "n_js_market_engine",
+   "toNode": "n_js_core_rng",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.RNG, BTB.hashSeed"
+  },
+  {
+   "id": "e93",
+   "fromNode": "n_js_market_news",
+   "toNode": "n_js_market_sqwak",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Sqwak"
+  },
+  {
+   "id": "e94",
+   "fromNode": "n_js_market_news",
+   "toNode": "n_js_market_tickers",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.TICKERS"
+  },
+  {
+   "id": "e95",
+   "fromNode": "n_js_market_sqwak",
+   "toNode": "n_js_core_rng",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.RNG, BTB.hashSeed"
+  },
+  {
+   "id": "e96",
+   "fromNode": "n_js_market_sqwak",
+   "toNode": "n_js_market_tickers",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.TICKERS"
+  },
+  {
+   "id": "e97",
+   "fromNode": "n_js_market_sqwak",
+   "toNode": "n_js_core_util",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.clamp"
+  },
+  {
+   "id": "e98",
+   "fromNode": "n_js_modes_endless_endless",
+   "toNode": "n_js_core_util",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.clamp, BTB.el, BTB.esc, BTB.fmt"
+  },
+  {
+   "id": "e99",
+   "fromNode": "n_js_modes_endless_endless",
+   "toNode": "n_js_core_rng",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.RNG, BTB.hashSeed"
+  },
+  {
+   "id": "e100",
+   "fromNode": "n_js_modes_endless_endless",
+   "toNode": "n_js_market_tickers",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.REGIMES, BTB.SECTORS, BTB.TICKERS"
+  },
+  {
+   "id": "e101",
+   "fromNode": "n_js_modes_endless_endless",
+   "toNode": "n_js_market_news",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.News"
+  },
+  {
+   "id": "e102",
+   "fromNode": "n_js_modes_endless_endless",
+   "toNode": "n_js_market_sqwak",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Sqwak"
+  },
+  {
+   "id": "e103",
+   "fromNode": "n_js_modes_endless_endless",
+   "toNode": "n_js_core_storage",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.storage"
+  },
+  {
+   "id": "e104",
+   "fromNode": "n_js_modes_endless_endless",
+   "toNode": "n_js_ui_screens",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Screens"
+  },
+  {
+   "id": "e105",
+   "fromNode": "n_js_modes_endless_endless",
+   "toNode": "n_js_audio_sfx",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.SFX"
+  },
+  {
+   "id": "e106",
+   "fromNode": "n_js_modes_endless_endless",
+   "toNode": "n_js_main",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Main"
+  },
+  {
+   "id": "e107",
+   "fromNode": "n_js_modes_story_economy",
+   "toNode": "n_js_core_util",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.clamp, BTB.fmt"
+  },
+  {
+   "id": "e108",
+   "fromNode": "n_js_modes_story_economy",
+   "toNode": "n_js_market_sqwak",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Sqwak"
+  },
+  {
+   "id": "e109",
+   "fromNode": "n_js_modes_story_endings",
+   "toNode": "n_js_core_util",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.fmt"
+  },
+  {
+   "id": "e110",
+   "fromNode": "n_js_modes_story_endings",
+   "toNode": "n_js_core_save",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Save"
+  },
+  {
+   "id": "e111",
+   "fromNode": "n_js_modes_story_life",
+   "toNode": "n_js_modes_story_story_data",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.StoryData"
+  },
+  {
+   "id": "e112",
+   "fromNode": "n_js_modes_story_life",
+   "toNode": "n_js_core_util",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.fmt"
+  },
+  {
+   "id": "e113",
+   "fromNode": "n_js_modes_story_mentor",
+   "toNode": "n_js_ui_hud",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.UI"
+  },
+  {
+   "id": "e114",
+   "fromNode": "n_js_modes_story_mentor",
+   "toNode": "n_js_market_sqwak",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Sqwak"
+  },
+  {
+   "id": "e115",
+   "fromNode": "n_js_modes_story_sqwak_story",
+   "toNode": "n_js_modes_story_story_data",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.StoryData"
+  },
+  {
+   "id": "e116",
+   "fromNode": "n_js_modes_story_sqwak_story",
+   "toNode": "n_js_market_sqwak",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Sqwak"
+  },
+  {
+   "id": "e117",
+   "fromNode": "n_js_modes_story_story_data",
+   "toNode": "n_js_core_util",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.clamp"
+  },
+  {
+   "id": "e118",
+   "fromNode": "n_js_modes_story_story_engine",
+   "toNode": "n_js_modes_story_story_data",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.StoryData"
+  },
+  {
+   "id": "e119",
+   "fromNode": "n_js_modes_story_story_engine",
+   "toNode": "n_js_art_cinematic",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Cinematic"
+  },
+  {
+   "id": "e120",
+   "fromNode": "n_js_modes_story_story_engine",
+   "toNode": "n_js_art_scenes",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Scenes"
+  },
+  {
+   "id": "e121",
+   "fromNode": "n_js_modes_story_story_engine",
+   "toNode": "n_js_modes_story_economy",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Economy"
+  },
+  {
+   "id": "e122",
+   "fromNode": "n_js_modes_story_story_engine",
+   "toNode": "n_js_ui_screens",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Screens, BTB.Settings"
+  },
+  {
+   "id": "e123",
+   "fromNode": "n_js_modes_story_story_engine",
+   "toNode": "n_js_core_util",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.DAY_MIN, BTB.clamp, BTB.fmt"
+  },
+  {
+   "id": "e124",
+   "fromNode": "n_js_modes_story_story_engine",
+   "toNode": "n_js_market_tickers",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.SECTORS, BTB.TICKERS"
+  },
+  {
+   "id": "e125",
+   "fromNode": "n_js_modes_story_story_engine",
+   "toNode": "n_js_core_clock",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Calendar"
+  },
+  {
+   "id": "e126",
+   "fromNode": "n_js_modes_story_story_engine",
+   "toNode": "n_js_core_rng",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.RNG, BTB.hashSeed"
+  },
+  {
+   "id": "e127",
+   "fromNode": "n_js_modes_story_story_engine",
+   "toNode": "n_js_market_news",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.News"
+  },
+  {
+   "id": "e128",
+   "fromNode": "n_js_modes_story_story_engine",
+   "toNode": "n_js_market_sqwak",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Sqwak"
+  },
+  {
+   "id": "e129",
+   "fromNode": "n_js_modes_story_story_engine",
+   "toNode": "n_js_ui_hud",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.UI"
+  },
+  {
+   "id": "e130",
+   "fromNode": "n_js_modes_story_story_engine",
+   "toNode": "n_js_modes_story_mentor",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Mentor"
+  },
+  {
+   "id": "e131",
+   "fromNode": "n_js_modes_story_story_engine",
+   "toNode": "n_js_audio_sfx",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.SFX"
+  },
+  {
+   "id": "e132",
+   "fromNode": "n_js_modes_story_story_engine",
+   "toNode": "n_js_audio_music",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Music"
+  },
+  {
+   "id": "e133",
+   "fromNode": "n_js_modes_story_story_engine",
+   "toNode": "n_js_modes_story_life",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Life"
+  },
+  {
+   "id": "e134",
+   "fromNode": "n_js_modes_story_story_engine",
+   "toNode": "n_js_trading_options",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Options"
+  },
+  {
+   "id": "e135",
+   "fromNode": "n_js_modes_story_story_engine",
+   "toNode": "n_js_modes_story_endings",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.StoryEndings"
+  },
+  {
+   "id": "e136",
+   "fromNode": "n_js_stress",
+   "toNode": "n_js_core_util",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.clamp"
+  },
+  {
+   "id": "e137",
+   "fromNode": "n_js_tests_balance_run",
+   "toNode": "n_js_modes_story_story_engine",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.StoryMode"
+  },
+  {
+   "id": "e138",
+   "fromNode": "n_js_tests_balance_run",
+   "toNode": "n_js_market_engine",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Market"
+  },
+  {
+   "id": "e139",
+   "fromNode": "n_js_tests_balance_run",
+   "toNode": "n_js_trading_broker",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Broker"
+  },
+  {
+   "id": "e140",
+   "fromNode": "n_js_tests_balance_run",
+   "toNode": "n_js_modes_story_story_data",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.StoryData"
+  },
+  {
+   "id": "e141",
+   "fromNode": "n_js_tests_balance_run",
+   "toNode": "n_js_core_util",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.DAY_MIN"
+  },
+  {
+   "id": "e142",
+   "fromNode": "n_js_tests_browser_run",
+   "toNode": "n_js_ui_screens",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Screens, BTB.Settings"
+  },
+  {
+   "id": "e143",
+   "fromNode": "n_js_tests_browser_run",
+   "toNode": "n_js_art_cinematic",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Cinematic"
+  },
+  {
+   "id": "e144",
+   "fromNode": "n_js_tests_browser_run",
+   "toNode": "n_js_art_scenes",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Scenes"
+  },
+  {
+   "id": "e145",
+   "fromNode": "n_js_tests_browser_run",
+   "toNode": "n_js_art_rhythm",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Rhythm"
+  },
+  {
+   "id": "e146",
+   "fromNode": "n_js_tests_browser_run",
+   "toNode": "n_js_main",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Main"
+  },
+  {
+   "id": "e147",
+   "fromNode": "n_js_tests_economy_run",
+   "toNode": "n_js_modes_story_story_data",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.StoryData"
+  },
+  {
+   "id": "e148",
+   "fromNode": "n_js_tests_economy_run",
+   "toNode": "n_js_modes_story_economy",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Economy"
+  },
+  {
+   "id": "e149",
+   "fromNode": "n_js_tests_economy_run",
+   "toNode": "n_js_market_tickers",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.SECTORS, BTB.TICKERS"
+  },
+  {
+   "id": "e150",
+   "fromNode": "n_js_tests_economy_run",
+   "toNode": "n_js_modes_story_story_engine",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.StoryMode"
+  },
+  {
+   "id": "e151",
+   "fromNode": "n_js_tests_economy_run",
+   "toNode": "n_js_market_engine",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Market"
+  },
+  {
+   "id": "e152",
+   "fromNode": "n_js_tests_economy_run",
+   "toNode": "n_js_trading_broker",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Broker"
+  },
+  {
+   "id": "e153",
+   "fromNode": "n_js_tests_economy_run",
+   "toNode": "n_js_core_util",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.DAY_MIN"
+  },
+  {
+   "id": "e154",
+   "fromNode": "n_js_tests_economy_run",
+   "toNode": "n_js_core_rng",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.RNG, BTB.hashSeed"
+  },
+  {
+   "id": "e155",
+   "fromNode": "n_js_tests_export_storyboard",
+   "toNode": "n_js_art_rhythm",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Rhythm"
+  },
+  {
+   "id": "e156",
+   "fromNode": "n_js_tests_export_storyboard",
+   "toNode": "n_js_modes_story_story_data",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.StoryData"
+  },
+  {
+   "id": "e157",
+   "fromNode": "n_js_tests_export_storyboard",
+   "toNode": "n_js_art_scenes",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Scenes"
+  },
+  {
+   "id": "e158",
+   "fromNode": "n_js_tests_export_storyboard",
+   "toNode": "n_js_modes_story_endings",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.StoryEndings"
+  },
+  {
+   "id": "e159",
+   "fromNode": "n_js_tests_export_storyboard",
+   "toNode": "n_js_art_decisions",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.DecisionArt"
+  },
+  {
+   "id": "e160",
+   "fromNode": "n_js_tests_export_storyboard",
+   "toNode": "n_js_modes_story_life",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Life"
+  },
+  {
+   "id": "e161",
+   "fromNode": "n_js_tests_export_storyboard",
+   "toNode": "n_js_art_storyboard",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Storyboard"
+  },
+  {
+   "id": "e162",
+   "fromNode": "n_js_tests_node_run",
+   "toNode": "n_js_tests_tests",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Tests, BTB.__storyReach"
+  },
+  {
+   "id": "e163",
+   "fromNode": "n_js_tests_reachability_run",
+   "toNode": "n_js_modes_story_story_data",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.StoryData"
+  },
+  {
+   "id": "e164",
+   "fromNode": "n_js_tests_reachability_run",
+   "toNode": "n_js_market_tickers",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.TICKERS"
+  },
+  {
+   "id": "e165",
+   "fromNode": "n_js_tests_reachability_run",
+   "toNode": "n_js_modes_story_story_engine",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.StoryMode"
+  },
+  {
+   "id": "e166",
+   "fromNode": "n_js_tests_reachability_run",
+   "toNode": "n_js_modes_story_endings",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.StoryEndings"
+  },
+  {
+   "id": "e167",
+   "fromNode": "n_js_tests_render_run",
+   "toNode": "n_js_art_scenes",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Scenes"
+  },
+  {
+   "id": "e168",
+   "fromNode": "n_js_tests_render_run",
+   "toNode": "n_js_art_rhythm",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Rhythm"
+  },
+  {
+   "id": "e169",
+   "fromNode": "n_js_tests_sim_run",
+   "toNode": "n_js_game",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Game"
+  },
+  {
+   "id": "e170",
+   "fromNode": "n_js_tests_sim_run",
+   "toNode": "n_js_ui_screens",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Screens"
+  },
+  {
+   "id": "e171",
+   "fromNode": "n_js_tests_sim_run",
+   "toNode": "n_js_modes_story_story_data",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.StoryData"
+  },
+  {
+   "id": "e172",
+   "fromNode": "n_js_tests_sim_run",
+   "toNode": "n_js_core_rng",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.RNG, BTB.hashSeed"
+  },
+  {
+   "id": "e173",
+   "fromNode": "n_js_tests_sim_run",
+   "toNode": "n_js_modes_story_story_engine",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.StoryMode"
+  },
+  {
+   "id": "e174",
+   "fromNode": "n_js_tests_sim_run",
+   "toNode": "n_js_modes_endless_endless",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Endless, BTB.EndlessMode"
+  },
+  {
+   "id": "e175",
+   "fromNode": "n_js_tests_tests",
+   "toNode": "n_js_ui_hud",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.UI"
+  },
+  {
+   "id": "e176",
+   "fromNode": "n_js_tests_tests",
+   "toNode": "n_js_market_engine",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Market"
+  },
+  {
+   "id": "e177",
+   "fromNode": "n_js_tests_tests",
+   "toNode": "n_js_core_util",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.DAY_MIN, BTB.fmt"
+  },
+  {
+   "id": "e178",
+   "fromNode": "n_js_tests_tests",
+   "toNode": "n_js_trading_broker",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Broker"
+  },
+  {
+   "id": "e179",
+   "fromNode": "n_js_tests_tests",
+   "toNode": "n_js_core_rng",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.RNG, BTB.hashSeed"
+  },
+  {
+   "id": "e180",
+   "fromNode": "n_js_tests_tests",
+   "toNode": "n_js_trading_options",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Options"
+  },
+  {
+   "id": "e181",
+   "fromNode": "n_js_tests_tests",
+   "toNode": "n_js_market_tickers",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.REGIMES, BTB.SECTORS, BTB.TICKERS"
+  },
+  {
+   "id": "e182",
+   "fromNode": "n_js_tests_tests",
+   "toNode": "n_js_stress",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Stress"
+  },
+  {
+   "id": "e183",
+   "fromNode": "n_js_tests_tests",
+   "toNode": "n_js_modes_story_story_engine",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.StoryMode"
+  },
+  {
+   "id": "e184",
+   "fromNode": "n_js_tests_tests",
+   "toNode": "n_js_game",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Game"
+  },
+  {
+   "id": "e185",
+   "fromNode": "n_js_tests_tests",
+   "toNode": "n_js_core_save",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Save"
+  },
+  {
+   "id": "e186",
+   "fromNode": "n_js_tests_tests",
+   "toNode": "n_js_core_storage",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.storage"
+  },
+  {
+   "id": "e187",
+   "fromNode": "n_js_tests_tests",
+   "toNode": "n_js_modes_story_story_data",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.StoryData"
+  },
+  {
+   "id": "e188",
+   "fromNode": "n_js_tests_tests",
+   "toNode": "n_js_art_storyboard",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Storyboard"
+  },
+  {
+   "id": "e189",
+   "fromNode": "n_js_tests_tests",
+   "toNode": "n_js_art_scenes",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Scenes"
+  },
+  {
+   "id": "e190",
+   "fromNode": "n_js_tests_tests",
+   "toNode": "n_js_art_decisions",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.DecisionArt"
+  },
+  {
+   "id": "e191",
+   "fromNode": "n_js_tests_tests",
+   "toNode": "n_js_modes_story_life",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Life"
+  },
+  {
+   "id": "e192",
+   "fromNode": "n_js_tests_tests",
+   "toNode": "n_js_art_portraits",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Portraits"
+  },
+  {
+   "id": "e193",
+   "fromNode": "n_js_tests_tests",
+   "toNode": "n_js_art_rhythm",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Rhythm"
+  },
+  {
+   "id": "e194",
+   "fromNode": "n_js_tests_tests",
+   "toNode": "n_js_modes_story_economy",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Economy"
+  },
+  {
+   "id": "e195",
+   "fromNode": "n_js_tests_tests",
+   "toNode": "n_js_interrupts",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Interrupts"
+  },
+  {
+   "id": "e196",
+   "fromNode": "n_js_tests_tests",
+   "toNode": "n_js_market_news",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.News"
+  },
+  {
+   "id": "e197",
+   "fromNode": "n_js_tests_tests",
+   "toNode": "n_js_market_sqwak",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Sqwak"
+  },
+  {
+   "id": "e198",
+   "fromNode": "n_js_tests_tests",
+   "toNode": "n_js_modes_story_sqwak_story",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.SqwakStory"
+  },
+  {
+   "id": "e199",
+   "fromNode": "n_js_tests_tests",
+   "toNode": "n_js_modes_story_mentor",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Mentor"
+  },
+  {
+   "id": "e200",
+   "fromNode": "n_js_tests_tests",
+   "toNode": "n_js_modes_story_endings",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.StoryEndings"
+  },
+  {
+   "id": "e201",
+   "fromNode": "n_js_tests_tests",
+   "toNode": "n_js_art_palette",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.PalKeys"
+  },
+  {
+   "id": "e202",
+   "fromNode": "n_js_tests_tests",
+   "toNode": "n_js_modes_endless_endless",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Endless"
+  },
+  {
+   "id": "e203",
+   "fromNode": "n_js_trading_broker",
+   "toNode": "n_js_trading_options",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Options"
+  },
+  {
+   "id": "e204",
+   "fromNode": "n_js_trading_broker",
+   "toNode": "n_js_market_tickers",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.SECTORS"
+  },
+  {
+   "id": "e205",
+   "fromNode": "n_js_trading_broker",
+   "toNode": "n_js_core_events",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.bus"
+  },
+  {
+   "id": "e206",
+   "fromNode": "n_js_trading_broker",
+   "toNode": "n_js_core_util",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.DAY_MIN, BTB.clamp"
+  },
+  {
+   "id": "e207",
+   "fromNode": "n_js_trading_options",
+   "toNode": "n_js_market_tickers",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.REGIMES, BTB.SECTORS"
+  },
+  {
+   "id": "e208",
+   "fromNode": "n_js_trading_options",
+   "toNode": "n_js_core_util",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.DAY_MIN"
+  },
+  {
+   "id": "e209",
+   "fromNode": "n_js_trading_options",
+   "toNode": "n_js_core_clock",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Calendar"
+  },
+  {
+   "id": "e210",
+   "fromNode": "n_js_ui_chart",
+   "toNode": "n_js_art_palette",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Pal"
+  },
+  {
+   "id": "e211",
+   "fromNode": "n_js_ui_chart",
+   "toNode": "n_js_core_util",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.DAY_MIN, BTB.fmt"
+  },
+  {
+   "id": "e212",
+   "fromNode": "n_js_ui_chart",
+   "toNode": "n_js_core_clock",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Calendar"
+  },
+  {
+   "id": "e213",
+   "fromNode": "n_js_ui_debug",
+   "toNode": "n_js_core_util",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.DAY_MIN, BTB.clamp, BTB.el"
+  },
+  {
+   "id": "e214",
+   "fromNode": "n_js_ui_debug",
+   "toNode": "n_js_ui_hud",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.UI"
+  },
+  {
+   "id": "e215",
+   "fromNode": "n_js_ui_debug",
+   "toNode": "n_js_modes_story_story_data",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.StoryData"
+  },
+  {
+   "id": "e216",
+   "fromNode": "n_js_ui_debug",
+   "toNode": "n_js_art_cinematic",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Cinematic"
+  },
+  {
+   "id": "e217",
+   "fromNode": "n_js_ui_debug",
+   "toNode": "n_js_core_clock",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Calendar"
+  },
+  {
+   "id": "e218",
+   "fromNode": "n_js_ui_debug",
+   "toNode": "n_js_game",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Game"
+  },
+  {
+   "id": "e219",
+   "fromNode": "n_js_ui_debug",
+   "toNode": "n_js_modes_story_story_engine",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.StoryMode"
+  },
+  {
+   "id": "e220",
+   "fromNode": "n_js_ui_debug",
+   "toNode": "n_js_modes_endless_endless",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.EndlessMode"
+  },
+  {
+   "id": "e221",
+   "fromNode": "n_js_ui_debug",
+   "toNode": "n_js_ui_screens",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Screens"
+  },
+  {
+   "id": "e222",
+   "fromNode": "n_js_ui_hud",
+   "toNode": "n_js_core_util",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.clamp, BTB.el, BTB.esc, BTB.fmt, BTB.timeAgo"
+  },
+  {
+   "id": "e223",
+   "fromNode": "n_js_ui_hud",
+   "toNode": "n_js_ui_chart",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Chart"
+  },
+  {
+   "id": "e224",
+   "fromNode": "n_js_ui_hud",
+   "toNode": "n_js_ui_ticket",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Ticket"
+  },
+  {
+   "id": "e225",
+   "fromNode": "n_js_ui_hud",
+   "toNode": "n_js_audio_sfx",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.SFX"
+  },
+  {
+   "id": "e226",
+   "fromNode": "n_js_ui_hud",
+   "toNode": "n_js_ui_screens",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Screens, BTB.Settings"
+  },
+  {
+   "id": "e227",
+   "fromNode": "n_js_ui_hud",
+   "toNode": "n_js_audio_music",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Music"
+  },
+  {
+   "id": "e228",
+   "fromNode": "n_js_ui_hud",
+   "toNode": "n_js_core_save",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Save"
+  },
+  {
+   "id": "e229",
+   "fromNode": "n_js_ui_hud",
+   "toNode": "n_js_art_cinematic",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Cinematic"
+  },
+  {
+   "id": "e230",
+   "fromNode": "n_js_ui_hud",
+   "toNode": "n_js_core_clock",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Calendar"
+  },
+  {
+   "id": "e231",
+   "fromNode": "n_js_ui_hud",
+   "toNode": "n_js_art_story_art",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.StoryArt"
+  },
+  {
+   "id": "e232",
+   "fromNode": "n_js_ui_hud",
+   "toNode": "n_js_modes_story_story_data",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.StoryData"
+  },
+  {
+   "id": "e233",
+   "fromNode": "n_js_ui_hud",
+   "toNode": "n_js_core_rng",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.hashSeed"
+  },
+  {
+   "id": "e234",
+   "fromNode": "n_js_ui_hud",
+   "toNode": "n_js_market_sqwak",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Sqwak"
+  },
+  {
+   "id": "e235",
+   "fromNode": "n_js_ui_hud",
+   "toNode": "n_js_market_tickers",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.TICKERS"
+  },
+  {
+   "id": "e236",
+   "fromNode": "n_js_ui_hud",
+   "toNode": "n_js_modes_story_sqwak_story",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.SqwakStory"
+  },
+  {
+   "id": "e237",
+   "fromNode": "n_js_ui_hud",
+   "toNode": "n_js_modes_story_story_engine",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.StoryMode"
+  },
+  {
+   "id": "e238",
+   "fromNode": "n_js_ui_hud",
+   "toNode": "n_js_trading_options",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Options"
+  },
+  {
+   "id": "e239",
+   "fromNode": "n_js_ui_saveslots",
+   "toNode": "n_js_core_util",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.el, BTB.esc, BTB.fmt, BTB.timeAgo"
+  },
+  {
+   "id": "e240",
+   "fromNode": "n_js_ui_saveslots",
+   "toNode": "n_js_ui_screens",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Screens"
+  },
+  {
+   "id": "e241",
+   "fromNode": "n_js_ui_saveslots",
+   "toNode": "n_js_core_save",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Save"
+  },
+  {
+   "id": "e242",
+   "fromNode": "n_js_ui_saveslots",
+   "toNode": "n_js_main",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Main"
+  },
+  {
+   "id": "e243",
+   "fromNode": "n_js_ui_saveslots",
+   "toNode": "n_js_ui_hud",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.UI"
+  },
+  {
+   "id": "e244",
+   "fromNode": "n_js_ui_saveslots",
+   "toNode": "n_js_audio_sfx",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.SFX"
+  },
+  {
+   "id": "e245",
+   "fromNode": "n_js_ui_saveslots",
+   "toNode": "n_js_game",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Game"
+  },
+  {
+   "id": "e246",
+   "fromNode": "n_js_ui_saveslots",
+   "toNode": "n_js_modes_story_story_engine",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.StoryMode"
+  },
+  {
+   "id": "e247",
+   "fromNode": "n_js_ui_saveslots",
+   "toNode": "n_js_modes_endless_endless",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.EndlessMode"
+  },
+  {
+   "id": "e248",
+   "fromNode": "n_js_ui_screens",
+   "toNode": "n_js_core_util",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.el, BTB.esc, BTB.fmt"
+  },
+  {
+   "id": "e249",
+   "fromNode": "n_js_ui_screens",
+   "toNode": "n_js_core_storage",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.storage"
+  },
+  {
+   "id": "e250",
+   "fromNode": "n_js_ui_screens",
+   "toNode": "n_js_audio_sfx",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.SFX"
+  },
+  {
+   "id": "e251",
+   "fromNode": "n_js_ui_screens",
+   "toNode": "n_js_audio_music",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Music"
+  },
+  {
+   "id": "e252",
+   "fromNode": "n_js_ui_screens",
+   "toNode": "n_js_main",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Main"
+  },
+  {
+   "id": "e253",
+   "fromNode": "n_js_ui_screens",
+   "toNode": "n_js_core_clock",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Calendar"
+  },
+  {
+   "id": "e254",
+   "fromNode": "n_js_ui_screens",
+   "toNode": "n_js_market_sqwak",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Sqwak"
+  },
+  {
+   "id": "e255",
+   "fromNode": "n_js_ui_screens",
+   "toNode": "n_js_ui_hud",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.UI"
+  },
+  {
+   "id": "e256",
+   "fromNode": "n_js_ui_screens",
+   "toNode": "n_js_art_portraits",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Portraits"
+  },
+  {
+   "id": "e257",
+   "fromNode": "n_js_ui_screens",
+   "toNode": "n_js_art_decisions",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.DecisionArt"
+  },
+  {
+   "id": "e258",
+   "fromNode": "n_js_ui_screens",
+   "toNode": "n_js_art_cinematic",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Cinematic"
+  },
+  {
+   "id": "e259",
+   "fromNode": "n_js_ui_screens",
+   "toNode": "n_js_core_save",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Save"
+  },
+  {
+   "id": "e260",
+   "fromNode": "n_js_ui_screens",
+   "toNode": "n_js_modes_story_endings",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.StoryEndings"
+  },
+  {
+   "id": "e261",
+   "fromNode": "n_js_ui_ticket",
+   "toNode": "n_js_core_util",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.el, BTB.fmt"
+  },
+  {
+   "id": "e262",
+   "fromNode": "n_js_ui_ticket",
+   "toNode": "n_js_ui_hud",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.UI"
+  },
+  {
+   "id": "e263",
+   "fromNode": "n_js_ui_ticket",
+   "toNode": "n_js_audio_sfx",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.SFX"
+  },
+  {
+   "id": "e264",
+   "fromNode": "n_js_ui_ticket",
+   "toNode": "n_js_trading_options",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "uses BTB.Options"
+  },
+  {
+   "id": "e265",
+   "fromNode": "n_css_ui",
+   "toNode": "n_css_tokens",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "reads tokens from"
+  },
+  {
+   "id": "e266",
+   "fromNode": "n_css_office",
+   "toNode": "n_css_tokens",
+   "fromSide": "right",
+   "toSide": "left",
+   "toEnd": "arrow",
+   "label": "reads tokens from"
+  }
+ ]
+}
