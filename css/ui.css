@@ -489,6 +489,17 @@ input.short { width: 72px; }
 .preopen-item > strong { display: block; color: var(--c-bone); font-size: 12px; margin-top: 3px; }
 .preopen-item > p { margin: 7px 0 0; color: var(--c-putty); font-size: 11px; line-height: 1.6; }
 .preopen-item.life { border-left-color: var(--c-grey); }
+/* The Ledger's desk note: a card with its own actions, so not one button. */
+.preopen-item.ledger { border-left-color: var(--c-jade); cursor: default; padding: 0; }
+.preopen-item.ledger .ledger-head { display: block; width: 100%; text-align: left; padding: 9px 10px; background: none; border: 0; color: inherit; font: inherit; cursor: pointer; }
+.preopen-item.ledger .ledger-head > span { display: block; color: var(--c-phosphor-d); font-size: 9px; letter-spacing: .08em; }
+.preopen-item.ledger .ledger-head > span b { color: var(--c-jade); }
+.preopen-item.ledger .ledger-head > strong { display: block; color: var(--c-bone); font-size: 12px; margin-top: 3px; }
+.preopen-item.ledger .ledger-body { padding: 0 10px 10px; }
+.preopen-item.ledger .ledger-body p { margin: 0 0 7px; color: var(--c-putty); font-size: 11px; line-height: 1.6; }
+.preopen-item.ledger .ledger-body p b { color: var(--c-bone); }
+.ledger-act { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; color: var(--c-grey2); font-size: 10px; }
+.ledger-act .btn { padding: 6px 10px; font-size: 10px; }
 .preopen-item.life > strong { color: var(--c-putty2); }
 .preopen-item.sq { display: grid; grid-template-columns: 24px 1fr; column-gap: 8px; align-items: start; }
 .preopen-item.sq > .sq-av { grid-row: 1 / span 3; font-style: normal; }
