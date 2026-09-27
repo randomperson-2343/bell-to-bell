@@ -45,7 +45,7 @@
     memo: 'HOLLOWAY STERN · INTERNAL', footnote: 'OFFERING MEMORANDUM', rating: 'MERIDIAN RATINGS · ACTION', post: 'SQWAK',
     chart: 'RISK PRINTOUT', ticket: 'ORDER BOOK', vote: 'FLOOR TALLY', voicemail: 'VOICEMAIL'
   };
-  // The twelve technical anomalies (patch3-data.js, A) sit on these sessions.
+  // The twelve technical anomalies (story-data.js, ANOMALIES) sit on these sessions.
   // The morning of each one has one small thing wrong in the picture.
   const ANOMALY_DAYS = [0, 2, 15, 19, 23, 25, 30, 32, 38, 43, 49, 58];
 
