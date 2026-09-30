@@ -364,11 +364,12 @@
       const track = dark ? 'endingDark' : 'endingLight';
       const show = () => {
         if (B.Cinematic.endChain) B.Cinematic.endChain();
-        B.Music.play(track);
+        if (B.Music.ending) B.Music.ending(ending, track); else B.Music.play(track);
         if (g.mode.kind === 'story') this.storyEnding(g, ending);
         else this.endlessEnding(g, ending);
       };
       if (B.Cinematic.startChain) B.Cinematic.startChain('ending');
+      if (B.Music.prepareEnding) B.Music.prepareEnding(ending);
       const pulled = !!(g.mode && g.mode.S && g.mode.S.f && g.mode.S.f.pulledPlug);
       B.Cinematic.play('ending', { id: ending.id, title: ending.title, deck: ending.deck, dark, pulled }, show);
     },

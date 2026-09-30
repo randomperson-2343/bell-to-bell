@@ -16,7 +16,7 @@ Everything goes through `js/audio/sound.js`. Game code still calls `B.SFX.*` and
 | During the day | `Music.setIntensity(stress, dayPos, game)` | Intensity from the formula below, about four times a second |
 | 4:00 close | `endDay()` | `bell_close`, music fades out (time constant 0.5 s) |
 | Closing report (after the close cinematic) | `Music.play('close')` | **Report bed**: the day's loop at intensity 0.1 (pad, bass, tape only). Not in the kit; see "Decisions for the owner" |
-| Ending screens | `Music.play('endingLight' / 'endingDark')` | **Classic** chiptune. The kit has no ending music |
+| Ending screens | `Music.ending(ending, 'endingLight' / 'endingDark')` | **That ending's own score**, `end_<id>`, fading in under the ending sound (see "Ending music" below). Classic style still plays the old chiptune |
 | Pause | `Music.duck(true)` | Music dips to 35 percent |
 | Music switch / volume | `setEnabled`, `setVolume` | Music stops or returns; slider default (45 percent) plays at the kit's level |
 
@@ -136,6 +136,39 @@ T is computed from the market clock and the day length setting, so the countdown
 | Master of the Universe, Clawback, The Everything Rally, The Acquirer, Ward of the State | `ending_hollow_win` (wins that cost you) |
 | Every other Career ending | `bell_close` (the old game rang its closing bell here) |
 
+## Ending music
+
+The kit had no ending music, so there is one loop for each of the 22 Career endings, composed afterwards in the same sound world (`source/compose_endings.py`: the same instruments, the same mix chain, the same leitmotif T). They are scores like the others (`events/ending_<id>.json`, key `end_<id>` in the game). Each one does something with T that matches what happened to the player:
+
+| Ending | Music |
+|---|---|
+| Wiped Out | T taken apart (five notes, four, three), then only the falling fifth D to A. The heartbeat slows and stops |
+| Fired | T's rhythm on one note, a clock, and a door at the end |
+| Nobody Turned It Off | Four machine voices drifting out of phase; a sharp ghost piles up; one bell and no answer |
+| Master of the Universe | Bright D major lounge; halfway the third drops and the same tune goes hollow |
+| The Whistleblower | T rising a step each time in D major (the one place the major third is used for real), a growing heartbeat, the tune whole at the end |
+| The Revolving Door | T in canon with itself over the same four chords, passing ear to ear |
+| Perp Walk | March, camera flashes of ticker tape, handcuff clacks, T upside down |
+| The Fall Guy | T plays right, then one note is a semitone off and a thin voice echoes it |
+| Cassandra | The same rising question four times, louder, always ending on the dominant |
+| The Acquirer | T at half speed, two voices tuning into each other |
+| Ward of the State | A chorale over a slow metronome, settling on D minor |
+| Clawback | A fast festive loop, then notes are removed until about 40 percent is left |
+| The Fund | D dorian, driving, ending on a bare fifth |
+| Right, Too Early | T arrives half a beat early each time and a little smaller each time |
+| The Everything Rally | F lydian shine over a D pedal that never moves |
+| The Lost Decade | One chord, a worn tape, two ostinatos slowly slipping apart |
+| Soft Landing | D major, the bass stepping down a stair at a time |
+| The Quiet Fortune | A soft pad and T rung very quietly on a bell |
+| Replaced | People first, then a machine grid takes over and recites T exactly |
+| The Depression | Layers taken away one at a time until a bell tolls T upside down over a drone |
+| Quiet Exit | Walking bass, footsteps moving away, T in pieces |
+| The Grind | T plain, an even heartbeat, a clock, a commute. No build, no fall |
+
+Endless runs borrow: Margin Death and Sudden Death play Wiped Out; Fired (both kinds) play Fired; Burnout and Walked Away play Quiet Exit; Legend plays The Fund; Retired Rich plays Soft Landing; both Survivors play The Grind.
+
+They were composed without being heard: the checks are the same as for the rest of the kit (every melody note in the key or declared, no melodic semitone clashes with the chord, loudness within 0.3 LU of the target in the game's own render). **What that cannot say is whether they are good.** `audition.html` in this folder plays all 22 through the game's own engine so they can be judged by ear.
+
 ## Cost on the audio thread, and the safety net
 
 The kit was rendered offline, so nobody has heard it run live on a phone. The busiest loops (Act I and II gameplay) cost about a quarter of one core of the machine this was built on, measured as offline render time per second of audio. Most of that is the number of live audio nodes, so every instrument was slimmed (constant gains are baked into the waveforms, panners are shared, voices end when they are 48 dB down) and checked again, note by note, against the kit's Python: the sound did not change.
@@ -165,6 +198,6 @@ These play their **Classic** sound in both styles:
 These are defaults chosen so the work could be finished. Each is one line to change.
 
 1. **Report bed.** After the closing bell the quiet gameplay loop plays under the closing report. The kit calls this optional and unheard. Off = delete `close` from `PLAN` in `sound.js`.
-2. **Ending music** stays the old chiptune. The kit did not cover it.
+2. **Ending music** is new, composed after the kit and never heard by its composer. Anything that sounds wrong is a one-file edit in `compose_endings.py` (then run `build_endings.py`). To go back to the old chiptune for one ending, delete its `end_<id>` from `ENDINGS` in `tools/build-audio-data.js` and rebuild.
 3. **Intensity.** The volatility maxima and the small stress push are guesses.
 4. **Classic fallback** is on by default (Settings > Sound style), as the handoff recommends.

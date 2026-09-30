@@ -6,9 +6,10 @@ The new music and sound effects were composed and rendered offline in Python (by
 |---|---|
 | `handoff.md` | The plan, the composition in plain English and the exact recipes. Written before the code existed, so it guesses at the game's own code in places; `mapping.md` is what was actually built. |
 | `mapping.md` | Which game event plays which sound, what stayed Classic, and the decisions left for the owner. |
-| `events/*.json` | The scores (menu, four feeds, four gameplay acts) and the 56-sound pack. **These are the source of truth.** |
-| `source/*.py` | The Python that wrote every score and rendered the previews. Needs numpy, scipy and ffmpeg. |
-| `qa_*.json`, `audibility.json` | The measurements the kit shipped with. `js/tests/audio-expected.json` is the part the render check compares against. |
+| `events/*.json` | The scores (menu, four feeds, four gameplay acts, and one loop for each of the 22 endings) and the 56-sound pack. **These are the source of truth.** |
+| `source/*.py` | The Python that wrote every score and rendered the previews. Needs numpy, scipy, matplotlib and ffmpeg. `compose_endings.py` writes the ending scores; `build_endings.py all` renders, normalises and exports them; `check_endings.py` runs the theory checks alone. |
+| `audition.html` | Open it in a browser (from the repo, not on its own) to hear all 31 loops through the game's own engine. |
+| `qa_*.json`, `qa_endings.json`, `audibility.json` | The measurements the kit shipped with. `js/tests/audio-expected.json` is the part the render check compares against. |
 
 The MP3 previews and the piano-roll pictures are not kept here (16 MB); they are in the original zip. The previews are the reference sound: if the game sounds different from them, fix the game.
 

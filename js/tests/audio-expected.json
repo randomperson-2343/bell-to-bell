@@ -77,6 +77,116 @@
     "1.0": 491
    },
    "loopSeconds": 91.43
+  },
+  "end_acquirer": {
+   "lufs": -21.0,
+   "centroid": 677,
+   "loopSeconds": 64.0
+  },
+  "end_cassandra": {
+   "lufs": -22.0,
+   "centroid": 843,
+   "loopSeconds": 53.33
+  },
+  "end_clawback": {
+   "lufs": -20.0,
+   "centroid": 1054,
+   "loopSeconds": 57.6
+  },
+  "end_depression": {
+   "lufs": -23.0,
+   "centroid": 458,
+   "loopSeconds": 71.11
+  },
+  "end_everything-rally": {
+   "lufs": -21.0,
+   "centroid": 1675,
+   "loopSeconds": 40.0
+  },
+  "end_exit": {
+   "lufs": -22.0,
+   "centroid": 648,
+   "loopSeconds": 41.74
+  },
+  "end_fall-guy": {
+   "lufs": -22.0,
+   "centroid": 654,
+   "loopSeconds": 54.86
+  },
+  "end_fired": {
+   "lufs": -22.0,
+   "centroid": 585,
+   "loopSeconds": 58.18
+  },
+  "end_fund": {
+   "lufs": -20.0,
+   "centroid": 907,
+   "loopSeconds": 40.0
+  },
+  "end_grind": {
+   "lufs": -22.0,
+   "centroid": 692,
+   "loopSeconds": 45.71
+  },
+  "end_lost-decade": {
+   "lufs": -23.0,
+   "centroid": 823,
+   "loopSeconds": 58.18
+  },
+  "end_master": {
+   "lufs": -21.0,
+   "centroid": 1033,
+   "loopSeconds": 41.74
+  },
+  "end_nobody": {
+   "lufs": -23.0,
+   "centroid": 570,
+   "loopSeconds": 53.33
+  },
+  "end_perp": {
+   "lufs": -21.0,
+   "centroid": 832,
+   "loopSeconds": 45.71
+  },
+  "end_quiet": {
+   "lufs": -25.0,
+   "centroid": 459,
+   "loopSeconds": 64.0
+  },
+  "end_replaced": {
+   "lufs": -21.0,
+   "centroid": 823,
+   "loopSeconds": 38.4
+  },
+  "end_revolving": {
+   "lufs": -21.0,
+   "centroid": 767,
+   "loopSeconds": 50.53
+  },
+  "end_right-early": {
+   "lufs": -22.0,
+   "centroid": 731,
+   "loopSeconds": 43.64
+  },
+  "end_soft": {
+   "lufs": -22.0,
+   "centroid": 817,
+   "loopSeconds": 53.33
+  },
+  "end_ward": {
+   "lufs": -22.0,
+   "centroid": 922,
+   "loopSeconds": 66.21
+  },
+  "end_whistle": {
+   "lufs": -20.0,
+   "centroid": 1121,
+   "loopSeconds": 48.0
+  },
+  "end_wiped": {
+   "lufs": -22.0,
+   "centroid": 411,
+   "loopSeconds": 64.0
   }
  },
  "sfx": {

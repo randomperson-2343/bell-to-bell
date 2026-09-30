@@ -30,8 +30,21 @@
     lastIntensityAt: 0, dayStartAt: 0, newsAt: -1e9, closeRamp: null, cd: { last: null, riser: false }
   };
 
-  // The old score stays for the ending screens: the kit does not cover them.
+  // Asked for by name, the two old ending tracks are always the Classic chiptune.
+  // In New style the ending screens go through Music.ending(), which plays that
+  // ending's own score (end_<id>) and only falls back to these.
   const CLASSIC_ONLY = { endingLight: true, endingDark: true };
+  // Endless runs have their own short list of endings; each borrows the music of the
+  // career ending that says the same thing.
+  const ENDLESS_ENDING = {
+    margin: 'wiped', sudden: 'wiped', drawdown: 'fired', fired: 'fired', burnout: 'exit', quit: 'exit',
+    legend: 'fund', rich: 'soft', survivorUp: 'grind', survivor: 'grind'
+  };
+  // The score key for an ending id, or null if there is none.
+  function endingKeyOf(id) {
+    const k = 'end_' + (ENDLESS_ENDING[id] || id);
+    return B.AudioData && B.AudioData.scores && B.AudioData.scores[k] ? k : null;
+  }
   // S.broken: the browser cannot run the new engines, so everything plays Classic.
   const isNew = () => S.style === 'new' && !S.broken;
   const usesClassic = (name) => !isNew() || !!CLASSIC_ONLY[name];
@@ -85,7 +98,9 @@
     brief: () => ({ key: 'feed' + (actOf() + 1), anomaly: anomalyOf(), fadeIn: 0.5 }),
     trading: () => ({ key: 'game' + (actOf() + 1), anomaly: anomalyOf(), intensity: 0.25, fadeIn: 0.25 }),
     // The report bed: the day's loop with only the pad, bass and tape (handoff 7.5).
-    close: () => ({ key: 'game' + (actOf() + 1), anomaly: anomalyOf(), intensity: 0.1, fadeIn: 1 })
+    close: () => ({ key: 'game' + (actOf() + 1), anomaly: anomalyOf(), intensity: 0.1, fadeIn: 1 }),
+    // The ending screen. The ending sting lands first; the music rises under it.
+    ending: () => ({ key: S.endingKey, fadeIn: 1.2 })
   };
 
   function stopNew(tc) {
@@ -145,12 +160,28 @@
 
     play(name, force) {
       S.name = name;
-      if (!S.musicOn) { if (!usesClassic(name)) C.music.name = null; else C.music.name = name; return; }
-      if (usesClassic(name)) { stopNew(0.25); C.music.play(name, force); return; }
+      // 'ending' is the New score for the ending set by Music.ending(); Classic (or a
+      // browser that cannot run the new engines) plays the old ending track instead.
+      const eff = name === 'ending' && (!isNew() || !S.endingKey) ? (S.endingClassic || 'endingDark') : name;
+      if (!S.musicOn) { if (!usesClassic(eff)) C.music.name = null; else C.music.name = eff; return; }
+      if (usesClassic(eff)) { stopNew(0.25); C.music.play(eff, force); return; }
       if (!playNew(name, force)) {
-        if (S.broken) C.music.play(name, force);   // this browser cannot run the new engines
+        if (S.broken) C.music.play(S.endingClassic || eff, force);   // this browser cannot run the new engines
         else C.music.name = null;
       }
+    },
+    // The ending screen. ending is { id, ... }; classicTrack is the old track to play in Classic style.
+    ending(ending, classicTrack) {
+      S.endingKey = endingKeyOf(ending && ending.id);
+      S.endingClassic = classicTrack;
+      Music.play('ending', true);
+    },
+    // Start building the reverb for an ending's music while its cinematic plays.
+    prepareEnding(ending) {
+      const k = endingKeyOf(ending && ending.id);
+      if (!k || !isNew() || !S.musicOn) return;
+      const a = audio();
+      if (a) B.AudioVoices.warm(a.c, [[B.AudioData.scores[k].mix.reverb.seconds, 5, 0.02]]);
     },
     // The player skipped the pre-open feed: drop its music fast.
     skipFeed() { if (S.trackName === 'brief') stopNew(0.12); },
@@ -359,7 +390,7 @@
     },
     state: S,
     // for tests
-    plan: PLAN, actOf, anomalyOf
+    plan: PLAN, actOf, anomalyOf, endingKeyOf, endlessEnding: ENDLESS_ENDING
   };
 
   B.SFX = SFX;

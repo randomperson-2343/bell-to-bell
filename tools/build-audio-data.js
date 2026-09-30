@@ -24,6 +24,12 @@ const SCORES = {
   feed1: 'feed_act1_melt_up', feed2: 'feed_act2_tremors', feed3: 'feed_act3_contagion', feed4: 'feed_act4_reckoning',
   game1: 'gameplay_act1_melt_up', game2: 'gameplay_act2_tremors', game3: 'gameplay_act3_contagion', game4: 'gameplay_act4_reckoning'
 };
+// One loop for each Career ending screen (docs/music-kit/source/compose_endings.py).
+// The key is end_<ending id>; the ids are the ones in js/modes/story/endings.js.
+const ENDINGS = ['wiped', 'fired', 'nobody', 'master', 'whistle', 'revolving', 'perp', 'fall-guy', 'cassandra', 'acquirer',
+  'ward', 'clawback', 'fund', 'right-early', 'everything-rally', 'lost-decade', 'soft', 'quiet', 'replaced', 'depression',
+  'exit', 'grind'];
+ENDINGS.forEach((id) => { SCORES['end_' + id] = 'ending_' + id; });
 
 // The feed and menu scores were normalised after mixing in the Python render
 // (handoff section 9.1). The gameplay scores carry their own mix.trackGain.

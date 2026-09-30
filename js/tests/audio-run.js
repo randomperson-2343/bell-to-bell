@@ -33,7 +33,23 @@ const SCORE_EVENTS = { menu: 785, feed1: 314, feed2: 306, feed3: 528, feed4: 53,
 
 test('Nine scores ship, with the event counts of the kit', () => {
   for (const k of Object.keys(SCORE_EVENTS)) assert(D.scores[k].events.length === SCORE_EVENTS[k], `${k}: ${D.scores[k].events.length} events`);
-  assert(Object.keys(D.scores).length === 9, 'score count');
+});
+
+test('Every Career ending has its own score, and it matches its kit file', () => {
+  const list = B.StoryEndings.list;
+  assert(list.length === 22, 'the game has 22 endings');
+  for (const e of list) {
+    const s = D.scores['end_' + e.id];
+    assert(s, `no score for ending ${e.id}`);
+    const kit = JSON.parse(fs.readFileSync(path.join(root, 'docs', 'music-kit', 'events', `ending_${e.id}.json`), 'utf8'));
+    assert(s.events.length === kit.events.length, `${e.id}: ${s.events.length} events, kit ${kit.events.length}`);
+    near(s.loopSeconds, kit.loopSeconds, 0.001, e.id + ' loop');
+    assert(s.mix.ghostLayers.length === 0, e.id + ' has no anomaly ghost');
+    assert(typeof s.mix.trackGain === 'number' && s.mix.trackGain > 0.05 && s.mix.trackGain < 1, e.id + ' track gain');
+    assert(s.mix.target_lufs <= -19 && s.mix.target_lufs >= -28, `${e.id} target loudness ${s.mix.target_lufs}`);
+    assert(s.loopSeconds >= 35 && s.loopSeconds <= 75, `${e.id} loop length ${s.loopSeconds}`);
+  }
+  assert(Object.keys(D.scores).length === 9 + 22, 'score count');
 });
 
 test('Every score event is valid: time in the loop, real note, known instrument and layer', () => {
@@ -440,7 +456,7 @@ test('Ghost count comes from the anomaly counter and is passed to the track', ()
   assert(B.Sound.plan.brief().anomaly === 12, 'clamped at 12');
 });
 
-test('Music: menu, feed and the day start in the right voice; ending music stays Classic', () => {
+test('Music: menu, feed and the day start in the right voice; the old ending tracks stay Classic when asked for by name', () => {
   setup();
   B.Music.setGame({ day: 35, mode: { kind: 'story', S: { anomalies: 0 } } });
   B.Music.play('menu');
@@ -453,6 +469,45 @@ test('Music: menu, feed and the day start in the right voice; ending music stays
   assert(B.Sound.state.track === null, 'new track still playing under an ending');
   assert(B.ClassicMusic.name === 'endingDark', 'ending music is Classic');
   B.Music.stop();
+});
+
+test('Music: each ending screen plays its own score in New and the old track in Classic', () => {
+  const S = setup();
+  B.Music.setGame({ day: 60, mode: { kind: 'story', S: { anomalies: 0 } } });
+  for (const e of B.StoryEndings.list) {
+    B.Music.ending({ id: e.id }, e.dark ? 'endingDark' : 'endingLight');
+    assert(S.track && S.trackName === 'ending' && S.track.key === 'end_' + e.id, `${e.id} played ${S.track && S.track.key}`);
+    assert(B.ClassicMusic.name === null, 'classic score under a new ending');
+  }
+  // the ten Endless endings borrow a career ending's music
+  const want = { margin: 'wiped', sudden: 'wiped', drawdown: 'fired', fired: 'fired', burnout: 'exit', quit: 'exit', legend: 'fund', rich: 'soft', survivorUp: 'grind', survivor: 'grind' };
+  for (const id of Object.keys(want)) {
+    B.Music.ending({ id }, 'endingDark');
+    assert(S.track.key === 'end_' + want[id], `endless ${id} played ${S.track.key}`);
+  }
+  // an ending with no score, or no new engine, falls back to the old track
+  B.Music.ending({ id: 'no-such-ending' }, 'endingLight');
+  assert(S.track === null && B.ClassicMusic.name === 'endingLight', 'unknown ending did not fall back to Classic');
+  B.Music.ending({ id: 'soft' }, 'endingLight');
+  B.Sound.setStyle('classic');
+  assert(S.track === null && B.ClassicMusic.name === 'endingLight', 'Classic style did not play the old ending track');
+  B.Sound.setStyle('new');
+  assert(S.track && S.track.key === 'end_soft' && B.ClassicMusic.name === null, 'switching back to New lost the ending music');
+  // muted: nothing plays, and the score comes back when music is switched on again
+  B.Music.setEnabled(false);
+  assert(S.track === null, 'ending music playing while muted');
+  B.Music.setEnabled(true);
+  assert(S.track && S.track.key === 'end_soft', 'ending music did not return after unmuting');
+  B.Music.stop();
+});
+
+test('Music: building an ending\'s reverb ahead of time does not throw, and is skipped for Classic', () => {
+  setup();
+  B.Music.prepareEnding({ id: 'wiped' });
+  B.Music.prepareEnding({ id: 'no-such-ending' });
+  B.Sound.setStyle('classic');
+  B.Music.prepareEnding({ id: 'wiped' });
+  B.Sound.setStyle('new');
 });
 
 test('Music: the day starts at intensity 0.25 and the first 10 seconds stay at or under 0.35', () => {
