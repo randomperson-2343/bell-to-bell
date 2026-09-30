@@ -55,7 +55,7 @@ function check(name, ok, detail) {
 
   console.log('Music');
   const endingKeys = Object.keys(exp.music).filter((k) => k.startsWith('end_'));
-  const tracks = quick ? ['menu', 'feed1', 'game1', 'end_wiped', 'end_whistle'] : ['menu', 'feed1', 'feed2', 'feed3', 'feed4', 'game1', 'game2', 'game3', 'game4'].concat(endingKeys);
+  const tracks = quick ? ['menu', 'feed1', 'game1', 'end_wiped', 'end_quiet'] : ['menu', 'feed1', 'feed2', 'feed3', 'feed4', 'game1', 'game2', 'game3', 'game4'].concat(endingKeys);
   for (const key of tracks) {
     const e = exp.music[key];
     if (key.startsWith('game')) {
