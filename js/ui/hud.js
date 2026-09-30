@@ -41,6 +41,7 @@
       }));
       document.querySelectorAll('.feed-tabs button').forEach((b) => b.addEventListener('click', () => {
         this.feedTab = b.dataset.feed;
+        B.SFX.uiTab();
         document.querySelectorAll('.feed-tabs button').forEach((x) => x.classList.toggle('on', x === b));
         if (this.feedTab === 'inbox') { this.unread = 0; this.updateBadge(); }
         this.renderFeed();
@@ -298,14 +299,14 @@
       }
       this.feed[kind].unshift(item);
       if (this.feed[kind].length > 120) this.feed[kind].pop();
-      if (kind === 'wire') B.SFX.news();
+      B.SFX.news({ kind, big: e.big });
       this.renderFeed();
     },
 
     inbox(msg) {
       this.feed.inbox.unshift({ kind: 'inbox', text: msg.text, src: msg.from, t: this.g ? this.g.market.t : 0 });
       if (this.feedTab !== 'inbox') { this.unread++; this.updateBadge(); }
-      B.SFX.news();
+      B.SFX.news({ kind: 'inbox', from: msg.from });
       this.renderFeed();
       if (msg.toast !== false) this.toast(`${msg.from}: ${msg.text.length > 90 ? msg.text.slice(0, 88) + '…' : msg.text}`, 'warn');
     },
@@ -390,7 +391,7 @@
       const item = this.feed.chirp.find((n) => n.id === id);
       if (!item || item.rq) return;
       item.rq = true;
-      B.SFX.click();
+      B.SFX.resqwak();
       const note = g.mode.onResqwak ? g.mode.onResqwak(g, item) : null;
       this.toast(note || `Resqwaked ${item.src}.`, note ? 'warn' : '');
       this.renderFeed();
@@ -444,7 +445,7 @@
       el.hidden = false;
       this.placeNote();
       this.noteOn = true;
-      B.SFX.news();
+      B.SFX.news({ kind: 'note', from: n.from });
       // Long enough to read: about 55ms a character, never under five seconds.
       clearTimeout(this.noteTimer);
       this.noteTimer = setTimeout(() => this.nextNote(), Math.max(5000, n.text.length * 55));
@@ -512,7 +513,7 @@
         body += '<div class="ph-timer" id="ph-timer" style="width:100%"></div>';
       }
       p.innerHTML = body;
-      B.SFX.choice();
+      B.SFX.choice(call.kind === 'choice' ? 'choice' : 'call');
     },
 
     phoneHide() {
@@ -632,6 +633,13 @@
           this.ringAcc += dt;
           if (this.ringAcc > 1.4) { this.ringAcc = 0; B.SFX.ring(); }
         }
+        // A timed decision call: tick once a second through its last eight seconds.
+        const call = g.interrupts && g.interrupts.active;
+        if (call && call.kind === 'choice' && call.state === 'open') {
+          const left = (call.choiceEnd - g.market.t) / ((g.rate || 1) * (g.speed || 1));
+          const sec = Math.ceil(left);
+          if (left > 0 && left <= 8 && sec !== this.decSec) { this.decSec = sec; B.SFX.decisionTick(); }
+        } else this.decSec = null;
       }
 
       const jitter = motion && g.running && s > 0.78 ? (s - 0.78) * 7 * fx : 0;

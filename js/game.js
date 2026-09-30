@@ -47,6 +47,12 @@
 
     get rate() { return B.DAY_MIN / this.dayLength; }
 
+    // Profit on the day, net of story fines, as the closing report will judge it.
+    dayPnl() {
+      const b = this.broker;
+      return b.equity() - b.dayStartEquity - ((b.dayRisk && b.dayRisk.adj) || 0);
+    }
+
     begin() {
       B.UI.enterGame(this);
       this.last = performance.now();
@@ -74,6 +80,7 @@
 
     // ---- day lifecycle ----
     showBriefing() {
+      B.Music.setGame(this);
       const b = this.mode.briefing(this.day, this);
       if (B.Cinematic.startChain) B.Cinematic.startChain('preopen');
       const open = () => {
@@ -117,6 +124,9 @@
       B.UI.dayStart(this);
       this.interrupts.startDay(this.day, this.mode.calls ? this.mode.calls(this.day, this) : []);
       if (this.mode.onDayStart) this.mode.onDayStart(this);
+      B.Music.setGame(this);
+      this.quotaSounded = false;
+      B.SFX.countdown(999);
       B.SFX.bell();
       B.Music.play('trading');
       this.acc = 0;
@@ -161,6 +171,9 @@
       B.UI.dayStart(this);
       B.UI.restoreFeed(snap.feed);
       if (snap.lock) this.setLock(Math.max(0, snap.lock.until - m.t), snap.lock.reason, snap.lock.kind, snap.lock);
+      B.Music.setGame(this);
+      this.quotaSounded = this.quota > 0 && this.dayPnl() >= this.quota;
+      B.SFX.countdown(999);
       B.Music.play('trading');
       this.acc = 0;
       this.running = true;
@@ -179,7 +192,9 @@
       while (this.inboxQueue.length && this.inboxQueue[0].t <= m.t) B.UI.inbox(this.inboxQueue.shift());
       this.interrupts.update(m.t);
       this.stress.update(dt, this);
-      B.Music.setIntensity(this.stress.level(), m.t / B.DAY_MIN);
+      B.Music.setIntensity(this.stress.level(), m.t / B.DAY_MIN, this);
+      B.SFX.countdown(B.Music.secondsToClose(this));
+      if (!this.quotaSounded && this.quota > 0 && eq - b.dayStartEquity - ((b.dayRisk && b.dayRisk.adj) || 0) >= this.quota) { this.quotaSounded = true; B.SFX.quotaMet(); }
       if (!this.lock && this.stress.canPanic(false)) this.panicAttack(false);
       if (this.mode.onTick) this.mode.onTick(this, m.t);
       if (!this.running) return;
@@ -197,7 +212,7 @@
       if (!this.warned.overnight && m.t >= 370 && b.stockGross() / b.rules.overnightLev > b.netLiq()) {
         this.warned.overnight = true;
         B.UI.toast(`Overnight limit is ${b.rules.overnightLev}x. Cut exposure before the bell or get force-sold at the close.`, 'warn');
-        B.SFX.alarm();
+        B.SFX.alarm('overnight');
       }
       if (!this.warned.last && m.t >= 380) {
         this.warned.last = true;
@@ -211,7 +226,12 @@
       switch (e.type) {
         case 'news':
           B.UI.addNews(e);
-          if (e.big) { B.UI.flash('amber'); g.stress.spike(4); if (e.kind !== 'chirp' && e.text) B.UI.toast(`SQWAK ALERT · ${e.text}`, 'warn'); }
+          if (e.big) {
+            B.UI.flash('amber'); g.stress.spike(4);
+            B.Music.burst();
+            B.SFX.news({ kind: e.kind === 'chirp' ? 'push' : 'alert' });
+            if (e.kind !== 'chirp' && e.text) B.UI.toast(`SQWAK ALERT · ${e.text}`, 'warn');
+          }
           break;
         case 'script':
           if (g.mode.onScript) g.mode.onScript(g, e.id);
@@ -229,7 +249,7 @@
           break;
         case 'haltEnd':
           B.UI.toast('Trading resumes', 'warn');
-          B.SFX.bell();
+          B.SFX.haltEnd();
           break;
         case 'luld':
           B.SFX.halt();
@@ -250,13 +270,13 @@
       }
       const o = r.order;
       B.UI.toast(`${o.label || o.type.toUpperCase()} filled: ${r.res.qty > 0 ? 'BUY' : 'SELL'} ${B.fmt.qty(Math.abs(r.res.qty))} ${o.sym} @ ${B.fmt.price(r.res.price)}`, r.res.realized >= 0 ? 'good' : 'bad');
-      B.SFX.fill(r.res.qty);
+      B.SFX.fill(r.res.qty, { resting: true, realized: r.res.realized, eq: this.broker.dayStartEquity });
       if (o.label === 'STOP-LOSS') this.stress.spike(3);
     }
 
     onMargin(e) {
       if (e.type === 'mc') {
-        B.SFX.alarm();
+        B.SFX.alarm('margin');
         B.Music.cue('margin');
         this.stress.spike(10);
         B.UI.flash('red');
@@ -312,18 +332,19 @@
       }
       let res;
       if (!o.type || o.type === 'market') {
+        const before = b.posQty(sym);
         res = b.marketOrder(sym, q, { tag: ff ? 'FAT FINGER' : '' });
         if (res.ok) {
-          B.SFX.fill(q);
+          B.SFX.fill(q, { before, realized: res.realized, eq: b.dayStartEquity });
           if ((protection.sl > 0 || protection.tp > 0) && b.posQty(sym)) b.attachBracket(sym, protection.sl, protection.tp);
-          if (res.realized > 0 && Math.abs(res.realized) > b.dayStartEquity * 0.003) { this.stress.spike(-5); B.SFX.cash(); }
+          if (res.realized > 0 && Math.abs(res.realized) > b.dayStartEquity * 0.003) { this.stress.spike(-5); B.SFX.cash('trade'); }
           if (res.realized < 0 && Math.abs(res.realized) > b.dayStartEquity * 0.01) this.stress.spike(4);
           if (this.mode.onTrade) this.mode.onTrade(this, sym, q);
         } else this.reject(res.msg);
       } else {
         res = b.placeOrder(sym, q, o.type, o.price,
           protection.sl > 0 || protection.tp > 0 ? { protect: { sl: protection.sl, tp: protection.tp } } : null);
-        if (res.ok) { B.SFX.click(); B.UI.toast(`${o.type.toUpperCase()} ${q > 0 ? 'BUY' : 'SELL'} ${B.fmt.qty(Math.abs(q))} ${sym} @ ${B.fmt.price(o.price)} working`, ''); }
+        if (res.ok) { B.SFX.limitSet(); B.UI.toast(`${o.type.toUpperCase()} ${q > 0 ? 'BUY' : 'SELL'} ${B.fmt.qty(Math.abs(q))} ${sym} @ ${B.fmt.price(o.price)} working`, ''); }
         else this.reject(res.msg);
       }
       if (ff) {
@@ -340,7 +361,7 @@
       if (bad) return this.reject(bad);
       const res = this.broker.closePosition(sym, frac);
       if (res.ok) {
-        B.SFX.fill(res.qty);
+        B.SFX.fill(res.qty, { kind: res.qty < 0 ? 'sell' : 'cover', realized: res.realized, eq: this.broker.dayStartEquity });
         if (res.realized > 0) this.stress.spike(-6);
         if (this.mode.onTrade) this.mode.onTrade(this, sym, res.qty);
       } else this.reject(res.msg);
@@ -351,21 +372,22 @@
       const bad = this.act();
       if (bad) return this.reject(bad);
       if (this.broker.isFlat() && !this.broker.orders.length) return this.reject('Already flat');
+      const longs = Object.keys(this.broker.pos).some((s) => this.broker.pos[s].qty > 0);
       const res = this.broker.flattenAll('FLATTEN');
       const fails = res.filter((r) => !r.ok);
       if (fails.length) B.UI.toast(`Could not close everything: ${fails[0].msg}`, 'bad');
       else B.UI.toast('FLAT. Every position closed, every order cancelled.', 'good');
-      B.SFX.fill(-1);
+      B.SFX.fill(-1, { kind: longs ? 'sell' : 'cover', realized: res.reduce((a, r) => a + (r.ok && r.realized ? r.realized : 0), 0), eq: this.broker.dayStartEquity });
       this.stress.spike(-8);
     }
 
-    cancelOrder(id) { this.broker.cancelOrder(id); B.SFX.click(); }
+    cancelOrder(id) { this.broker.cancelOrder(id); B.SFX.orderCancel(); }
 
     buyOption(sym, type, strike, expiry, n) {
       const bad = this.act();
       if (bad) return this.reject(bad);
       const res = this.broker.buyOption(sym, type, strike, expiry, n);
-      if (res.ok) { B.SFX.fill(1); B.UI.toast(`Bought ${n} ${sym} ${strike}${type} @ ${B.fmt.price(res.price)}`, ''); }
+      if (res.ok) { B.SFX.fill(1, { kind: 'buy' }); B.UI.toast(`Bought ${n} ${sym} ${strike}${type} @ ${B.fmt.price(res.price)}`, ''); }
       else this.reject(res.msg);
       return res;
     }
@@ -374,7 +396,7 @@
       const bad = this.act();
       if (bad) return this.reject(bad);
       const res = this.broker.sellOption(id);
-      if (res.ok) { B.SFX.fill(-1); if (res.realized > 0) this.stress.spike(-5); }
+      if (res.ok) { B.SFX.fill(-1, { kind: 'sell', realized: res.realized, eq: this.broker.dayStartEquity }); if (res.realized > 0) this.stress.spike(-5); }
       else this.reject(res.msg);
       return res;
     }
@@ -461,7 +483,8 @@
       if (this.lock) this.unlock();
       m.close();
       this.interrupts.endDay();
-      B.Music.stop();
+      if (this.earlyEnd !== 'wiped') B.SFX.marketClose();
+      B.Music.stop({ fade: 0.5 });
       const eod = b.endOfDay(this.day);
       const eq = b.equity();
       const pnl = eq - b.dayStartEquity;
