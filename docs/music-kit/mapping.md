@@ -26,14 +26,24 @@ Everything goes through `js/audio/sound.js`. Game code still calls `B.SFX.*` and
 
 | Term | What it is in this game |
 |---|---|
-| `volatility` | `abs(market.indexMove(30)) / max`, where max is 1.2, 2, 3 and 4 percent for Acts I to IV |
+| `volatility` | `abs(market.indexMove(30)) / max`, where max is 0.7, 1.2, 1.5 and 3 percent for Acts I to IV |
 | `exposure` | `broker.stockGross() / (maxLev x netLiq)` |
 | `newsBurst` | 1 when a big Wire or Sqwak item lands, falling to 0 over 10 seconds |
 | `decisionOpen` | 1 while a timed decision call is open |
 | `closeRush` | 0 until 15 real seconds before the close, then rising to 1 |
 | `stressPush` | **Added here, not in the kit.** `0.2 x (stress - 0.6) / 0.4` when stress is above 0.6, so a panic attack or a margin call is never played over a calm bed |
 
-Also from the handoff: capped at 0.35 for the first 10 seconds of the day, and from 8 seconds before the close it climbs to 1.0 with the riser. The volatility maxima and the stress push are guesses to tune by play.
+Also from the handoff: capped at 0.35 for the first 10 seconds of the day, and from 8 seconds before the close it climbs to 1.0 with the riser.
+
+**Calibration.** The design target was "an ordinary day spends most of its time between 0.25 and 0.6". The volatility maxima were set from simulated careers (bot traders through all four acts, sampled every game tick): the market's 90th-percentile 30-minute index move is about 0.5, 0.8, 1.0 and 1.3 percent in Acts I to IV, and each maximum is about 1.4 times that. Result:
+
+| Who is trading | Time between 0.25 and 0.6 | Median | 90th percentile |
+|---|---|---|---|
+| Flat desk, all four acts | 86 to 90 percent | 0.32 to 0.37 | 0.61 to 0.69 |
+| Careful trader, Acts I and II | 75 to 80 percent | 0.45 to 0.48 | 0.73 to 0.77 |
+| All-in trader, Acts I and II | about 60 to 70 percent | 0.5 or more | about 0.8 |
+
+About 5 percent of a day is above 0.85, which is the last eight seconds (the close). What this cannot say is how it *feels*; that needs a day played with headphones.
 
 ## Sound effects
 

@@ -180,7 +180,7 @@
       now = now == null ? Date.now() : now;
       if (!g || !g.market) return 0.4;
       const act = actOf(g);
-      const volMax = [0.012, 0.02, 0.03, 0.04][act];
+      const volMax = [0.007, 0.012, 0.015, 0.03][act];
       const volatility = Math.min(1, Math.abs(g.market.indexMove(30)) / volMax);
       const b = g.broker;
       let exposure = 0;
