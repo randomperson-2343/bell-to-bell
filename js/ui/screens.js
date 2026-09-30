@@ -522,8 +522,8 @@
           <div class="field"><label for="set-mvol">Music volume</label><input type="range" id="set-mvol" min="0" max="1" step="0.05" value="${s.musicVolume}"><output id="set-mvol-o">${Math.round(s.musicVolume * 100)}%</output></div>
           <div class="field"><label for="set-style">Sound style</label>
             <select id="set-style">
-              <option value="new">New (synth score and sound pack)</option>
-              <option value="classic">Classic (original chiptune)</option>
+              <option value="new">New</option>
+              <option value="classic">Classic (chiptune)</option>
             </select><output></output></div>
           <button class="btn small" id="set-test">Test sound</button>
         </div>
