@@ -1,0 +1,282 @@
+{
+ "reference": "A-weighted level of the whole 3:00 day of music (Act I demo schedule)",
+ "per_sound_median_margin_db": {
+  "ui_click": 4.0,
+  "ui_tab": 4.0,
+  "ui_back": 4.0,
+  "screen_in": 4.0,
+  "screen_out": 4.0,
+  "order_buy": 7.0,
+  "order_sell": 7.0,
+  "order_short": 7.0,
+  "order_cover": 7.0,
+  "order_limit_set": 7.0,
+  "order_limit_fill": 7.0,
+  "order_reject": 7.0,
+  "order_cancel": 7.0,
+  "win_close": 10.0,
+  "loss_close": 7.8,
+  "bell_open": 10.0,
+  "bell_close": 10.0,
+  "countdown_tick": 6.0,
+  "countdown_final": 6.0,
+  "decision_prompt": 8.0,
+  "decision_tick": 8.0,
+  "decision_timeout": -0.4,
+  "decision_confirm": 8.0,
+  "sqwak_push": 7.0,
+  "sqwak_alert_wire": 7.0,
+  "sqwak_post": 7.0,
+  "sqwak_resqwak": 7.0,
+  "sqwak_paywall": 5.5,
+  "feed_skip": 7.0,
+  "phone_open": 7.0,
+  "mail_new": 7.0,
+  "dm_imani": 7.0,
+  "dm_kroll": 7.0,
+  "dm_compliance": 7.0,
+  "anomaly_logged": 8.0,
+  "strike_added": 6.3,
+  "quota_met": 10.0,
+  "week_made": 10.0,
+  "quota_missed": 8.0,
+  "heat_up": 8.0,
+  "flash_crash": 3.8,
+  "halt": 10.0,
+  "hope_chime": 10.0,
+  "ending_fired": 10.0,
+  "ending_wiped": -3.1,
+  "ending_hollow_win": 10.0,
+  "ending_unpriced": 10.0,
+  "cutscene_hit": 2.9,
+  "cutscene_whoosh": 3.2,
+  "text_blip_imani": 2.0,
+  "text_blip_kroll": 2.0,
+  "text_blip_sana": 2.0,
+  "text_blip_thorne": 2.0,
+  "text_blip_compliance": 2.0,
+  "text_blip_narrator": 2.0
+ },
+ "events": [
+  [
+   "bell_open",
+   0.0,
+   10.0
+  ],
+  [
+   "order_buy",
+   7.0,
+   7.0
+  ],
+  [
+   "sqwak_post",
+   8.8,
+   7.0
+  ],
+  [
+   "order_buy",
+   13.5,
+   7.0
+  ],
+  [
+   "ui_click",
+   19.0,
+   4.0
+  ],
+  [
+   "order_sell",
+   20.5,
+   7.0
+  ],
+  [
+   "win_close",
+   20.75,
+   10.0
+  ],
+  [
+   "sqwak_post",
+   27.0,
+   7.0
+  ],
+  [
+   "sqwak_resqwak",
+   36.0,
+   7.0
+  ],
+  [
+   "sqwak_alert_wire",
+   47.8,
+   7.0
+  ],
+  [
+   "order_short",
+   51.5,
+   7.0
+  ],
+  [
+   "order_reject",
+   57.0,
+   7.0
+  ],
+  [
+   "order_cover",
+   62.0,
+   7.0
+  ],
+  [
+   "win_close",
+   62.3,
+   10.0
+  ],
+  [
+   "dm_kroll",
+   70.0,
+   7.0
+  ],
+  [
+   "heat_up",
+   72.5,
+   8.0
+  ],
+  [
+   "decision_prompt",
+   78.0,
+   8.0
+  ],
+  [
+   "decision_tick",
+   84.0,
+   8.0
+  ],
+  [
+   "decision_tick",
+   85.0,
+   8.0
+  ],
+  [
+   "decision_tick",
+   86.0,
+   8.0
+  ],
+  [
+   "decision_tick",
+   87.0,
+   8.0
+  ],
+  [
+   "decision_confirm",
+   88.0,
+   8.0
+  ],
+  [
+   "mail_new",
+   96.0,
+   7.0
+  ],
+  [
+   "sqwak_post",
+   104.0,
+   7.0
+  ],
+  [
+   "dm_compliance",
+   112.0,
+   7.0
+  ],
+  [
+   "heat_up",
+   113.6,
+   8.0
+  ],
+  [
+   "order_buy",
+   121.0,
+   7.0
+  ],
+  [
+   "order_limit_set",
+   127.0,
+   7.0
+  ],
+  [
+   "order_limit_fill",
+   133.0,
+   7.0
+  ],
+  [
+   "order_sell",
+   139.0,
+   7.0
+  ],
+  [
+   "loss_close",
+   139.25,
+   7.8
+  ],
+  [
+   "quota_met",
+   148.0,
+   10.0
+  ],
+  [
+   "countdown_tick",
+   170.0,
+   6.0
+  ],
+  [
+   "countdown_tick",
+   171.0,
+   6.0
+  ],
+  [
+   "countdown_tick",
+   172.0,
+   6.0
+  ],
+  [
+   "countdown_tick",
+   173.0,
+   6.0
+  ],
+  [
+   "countdown_tick",
+   174.0,
+   6.0
+  ],
+  [
+   "countdown_tick",
+   175.0,
+   6.0
+  ],
+  [
+   "countdown_tick",
+   176.0,
+   6.0
+  ],
+  [
+   "countdown_final",
+   177.0,
+   6.0
+  ],
+  [
+   "countdown_final",
+   178.0,
+   6.0
+  ],
+  [
+   "countdown_final",
+   179.0,
+   6.0
+  ],
+  [
+   "close_riser",
+   172.0,
+   -51.8
+  ],
+  [
+   "bell_close",
+   180.0,
+   10.0
+  ]
+ ]
+}

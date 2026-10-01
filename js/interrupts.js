@@ -58,7 +58,7 @@
 
     endDay() {
       if (this.active && this.active.kind === 'choice' && this.active.state !== 'done') {
-        this.resolveChoice(this.active.defaultOpt, true);
+        this.resolveChoice(this.active.defaultOpt, true, true);
       }
       this.active = null;
       this.ringing = false;
@@ -236,10 +236,12 @@
       B.UI.phoneHide();
     }
 
-    resolveChoice(optId, timedOut) {
+    // silent: the day ended on an open call, so there is no timeout to announce.
+    resolveChoice(optId, timedOut, silent) {
       const a = this.active;
       if (!a || a.kind !== 'choice' || a.state === 'done') return;
       a.state = 'done';
+      if (!silent) { if (timedOut) B.SFX.decisionTimeout(); else B.SFX.decisionConfirm(); }
       const reply = this.g.mode.resolveMidChoice(this.g, a.choiceId, optId, timedOut);
       this.active = null;
       B.UI.phoneHide();
@@ -261,7 +263,7 @@
       task.done = true;
       g.broker.cash += task.fee;
       g.stress.spike(-3);
-      B.SFX.cash();
+      B.SFX.cash('task');
       B.UI.toast(`Client order worked: ${task.label}. Commission +${B.fmt.money(task.fee)}`, 'good');
       if (g.mode.onTaskDone) g.mode.onTaskDone(g, task);
       B.UI.renderTasks(this.tasks);

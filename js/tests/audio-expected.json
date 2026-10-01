@@ -1,0 +1,418 @@
+{
+ "note": "Measurements from the music kit (qa_report.json, qa_gameplay.json, qa_sfx.json), made on the kit's Python renders. js/tests/audio-render-run.js compares the game's own Web Audio render against them.",
+ "music": {
+  "menu": {
+   "lufs": -17.0,
+   "centroid": 1026,
+   "loopSeconds": 91.43
+  },
+  "feed1": {
+   "lufs": -22.0,
+   "centroid": 925,
+   "loopSeconds": 49.23
+  },
+  "feed2": {
+   "lufs": -22.5,
+   "centroid": 819,
+   "loopSeconds": 49.23
+  },
+  "feed3": {
+   "lufs": -22.5,
+   "centroid": 766,
+   "loopSeconds": 45.71
+  },
+  "feed4": {
+   "lufs": -25.0,
+   "centroid": 570,
+   "loopSeconds": 64.0
+  },
+  "game1": {
+   "lufs": {
+    "0.15": -25.6,
+    "0.6": -21.0,
+    "1.0": -19.4
+   },
+   "centroid": {
+    "0.15": 825,
+    "0.6": 1140,
+    "1.0": 1223
+   },
+   "loopSeconds": 68.57
+  },
+  "game2": {
+   "lufs": {
+    "0.15": -25.6,
+    "0.6": -21.0,
+    "1.0": -19.5
+   },
+   "centroid": {
+    "0.15": 776,
+    "0.6": 1062,
+    "1.0": 1147
+   },
+   "loopSeconds": 68.57
+  },
+  "game3": {
+   "lufs": {
+    "0.15": -23.9,
+    "0.6": -21.0,
+    "1.0": -19.7
+   },
+   "centroid": {
+    "0.15": 613,
+    "0.6": 747,
+    "1.0": 819
+   },
+   "loopSeconds": 64.0
+  },
+  "game4": {
+   "lufs": {
+    "0.15": -23.8,
+    "0.6": -21.0,
+    "1.0": -19.1
+   },
+   "centroid": {
+    "0.15": 455,
+    "0.6": 481,
+    "1.0": 491
+   },
+   "loopSeconds": 91.43
+  },
+  "end_acquirer": {
+   "lufs": -21.0,
+   "centroid": 677,
+   "loopSeconds": 64.0
+  },
+  "end_cassandra": {
+   "lufs": -22.0,
+   "centroid": 843,
+   "loopSeconds": 53.33
+  },
+  "end_clawback": {
+   "lufs": -20.0,
+   "centroid": 1054,
+   "loopSeconds": 57.6
+  },
+  "end_depression": {
+   "lufs": -23.0,
+   "centroid": 458,
+   "loopSeconds": 71.11
+  },
+  "end_everything-rally": {
+   "lufs": -21.0,
+   "centroid": 1675,
+   "loopSeconds": 40.0
+  },
+  "end_exit": {
+   "lufs": -22.0,
+   "centroid": 648,
+   "loopSeconds": 41.74
+  },
+  "end_fall-guy": {
+   "lufs": -22.0,
+   "centroid": 654,
+   "loopSeconds": 54.86
+  },
+  "end_fired": {
+   "lufs": -22.0,
+   "centroid": 585,
+   "loopSeconds": 58.18
+  },
+  "end_fund": {
+   "lufs": -20.0,
+   "centroid": 907,
+   "loopSeconds": 40.0
+  },
+  "end_grind": {
+   "lufs": -22.0,
+   "centroid": 692,
+   "loopSeconds": 45.71
+  },
+  "end_lost-decade": {
+   "lufs": -23.0,
+   "centroid": 823,
+   "loopSeconds": 58.18
+  },
+  "end_master": {
+   "lufs": -21.0,
+   "centroid": 1033,
+   "loopSeconds": 41.74
+  },
+  "end_nobody": {
+   "lufs": -23.0,
+   "centroid": 570,
+   "loopSeconds": 53.33
+  },
+  "end_perp": {
+   "lufs": -21.0,
+   "centroid": 832,
+   "loopSeconds": 45.71
+  },
+  "end_quiet": {
+   "lufs": -25.0,
+   "centroid": 459,
+   "loopSeconds": 64.0
+  },
+  "end_replaced": {
+   "lufs": -21.0,
+   "centroid": 823,
+   "loopSeconds": 38.4
+  },
+  "end_revolving": {
+   "lufs": -21.0,
+   "centroid": 767,
+   "loopSeconds": 50.53
+  },
+  "end_right-early": {
+   "lufs": -22.0,
+   "centroid": 731,
+   "loopSeconds": 43.64
+  },
+  "end_soft": {
+   "lufs": -22.0,
+   "centroid": 817,
+   "loopSeconds": 53.33
+  },
+  "end_ward": {
+   "lufs": -22.0,
+   "centroid": 922,
+   "loopSeconds": 66.21
+  },
+  "end_whistle": {
+   "lufs": -20.0,
+   "centroid": 1121,
+   "loopSeconds": 48.0
+  },
+  "end_wiped": {
+   "lufs": -22.0,
+   "centroid": 411,
+   "loopSeconds": 64.0
+  }
+ },
+ "sfx": {
+  "ui_click": {
+   "peak_db": -10.5,
+   "duration_s": 0.202
+  },
+  "ui_tab": {
+   "peak_db": -10.7,
+   "duration_s": 0.238
+  },
+  "ui_back": {
+   "peak_db": -14.9,
+   "duration_s": 0.252
+  },
+  "screen_in": {
+   "peak_db": -10.4,
+   "duration_s": 0.771
+  },
+  "screen_out": {
+   "peak_db": -9.4,
+   "duration_s": 0.329
+  },
+  "order_buy": {
+   "peak_db": -9.5,
+   "duration_s": 0.989
+  },
+  "order_sell": {
+   "peak_db": -7.7,
+   "duration_s": 1.189
+  },
+  "order_short": {
+   "peak_db": -7.0,
+   "duration_s": 1.293
+  },
+  "order_cover": {
+   "peak_db": -9.3,
+   "duration_s": 1.242
+  },
+  "order_limit_set": {
+   "peak_db": -8.8,
+   "duration_s": 0.848
+  },
+  "order_limit_fill": {
+   "peak_db": -11.4,
+   "duration_s": 3.291
+  },
+  "order_reject": {
+   "peak_db": -5.9,
+   "duration_s": 0.388
+  },
+  "order_cancel": {
+   "peak_db": -9.4,
+   "duration_s": 0.253
+  },
+  "win_close": {
+   "peak_db": -7.2,
+   "duration_s": 2.925
+  },
+  "loss_close": {
+   "peak_db": -3.0,
+   "duration_s": 1.263
+  },
+  "bell_open": {
+   "peak_db": -7.1,
+   "duration_s": 11.133
+  },
+  "bell_close": {
+   "peak_db": -6.5,
+   "duration_s": 14.154
+  },
+  "countdown_tick": {
+   "peak_db": -10.2,
+   "duration_s": 0.158
+  },
+  "countdown_final": {
+   "peak_db": -9.5,
+   "duration_s": 0.197
+  },
+  "close_riser": {
+   "peak_db": -15.0,
+   "duration_s": 8.772
+  },
+  "decision_prompt": {
+   "peak_db": -8.6,
+   "duration_s": 5.952
+  },
+  "decision_tick": {
+   "peak_db": -6.4,
+   "duration_s": 0.196
+  },
+  "decision_timeout": {
+   "peak_db": -3.0,
+   "duration_s": 1.294
+  },
+  "decision_confirm": {
+   "peak_db": -3.0,
+   "duration_s": 3.877
+  },
+  "sqwak_push": {
+   "peak_db": -10.2,
+   "duration_s": 0.842
+  },
+  "sqwak_alert_wire": {
+   "peak_db": -9.3,
+   "duration_s": 4.16
+  },
+  "sqwak_post": {
+   "peak_db": -11.2,
+   "duration_s": 0.224
+  },
+  "sqwak_resqwak": {
+   "peak_db": -5.7,
+   "duration_s": 0.514
+  },
+  "sqwak_paywall": {
+   "peak_db": -3.0,
+   "duration_s": 0.413
+  },
+  "feed_skip": {
+   "peak_db": -3.1,
+   "duration_s": 0.822
+  },
+  "phone_open": {
+   "peak_db": -5.9,
+   "duration_s": 0.837
+  },
+  "mail_new": {
+   "peak_db": -11.4,
+   "duration_s": 2.954
+  },
+  "dm_imani": {
+   "peak_db": -10.6,
+   "duration_s": 0.923
+  },
+  "dm_kroll": {
+   "peak_db": -8.6,
+   "duration_s": 2.886
+  },
+  "dm_compliance": {
+   "peak_db": -10.9,
+   "duration_s": 0.71
+  },
+  "anomaly_logged": {
+   "peak_db": -12.2,
+   "duration_s": 0.912
+  },
+  "strike_added": {
+   "peak_db": -3.0,
+   "duration_s": 11.002
+  },
+  "quota_met": {
+   "peak_db": -6.9,
+   "duration_s": 5.639
+  },
+  "week_made": {
+   "peak_db": -3.4,
+   "duration_s": 8.445
+  },
+  "quota_missed": {
+   "peak_db": -7.4,
+   "duration_s": 7.05
+  },
+  "heat_up": {
+   "peak_db": -3.6,
+   "duration_s": 1.349
+  },
+  "flash_crash": {
+   "peak_db": -3.0,
+   "duration_s": 4.202
+  },
+  "halt": {
+   "peak_db": -6.3,
+   "duration_s": 1.893
+  },
+  "hope_chime": {
+   "peak_db": -3.0,
+   "duration_s": 10.644
+  },
+  "ending_fired": {
+   "peak_db": -5.5,
+   "duration_s": 11.716
+  },
+  "ending_wiped": {
+   "peak_db": -3.0,
+   "duration_s": 15.309
+  },
+  "ending_hollow_win": {
+   "peak_db": -6.5,
+   "duration_s": 14.113
+  },
+  "ending_unpriced": {
+   "peak_db": -6.7,
+   "duration_s": 3.417
+  },
+  "cutscene_hit": {
+   "peak_db": -3.0,
+   "duration_s": 5.433
+  },
+  "cutscene_whoosh": {
+   "peak_db": -3.0,
+   "duration_s": 1.957
+  },
+  "text_blip_imani": {
+   "peak_db": -13.8,
+   "duration_s": 0.1
+  },
+  "text_blip_kroll": {
+   "peak_db": -12.3,
+   "duration_s": 0.1
+  },
+  "text_blip_sana": {
+   "peak_db": -17.1,
+   "duration_s": 0.1
+  },
+  "text_blip_thorne": {
+   "peak_db": -3.7,
+   "duration_s": 0.099
+  },
+  "text_blip_compliance": {
+   "peak_db": -14.5,
+   "duration_s": 0.1
+  },
+  "text_blip_narrator": {
+   "peak_db": -13.6,
+   "duration_s": 0.1
+  }
+ }
+}

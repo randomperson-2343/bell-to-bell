@@ -309,7 +309,7 @@
         if (B.Sqwak && B.Sqwak.account(item.src).followers >= B.Sqwak.HYPE_MIN_FOLLOWERS && B.Sqwak.tickersIn(item.text).length) R.moved = (R.moved || 0) + 1;
         if (item.fake) {
           const add = Math.min(3, 9 - R.heat);
-          if (add > 0) { S.m.heat = B.clamp(S.m.heat + add, 0, 100); R.heat += add; }
+          if (add > 0) { S.m.heat = B.clamp(S.m.heat + add, 0, 100); R.heat += add; B.SFX.heatUp(); }
           S.rumorsSpread = (S.rumorsSpread || 0) + 1;
         } else if (item.truth && R.influence < 3) {
           S.m.influence = B.clamp(S.m.influence + 1, 0, 100);
@@ -319,7 +319,7 @@
         const held = syms.find((sym) => g.broker && g.broker.posQty(sym) !== 0);
         if (held) {
           const add = Math.min(2, 9 - R.heat);
-          if (add > 0) { S.m.heat = B.clamp(S.m.heat + add, 0, 100); R.heat += add; }
+          if (add > 0) { S.m.heat = B.clamp(S.m.heat + add, 0, 100); R.heat += add; B.SFX.heatUp(); }
           if (!R.warned) {
             R.warned = true;
             note = `Compliance: you publicly promoted $${held} while holding it.`;
@@ -476,7 +476,7 @@
 
       onScript(g, id) {
         if (id === 'voteFail') { g.stress.spike(20); B.UI.shake(10); B.SFX.crash(); B.Music.cue('breaker'); }
-        if (id === 'votePass') { g.stress.spike(-10); B.SFX.cash(); }
+        if (id === 'votePass') { g.stress.spike(-10); B.SFX.cash('vote'); }
         if (id === 'loop' || id === 'worstSession' || id === 'finalSession') { g.stress.spike(16); B.UI.shake(8); B.SFX.crash(); }
         if (id === 'pullFlatten' && !S.f.pullCostApplied) {
           S.f.pullCostApplied = true;
@@ -573,6 +573,7 @@
             notes.push(`<b>Quota missed, strike excused.</b> You stopped at the loss limit and got flat. The risk desk signed off on the day. ${D.boss(S)} did not like it, but the rule is the rule.`);
           } else {
             S.missStreak++;
+            r.strikeAdded = true;
             if (!S.quotaLedger.some((entry) => entry.day === g.day && entry.kind !== 'week')) {
               S.quotaLedger.push({ day: g.day, pnl: r.pnl, quota: r.quota, date: r.date });
               S.quotaLedger.sort((a, b) => a.day - b.day);
@@ -589,6 +590,7 @@
           if (g.day >= W.end) {
             W.done = true;
             if (made >= W.target) {
+              r.weekMade = true;
               D.adj(S, { firm: 2 }, { kroll: 3 });
               let wiped = '';
               const missed = S.quotaLedger.filter((e) => e.kind !== 'week' && e.day >= W.start && e.day <= W.end);
@@ -601,6 +603,7 @@
               }
               notes.push(`<b>Weekly quota met:</b> ${B.fmt.money(made, true)} against ${B.fmt.money(W.target)}.${wiped} ${D.boss(S)}: "Good week. The next one starts higher."`);
             } else {
+              r.strikeAdded = true;
               if (!S.quotaLedger.some((e) => e.kind === 'week' && e.week === W.w)) {
                 S.quotaLedger.push({ day: g.day, week: W.w, kind: 'week', pnl: made, quota: W.target, date: r.date });
                 S.quotaLedger.sort((a, b) => a.day - b.day || (a.kind === 'week') - (b.kind === 'week'));

@@ -8,6 +8,7 @@
   const DEFAULTS = {
     volume: 0.6, sound: true,
     music: true, musicVolume: 0.45,
+    soundStyle: 'new',      // new | classic (the original chiptune and beeps)
     effects: 'full',        // full | reduced | off
     cinematics: 'full',     // full | short | off
     storyDayLength: 180
@@ -39,6 +40,7 @@
       const s = this.get();
       B.SFX.setVolume(s.volume);
       B.SFX.setEnabled(s.sound);
+      if (B.Sound) B.Sound.setStyle(s.soundStyle);
       B.Music.setVolume(s.musicVolume);
       B.Music.setEnabled(s.music);
       document.documentElement.style.setProperty('--fx', this.fx());
@@ -138,7 +140,7 @@
         const text = !item.locked ? item.text
           : b.ledger && b.ledger.access ? 'Subscriber piece. The trading read is in this morning\'s desk note, top of the feed.'
           : b.ledger ? 'Behind The Ledger\'s paywall. Subscribe from the desk note at the top of the feed.' : item.text;
-        return `<button class="preopen-item ${kind}" data-feed-item="${i}">
+        return `<button class="preopen-item ${kind}" data-feed-item="${i}"${paywalled ? ' data-paywall="1"' : ''}>
         <span><b>${B.esc(item.source || 'THE WIRE')}</b>${paywalled ? ' · PAYWALLED' : ''}</span>
         <strong>${B.esc(item.title || 'Before the bell')}</strong>
         <p hidden>${B.esc(text || '')}</p>
@@ -182,7 +184,9 @@
         ${b.quotaStrikes ? `<div class="stat strike-stat"><div class="l">Career strikes</div><div class="v">${b.quotaStrikes.count} / ${b.quotaStrikes.limit}</div></div>` : ''}
       </div>`;
       const mandate = b.quotaMeta ? `<div class="quota-order"><span>DESK MANDATE</span><p>${B.esc(b.quotaMeta.memo)}</p></div>` : '';
+      B.Music.setGame(g);
       B.Music.play('brief');
+      if (feed && !b.phoneSounded) { b.phoneSounded = true; B.SFX.phoneOpen(); }
       const opened = new Set();
       const el = this.modal({
         kicker: `${b.kicker || ''} ${dateLabel}`,
@@ -194,6 +198,7 @@
           ...(feed ? [{ label: 'Skip Feed', keep: true, onClick: () => {
             if (!opened.size && g.mode.onFeedSkip) g.mode.onFeedSkip(g);
             const scroll = el.querySelector('.preopen-scroll');
+            if (scroll && !scroll.hidden) { B.SFX.feedSkip(); B.Music.skipFeed(); }
             if (scroll) scroll.hidden = true;
           }}] : []),
           { label: 'Ring the Opening Bell', cls: 'primary', onClick: () => {
@@ -215,7 +220,7 @@
           const a = act.dataset.ledger;
           if (a === 'toggle') ledgerOpen = !ledgerOpen;
           else if (a === 'sub') {
-            b.ledger = g.mode.ledgerSubscribe(g); ledgerOpen = true; B.SFX.news();
+            b.ledger = g.mode.ledgerSubscribe(g); ledgerOpen = true; B.SFX.news({ kind: 'sub' });
             // Keep the briefing's money line honest about what was just paid.
             el.querySelectorAll('.rules-list > div').forEach((row) => {
               row.innerHTML = row.innerHTML.replace(/Your money: [^ ]+ cash/, () => `Your money: ${F.money(b.ledger.cash)} cash`);
@@ -227,7 +232,6 @@
         }
         const node = e.target.closest('[data-feed-item]');
         if (!node) return;
-        B.SFX.click();
         const i = +node.dataset.feedItem;
         const item = b.feed[i];
         const detail = node.querySelector('p');
@@ -238,7 +242,11 @@
           if (g.mode.onFeedOpen) g.mode.onFeedOpen(g, item);
           const count = el.querySelector('.preopen-top b');
           if (count && item.anomalyId) count.textContent = `ANOMALIES: ${g.mode.S.anomalies}`;
-        }
+          if (item.anomalyId) B.SFX.anomaly(g.mode.S.anomalies);
+          else if (node.dataset.paywall) B.SFX.paywall();
+          else B.SFX.click();
+        } else if (node.dataset.paywall) B.SFX.paywall();
+        else B.SFX.click();
       });
     },
 
@@ -288,6 +296,10 @@
           ${r.quotaStrikeLimit ? `<div class="stat strike-stat"><div class="l">Career strikes</div><div class="v">${r.quotaStrikes} / ${r.quotaStrikeLimit}</div>${r.quotaStrikeLimit - r.quotaStrikes === 1 ? '<div class="quota-delta">FINAL WARNING · ONE MISS LEFT</div>' : ''}</div>` : ''}
         </div>
         ${notes.length ? `<ul class="notes">${notes.map((n) => `<li>${n}</li>`).join('')}</ul>` : ''}`;
+      // The report's verdict, in the pack's reward and penalty motifs.
+      if (r.weekMade) B.SFX.weekMade();
+      else if (r.strikeAdded) B.SFX.strike();
+      else if (r.quota > 0 && !r.quotaMet && r.earlyEnd !== 'wiped') B.SFX.quotaMissed();
       this.modal({
         kicker: r.earlyEnd === 'wiped' ? 'ACCOUNT TERMINATED' : 'CLOSING BELL',
         title: r.date,
@@ -331,9 +343,10 @@
       const after = `<div class="choice-list">${opts.map((o) => `<button class="choice-btn" data-opt="${o.id}"><b>${o.label}</b>${o.hint ? `<span>${o.hint}</span>` : ''}</button>`).join('')}</div>`;
       const el = this.modal({ kicker: c.kicker || 'DECISION', title: c.title, body, after, wide: true });
       if (B.Portraits) B.Portraits.drawAll(el);
-      B.SFX.choice();
+      B.SFX.choice('card');
       el.querySelectorAll('.choice-btn').forEach((btn) => btn.addEventListener('click', () => {
         B.SFX.unlock();
+        B.SFX.decisionConfirm();
         onPick(btn.dataset.opt);
       }));
     },
@@ -351,11 +364,12 @@
       const track = dark ? 'endingDark' : 'endingLight';
       const show = () => {
         if (B.Cinematic.endChain) B.Cinematic.endChain();
-        B.Music.play(track);
+        if (B.Music.ending) B.Music.ending(ending, track); else B.Music.play(track);
         if (g.mode.kind === 'story') this.storyEnding(g, ending);
         else this.endlessEnding(g, ending);
       };
       if (B.Cinematic.startChain) B.Cinematic.startChain('ending');
+      if (B.Music.prepareEnding) B.Music.prepareEnding(ending);
       const pulled = !!(g.mode && g.mode.S && g.mode.S.f && g.mode.S.f.pulledPlug);
       B.Cinematic.play('ending', { id: ending.id, title: ending.title, deck: ending.deck, dark, pulled }, show);
     },
@@ -419,7 +433,7 @@
       </div></div>`;
       $('app').appendChild(scr);
       if (e.unpriced) this.animateUnpriced($('unpriced-value'));
-      B.SFX.closeBell();
+      B.SFX.ending(e);
       const leave = () => { scr.remove(); B.UI.leaveGame(); };
       $('end-menu').addEventListener('click', leave);
       $('end-again').addEventListener('click', () => { scr.remove(); B.UI.g = null; B.Main.newStory(); });
@@ -507,6 +521,11 @@
           <div class="field"><label for="set-vol">SFX volume</label><input type="range" id="set-vol" min="0" max="1" step="0.05" value="${s.volume}"><output id="set-vol-o">${Math.round(s.volume * 100)}%</output></div>
           <div class="check"><input type="checkbox" id="set-music" ${s.music ? 'checked' : ''}><label for="set-music">Music</label><span></span></div>
           <div class="field"><label for="set-mvol">Music volume</label><input type="range" id="set-mvol" min="0" max="1" step="0.05" value="${s.musicVolume}"><output id="set-mvol-o">${Math.round(s.musicVolume * 100)}%</output></div>
+          <div class="field"><label for="set-style">Sound style</label>
+            <select id="set-style">
+              <option value="new">New</option>
+              <option value="classic">Classic (chiptune)</option>
+            </select><output></output></div>
           <button class="btn small" id="set-test">Test sound</button>
         </div>
         <div class="fieldset" style="margin-top:14px">
@@ -541,6 +560,7 @@
           <h3>Data</h3>
           <button class="btn small danger" id="set-reset">Delete all saves, endings and leaderboards</button>
         </div>`}`;
+      $('set-style').value = s.soundStyle === 'classic' ? 'classic' : 'new';
       $('set-fx').value = s.effects;
       $('set-cine').value = s.cinematics;
       $('set-dl').value = String(s.storyDayLength);
@@ -560,6 +580,7 @@
       $('set-vol').addEventListener('input', (e) => { B.Settings.set('volume', +e.target.value); $('set-vol-o').textContent = Math.round(e.target.value * 100) + '%'; });
       $('set-music').addEventListener('change', (e) => { B.Settings.set('music', e.target.checked); if (e.target.checked && !inGame) B.Music.play('menu', true); });
       $('set-mvol').addEventListener('input', (e) => { B.Settings.set('musicVolume', +e.target.value); $('set-mvol-o').textContent = Math.round(e.target.value * 100) + '%'; });
+      $('set-style').addEventListener('change', (e) => { B.Settings.set('soundStyle', e.target.value); B.SFX.unlock(); B.SFX.bell(); });
       $('set-test').addEventListener('click', () => { B.SFX.unlock(); B.SFX.bell(); });
       $('set-fx').addEventListener('change', (e) => B.Settings.set('effects', e.target.value));
       $('set-cine').addEventListener('change', (e) => B.Settings.set('cinematics', e.target.value));

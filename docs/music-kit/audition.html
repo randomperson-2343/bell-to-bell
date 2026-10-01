@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bell to Bell - music audition</title>
+<style>
+  :root { --bg: #14161a; --panel: #1d2026; --line: #2c313a; --fg: #e8e6df; --dim: #9aa0aa; --accent: #e0b84a; --bad: #e06a5a; }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  body { margin: 0; background: var(--bg); color: var(--fg); font: 16px/1.45 system-ui, sans-serif; }
+  main { max-width: 760px; margin: 0 auto; padding: 16px 16px 120px; }
+  h1 { font-size: 22px; margin: 8px 0 4px; }
+  h2 { font-size: 13px; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); margin: 28px 0 8px; }
+  p.note { color: var(--dim); margin: 4px 0 12px; font-size: 14px; }
+  .row { display: flex; gap: 12px; align-items: center; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; margin: 6px 0; }
+  .row.on { border-color: var(--accent); }
+  .row button { flex: none; width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--line); background: #262a32; color: var(--fg); font-size: 18px; cursor: pointer; }
+  .row.on button { background: var(--accent); color: #111; border-color: var(--accent); }
+  .row .t { flex: 1; min-width: 0; }
+  .row .t b { display: block; }
+  .row .t span { display: block; color: var(--dim); font-size: 13px; }
+  .bar { position: fixed; left: 0; right: 0; bottom: 0; background: #101216; border-top: 1px solid var(--line); padding: 10px 16px; }
+  .bar .in { max-width: 760px; margin: 0 auto; display: flex; gap: 14px; align-items: center; flex-wrap: wrap; font-size: 14px; }
+  .bar label { display: flex; gap: 8px; align-items: center; color: var(--dim); }
+  input[type=range] { accent-color: var(--accent); }
+  #status { color: var(--dim); margin-left: auto; }
+  .warn { color: var(--bad); }
+</style>
+</head>
+<body>
+<main>
+  <h1>Bell to Bell: music audition</h1>
+  <p class="note">Plays the game's own music engine, not a recording. Tap a track to start it, tap again to stop. Use headphones or decent speakers. The endings were composed after the rest of the kit and have not been heard by anyone yet: tell the composer which ones feel wrong.</p>
+  <div id="list"></div>
+</main>
+<div class="bar"><div class="in">
+  <label>Volume <input id="vol" type="range" min="0" max="1" step="0.01" value="0.45"></label>
+  <label id="ilab" hidden>Intensity <input id="int" type="range" min="0" max="1" step="0.01" value="0.6"></label>
+  <span id="status">Nothing playing.</span>
+</div></div>
+
+<script>window.BTB = {};</script>
+<script src="../../js/audio/voices.js"></script>
+<script src="../../js/audio/music-data.js"></script>
+<script src="../../js/audio/sfx-pack.js"></script>
+<script src="../../js/audio/music-engine.js"></script>
+<script src="../../js/audio/sfx-engine.js"></script>
+<script>
+(function () {
+  'use strict';
+  const B = window.BTB, scores = B.AudioData && B.AudioData.scores;
+  const list = document.getElementById('list');
+  if (!scores) { list.innerHTML = '<p class="warn">The audio files did not load. Open this page from inside the repository (docs/music-kit/audition.html).</p>'; return; }
+
+  const GROUPS = [
+    ['Menu', [['menu', 'The opening bell theme.']]],
+    ['Pre-open phone (the feed)', [['feed1', 'Act I, melt-up.'], ['feed2', 'Act II, tremors.'], ['feed3', 'Act III, contagion.'], ['feed4', 'Act IV, reckoning.']]],
+    ['Trading day (set intensity below)', [['game1', 'Act I, melt-up.'], ['game2', 'Act II, tremors.'], ['game3', 'Act III, contagion.'], ['game4', 'Act IV, reckoning.']]],
+    ['Endings', [
+      ['end_wiped', 'The tune is taken apart; the heartbeat stops.'], ['end_fired', 'One note, a clock, a door.'],
+      ['end_nobody', 'Machines drift in and out of step; no human pulse.'], ['end_master', 'Bright lounge, then the third drops.'],
+      ['end_whistle', 'The tune rises a step each time. Hope.'], ['end_revolving', 'The tune chases itself in canon.'],
+      ['end_perp', 'March, camera flashes, cuffs, the tune upside down.'], ['end_fall-guy', 'One note is wrong and something echoes it.'],
+      ['end_cassandra', 'The same question, louder, never answered.'], ['end_acquirer', 'Heavy and slow; two voices tune into one.'],
+      ['end_ward', 'A chorale and a slow metronome.'], ['end_clawback', 'A party, then notes are taken away until 40 percent is left.'],
+      ['end_fund', 'Driving, dorian, ends on a bare fifth.'], ['end_right-early', 'Always half a beat early, a little smaller each time.'],
+      ['end_everything-rally', 'Shiny on top, hollow underneath.'], ['end_lost-decade', 'One chord, a worn tape, two loops slipping apart.'],
+      ['end_soft', 'D major, the bass stepping down.'], ['end_quiet', 'Nearly silent. A soft bell.'],
+      ['end_replaced', 'People first, then the machine recites the tune.'], ['end_depression', 'Layers removed until a bell and a drone are left.'],
+      ['end_exit', 'Footsteps, walking bass, the ticker fading.'], ['end_grind', 'Plain, steady, alive.']]]
+  ];
+
+  let ctx = null, mixer = null, track = null, playing = null;
+  const vol = document.getElementById('vol'), intensity = document.getElementById('int'), ilab = document.getElementById('ilab'), status = document.getElementById('status');
+
+  function audio() {
+    if (ctx) return true;
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) { status.textContent = 'This browser has no Web Audio.'; return false; }
+    ctx = new AC();
+    mixer = B.AudioMixer.get(ctx);
+    mixer.setMusic(+vol.value, true);
+    mixer.setSfx(0.5, true);
+    return true;
+  }
+  function stop() {
+    if (track) { track.stop(0.4); track = null; }
+    document.querySelectorAll('.row.on').forEach((r) => { r.classList.remove('on'); r.querySelector('button').textContent = '▶'; });
+    playing = null; ilab.hidden = true; status.textContent = 'Nothing playing.';
+  }
+  function play(key, row) {
+    if (!audio()) return;
+    if (ctx.state === 'suspended') ctx.resume();
+    const same = playing === key;
+    stop();
+    if (same) return;
+    const isGame = /^game/.test(key);
+    track = B.MusicEngine.play(ctx, mixer.music, key, { intensity: isGame ? +intensity.value : undefined, fadeIn: 0.4 });
+    playing = key;
+    row.classList.add('on'); row.querySelector('button').textContent = '■';
+    ilab.hidden = !isGame;
+    const s = scores[key];
+    status.textContent = `${s.title}: ${Math.round(s.loopSeconds)} s loop, ${s.bpm} BPM`;
+  }
+  vol.addEventListener('input', () => { if (mixer) mixer.setMusic(+vol.value, true); });
+  intensity.addEventListener('input', () => { if (track && /^game/.test(playing)) track.setIntensity(+intensity.value); });
+
+  for (const [label, items] of GROUPS) {
+    const h = document.createElement('h2'); h.textContent = label; list.appendChild(h);
+    for (const [key, blurb] of items) {
+      const s = scores[key];
+      if (!s) continue;
+      const row = document.createElement('div'); row.className = 'row';
+      row.innerHTML = `<button aria-label="Play or stop">▶</button><div class="t"><b></b><span></span></div>`;
+      row.querySelector('b').textContent = s.title;
+      row.querySelector('span').textContent = `${blurb} ${Math.round(s.loopSeconds)} s, ${s.bpm} BPM.`;
+      row.querySelector('button').addEventListener('click', () => play(key, row));
+      list.appendChild(row);
+    }
+  }
+})();
+</script>
+</body>
+</html>

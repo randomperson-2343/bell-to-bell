@@ -1,0 +1,252 @@
+{
+ "gameplay_act1_melt_up": {
+  "bpm": 112,
+  "bars": 32,
+  "loop_seconds": 68.57,
+  "events": 1822,
+  "notes_out_of_scale": 0,
+  "melodic_clashes": 0,
+  "bell_ring_clashes": [
+   [
+    30.0,
+    "Db5",
+    "rings into",
+    "Dm9"
+   ],
+   [
+    62.0,
+    "Db5",
+    "rings into",
+    "Dm9"
+   ],
+   [
+    94.0,
+    "Db5",
+    "rings into",
+    "Dm9"
+   ]
+  ],
+  "voicing_crunch": {
+   "voicings": 20,
+   "semitone_pairs": 0,
+   "where": []
+  },
+  "norm_gain_linear": 0.2472,
+  "target_lufs": -21.0,
+  "by_intensity": {
+   "0.15": {
+    "lufs": -25.6,
+    "true_peak": -13.4,
+    "seam": 0.42,
+    "seam_over_p99": 0.04,
+    "centroid": 825
+   },
+   "0.6": {
+    "lufs": -21.0,
+    "true_peak": -9.5,
+    "seam": 2.15,
+    "seam_over_p99": 0.36,
+    "centroid": 1140
+   },
+   "1.0": {
+    "lufs": -19.4,
+    "true_peak": -8.4,
+    "seam": 1.8,
+    "seam_over_p99": 0.33,
+    "centroid": 1223
+   }
+  },
+  "layer_rms_db_full_loop": {
+   "pad": -31.1,
+   "bass": -28.2,
+   "kick": -29.6,
+   "kick2": -36.8,
+   "tick": -61.1,
+   "tock": -52.0,
+   "keys": -30.6,
+   "arp": -33.3,
+   "lead": -32.9,
+   "lead2": -41.9,
+   "bell": -36.0
+  }
+ },
+ "gameplay_act2_tremors": {
+  "bpm": 112,
+  "bars": 32,
+  "loop_seconds": 68.57,
+  "events": 1872,
+  "notes_out_of_scale": 0,
+  "melodic_clashes": 0,
+  "bell_ring_clashes": [
+   [
+    30.0,
+    "Db5",
+    "rings into",
+    "Dm9"
+   ],
+   [
+    62.0,
+    "Db5",
+    "rings into",
+    "Dm9"
+   ],
+   [
+    94.0,
+    "Db5",
+    "rings into",
+    "Dm9"
+   ]
+  ],
+  "voicing_crunch": {
+   "voicings": 20,
+   "semitone_pairs": 0,
+   "where": []
+  },
+  "norm_gain_linear": 0.2333,
+  "target_lufs": -21.0,
+  "by_intensity": {
+   "0.15": {
+    "lufs": -25.6,
+    "true_peak": -13.0,
+    "seam": 1.9,
+    "seam_over_p99": 0.19,
+    "centroid": 776
+   },
+   "0.6": {
+    "lufs": -21.0,
+    "true_peak": -9.6,
+    "seam": 2.24,
+    "seam_over_p99": 0.39,
+    "centroid": 1062
+   },
+   "1.0": {
+    "lufs": -19.5,
+    "true_peak": -8.4,
+    "seam": 0.66,
+    "seam_over_p99": 0.12,
+    "centroid": 1147
+   }
+  },
+  "layer_rms_db_full_loop": {
+   "pad": -31.2,
+   "bass": -28.7,
+   "kick": -30.1,
+   "kick2": -37.3,
+   "tick": -61.6,
+   "tock": -52.5,
+   "keys": -30.4,
+   "arp": -33.8,
+   "lead": -33.4,
+   "lead2": -41.1,
+   "bell": -36.5,
+   "drone": -36.4,
+   "tremor": -50.2
+  }
+ },
+ "gameplay_act3_contagion": {
+  "bpm": 120,
+  "bars": 32,
+  "loop_seconds": 64.0,
+  "events": 2110,
+  "notes_out_of_scale": 0,
+  "melodic_clashes": 0,
+  "bell_ring_clashes": [],
+  "voicing_crunch": {
+   "voicings": 16,
+   "semitone_pairs": 0,
+   "where": []
+  },
+  "norm_gain_linear": 0.2773,
+  "target_lufs": -21.0,
+  "by_intensity": {
+   "0.15": {
+    "lufs": -23.9,
+    "true_peak": -12.5,
+    "seam": 0.28,
+    "seam_over_p99": 0.02,
+    "centroid": 613
+   },
+   "0.6": {
+    "lufs": -21.0,
+    "true_peak": -10.4,
+    "seam": 0.53,
+    "seam_over_p99": 0.06,
+    "centroid": 747
+   },
+   "1.0": {
+    "lufs": -19.7,
+    "true_peak": -8.6,
+    "seam": 0.51,
+    "seam_over_p99": 0.06,
+    "centroid": 819
+   }
+  },
+  "layer_rms_db_full_loop": {
+   "pad": -31.6,
+   "bass": -25.7,
+   "kick": -28.2,
+   "kick2": -39.4,
+   "tick": -59.8,
+   "tock": -48.8,
+   "lead": -41.5,
+   "bell": -37.5,
+   "drone": -34.9,
+   "tremor": -54.0,
+   "swarm_a": -38.3,
+   "swarm_b": -38.6,
+   "swarm_c": -38.1,
+   "swarm_d": -38.9
+  }
+ },
+ "gameplay_act4_reckoning": {
+  "bpm": 84,
+  "bars": 32,
+  "loop_seconds": 91.43,
+  "events": 331,
+  "notes_out_of_scale": 0,
+  "melodic_clashes": 0,
+  "bell_ring_clashes": [],
+  "voicing_crunch": {
+   "voicings": 16,
+   "semitone_pairs": 0,
+   "where": []
+  },
+  "norm_gain_linear": 0.3076,
+  "target_lufs": -21.0,
+  "by_intensity": {
+   "0.15": {
+    "lufs": -23.8,
+    "true_peak": -10.1,
+    "seam": 0.61,
+    "seam_over_p99": 0.06,
+    "centroid": 455
+   },
+   "0.6": {
+    "lufs": -21.0,
+    "true_peak": -7.7,
+    "seam": 3.71,
+    "seam_over_p99": 0.39,
+    "centroid": 481
+   },
+   "1.0": {
+    "lufs": -19.1,
+    "true_peak": -6.5,
+    "seam": 3.85,
+    "seam_over_p99": 0.41,
+    "centroid": 491
+   }
+  },
+  "layer_rms_db_full_loop": {
+   "pad": -27.8,
+   "bass": -27.1,
+   "kick": -35.5,
+   "tick": -64.1,
+   "tock": -54.3,
+   "keys": -33.4,
+   "lead": -39.8,
+   "bell": -38.0,
+   "drone": -33.7,
+   "tremor": -49.4
+  }
+ }
+}
