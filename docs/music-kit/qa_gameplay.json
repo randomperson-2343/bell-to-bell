@@ -147,7 +147,7 @@
   "bpm": 120,
   "bars": 32,
   "loop_seconds": 64.0,
-  "events": 2110,
+  "events": 2142,
   "notes_out_of_scale": 0,
   "melodic_clashes": 0,
   "bell_ring_clashes": [],
@@ -156,46 +156,46 @@
    "semitone_pairs": 0,
    "where": []
   },
-  "norm_gain_linear": 0.2773,
+  "norm_gain_linear": 0.2742,
   "target_lufs": -21.0,
   "by_intensity": {
    "0.15": {
-    "lufs": -23.9,
-    "true_peak": -12.5,
+    "lufs": -24.0,
+    "true_peak": -12.6,
     "seam": 0.28,
     "seam_over_p99": 0.02,
     "centroid": 613
    },
    "0.6": {
     "lufs": -21.0,
-    "true_peak": -10.4,
-    "seam": 0.53,
-    "seam_over_p99": 0.06,
-    "centroid": 747
+    "true_peak": -10.2,
+    "seam": 0.65,
+    "seam_over_p99": 0.08,
+    "centroid": 738
    },
    "1.0": {
-    "lufs": -19.7,
-    "true_peak": -8.6,
-    "seam": 0.51,
-    "seam_over_p99": 0.06,
-    "centroid": 819
+    "lufs": -19.5,
+    "true_peak": -9.6,
+    "seam": 0.27,
+    "seam_over_p99": 0.04,
+    "centroid": 805
    }
   },
   "layer_rms_db_full_loop": {
-   "pad": -31.6,
-   "bass": -25.7,
-   "kick": -28.2,
-   "kick2": -39.4,
-   "tick": -59.8,
-   "tock": -48.8,
-   "lead": -41.5,
-   "bell": -37.5,
-   "drone": -34.9,
-   "tremor": -54.0,
-   "swarm_a": -38.3,
-   "swarm_b": -38.6,
-   "swarm_c": -38.1,
-   "swarm_d": -38.9
+   "pad": -31.7,
+   "bass": -25.8,
+   "kick": -28.3,
+   "kick2": -39.5,
+   "tick": -59.9,
+   "tock": -48.9,
+   "lead": -41.6,
+   "bell": -37.6,
+   "drone": -35.0,
+   "tremor": -54.1,
+   "swarm_a": -38.4,
+   "swarm_b": -38.4,
+   "swarm_c": -38.4,
+   "swarm_d": -38.4
   }
  },
  "gameplay_act4_reckoning": {

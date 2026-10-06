@@ -169,6 +169,10 @@ Endless runs borrow: Margin Death and Sudden Death play Wiped Out; Fired (both k
 
 They were composed without being heard: the checks are the same as for the rest of the kit (every melody note in the key or declared, no melodic semitone clashes with the chord, loudness within 0.3 LU of the target in the game's own render). **What that cannot say is whether they are good.** `audition.html` in this folder plays all 22 through the game's own engine so they can be judged by ear.
 
+## Act III trading music is on the beat
+
+The first Act III "Market Hours" had four arpeggio voices running at 28, 30, 32 and 34 cycles per loop, so most of their notes fell between beats and it sounded off the tempo. They now all play the same eight-note cell on the eighth-note grid (one cell per bar at 120 BPM), starting at different points in the cell so they still chase each other. Every note in the score is on a sixteenth-note grid line (checked). The Act III *phone feed* ("Thumb Scroll") keeps its deliberate drift: that one is meant to slip.
+
 ## Cost on the audio thread, and the safety net
 
 The kit was rendered offline, so nobody has heard it run live on a phone. The busiest loops (Act I and II gameplay) cost about a quarter of one core of the machine this was built on, measured as offline render time per second of audio. Most of that is the number of live audio nodes, so every instrument was slimmed (constant gains are baked into the waveforms, panners are shared, voices end when they are 48 dB down) and checked again, note by note, against the kit's Python: the sound did not change.

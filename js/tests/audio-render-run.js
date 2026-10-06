@@ -54,9 +54,11 @@ function check(name, ok, detail) {
   }
 
   console.log('Music');
+  const onlyArg = process.argv.find((a) => a.startsWith('--only='));   // e.g. --only=game3,end_wiped: just those tracks
   const endingKeys = Object.keys(exp.music).filter((k) => k.startsWith('end_'));
   const tracks = quick ? ['menu', 'feed1', 'game1', 'end_wiped', 'end_quiet'] : ['menu', 'feed1', 'feed2', 'feed3', 'feed4', 'game1', 'game2', 'game3', 'game4'].concat(endingKeys);
   for (const key of tracks) {
+    if (onlyArg && onlyArg.slice(7).split(',').indexOf(key) < 0) continue;
     const e = exp.music[key];
     if (key.startsWith('game')) {
       const levels = quick ? ['0.6'] : ['0.15', '0.6', '1.0'];

@@ -29,7 +29,7 @@ let fake = null;
 ctx.AudioContext = function () { fake = makeContext(); return fake; };
 
 // ---- data ---------------------------------------------------------------------
-const SCORE_EVENTS = { menu: 785, feed1: 314, feed2: 306, feed3: 528, feed4: 53, game1: 1822, game2: 1872, game3: 2110, game4: 331 };
+const SCORE_EVENTS = { menu: 785, feed1: 314, feed2: 306, feed3: 528, feed4: 53, game1: 1822, game2: 1872, game3: 2142, game4: 331 };
 
 test('Nine scores ship, with the event counts of the kit', () => {
   for (const k of Object.keys(SCORE_EVENTS)) assert(D.scores[k].events.length === SCORE_EVENTS[k], `${k}: ${D.scores[k].events.length} events`);

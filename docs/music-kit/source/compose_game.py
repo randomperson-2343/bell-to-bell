@@ -220,16 +220,19 @@ def build_game(act):
         for t0 in (46.5, 110.5):
             P.add("tremor", "tremor", t0, 3.0 / spb, None, v=0.6)
 
-    # ---------------- ACT III SWARM: four funds, one pattern, four slightly different speeds
+    # ---------------- ACT III SWARM: four funds, one pattern, locked to the beat
+    # Every voice plays the same eight-note cell on the eighth-note grid (one cell per bar, 120 BPM). The voices are
+    # told apart by where in the cell they start, so they chase each other like a canon instead of drifting out of
+    # time. (The first version ran them at 28, 30, 32 and 34 cycles per loop, which put most notes between beats.)
     if act == 3:
         cell = [67, 74, 72, 77, 74, 77, 72, 74]              # G4 D5 C5 F5 D5 F5 C5 D5 (safe over Dm9 and Ebmaj7/D)
         acc = [1.0, 0.55, 0.6, 0.9, 0.55, 0.6, 0.85, 0.5]
-        copies = {"swarm_a": (32, -0.7), "swarm_b": (30, -0.25), "swarm_c": (34, 0.25), "swarm_d": (28, 0.7)}
-        for layer, (cycles, pn) in copies.items():
-            period = 128.0 / cycles                          # every copy ends exactly on the loop point
-            for cy in range(cycles):
-                for j, m in enumerate(cell):
-                    P.add(layer, "arp", cy * period + j * (period / 8), period / 8 * 0.9, m, v=0.6 * acc[j], p=pn)
+        copies = {"swarm_a": (0, -0.7), "swarm_b": (2, -0.25), "swarm_c": (4, 0.25), "swarm_d": (6, 0.7)}
+        for layer, (rot, pn) in copies.items():
+            for bar in range(32):
+                for j in range(8):
+                    k = (j + rot) % 8
+                    P.add(layer, "arp", bar * 4 + j * 0.5, 0.45, cell[k], v=0.6 * acc[k], p=pn)
 
     # ---------------- MIX: layer gain at intensity 1.0, and the intensity curves
     ev_layers = {e["l"] for e in P.events}
