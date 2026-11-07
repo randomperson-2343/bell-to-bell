@@ -82,7 +82,7 @@
   };
 
   // ---- which act are we in --------------------------------------------------
-  // D1-D15 Act I, D16-D30 II, D31-D45 III, D46-D61 IV. Endless is always Act I.
+  // D1-D8 Act I, D9-D17 II, D18-D32 III, D33-D46 IV. Endless is always Act I.
   function actOf(g) {
     g = g || S.game;
     if (g && g.mode && g.mode.kind === 'story' && B.StoryData && B.StoryData.actIndex) return B.StoryData.actIndex(g.day);
