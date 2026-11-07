@@ -67,7 +67,7 @@
     },
 
     read(i) {
-      const d = B.storage.get(key(i), null);
+      let d = B.storage.get(key(i), null);
       if (!d) return null;
       if (d.v === 2) d = this.migrateV2Snapshot(d);
       if (d && d.v === 3) d = this.migrateV3Snapshot(d);

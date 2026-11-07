@@ -588,6 +588,11 @@
     }
     const mid = B.Save.migrateV3Snapshot({ v: 3, kind: 'story', day: 20, inDay: true, dayOpen: { fearLevel: 20 }, mode: { S: B.StoryMode.freshState(250000) } });
     assert(mid.inDay === false && mid.migrationNotice && mid.market === mid.dayOpen, 'a mid-session save rewinds to the bell');
+    // read() chains V3 -> V4 for a stored slot.
+    B.storage.set('save:slot:5', { v: 3, kind: 'story', day: 20, mode: { S: B.StoryMode.freshState(250000) } });
+    const stored = B.Save.read(5);
+    B.storage.remove('save:slot:5');
+    assert(stored && stored.v === 4 && stored.day === 11, 'read() migrates a V3 slot: ' + (stored && stored.day));
   });
 
   test('A trading day is three real minutes by default', () => {
@@ -772,7 +777,7 @@
       return mode.onDayEnd(g, report(day, quotaMet));
     };
     const limit = B.StoryMode.QUOTA_STRIKE_LIMIT;
-    assert(limit === 30, 'calibrated strike limit drifted');
+    assert(limit === 23, 'calibrated strike limit drifted');
     for (let i = 0; i < limit - 1; i++) {
       const verdict = close(i, false);
       assert(!verdict.ending, `fired early on strike ${i + 1}`);

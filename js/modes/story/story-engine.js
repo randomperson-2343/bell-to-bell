@@ -3,9 +3,9 @@
   'use strict';
   const D = B.StoryData;
   // Calibrated against real Market/Broker runs. Twelve cumulative misses fired
-  // even a perfect-foresight trader before the late-game choices. Thirty keeps
+  // even a perfect-foresight trader before the late-game choices. Twenty-three (thirty, scaled to the 46-session story) keeps
   // misses permanent while allowing a competent run to reach the last session.
-  const QUOTA_STRIKE_LIMIT = 30;
+  const QUOTA_STRIKE_LIMIT = 23;
   // Weekly quota: on top of the daily mandate, the desk wants the whole week
   // to clear the sum of its daily quotas plus a margin. It resets every
   // Monday. A missed week is one more career strike, logged at Friday's close.
