@@ -15,31 +15,30 @@
   // Shots: place (rhythm composition), tv, floor, dark (empty floor),
   // elevator, bell, insert, tableau, skyline.
   const SHEET = [
-    ['elevator', 'XL'], ['insert', 'S', 'DESK QUOTA RAISED'], ['insert', 'M', '212 PAGES OF RELEASE NOTES'], ['floor', 'M'],
-    ['tv', 'M', '$90B · NO REVENUE'], ['insert', 'M', '18K LIKES · DENIAL: 0 VIEWS'], ['insert', 'M', 'AUDITOR RESIGNS · FRLN UP'],
-    ['place', 'S'], ['bell', 'L', 'THE BELL RINGS FOURTEEN TIMES'], ['insert', 'L', 'DELINQUENCY 6.4%'],
-    ['insert', 'M', 'RATING AFFIRMED: AAA'], ['insert', 'L', 'FRLN HALTED · INDEX AT A RECORD'], ['tableau', 'L', 3],
-    ['place', 'L'], ['insert', 'M', '-3% AT TEN · FLAT AT THE CLOSE'],
-    ['insert', 'XL', 'A CIRCLE: THSI > HALO > THSI'], ['tv', 'S'], ['insert', 'M', 'SAME EXIT CLAUSE · THREE TIMES'],
+    ['elevator', 'XL'], ['insert', 'M', '212 PAGES OF RELEASE NOTES'], ['insert', 'M', '18K LIKES · DENIAL: 0 VIEWS'],
+    ['insert', 'L', 'DELINQUENCY 6.4%'], ['insert', 'M', 'RATING AFFIRMED: AAA'], ['insert', 'L', 'FRLN HALTED · INDEX AT A RECORD'],
+    ['tableau', 'L', 3], ['place', 'L'], ['insert', 'XL', 'A CIRCLE: THSI > HALO > THSI'],
     ['tableau', 'L', 5], ['dark', 'L', '19% OF RACKS NEVER ENERGIZE'], ['insert', 'M', 'COMPUTE FREEDOM ACT · SIGNED'],
-    ['floor', 'L'], ['insert', 'M', 'PAGE 14 · FOOTNOTE 9'], ['insert', 'XL', 'BIDS: 1 · PRICE: 0.00'], ['place', 'S'],
-    ['insert', 'M', '40 DOWNGRADES · SAME MINUTE'], ['place', 'M'], ['insert', 'M', 'CREDIT LINE WITHDRAWN'], ['place', 'L'],
-    ['insert', 'S', 'VOLUME UP · PRICE FLAT'],
-    ['tableau', 'XL', 8], ['tv', 'S'], ['insert', 'M', 'FOUR FUNDS · ONE MODEL'], ['tableau', 'XL', 9], ['place', 'L'],
-    ['place', 'L'], ['insert', 'L', 'MARKED AT 22 CENTS'], ['insert', 'L', 'AT RISK: 5.5 CENTS'], ['tableau', 'M', 11],
-    ['place', 'M'], ['skyline', 'S'], ['skyline', 'S'], ['skyline', 'S'], ['insert', 'M', 'VOLUME: PERFECTLY EVEN'], ['place', 'M'],
-    ['insert', 'XL', 'QUOTA: 1.5% OF BOOK'], ['insert', 'M', '9,000 WORDS · 0 READS'], ['place', 'M'], ['skyline', 'S'],
-    ['insert', 'L', 'VOICEMAIL · PERRY · 0:41'], ['skyline', 'S'], ['tableau', 'XL', 12], ['insert', 'L', 'YEAS 214 · NEEDED 218'],
-    ['dark', 'L', 'THE ONE THEY LEAVE'], ['insert', 'M', 'MONEY FUND NAV 0.99'], ['tableau', 'XL', 13], ['floor', 'XL'],
-    ['place', 'L'], ['insert', 'L', '61% OF FILLS · ONE COUNTERPARTY'], ['dark', 'XL'], ['tableau', 'XL', 14]
+    ['insert', 'XL', 'BIDS: 1 · PRICE: 0.00'], ['place', 'S'], ['insert', 'M', '40 DOWNGRADES · SAME MINUTE'],
+    ['insert', 'M', 'CREDIT LINE WITHDRAWN'], ['place', 'L'], ['tableau', 'XL', 8],
+    ['tv', 'S'], ['insert', 'M', 'FOUR FUNDS · ONE MODEL'], ['tableau', 'XL', 9],
+    ['place', 'L'], ['place', 'L'], ['insert', 'L', 'MARKED AT 22 CENTS'],
+    ['insert', 'L', 'AT RISK: 5.5 CENTS'], ['tableau', 'M', 11], ['place', 'M'],
+    ['skyline', 'S'], ['skyline', 'S'], ['skyline', 'S'],
+    ['insert', 'M', 'VOLUME: PERFECTLY EVEN'], ['place', 'M'], ['insert', 'XL', 'QUOTA: 1.5% OF BOOK'],
+    ['insert', 'M', '9,000 WORDS · 0 READS'], ['place', 'M'], ['skyline', 'S'],
+    ['insert', 'L', 'VOICEMAIL · PERRY · 0:41'], ['tableau', 'XL', 12], ['insert', 'L', 'YEAS 214 · NEEDED 218'],
+    ['insert', 'M', 'MONEY FUND NAV 0.99'], ['tableau', 'XL', 13], ['floor', 'XL'],
+    ['place', 'L'], ['insert', 'L', '61% OF FILLS · ONE COUNTERPARTY'], ['dark', 'XL'],
+    ['tableau', 'XL', 14]
   ];
   const WEIGHTS = { S: 1, M: 2, L: 3, XL: 3 };
 
   // Which document each close-up is. Anything not listed is an internal memo.
   const DOCS = {
-    2: 'footnote', 4: 'rating', 5: 'post', 6: 'chart', 9: 'chart', 10: 'rating', 11: 'ticket', 14: 'chart', 15: 'footnote',
-    17: 'footnote', 20: 'vote', 22: 'footnote', 23: 'ticket', 25: 'rating', 29: 'chart', 36: 'ticket', 37: 'footnote',
-    43: 'chart', 46: 'post', 49: 'voicemail', 52: 'vote', 54: 'ticket', 58: 'chart'
+    1: 'footnote', 2: 'post', 3: 'chart', 4: 'rating', 5: 'ticket', 8: 'footnote', 11: 'vote', 12: 'ticket',
+    14: 'rating', 23: 'ticket', 24: 'footnote', 30: 'chart', 33: 'post', 36: 'voicemail', 38: 'vote', 39: 'ticket',
+    43: 'chart'
   };
   const LABELS = {
     memo: 'HOLLOWAY STERN · INTERNAL', footnote: 'OFFERING MEMORANDUM', rating: 'MERIDIAN RATINGS · ACTION', post: 'SQWAK',
@@ -47,19 +46,19 @@
   };
   // The twelve technical anomalies (story-data.js, ANOMALIES) sit on these sessions.
   // The morning of each one has one small thing wrong in the picture.
-  const ANOMALY_DAYS = [0, 2, 15, 19, 23, 25, 30, 32, 38, 43, 49, 58];
+  const ANOMALY_DAYS = [0, 1, 8, 10, 12, 14, 17, 19, 25, 30, 36, 43];
 
   // Four mornings depend on what you chose the night before.
   function variant(day, S) {
     if (!S) return null;
     const c = S.choices || {}, f = S.f || {};
-    if (day === 10 && c.c1 === 'dump') return ['insert', 'M', 'RIVERBEND BUYS AT PAR', 'ticket'];
-    if (day === 10 && c.c1 === 'leak') return ['insert', 'M', 'LEAKED DECK · FRONT PAGE', 'post'];
-    if (day === 35 && c.c5 === 'fail') return ['dark', 'L', 'NO RESCUE · DESKS CLEARED'];
-    if (day === 35 && c.c5 === 'ban') return ['insert', 'L', 'SHORT SALES BANNED · 5 DAYS', 'ticket'];
-    if (day === 35 && c.c5 === 'bail') return ['insert', 'L', 'GUARANTEE SIGNED · 2:14 AM', 'memo'];
-    if (day === 55 && f.billPassed) return ['insert', 'XL', 'THE BILL PASSES · 218 YEAS', 'vote'];
-    if (day === 60 && f.pulledPlug) return ['racks', 'XL', 'THE STACK IS OFF'];
+    if (day === 4 && c.c1 === 'dump') return ['insert', 'M', 'RIVERBEND BUYS AT PAR', 'ticket'];
+    if (day === 4 && c.c1 === 'leak') return ['insert', 'M', 'LEAKED DECK · FRONT PAGE', 'post'];
+    if (day === 22 && c.c5 === 'fail') return ['dark', 'L', 'NO RESCUE · DESKS CLEARED'];
+    if (day === 22 && c.c5 === 'ban') return ['insert', 'L', 'SHORT SALES BANNED · 5 DAYS', 'ticket'];
+    if (day === 22 && c.c5 === 'bail') return ['insert', 'L', 'GUARANTEE SIGNED · 2:14 AM', 'memo'];
+    if (day === 40 && f.billPassed) return ['insert', 'XL', 'THE BILL PASSES · 218 YEAS', 'vote'];
+    if (day === 45 && f.pulledPlug) return ['racks', 'XL', 'THE STACK IS OFF'];
     return null;
   }
   function row(day, S) {
@@ -101,17 +100,17 @@
     X.rect(ctx, x + 47, y, 2, 1, P.crimson);
   }
 
-  // The false dawn as a motif: sessions 42-49 light one more window each;
+  // The false dawn as a motif: sessions 29-36 light one more window each;
   // after the top they go out again.
   function lit(day) {
-    if (day < 41) return 0.18;
-    if (day <= 48) return 0.18 + (day - 40) * 0.08;
-    return Math.max(0.04, 0.82 - (day - 48) * 0.07);
+    if (day < 28) return 0.18;
+    if (day <= 35) return 0.18 + (day - 27) * 0.08;
+    return Math.max(0.04, 0.82 - (day - 35) * 0.07);
   }
   function skylineShot(ctx, day, title) {
-    const a = B.clamp(Math.ceil((day + 1) / 15), 1, 4), s = R.season(day);
+    const a = (B.StoryData.actIndex(day) + 1), s = R.season(day);
     X.rect(ctx, 0, 0, V.w, V.h, P.ink);
-    X.gradient(ctx, 0, 0, V.w, 260, day >= 41 && day <= 48 ? P.amberD : P.ink2, P.ink, 12);
+    X.gradient(ctx, 0, 0, V.w, 260, day >= 28 && day <= 35 ? P.amberD : P.ink2, P.ink, 12);
     const f = lit(day);
     for (let i = 0; i < 26; i++) {
       const w = 18 + ((i * 17) % 20), h = 60 + ((i * 41) % 150), x = i * 26 - 6;
@@ -119,7 +118,7 @@
       if (s.snow) X.rect(ctx, x, 260 - h, w, 2, P.bone);
       for (let yy = 8; yy < h - 6; yy += 12) for (let xx = 4; xx < w - 4; xx += 8) {
         const k = ((i * 131 + xx * 7 + yy * 3) % 100) / 100;
-        if (k < f) X.rect(ctx, x + xx, 260 - h + yy, 3, 3, day > 48 ? P.sky : P.amber);
+        if (k < f) X.rect(ctx, x + xx, 260 - h + yy, 3, 3, day > 35 ? P.sky : P.amber);
       }
     }
     R.weather(ctx, 0, 0, V.w, 240, day);
@@ -195,7 +194,7 @@
       lines.forEach((ln, i) => big(ctx, ln, 320, 96 + i * 28 + (lines.length === 1 ? 12 : 0), c.signal === P.amber ? P.amberD : c.signal, 3, 'center'));
     },
     post(ctx, day, value, c) {
-      X.rect(ctx, 0, 0, V.w, V.h, P.ink); R.skyline(ctx, Math.ceil((day + 1) / 15), day * 5, 300, day);
+      X.rect(ctx, 0, 0, V.w, V.h, P.ink); R.skyline(ctx, B.StoryData.actIndex(day) + 1, day * 5, 300, day);
       X.cel(ctx, 190, 16, 260, 300, P.ink2, P.slate2, P.ink, P.ink2, 3);
       X.rect(ctx, 200, 28, 240, 276, P.screenD);
       big(ctx, 'sqwak', 320, 36, P.bone, 2, 'center');
@@ -251,13 +250,13 @@
     }
   };
   function insertShot(ctx, day, value, doc) {
-    const a = B.clamp(Math.ceil((day + 1) / 15), 1, 4), c = R.colors(a);
+    const a = (B.StoryData.actIndex(day) + 1), c = R.colors(a);
     (DOC_DRAW[doc] || DOC_DRAW.memo)(ctx, day, value, c);
     X.scanlines(ctx, 0, 0, V.w, V.h, P.ink, 0.05);
   }
 
   function actCard(ctx, day) {
-    const a = B.clamp(Math.ceil((day + 1) / 15), 1, 4), c = R.colors(a);
+    const a = (B.StoryData.actIndex(day) + 1), c = R.colors(a);
     X.rect(ctx, 0, 0, V.w, V.h, P.ink);
     X.gradient(ctx, 0, 0, V.w, V.h, c.wash, P.ink, 12);
     const label = act(day);
@@ -286,7 +285,7 @@
     switch (r.doc) {
       case 'rating': return at2x(ctx, (c) => { SH.apartment(c, 0.7); SH.tvSet(c, 40, 50, 104, 68, r.arg || title, act(day), 0); }, day);
       case 'post': return R.phoneFrame(ctx, R.storyboard(day), [{ source: 'SQWAK', title: r.arg || title, kind: 'chirp' }], false);
-      case 'vote': return B.DecisionArt ? B.DecisionArt.room(ctx, day > 40 ? 'c8' : 'c3', day, true, { f: { billPassed: /PASSES/.test(r.arg || '') } }) : at2x(ctx, (c) => SH.apartment(c, 0.6), day);
+      case 'vote': return B.DecisionArt ? B.DecisionArt.room(ctx, day > 27 ? 'c8' : 'c3', day, true, { f: { billPassed: /PASSES/.test(r.arg || '') } }) : at2x(ctx, (c) => SH.apartment(c, 0.6), day);
       case 'voicemail': return at2x(ctx, (c) => SH.apartment(c, 0.15), day);
       case 'ticket': return at2x(ctx, (c) => SH.tradingFloor(c, 0.45 + (day % 4) * 0.08, true, day), day);
       case 'chart': return R.officeFrame(ctx, day, false);
@@ -317,7 +316,7 @@
   // live on the 640-pixel canvas, giving glass, paper and architecture their
   // own scale without changing a storyboard's subject or blocking its caption.
   function finePass(ctx, day, r, phase) {
-    const signal = R.colors(B.clamp(Math.ceil((day + 1) / 15), 1, 4)).signal;
+    const signal = R.colors((B.StoryData.actIndex(day) + 1)).signal;
     const top = phase === 'detail' ? 19 : 12;
     if (r.shot === 'insert' && phase === 'detail') return; // native documents already have fine linework
     ctx.save();
@@ -425,13 +424,12 @@
   };
   // The weekends the story cares about: Friday's day index -> caption.
   const WEEKENDS = {
-    9: 'THE BONUS EMAIL SITS UNREAD ALL WEEKEND.',
-    19: 'THE BILL IS ON EVERY CHANNEL. NOBODY HAS READ IT.',
-    34: 'RESCUE WEEKEND. THE LIGHTS AT TREASURY NEVER GO OFF.',
-    44: 'KROLL PAID FOR DINNER. IT IS OVER, HE SAYS.',
-    49: 'THE TOP. NOBODY RINGS A BELL AT THE TOP.',
-    54: 'FOUR VOTES SHORT. THE PHONES RING ALL NIGHT.',
-    59: '3:17 AM. THE MACHINES ARE STILL TRADING.'
+    4: 'THE BONUS EMAIL SITS UNREAD ALL WEEKEND.',
+    14: 'THE BILL IS ON EVERY CHANNEL. NOBODY HAS READ IT.',
+    24: 'RESCUE WEEKEND. THE LIGHTS AT TREASURY NEVER GO OFF.',
+    34: 'KROLL PAID FOR DINNER. IT IS OVER, HE SAYS.',
+    39: 'FOUR VOTES SHORT. THE PHONES RING ALL NIGHT.',
+    44: '3:17 AM. THE MACHINES ARE STILL TRADING.'
   };
   function wallet(o) { const g = o && o.game; return g && g.mode && g.mode.S && g.mode.S.wallet; }
   function homeOf(w) {
@@ -586,18 +584,18 @@
 
     // What is on the bed this week, or what the story left there.
     const bx = home.id === 'share' ? 132 : 150, by = top - 24;
-    if (day === 9 || day === 54) {
-      for (let i = 0; i < (day === 54 ? 4 : 1); i++) { box(ctx, bx + i * 21, by + 6 - (i % 2) * 3, 36, 21, P.bone, P.white, P.putty2); X.rect(ctx, bx + 6 + i * 21, by + 12 - (i % 2) * 3, 21, U, day === 54 ? P.crimsonD : P.amberD); }
-    } else if (day === 44 || day === 49) {
-      box(ctx, bx, by + 3, 60, 24, P.bone, P.white, P.putty2); X.rect(ctx, bx + 6, by + 9, 42, U, day === 49 ? P.crimsonD : P.amberD); X.rect(ctx, bx + 6, by + 15, 30, U, P.grey2);
-    } else if (day === 59) {
+    if (day === 4 || day === 39) {
+      for (let i = 0; i < (day === 39 ? 4 : 1); i++) { box(ctx, bx + i * 21, by + 6 - (i % 2) * 3, 36, 21, P.bone, P.white, P.putty2); X.rect(ctx, bx + 6 + i * 21, by + 12 - (i % 2) * 3, 21, U, day === 39 ? P.crimsonD : P.amberD); }
+    } else if (day === 34) {
+      box(ctx, bx, by + 3, 60, 24, P.bone, P.white, P.putty2); X.rect(ctx, bx + 6, by + 9, 42, U, P.amberD); X.rect(ctx, bx + 6, by + 15, 30, U, P.grey2);
+    } else if (day === 44) {
       box(ctx, bx, by - 3, 54, 30, P.plasticD, P.plastic2, P.ink2); X.rect(ctx, bx + 6, by + 3, 42, 18, night ? P.screenGlow : P.screen);
       for (let i = 0; i < 9; i++) X.rect(ctx, bx + 9 + i * 4, by + 15 - (i * 7 % 9), 2, 2, i > 5 ? P.crimson : P.phosphorD);
       box(ctx, bx - 6, by + 24, 66, 9, P.plastic, P.plastic2, P.plasticD);
-    } else if (day === 19 || day === 34 || week % 3 === 0) {
+    } else if (day === 14 || day === 24 || week % 3 === 0) {
       box(ctx, bx, by - 3, 54, 30, P.plasticD, P.plastic2, P.ink2); X.rect(ctx, bx + 6, by + 3, 42, 18, night ? P.screenGlow : P.screen);
-      const c = day === 34 ? P.amber : P.sky;
-      if (day === 19 || day === 34) for (let i = 0; i < 4; i++) X.rect(ctx, bx + 9, by + 6 + i * 4, 33 - i * 6, 2, c);
+      const c = day === 24 ? P.amber : P.sky;
+      if (day === 14 || day === 24) for (let i = 0; i < 4; i++) X.rect(ctx, bx + 9, by + 6 + i * 4, 33 - i * 6, 2, c);
       else { X.rect(ctx, bx + 9, by + 9, 24 - week % 5, U, P.sky); X.rect(ctx, bx + 9, by + 15, 15 + week % 7, U, P.phosphorD); }
       box(ctx, bx - 6, by + 24, 66, 9, P.plastic, P.plastic2, P.plasticD);
     } else if (week % 3 === 1) {
@@ -703,7 +701,7 @@
   B.Scenes.weekend = function (o) {
     const day = o.day || 0, week = Math.floor(day / 5) + 1, w = wallet(o), home = homeOf(w), S = story(o);
     const pulled = !!(S && S.f && S.f.pulledPlug);
-    const story$ = day === 59 && pulled ? '3:17 AM. FOR THE FIRST TIME IN YEARS, NOTHING IS TRADING.' : WEEKENDS[day];
+    const story$ = day === 44 && pulled ? '3:17 AM. FOR THE FIRST TIME IN YEARS, NOTHING IS TRADING.' : WEEKENDS[day];
     const pet = w && w.pet ? `${w.pet.kind}-${w.pet.sex}-${w.vet === 'neglected' ? 'n' : 'c'}` : '';
     const key = `${week}:${home.id}:${w ? Math.min(3, w.lateWeeks | 0) : 0}:${pulled ? 'p' : ''}:${pet}`;
     const sat = w && w.weeks && w.weeks[week] ? `WEEK ${week} · ${home.name.toUpperCase()} · PAYSLIP ${B.fmt.money(w.weeks[week].net, true)}` : `WEEK ${week} · SATURDAY · ${home.name.toUpperCase()}`;
@@ -713,10 +711,10 @@
     ];
     // Two weekends get a second room: Treasury with every light on, and the
     // whip's phones the night before the vote.
-    if (day === 34 && B.DecisionArt) beats.push(R.beat('weekend', `${key}:treasury`, 1.6, (c) => B.DecisionArt.room(c, 'c5', day), '2:14 AM. THE TERM SHEET IS ON ITS NINTH DRAFT.', { sfx: 'room' }));
-    if (day === 54 && B.DecisionArt) beats.push(R.beat('weekend', `${key}:whip`, 1.6, (c) => B.DecisionArt.room(c, 'c8', day), 'THE WHIP HAS 214. HE NEEDS 218.', { sfx: 'room' }));
+    if (day === 24 && B.DecisionArt) beats.push(R.beat('weekend', `${key}:treasury`, 1.6, (c) => B.DecisionArt.room(c, 'c5', day), '2:14 AM. THE TERM SHEET IS ON ITS NINTH DRAFT.', { sfx: 'room' }));
+    if (day === 39 && B.DecisionArt) beats.push(R.beat('weekend', `${key}:whip`, 1.6, (c) => B.DecisionArt.room(c, 'c8', day), 'THE WHIP HAS 214. HE NEEDS 218.', { sfx: 'room' }));
     beats.push(R.beat('weekend', `${key}:hold`, 0.8, (c) => { apartmentShot(c, day, home, true, w); c.save(); c.globalAlpha = 0.3; X.rect(c, 0, 0, V.w, V.h, P.ink); c.restore(); }, '', {}));
-    if (day === 59) beats.push(R.beat('weekend', `${key}:317`, 1.6, (c) => (pulled && B.DecisionArt ? B.DecisionArt.room(c, 'c10', day, true, S) : at2x(c, (cc) => SH.tradingFloor(cc, 0.4, false, 60), day)),
+    if (day === 44) beats.push(R.beat('weekend', `${key}:317`, 1.6, (c) => (pulled && B.DecisionArt ? B.DecisionArt.room(c, 'c10', day, true, S) : at2x(c, (cc) => SH.tradingFloor(cc, 0.4, false, 60), day)),
       pulled ? 'THE FLOOR IS DARK. SO ARE THE RACKS.' : 'THE FLOOR IS DARK. THE RACKS ARE NOT.', {}));
     return beats;
   };
@@ -737,25 +735,21 @@
     return beats;
   };
 
-  // The closing bell finally has a bell: the hand-drawn one, swinging. Three
-  // days ring differently: fourteen times on the fourteen-billion day, one
-  // long slow swing the day of the offer, and not at all at the end.
+  // The closing bell finally has a bell: the hand-drawn one, swinging. Two
+  // days ring differently: one long slow swing the day of the offer, and not
+  // at all at the end.
   const close = B.Scenes.close;
-  function bellSwing(day, p) {
-    if (day === 8) return (p * 2) % 1;
-    if (day === 57) return p * 0.45;
-    return p;
-  }
+  function bellSwing(day, p) { return day === 42 ? p * 0.45 : p; }
   B.Scenes.close = function (o) {
     const beats = close(o);
-    const r = o.report || {}, day = r.day || 0, silent = day >= 59;
+    const r = o.report || {}, day = r.day || 0, silent = day >= 44;
     if (beats[0]) {
       beats[0] = Object.assign({}, beats[0], {
         cache: false,
-        line: silent ? '4:00 PM. NOBODY RINGS IT.' : day === 8 ? '4:00 PM. IT RINGS FOURTEEN TIMES.' : beats[0].line,
+        line: silent ? '4:00 PM. NOBODY RINGS IT.' : beats[0].line,
         draw: (c, v, p) => {
           at2x(c, (cc) => {
-            SH.bellScene(cc, silent ? 1 : bellSwing(day, p == null ? 1 : p), day >= 38);
+            SH.bellScene(cc, silent ? 1 : bellSwing(day, p == null ? 1 : p), day >= 25);
             if (silent) { cc.save(); cc.globalAlpha = 0.45; X.rect(cc, 0, 0, 320, 180, P.ink); cc.restore(); }
           }, day);
           finePass(c, day, { shot: 'bell' }, 'establish');

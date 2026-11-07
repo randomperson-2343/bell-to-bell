@@ -25,10 +25,10 @@ const assert = (value, message) => { if (!value) throw new Error(message); };
   await page.evaluate(() => {
     BTB.Settings.set('sound', false); BTB.Settings.set('music', false); BTB.Settings.set('cinematics', 'full');
     BTB.Cinematic.startChain && BTB.Cinematic.startChain('qa');
-    BTB.Cinematic.play('news', { day:60, brief:{title:'Orphan Monday',kicker:'IV · RECKONING',feed:[]} }, () => {});
+    BTB.Cinematic.play('news', { day:45, brief:{title:'Orphan Monday',kicker:'IV · RECKONING',feed:[]} }, () => {});
   });
   await wait(200);
-  await page.locator('#cine-canvas').screenshot({ path:path.join(evidence, `${prefix}-news-session-61.png`) });
+  await page.locator('#cine-canvas').screenshot({ path:path.join(evidence, `${prefix}-news-session-46.png`) });
   if (captureOnly) { await browser.close(); server.kill(); return; }
 
   const results = await page.evaluate(async () => {
@@ -42,13 +42,13 @@ const assert = (value, message) => { if (!value) throw new Error(message); };
       const c=cv.getContext('2d');beat.draw(c,v,1,opts||{});return hashCanvas(cv);
     };
     const newsHashes=[];
-    for(let day=0;day<61;day++){const o={day,brief:{title:'SESSION '+(day+1),feed:[]}};const bs=BTB.Scenes.news(o);newsHashes.push(render(bs.find((b)=>b.informative)||bs[bs.length-1],o));}
+    for(let day=0;day<46;day++){const o={day,brief:{title:'SESSION '+(day+1),feed:[]}};const bs=BTB.Scenes.news(o);newsHashes.push(render(bs.find((b)=>b.informative)||bs[bs.length-1],o));}
     out.newsUnique=new Set(newsHashes).size;
     const endingHashes=[];
     for(const id of BTB.Rhythm.endingIds){const o={id,title:id,deck:'ENDING '+id,dark:false};endingHashes.push(render(BTB.Scenes.ending(o)[1],o));}
     out.endingUnique=new Set(endingHashes).size;
     const weekendHashes=[];
-    for(let day=4;day<60;day+=5){const o={day};weekendHashes.push(render(BTB.Scenes.weekend(o)[0],o));}
+    for(let day=4;day<45;day+=5){const o={day};weekendHashes.push(render(BTB.Scenes.weekend(o)[0],o));}
     out.weekendUnique=new Set(weekendHashes).size;
     const empty=BTB.Scenes.phone({day:4,brief:{feed:[]}}), one=BTB.Scenes.phone({day:4,brief:{feed:[{source:'WIRE',title:'ONE'}]}});
     out.emptyPhoneDiffers=render(empty[1],{})!==render(one[1],{});
@@ -70,13 +70,13 @@ const assert = (value, message) => { if (!value) throw new Error(message); };
     BTB.Cinematic.play('news',{day:1,brief:{title:'X',feed:[]}},()=>BTB.Cinematic.play('phone',{day:1,brief:{feed:[]}},()=>{chainDone=true;}));
     BTB.Cinematic.skipAll(); out.skipChain=chainDone; BTB.Cinematic.endChain();
     const start=performance.now();
-    for(let day=0;day<61;day++){const o={day,brief:{title:'SESSION '+day,feed:[]}};const bs=BTB.Scenes.news(o),beat=bs.find((b)=>b.informative)||bs[bs.length-1];BTB.Cinematic.opts=o;BTB.Cinematic.cachedFrame(beat,beat.view);}
+    for(let day=0;day<46;day++){const o={day,brief:{title:'SESSION '+day,feed:[]}};const bs=BTB.Scenes.news(o),beat=bs.find((b)=>b.informative)||bs[bs.length-1];BTB.Cinematic.opts=o;BTB.Cinematic.cachedFrame(beat,beat.view);}
     out.cacheMs=performance.now()-start;out.cacheEntries=BTB.Cinematic.frameCache.size;
     return out;
   });
-  assert(results.newsUnique >= 55, `only ${results.newsUnique} rendered news frames are distinct`);
+  assert(results.newsUnique >= 41, `only ${results.newsUnique} rendered news frames are distinct`);
   assert(results.endingUnique === 22, `only ${results.endingUnique} ending signatures`);
-  assert(results.weekendUnique === 12, `only ${results.weekendUnique} weekend frames`);
+  assert(results.weekendUnique === 9, `only ${results.weekendUnique} weekend frames`);
   assert(results.emptyPhoneDiffers, 'empty feed is visually indistinguishable from a fabricated row');
   assert(results.closeOpts.pnl === 12345 && results.closeOpts.quota === 2200, 'closing options were dropped');
   assert(results.endingOpts.id === 'fund' && results.endingOpts.dark === true, 'ending options were dropped');

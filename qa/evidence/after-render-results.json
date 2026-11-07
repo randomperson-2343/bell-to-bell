@@ -3,13 +3,13 @@
     640,
     360
   ],
-  "sampleHash": "aa72d0f6e48da08e9875",
-  "newsUnique": 61,
+  "sampleHash": "c821bddb0b33cb83c9ea",
+  "newsUnique": 46,
   "endingUnique": 22,
-  "weekendUnique": 12,
-  "establishGroups": 55,
+  "weekendUnique": 9,
+  "establishGroups": 41,
   "emptyPhoneRows": 0,
   "onePhoneRows": 1,
   "fullPhoneRows": 4,
-  "render61Ms": 1259.8
+  "renderMs": 1436.7
 }

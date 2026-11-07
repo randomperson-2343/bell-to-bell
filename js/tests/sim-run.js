@@ -77,7 +77,7 @@ try {
   mode.quota = () => 0;
   const r = play(B, mode, POLICIES.soft, 'flat', 'full-campaign-smoke');
   console.log(`STORY ${'full-smoke'.padEnd(10)} ${'flat'.padEnd(7)} -> ${r.ending ? r.ending.title.padEnd(22) : 'NO ENDING'.padEnd(22)} days=${String(r.days).padStart(2)} equity=$${r.equity.toLocaleString()}`);
-  if (!r.ending || r.days !== 61) errors++;
+  if (!r.ending || r.days !== mode.lastDay + 1) errors++;
 } catch (e) { errors++; console.log('STORY full-smoke flat THREW:', e.stack); }
 for (const [name, pol] of Object.entries(POLICIES)) {
   for (const style of ['careful', 'yolo']) {

@@ -23,13 +23,12 @@
   }
   function clean(s) { return String(s || '').replace(/<[^>]+>/g, ''); }
   function board(day) {
-    const d = Math.max(0, day | 0), act = d < 15 ? 1 : d < 30 ? 2 : d < 45 ? 3 : 4;
+    const d = Math.max(0, day | 0), act = B.StoryData.actIndex(d) + 1;
     const place = PLACES[d % PLACES.length], camera = CAMERAS[(Math.floor(d / 5) + d) % CAMERAS.length];
     const crop = { wide: 0, profile: -42, 'over-shoulder': 36, insert: -88, close: 74, desk: 18 }[camera];
     return { day: d, week: Math.floor(d / 5) + 1, act, place, camera, crop,
       signature: `${d + 1}:${place}:${camera}:${crop}` };
   }
-  const STORYBOARDS = Array.from({ length: 61 }, (_, day) => board(day));
 
   function colors(act) {
     return act === 4 ? { wash:P.crimsonD, signal:P.crimson, sky:P.ink2 }
@@ -40,10 +39,12 @@
   function text(ctx, value, x, y, color, align) {
     X.textShadow(ctx, clean(value).slice(0, 80), x, y, color || P.bone, P.ink, { align: align || 'left' });
   }
-  // Thirteen weeks run from October into the new year: amber dawns first,
-  // then grey six-o'clock darkness, then snow. Every exterior reads this.
+  // The calendar runs from October into the new year: amber dawns first, then
+  // grey six-o'clock darkness, then snow. Every exterior reads this. The weather
+  // follows each session's original calendar slot, so the shorter story still
+  // ends in snow.
   function season(day) {
-    const week = Math.floor(Math.max(0, day | 0) / 5) + 1;
+    const D = B.StoryData.DAYS[day], week = Math.floor(Math.max(0, D ? D.sid : day | 0) / 5) + 1;
     if (week <= 4) return { id: 'autumn', week, dawn: P.amberD, glow: 0.34, snow: 0 };
     if (week <= 9) return { id: 'grey', week, dawn: P.slate, glow: 0.22, snow: 0 };
     return { id: 'winter', week, dawn: P.slate2, glow: 0.16, snow: Math.min(1, (week - 9) / 3), wreath: week >= 11 };
@@ -372,11 +373,11 @@
     return Object.assign({ id:`${scene}:${id}`, view:V, dur, draw, line:line||'', cache:true, transition:'cut' }, extra||{});
   }
   B.Rhythm = {
-    view:V, storyboards:STORYBOARDS, endingIds:ENDING_IDS,
+    view:V, endingIds:ENDING_IDS,
     // Drawing helpers for js/art/storyboard.js.
     placeFrame, phoneFrame, officeFrame, closeFrame, weekendFrame, skyline, season, sky, weather, text, colors, clean, chart, person, marketDown, beat,
     phoneRowCount(feed){return Math.min(4,(feed||[]).length);},
-    storyboard(day){return STORYBOARDS[day]||board(day);},
+    storyboard:board,
     frameMap(day){const sb=this.storyboard(day);return [
       {id:`news:${day}:place`,purpose:'establish',camera:sb.camera},
       {id:`news:${day}:headline`,purpose:'meaningful insert',camera:'insert'},

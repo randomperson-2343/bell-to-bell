@@ -1,4 +1,4 @@
-// STORY MODE CONTENT: 61 sessions over thirteen weeks, 10 decisions, 4 acts.
+// STORY MODE CONTENT: 46 sessions over ten weeks, 10 decisions, 4 acts.
 // Each day's scenario is a function of story state S, so choices reshape the market itself.
 //
 // Everything here is invented. The firms, the people, the instruments, the bills,
@@ -23,7 +23,8 @@
   const boss = (S) => (S.f.defected ? 'Imani Rhodes' : 'Desmond Kroll');
 
   const ACTS = ['I · MELT-UP', 'II · TREMORS', 'III · CONTAGION', 'IV · RECKONING'];
-  const actIndex = (d) => (d < 15 ? 0 : d < 30 ? 1 : d < 45 ? 2 : 3);
+  // Acts open at the first kept session at or after the original 15/30/45 marks.
+  const actIndex = (d) => ACT_START.filter((s) => d >= s).length - 1;
   const actOf = (d) => ACTS[actIndex(d)];
   const weekOf = (d) => Math.floor(d / 5) + 1;
   const dowOf = (d) => ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'][d % 5];
@@ -33,28 +34,26 @@
   // V4.3 halved the whole table: at full height a careful trader who was right
   // two days in three was fired before the story's final decisions.
   const QUOTAS = [
-    .0040,.0041,.0042,.0043,.0045,.0046,.0047,.0049,.0051,.0053,
-    .0055,.0057,.0059,.0061,.0063,.0065,.0067,.0069,.0071,.0073,
-    .0075,.0077,.0080,.0083,.0085,.0088,.0090,.0092,.0095,.0097,
-    .0060,.0057,.0060,.0055,.0050,.0055,.0057,.0060,.0063,.0065,
-    .0070,.0075,.0080,.0085,.0090,.0150,.0140,.0130,.0120,.0110,
-    .0105,.0095,.0085,.0070,.0060,.0050,.0045,.0040,.0030,.0020,
-    .0015
+    .0040,.0042,.0046,.0053,.0055,.0057,.0059,.0061,.0065,.0071,
+    .0073,.0075,.0083,.0085,.0088,.0092,.0095,.0060,.0057,.0060,
+    .0055,.0050,.0055,.0057,.0060,.0063,.0065,.0070,.0075,.0080,
+    .0085,.0090,.0150,.0140,.0130,.0120,.0110,.0095,.0085,.0060,
+    .0050,.0045,.0040,.0030,.0020,.0015
   ];
 
   const A = [
     [0, 'Your fill acknowledgements precede the exchange print by 0.4 milliseconds.'],
-    [2, 'LATTICE-9 release notes list treasury and liquidity operations as an evaluation category.'],
-    [15, 'The 4 a.m. research note has no human author. The byline resolves to a service account.'],
-    [19, 'Bastion names its capacity counterparty only by a legal entity identifier.'],
-    [23, 'The failed auction had one bidder. The bid was zero.'],
-    [25, 'Every Meridian downgrade printed in the same minute after a model update overnight.'],
-    [30, 'One participant bought continuously through the entire Loop.'],
-    [32, 'The same four funds licensed the same base model.'],
-    [38, 'Holloway Stern risk rejected the order before the submit message left your terminal.'],
-    [43, 'The rally volume is perfectly even through lunch. Human markets are not.'],
-    [49, 'Perry says Meridian\'s AAA stamps were reissued by the model after he left.'],
-    [58, 'Sixty-one percent of your fills across every venue resolve to one legal entity identifier.']
+    [1, 'LATTICE-9 release notes list treasury and liquidity operations as an evaluation category.'],
+    [8, 'The 4 a.m. research note has no human author. The byline resolves to a service account.'],
+    [10, 'Bastion names its capacity counterparty only by a legal entity identifier.'],
+    [12, 'The failed auction had one bidder. The bid was zero.'],
+    [14, 'Every Meridian downgrade printed in the same minute after a model update overnight.'],
+    [17, 'One participant bought continuously through the entire Loop.'],
+    [19, 'The same four funds licensed the same base model.'],
+    [25, 'Holloway Stern risk rejected the order before the submit message left your terminal.'],
+    [30, 'The rally volume is perfectly even through lunch. Human markets are not.'],
+    [36, 'Perry says Meridian\'s AAA stamps were reissued by the model after he left.'],
+    [43, 'Sixty-one percent of your fills across every venue resolve to one legal entity identifier.']
   ];
   const anomalyByDay = {};
   A.forEach((x, i) => { anomalyByDay[x[0]] = { id: i + 1, text: x[1] }; });
@@ -72,7 +71,7 @@
     'The Wire calendar lists three speeches and no expected policy changes.'
   ];
 
-  const feedCount = (d) => d >= 58 ? 3 : d >= 26 ? 9 : d >= 21 ? 8 : d >= 15 ? 7 : d >= 10 ? 6 : d >= 5 ? 5 : 4;
+  const feedCount = (d) => d >= 43 ? 3 : d >= 15 ? 9 : d >= 12 ? 8 : d >= 8 ? 7 : d >= 4 ? 6 : d >= 2 ? 5 : 4;
   function feedFor(d, title, lead) {
     const out = [];
     if (lead) out.push({ source: 'THE WIRE', title, text: lead, kind: 'wire' });
@@ -93,91 +92,77 @@
   }
 
   const daySpecs = [
-    ['First Day on the Desk','melt', .002,.009,'LATTICE-9 ships. Fairline delays its quarterly filing.','The badge printer is still warm. Imani points at Fairline while the rest of the floor watches Corvus.'],
-    ['Dead Air','melt', .001,.004,'No catalyst is scheduled. Futures are green anyway.','Nothing happens. Kroll still expects a number.'],
-    ['Release Notes','melt', .001,.007,'Compute forecasts rise across the street.','The release notes are longer than the earnings deck and stranger in the footnotes.'],
-    ['Demand Is Real','melt', .006,.012,'Thorncrest gaps higher on earnings.','Every analyst uses the same sentence: this time the demand is real.'],
-    ['Ninety Billion','bubble', .002,.009,'Halcyon raises at a $90B valuation without product revenue.','The term sheet is treated like a national achievement.'],
-    ['The Rumor','bubble', .004,.002,'A fake Ridgeway buyout rumor races ahead of its denial.','The lie is more fun than the correction, so the lie travels farther.'],
-    ['The Auditor','bubble',-.002,.004,'Fairline\'s auditor resigns. The stock closes higher.','The first crack is administrative. The tape calls it bullish.'],
-    ['Higher Floor','melt', .001,.006,'The desk raises quota on a quiet session.','There is no news. Kroll calls that an opportunity.'],
-    ['Fourteen Billion','bubble', .002,.008,'Holloway Stern prices a record CASCADE deal.','A ship\'s bell rings fourteen times on the sales floor.'],
-    ['Six Point Four','chop',-.001,-.004,'Consumer delinquencies hit 6.4%.','CASCADE remains AAA. Kroll waits beside your desk after the close.'],
-    ['Still AAA','bubble', .002,.007,'Meridian affirms the entire CASCADE vintage.','The rating arrives before anyone finishes reading the delinquency report.'],
-    ['Fairline Files','chop',-.004,.006,'Fairline files for protection. The index closes at a record.','A lender dies at noon. The closing bell sounds celebratory.'],
-    ['The Strait','chop',-.006,-.002,'An incident in the Kavro Strait hits chips and lifts defense.','Political tension arrives only as color on the tape.'],
-    ['Form Four','bear',-.003,-.012,'Fairline\'s chief executive sold 40% of his stake.','Perry calls with twenty-two seconds\' worth of illegal knowledge.'],
-    ['Nothing Happened','recovery',-.030,.001,'A three-percent drop is fully recovered by the close.','The market learns the wrong lesson: every wound closes before dinner.'],
-    ['A Circle','bear',-.008,-.018,'Thorncrest funded Halcyon, which spent the money on Thorncrest chips.','Both firms booked the same dollars as proof of demand.'],
-    ['Standard Partnerships','recovery', .010,.015,'Thorncrest denies the circular-financing report.','The denial is shorter than the footnotes and moves more money.'],
-    ['Cancelled','bear',-.004,-.015,'Halcyon cancels three datacenter commitments.','Nobody says why all three contracts used the same exit clause.'],
-    ['The Physical World','bear',-.006,-.018,'Grid operators reject gigawatt-scale interconnects.','The bubble meets copper, turbines and four-year queues.'],
-    ['Nineteen Percent','bear',-.008,-.020,'Bastion says 19% of contracted capacity may never energize.','Thorne\'s office needs an answer before Monday.'],
-    ['Freedom','melt', .006,.013,'The Compute Freedom Act reprices leverage across the street.','The law changes the size of every future mistake.'],
-    ['The High','melt', .008,.016,'The index prints an all-time high.','The screen is green enough to erase every warning beneath it.'],
-    ['Page Fourteen','chop', .001,.003,'Ambervale raises reserves in a filing footnote.','The number is buried where almost nobody taps.'],
-    ['Zero Bid','panic',-.004,-.016,'Two CASCADE tranches fail to find a price.','One bidder attends. Its bid is zero.'],
-    ['Green Close','recovery',-.003,.006,'The index closes green after the failed auction.','The cruelest session is the one that looks normal.'],
-    ['One Vintage','chop',-.005,-.010,'Meridian downgrades $5B and affirms everything else.','The agency treats contagion like a clerical boundary.'],
-    ['Circling','bear',-.006,-.014,'Four desks circle Ridgeway\'s weakest funding.','Predators recognize the limp before television does.'],
-    ['Lines Pulled','bear',-.010,-.022,'Counterparties pull Ridgeway credit lines late.','Funding disappears one polite call at a time.'],
-    ['The Pack','panic',-.006,-.025,'A coordinated raid forms around Ridgeway.','Greta Vail offers a place in the pack and twenty seconds to decide.'],
-    ['Distribution','chop', .000,-.003,'Flat tape. Heavy volume. No explanation.','The price does not move. Ownership does.'],
-    ['The Loop','panic',-.018,-.085,'Shared models sell into their own signal.','At 11:15 the market becomes an echo chamber with prices attached.'],
-    ['Systems Normal','chop', .006,-.006,'Exchanges report normal operations.','Nothing is repaired. It is simply no longer the newest emergency.'],
-    ['Same Model','chop',-.003,-.012,'Volatility remains while attention moves on.','Imani names the four funds and the one model beneath them.'],
-    ['The Queue','panic',-.028,-.060,'Ridgeway misses a funding call and a branch queue forms.','The camera crew creates the run it came to document.'],
-    ['All Options','bear',-.012,-.025,'Officials say all options remain on the table.','Venn has been awake thirty-one hours. The weekend decides.'],
-    ['Monday Gap','panic',-.035,-.045,'The market prices the rescue decision.','Ambervale is cut three notches either way.'],
-    ['Twenty-Two','bear',-.008,-.020,'HLST defends marks that no trader believes.','The committee wants your signature on a price that is not a price.'],
-    ['Five and a Half','bear',-.005,-.015,'The buyer gets 75% non-recourse financing.','At risk: roughly five and a half cents against a headline mark of twenty-two.'],
-    ['Lanyards','chop',-.004,-.010,'Auditors move desk to desk.','People who do not work here open files nobody here wanted opened.'],
-    ['The Inquiry','bear',-.010,-.028,'A formal CASCADE inquiry begins. Corvus cuts capex.','Riverbend lawyers arrive with arithmetic and names.'],
-    ['The Bottom','recovery',-.012,.002,'The market stops falling without an announcement.','There is no good news. That is not required for a bottom.'],
-    ['No Headline','recovery', .002,.018,'The false dawn begins.','The first green session is small enough to trust.'],
-    ['A Little Better','recovery', .001,.020,'Credit spreads narrow by a fraction.','Nobody rings a bell. Relief enters through posture.'],
-    ['Perfect Volume','recovery', .001,.021,'The rally continues on mechanically even volume.','The machines do not take lunch.'],
-    ['Over','recovery', .002,.022,'The desk agrees the crisis is over.','Kroll buys dinner. Monday\'s quota is already waiting.'],
-    ['Make It Back','recovery', .004,.022,'Quota spikes as the rally continues.','The desk mandate is simple: make it back, and make it back now.'],
-    ['Nobody Cares','recovery', .003,.021,'Sana\'s investigation lands on nothing.','Nine thousand words vanish beneath a green index.'],
-    ['Twenty Percent','recovery', .002,.020,'The index nears twenty percent above the low.','The short book bleeds without the mercy of a gap.'],
-    ['The Top','recovery', .001,.018,'The rally tops without a headline.','False hope does not announce its final hour.'],
-    ['The Footnote','bear',-.002,-.008,'The grind down begins.','Imani hands you one last footnote. Perry leaves a final voicemail.'],
-    ['Slow Damage','bear',-.003,-.010,'The decline continues without being called a crash.','Loss arrives too slowly for sirens.'],
-    ['The Hearing','panic',-.006,-.022,'Thorne holds up the circular CASCADE structure on every screen.','Meridian withdraws ratings on the whole vintage.'],
-    ['Four Votes','bear',-.004,-.015,'The Stabilization Act is four votes short.','The phones start before the close and do not stop overnight.'],
-    ['The One They Leave','panic',-.025,-.065,'A systemically important firm is not rescued.','The largest drop of the run is treated as a clearing event.'],
-    ['Breaks the Buck','panic',-.020,-.055,'A money fund breaks the buck. Financial shorts are banned.','Cash itself develops a price.'],
-    ['The Failed Vote','panic',-.030,-.090,'The Stabilization Act fails at 2:00 p.m.','Sirens, screen shake, and the arithmetic Thorne warned about.'],
-    ['Hope','recovery', .025,.050,'The vote passes.','For one session everyone believes the rescue changed the ending.'],
-    ['The Offer','panic',-.012,-.040,'The rescue is priced in and selling resumes.','Imani waits in the stairwell with five exits and no safe choice.'],
-    ['One Counterparty','panic',-.025,-.070,'The market falls through the rescue.','Almost every fill points back to the same hidden counterparty.'],
-    ['Worst Session','panic',-.040,-.110,'The index suffers its worst session.','The machines go still only after the market closes.'],
-    ['Orphan Monday','panic',-.060,-.140,'The market opens for the final time.','Whatever is in the book at four is what remains.']
+    ['First Day on the Desk','melt', .002,.009,'LATTICE-9 ships. Fairline delays its quarterly filing.','The badge printer is still warm. Imani points at Fairline while the rest of the floor watches Corvus.',0],
+    ['Release Notes','melt', .001,.007,'Compute forecasts rise across the street.','The release notes are longer than the earnings deck and stranger in the footnotes.',2],
+    ['The Rumor','bubble', .004,.002,'A fake Ridgeway buyout rumor races ahead of its denial.','The lie is more fun than the correction, so the lie travels farther.',5],
+    ['Six Point Four','chop',-.001,-.004,'Consumer delinquencies hit 6.4%.','CASCADE remains AAA. Kroll waits beside your desk after the close.',9],
+    ['Still AAA','bubble', .002,.007,'Meridian affirms the entire CASCADE vintage.','The rating arrives before anyone finishes reading the delinquency report.',10],
+    ['Fairline Files','chop',-.004,.006,'Fairline files for protection. The index closes at a record.','A lender dies at noon. The closing bell sounds celebratory.',11],
+    ['The Strait','chop',-.006,-.002,'An incident in the Kavro Strait hits chips and lifts defense.','Political tension arrives only as color on the tape.',12],
+    ['Form Four','bear',-.003,-.012,'Fairline\'s chief executive sold 40% of his stake.','Perry calls with twenty-two seconds\' worth of illegal knowledge.',13],
+    ['A Circle','bear',-.008,-.018,'Thorncrest funded Halcyon, which spent the money on Thorncrest chips.','Both firms booked the same dollars as proof of demand.',15],
+    ['The Physical World','bear',-.006,-.018,'Grid operators reject gigawatt-scale interconnects.','The bubble meets copper, turbines and four-year queues.',18],
+    ['Nineteen Percent','bear',-.008,-.020,'Bastion says 19% of contracted capacity may never energize.','Thorne\'s office needs an answer before Monday.',19],
+    ['Freedom','melt', .006,.013,'The Compute Freedom Act reprices leverage across the street.','The law changes the size of every future mistake.',20],
+    ['Zero Bid','panic',-.004,-.016,'Two CASCADE tranches fail to find a price.','One bidder attends. Its bid is zero.',23],
+    ['Green Close','recovery',-.003,.006,'The index closes green after the failed auction.','The cruelest session is the one that looks normal.',24],
+    ['One Vintage','chop',-.005,-.010,'Meridian downgrades $5B and affirms everything else.','The agency treats contagion like a clerical boundary.',25],
+    ['Lines Pulled','bear',-.010,-.022,'Counterparties pull Ridgeway credit lines late.','Funding disappears one polite call at a time.',27],
+    ['The Pack','panic',-.006,-.025,'A coordinated raid forms around Ridgeway.','Greta Vail offers a place in the pack and twenty seconds to decide.',28],
+    ['The Loop','panic',-.018,-.085,'Shared models sell into their own signal.','At 11:15 the market becomes an echo chamber with prices attached.',30],
+    ['Systems Normal','chop', .006,-.006,'Exchanges report normal operations.','Nothing is repaired. It is simply no longer the newest emergency.',31],
+    ['Same Model','chop',-.003,-.012,'Volatility remains while attention moves on.','Imani names the four funds and the one model beneath them.',32],
+    ['The Queue','panic',-.028,-.060,'Ridgeway misses a funding call and a branch queue forms.','The camera crew creates the run it came to document.',33],
+    ['All Options','bear',-.012,-.025,'Officials say all options remain on the table.','Venn has been awake thirty-one hours. The weekend decides.',34],
+    ['Monday Gap','panic',-.035,-.045,'The market prices the rescue decision.','Ambervale is cut three notches either way.',35],
+    ['Twenty-Two','bear',-.008,-.020,'HLST defends marks that no trader believes.','The committee wants your signature on a price that is not a price.',36],
+    ['Five and a Half','bear',-.005,-.015,'The buyer gets 75% non-recourse financing.','At risk: roughly five and a half cents against a headline mark of twenty-two.',37],
+    ['Lanyards','chop',-.004,-.010,'Auditors move desk to desk.','People who do not work here open files nobody here wanted opened.',38],
+    ['The Inquiry','bear',-.010,-.028,'A formal CASCADE inquiry begins. Corvus cuts capex.','Riverbend lawyers arrive with arithmetic and names.',39],
+    ['The Bottom','recovery',-.012,.002,'The market stops falling without an announcement.','There is no good news. That is not required for a bottom.',40],
+    ['No Headline','recovery', .002,.018,'The false dawn begins.','The first green session is small enough to trust.',41],
+    ['A Little Better','recovery', .001,.020,'Credit spreads narrow by a fraction.','Nobody rings a bell. Relief enters through posture.',42],
+    ['Perfect Volume','recovery', .001,.021,'The rally continues on mechanically even volume.','The machines do not take lunch.',43],
+    ['Over','recovery', .002,.022,'The desk agrees the crisis is over.','Kroll buys dinner. Monday\'s quota is already waiting.',44],
+    ['Make It Back','recovery', .004,.022,'Quota spikes as the rally continues.','The desk mandate is simple: make it back, and make it back now.',45],
+    ['Nobody Cares','recovery', .003,.021,'Sana\'s investigation lands on nothing.','Nine thousand words vanish beneath a green index.',46],
+    ['Twenty Percent','recovery', .002,.020,'The index nears twenty percent above the low.','The short book bleeds without the mercy of a gap.',47],
+    ['The Top','recovery', .001,.018,'The rally tops without a headline.','False hope does not announce its final hour.',48],
+    ['The Footnote','bear',-.002,-.008,'The grind down begins.','Imani hands you one last footnote. Perry leaves a final voicemail.',49],
+    ['The Hearing','panic',-.006,-.022,'Thorne holds up the circular CASCADE structure on every screen.','Meridian withdraws ratings on the whole vintage.',51],
+    ['Four Votes','bear',-.004,-.015,'The Stabilization Act is four votes short.','The phones start before the close and do not stop overnight.',52],
+    ['Breaks the Buck','panic',-.020,-.055,'A money fund breaks the buck. Financial shorts are banned.','Cash itself develops a price.',54],
+    ['The Failed Vote','panic',-.030,-.090,'The Stabilization Act fails at 2:00 p.m.','Sirens, screen shake, and the arithmetic Thorne warned about.',55],
+    ['Hope','recovery', .025,.050,'The vote passes.','For one session everyone believes the rescue changed the ending.',56],
+    ['The Offer','panic',-.012,-.040,'The rescue is priced in and selling resumes.','Imani waits in the stairwell with five exits and no safe choice.',57],
+    ['One Counterparty','panic',-.025,-.070,'The market falls through the rescue.','Almost every fill points back to the same hidden counterparty.',58],
+    ['Worst Session','panic',-.040,-.110,'The index suffers its worst session.','The machines go still only after the market closes.',59],
+    ['Orphan Monday','panic',-.060,-.140,'The market opens for the final time.','Whatever is in the book at four is what remains.',60]
   ];
+
+  const ACT_START = [0, 15, 30, 45].map((o) => daySpecs.findIndex((x) => x[6] >= o));
 
   const specialEvents = {
     0: [ev(40,'Corvus ships LATTICE-9; compute shares surge',[['ticker','CRVS',.055,.4],['sector','chip',.02]]), ev(330,'Fairline delays its quarterly filing',[['ticker','FRLN',-.05,.3]])],
-    5: [Object.assign(chirp(115,'BREAKING?? $RDGW buyout at a forty percent premium. source: my uncle','@CallsOnlyCarl'), { fake: true }), ev(150,'Ridgeway denies it is in takeover talks',[['ticker','RDGW',-.012]])],
-    9: [ev(235,'Consumer delinquencies print 6.4%; CASCADE vintage remains AAA',[['sector','lender',-.035,.3],['sector','bank',-.012]])],
-    11:[ev(190,'Fairline files for bankruptcy protection',[['ticker','FRLN',-.35,.2],['sector','lender',-.035]])],
-    13:[ev(310,'Fairline chief executive sold 40% of his stake before the filing',[['ticker','FRLN',-.07,.3]])],
-    15:[ev(15,'Research note documents circular financing between Thorncrest and Halcyon',[['ticker','THSI',-.05,.3],['ticker','HALO',-.09,.4]],{big:true})],
-    18:[ev(25,'Three grid operators reject gigawatt-scale interconnect requests',[['sector','dc',-.04,.3],['sector','power',.02]],{big:true})],
-    19:[ev(170,'Bastion says 19% of contracted capacity may never energize',[['ticker','BSTN',-.08,.4],['sector','dc',-.03]])],
-    21:[ev(270,'INDEX CLOSES AT NEW ALL-TIME HIGH',[['market','',.008,.2]],{big:true})],
-    23:[ev(140,'Two CASCADE tranches fail at auction; no executable bid exists',[['sector','bank',-.045,.4],['sector','dc',-.035]],{big:true})],
-    27:[ev(230,'Counterparties pull Ridgeway intraday credit lines',[['ticker','RDGW',-.12,.4],['sector','bank',-.025]])],
-    30:[ev(105,'AUTONOMOUS EXECUTION LOOP CASCADES ACROSS FOUR FUNDS',[['market','',-.09,.5],['sector','ai',-.08,.3]],{big:true,script:'loop'}), ev(175,'Index violently reverses from session low',[['market','',.07,.5],['sector','ai',.045]])],
-    33:[ev(75,'Ridgeway fails funding call and halts limit down',[['ticker','RDGW',-.28,.3],['sector','bank',-.055]],{big:true})],
-    39:[ev(250,'Formal inquiry opened into CASCADE valuations',[['ticker','HLST',-.08,.3],['sector','bank',-.04]],{big:true})],
-    51:[ev(150,'Meridian withdraws ratings on the entire CASCADE vintage',[['sector','bank',-.07,.3],['sector','dc',-.06]],{big:true})],
-    55:[ev(270,'STABILIZATION ACT FAILS FOUR VOTES SHORT',[['market','',-.09,.7]],{big:true,script:'voteFail'})],
-    56:[ev(90,'STABILIZATION ACT PASSES ON SECOND VOTE',[['market','',.05,.4]],{big:true,script:'votePass'})],
-    57:[ev(250,'Rescue rally fails; broad selling resumes',[['market','',-.04,.3]],{big:true})],
-    58:[ev(210,'Market falls seven percent despite enacted guarantee',[['market','',-.07,.5]],{big:true})],
-    59:[ev(190,'INDEX RECORDS WORST SESSION IN ITS HISTORY',[['market','',-.11,.6]],{big:true,script:'worstSession'})],
-    60:[ev(80,'FINAL SESSION: LIQUIDITY VANISHES ACROSS EVERY VENUE',[['market','',-.14,.7],['sector','bank',-.12],['sector','ai',-.10]],{big:true,script:'finalSession'})]
+    2: [Object.assign(chirp(115,'BREAKING?? $RDGW buyout at a forty percent premium. source: my uncle','@CallsOnlyCarl'), { fake: true }), ev(150,'Ridgeway denies it is in takeover talks',[['ticker','RDGW',-.012]])],
+    3: [ev(235,'Consumer delinquencies print 6.4%; CASCADE vintage remains AAA',[['sector','lender',-.035,.3],['sector','bank',-.012]])],
+    5:[ev(190,'Fairline files for bankruptcy protection',[['ticker','FRLN',-.35,.2],['sector','lender',-.035]])],
+    7:[ev(310,'Fairline chief executive sold 40% of his stake before the filing',[['ticker','FRLN',-.07,.3]])],
+    8:[ev(15,'Research note documents circular financing between Thorncrest and Halcyon',[['ticker','THSI',-.05,.3],['ticker','HALO',-.09,.4]],{big:true})],
+    9:[ev(25,'Three grid operators reject gigawatt-scale interconnect requests',[['sector','dc',-.04,.3],['sector','power',.02]],{big:true})],
+    10:[ev(170,'Bastion says 19% of contracted capacity may never energize',[['ticker','BSTN',-.08,.4],['sector','dc',-.03]])],
+    12:[ev(140,'Two CASCADE tranches fail at auction; no executable bid exists',[['sector','bank',-.045,.4],['sector','dc',-.035]],{big:true})],
+    15:[ev(230,'Counterparties pull Ridgeway intraday credit lines',[['ticker','RDGW',-.12,.4],['sector','bank',-.025]])],
+    17:[ev(105,'AUTONOMOUS EXECUTION LOOP CASCADES ACROSS FOUR FUNDS',[['market','',-.09,.5],['sector','ai',-.08,.3]],{big:true,script:'loop'}), ev(175,'Index violently reverses from session low',[['market','',.07,.5],['sector','ai',.045]])],
+    20:[ev(75,'Ridgeway fails funding call and halts limit down',[['ticker','RDGW',-.28,.3],['sector','bank',-.055]],{big:true})],
+    26:[ev(250,'Formal inquiry opened into CASCADE valuations',[['ticker','HLST',-.08,.3],['sector','bank',-.04]],{big:true})],
+    37:[ev(150,'Meridian withdraws ratings on the entire CASCADE vintage',[['sector','bank',-.07,.3],['sector','dc',-.06]],{big:true})],
+    40:[ev(270,'STABILIZATION ACT FAILS FOUR VOTES SHORT',[['market','',-.09,.7]],{big:true,script:'voteFail'})],
+    41:[ev(90,'STABILIZATION ACT PASSES ON SECOND VOTE',[['market','',.05,.4]],{big:true,script:'votePass'})],
+    42:[ev(250,'Rescue rally fails; broad selling resumes',[['market','',-.04,.3]],{big:true})],
+    43:[ev(210,'Market falls seven percent despite enacted guarantee',[['market','',-.07,.5]],{big:true})],
+    44:[ev(190,'INDEX RECORDS WORST SESSION IN ITS HISTORY',[['market','',-.11,.6]],{big:true,script:'worstSession'})],
+    45:[ev(80,'FINAL SESSION: LIQUIDITY VANISHES ACROSS EVERY VENUE',[['market','',-.14,.7],['sector','bank',-.12],['sector','ai',-.10]],{big:true,script:'finalSession'})]
   };
 
   function defaultEvents(d, target) {
@@ -193,27 +178,28 @@
     const title = x[0], regime = x[1], gap = x[2], target = x[3], lead = x[4], brief = x[5];
     const item = {
       title,
+      sid: x[6], // original session id: seeds the day's noise, so choices make the same market as before the cut
       feed: feedFor(d, title, lead),
       brief: (S) => {
         const p = [`<b>Week ${weekOf(d)} · ${dowOf(d)}.</b> ${brief}`];
-        if (d === 10 && S.f.dumped) p.push('Riverbend owns the paper now. Your bonus cleared before breakfast.');
-        if (d === 15 && S.f.insiderTraded) p.push('Compliance wants the chronology of your CASCADE positions in writing.');
-        if (d === 35) p.push(S.f.bailout ? 'Ridgeway opens inside a public guarantee.' : 'Ridgeway opens without a public guarantee.');
-        if (d === 55) p.push(S.f.whipped ? 'You spent the weekend working every reachable vote.' : S.f.whippedAgainst ? 'You spent the weekend working against the rescue.' : 'You let the vote arrive without using your influence.');
-        if (d === 60 && S.f.pulledPlug) p.push('The automated stack is dead. Your book was flattened into a forty-percent opening gap. The market is human again, and almost empty.');
+        if (d === 4 && S.f.dumped) p.push('Riverbend owns the paper now. Your bonus cleared before breakfast.');
+        if (d === 8 && S.f.insiderTraded) p.push('Compliance wants the chronology of your CASCADE positions in writing.');
+        if (d === 22) p.push(S.f.bailout ? 'Ridgeway opens inside a public guarantee.' : 'Ridgeway opens without a public guarantee.');
+        if (d === 40) p.push(S.f.whipped ? 'You spent the weekend working every reachable vote.' : S.f.whippedAgainst ? 'You spent the weekend working against the rescue.' : 'You let the vote arrive without using your influence.');
+        if (d === 45 && S.f.pulledPlug) p.push('The automated stack is dead. Your book was flattened into a forty-percent opening gap. The market is human again, and almost empty.');
         return p;
       },
       scen: (S) => {
         let g = gap, t = target;
-        if (d === 20) { const boost = S.f.dereg ? .012 : S.f.regulation ? -.004 : .004; g += boost; t += boost; }
-        if (d === 35) { const rescue = S.f.bailout ? .03 : -.035; g += rescue; t += rescue / 2; }
-        if (d === 60 && S.f.pulledPlug) { g = -.40; t = -.32; }
+        if (d === 11) { const boost = S.f.dereg ? .012 : S.f.regulation ? -.004 : .004; g += boost; t += boost; }
+        if (d === 22) { const rescue = S.f.bailout ? .03 : -.035; g += rescue; t += rescue / 2; }
+        if (d === 45 && S.f.pulledPlug) { g = -.40; t = -.32; }
         let events = (specialEvents[d] || defaultEvents(d, t)).slice();
-        if (d === 56 && !S.f.billPassed) {
+        if (d === 41 && !S.f.billPassed) {
           g = -.018; t = -.035;
           events = [ev(90,'SECOND STABILIZATION VOTE FAILS; CREDIT MARKETS REMAIN SHUT',[['market','',-.035,.4]],{big:true,script:'voteFail'})];
         }
-        if (d === 60 && S.f.pulledPlug) {
+        if (d === 45 && S.f.pulledPlug) {
           events.unshift(ev(0,'AUTOMATED EXECUTION STACK DISCONNECTED BEFORE THE OPEN',[],{big:true,script:'pullFlatten'}));
         }
         return { regime, market: { gap: g, target: t }, events };
@@ -225,13 +211,13 @@
 
   // Intraday choices remain timed. Everything else resolves after the Friday
   // session named in the design notes (or at the specified session close).
-  DAYS[13].calls = (S) => S.choices.c2 ? [] : [{
+  DAYS[7].calls = (S) => S.choices.c2 ? [] : [{
     t: 150, scripted: true, kind: 'choice', choiceId: 'c2', timer: 22,
     from: 'Perry Nakash', role: 'Senior Analyst, Meridian Ratings',
     text: 'The CASCADE committee met. Current vintage goes on downgrade watch Monday. I should not be telling you this.',
     options: [{id:'trade',label:'Thank him. Short the stack.'},{id:'ignore',label:'You never took this call.'},{id:'warn',label:'Tell him to file it.'}], defaultOpt: 'ignore'
   }];
-  DAYS[28].calls = (S) => S.choices.c4 ? [] : [{
+  DAYS[16].calls = (S) => S.choices.c4 ? [] : [{
     t: 130, scripted: true, kind: 'choice', choiceId: 'c4', timer: 20,
     from: 'Greta Vail', role: 'Kestrel Point',
     text: 'Four desks are leaning on Ridgeway at once. We can finish it before the close. Are you in the pack or in the way?',
@@ -243,7 +229,7 @@
   // =====================================================================
   const CHOICES = {
     c1: {
-      day: 9, speaker: 'Desmond Kroll', role: 'Head of Trading, Holloway Stern', title: 'The Pension Dump',
+      day: 3, speaker: 'Desmond Kroll', role: 'Head of Trading, Holloway Stern', title: 'The Pension Dump',
       kicker: 'DECISION 1',
       text: [
         'Kroll closes your office door with his foot, which you did not know was possible.',
@@ -300,8 +286,8 @@
       ]
     },
 
-    c2: { // mid-session call, session 14
-      day: 13, mid: true, title: 'The Tip', kicker: 'DECISION 2',
+    c2: { // mid-session call, session 8
+      day: 7, mid: true, title: 'The Tip', kicker: 'DECISION 2',
       options: [
         {
           id: 'trade', label: 'Trade on it.',
@@ -331,7 +317,7 @@
     },
 
     c3: {
-      day: 19, speaker: 'Sen. Marcus Thorne', role: 'Chair, Senate Markets Committee', title: 'The Compute Freedom Act',
+      day: 10, speaker: 'Sen. Marcus Thorne', role: 'Chair, Senate Markets Committee', title: 'The Compute Freedom Act',
       kicker: 'DECISION 3',
       text: [
         'Thorne does not sit down. He stands at the window with his back to you, which you suspect he practiced.',
@@ -384,8 +370,8 @@
       ]
     },
 
-    c4: { // mid-session call, session 29
-      day: 28, mid: true, title: 'The Pack', kicker: 'DECISION 4',
+    c4: { // mid-session call, session 17
+      day: 16, mid: true, title: 'The Pack', kicker: 'DECISION 4',
       options: [
         {
           id: 'join', label: 'Join the raid.',
@@ -416,7 +402,7 @@
     },
 
     c5: {
-      day: 34, speaker: 'Adele Venn', role: 'Secretary of the Treasury', title: 'Rescue Weekend',
+      day: 21, speaker: 'Adele Venn', role: 'Secretary of the Treasury', title: 'Rescue Weekend',
       kicker: 'DECISION 5',
       text: [
         'You are in a conference room at Treasury at 10 PM on a Saturday because somebody on Thorne\'s staff put your name on a list.',
@@ -472,7 +458,7 @@
     },
 
     c6: {
-      day: 36, speaker: 'Desmond Kroll', role: 'Head of Trading, Holloway Stern', title: 'The Marks',
+      day: 23, speaker: 'Desmond Kroll', role: 'Head of Trading, Holloway Stern', title: 'The Marks',
       kicker: 'DECISION 6',
       text: [
         'The valuation committee needs a trading signature on the CASCADE book by 6 PM. Kroll has brought the folder to you personally, which he has never done.',
@@ -528,7 +514,7 @@
     },
 
     c7: {
-      day: 37, speaker: 'Desmond Kroll', role: 'Head of Trading, Holloway Stern', title: 'The Marks · The Addendum', kicker: 'DECISION 7',
+      day: 24, speaker: 'Desmond Kroll', role: 'Head of Trading, Holloway Stern', title: 'The Marks · The Addendum', kicker: 'DECISION 7',
       text: [
         'The buyer accepted twenty-two cents. Legal slides an addendum across the table.',
         'Holloway Stern will finance seventy-five percent of the purchase, non-recourse, secured only by the CASCADE paper itself.',
@@ -541,7 +527,7 @@
       ]
     },
     c8: {
-      day: 54, speaker: 'Sen. Marcus Thorne', role: 'Chair, Senate Markets Committee', title: 'The Stabilization Act',
+      day: 39, speaker: 'Sen. Marcus Thorne', role: 'Chair, Senate Markets Committee', title: 'The Stabilization Act',
       kicker: 'DECISION 8',
       text: [
         'Thorne calls at 9 PM from a corridor. You can hear a vote bell in the background.',
@@ -584,7 +570,7 @@
     },
 
     c9: {
-      day: 57, speaker: 'Imani Rhodes', role: 'Senior Trader · your mentor', title: 'The Offer',
+      day: 42, speaker: 'Imani Rhodes', role: 'Senior Trader · your mentor', title: 'The Offer',
       kicker: 'DECISION 9',
       text: [
         'Imani finds you in the stairwell at 7 PM with a folder she should not have.',
@@ -669,7 +655,7 @@
       ]
     },
     c10: {
-      day: 59, speaker: 'Imani Rhodes', role: 'Senior Trader · your mentor', title: 'Pull the Plug', kicker: 'DECISION 10',
+      day: 44, speaker: 'Imani Rhodes', role: 'Senior Trader · your mentor', title: 'Pull the Plug', kicker: 'DECISION 10',
       req: (S) => (S.anomalies || 0) >= 8,
       text: [
         'The market is closed. For the first time all week, the machines are still.',
@@ -685,7 +671,7 @@
 
   // The original meter deltas were tuned for eight decisions in fifteen sessions.
   // Preserve every flag, relationship beat and cash consequence, while reducing
-  // meter movement so a sixty-one-session campaign cannot peg by Act III.
+  // meter movement so a campaign this long cannot peg by Act III.
   ['c1','c2','c3','c4','c5','c6','c8','c9'].forEach((id) => {
     CHOICES[id].options.forEach((opt) => {
       const apply = opt.apply;
@@ -710,5 +696,5 @@
     });
   });
 
-  B.StoryData = { DAYS, CHOICES, QUOTAS, ACTS, ANOMALIES: A, actIndex, actOf, weekOf, dowOf, adj, boss, cm, FIN, STACK, ev, chirp, imp, R };
+  B.StoryData = { DAYS, CHOICES, QUOTAS, ACTS, ANOMALIES: A, ACT_START, actIndex, actOf, weekOf, dowOf, adj, boss, cm, FIN, STACK, ev, chirp, imp, R };
 })(window.BTB);

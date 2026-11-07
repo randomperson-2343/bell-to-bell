@@ -4,7 +4,7 @@
   const D = B.StoryData;
   // Calibrated against real Market/Broker runs. Twelve cumulative misses fired
   // even a perfect-foresight trader before the late-game choices. Thirty keeps
-  // misses permanent while allowing a competent run to reach session 61.
+  // misses permanent while allowing a competent run to reach the last session.
   const QUOTA_STRIKE_LIMIT = 30;
   // Weekly quota: on top of the daily mandate, the desk wants the whole week
   // to clear the sum of its daily quotas plus a margin. It resets every
@@ -19,8 +19,8 @@
   const SAFE_SECTORS = ['retail', 'haven', 'defense', 'power'];
   // The names the CASCADE trade actually sits in.
   const CASCADE_NAMES = ['BSTN', 'HLST', 'RDGW', 'FRLN', 'AMVL'];
-  // Your boss can fire you through session 57. After that he can only shout.
-  const BOSS_FIRE_LAST = 57;
+  // Your boss can fire you through session 42. After that he can only shout.
+  const BOSS_FIRE_LAST = 42;
   // The Ledger costs $30 a week on day one and follows the quota curve up.
   const LEDGER_BASE = 30;
   // A loss-limit stop can excuse a missed quota once a week, if it comes before 3:00 PM.
@@ -103,26 +103,26 @@
         const remaining = QUOTA_STRIKE_LIMIT - S.quotaStrikes;
         if (S.quotaStrikes > 0) rules.push(`Career quota strikes: ${S.quotaStrikes}/${QUOTA_STRIKE_LIMIT}`);
         // The first sessions introduce the desk's systems one at a time:
-        // Kroll from session 2, your money and the risk desk from session 3.
+        // Kroll, your money and the risk desk arrive with session 2.
         if (!S.f.defected && (d >= 1 || this.bossMood().warn)) {
           const mood = this.bossMood();
           const canFire = d < BOSS_FIRE_LAST;
           rules.push(`${mood.warn && canFire ? '<b>' : ''}${D.boss(S)} ${mood.label} (${mood.value}/100).${mood.warn && canFire ? ' At zero he fires you.</b>' : ''} Answering his calls, working client orders and making quota keep him on your side.`);
         }
         const T = E.tier(W$);
-        if (d >= 2) rules.push(`Your money: ${B.fmt.money(W$.cash)} cash${W$.card > 0 ? `, ${B.fmt.money(-W$.card)} on the card` : ''}. ${T.name}${T.rent ? `, ${B.fmt.money(T.rent * (W$.rentMult || 1))} rent due Friday` : ''}.${W$.arrears > 0 ? ` <b>${B.fmt.money(W$.arrears)} rent overdue.</b>` : ''}`);
-        if (d >= 2) rules.push(`Risk desk: daily loss limit ${B.fmt.money(-E.P.lossLimit * (g && g.broker ? g.broker.equity() : capital))}. Hit it before 3:00 PM and get flat within ${E.P.flatWithin} game minutes, and a missed quota that day is excused, once a week. Each kind of breach cuts your bonus ${Math.round(E.P.breachCut * 100)}% this week and next.`);
+        if (d >= 1) rules.push(`Your money: ${B.fmt.money(W$.cash)} cash${W$.card > 0 ? `, ${B.fmt.money(-W$.card)} on the card` : ''}. ${T.name}${T.rent ? `, ${B.fmt.money(T.rent * (W$.rentMult || 1))} rent due Friday` : ''}.${W$.arrears > 0 ? ` <b>${B.fmt.money(W$.arrears)} rent overdue.</b>` : ''}`);
+        if (d >= 1) rules.push(`Risk desk: daily loss limit ${B.fmt.money(-E.P.lossLimit * (g && g.broker ? g.broker.equity() : capital))}. Hit it before 3:00 PM and get flat within ${E.P.flatWithin} game minutes, and a missed quota that day is excused, once a week. Each kind of breach cuts your bonus ${Math.round(E.P.breachCut * 100)}% this week and next.`);
         if (remaining === 1) rules.push('FINAL WARNING: one more missed quota ends this career.');
         else if (remaining === 2) rules.push('WARNING: two missed quotas remain before termination.');
         if (S.f.v2RewoundToBell) rules.push('SAVE MIGRATION: this V2 mid-session save was rewound to the matching opening bell; book and decisions were preserved.');
         if (d === 0) rules.push('Tip: How to Play is under Menu, then Settings, any time.');
-        if (d === 2) rules.push('Imani: read the dull items in this morning\'s feed. Nobody hides anything in a headline.');
+        if (d === 1) rules.push('Imani: read the dull items in this morning\'s feed. Nobody hides anything in a headline.');
         return {
           kicker: D.actOf(d) + ' ·',
           title: `Session ${d + 1}: ${day.title}`,
           html: day.brief(S).filter(Boolean).map((p) => `<p>${p}</p>`).join(''),
           feed: day.feed || [],
-          anomalyCount: d >= 15 ? S.anomalies : null,
+          anomalyCount: d >= D.ACT_START[1] ? S.anomalies : null,
           quotaStrikes: { count: S.quotaStrikes, limit: QUOTA_STRIKE_LIMIT },
           weekQuota: g && g.broker ? (this.openWeek(g), this.weekQuota(g)) : null,
           quota: this.quota(d, g),
@@ -202,17 +202,17 @@
 
       rules(d) {
         let lev = 4;
-        if (S.f.refusedDump && d >= 10 && d <= 14) lev = 3;
-        if (S.f.dereg && d >= 20) lev = 6;
-        if (S.f.regulation && d >= 20) lev = 3;
-        if (S.f.letFail && d >= 35) lev = Math.max(2, lev - 1);
-        const shortBan = (S.f.tipShortBan && d >= 35 && d <= 39) || d === 54 ? D.FIN : [];
+        if (S.f.refusedDump && d >= 4 && d <= 7) lev = 3;
+        if (S.f.dereg && d >= 11) lev = 6;
+        if (S.f.regulation && d >= 11) lev = 3;
+        if (S.f.letFail && d >= 22) lev = Math.max(2, lev - 1);
+        const shortBan = (S.f.tipShortBan && d >= 22 && d <= 26) || d === 39 ? D.FIN : [];
         return { maxLev: lev, overnightLev: Math.max(1, lev / 2), shortBan };
       },
 
       scenario(d) {
         const scen = D.DAYS[d].scen(S);
-        const rng = B.RNG(B.hashSeed('story-noise|' + d));
+        const rng = B.RNG(B.hashSeed('story-noise|' + D.DAYS[d].sid));
         const extra = B.News.randomEvents(rng, { newsFreq: 0.6, fakeShare: 0.35, volMult: 1 }).filter((e) => {
           if (e.kind === 'chirp') return true;
           const im = e.impacts[0];
@@ -223,9 +223,12 @@
         });
         scen.events = (scen.events || []).concat(extra);
         // Sqwak hype: big accounts naming a ticker move it briefly, true or not.
-        if (B.Sqwak) scen.events = B.Sqwak.hype(scen.events, 'story|' + d);
+        if (B.Sqwak) scen.events = B.Sqwak.hype(scen.events, 'story|' + D.DAYS[d].sid);
+        scen.sid = D.DAYS[d].sid;
         return scen;
       },
+      // Interrupt and tape seeds use the original session id, so the cut leaves every market unchanged.
+      seedDay(d) { return D.DAYS[d].sid; },
 
       quota(d, g) {
         const eq = g ? g.broker.equity() : capital;
@@ -370,8 +373,8 @@
         this.openWeek(g);
         this.applyPending(g);
 
-        // Session 16: did you actually trade on Perry's downgrade tip?
-        if (g.day === 15 && S.f.insider && !S.f.insiderChecked) {
+        // Session 9: did you actually trade on Perry's downgrade tip?
+        if (g.day === 8 && S.f.insider && !S.f.insiderChecked) {
           S.f.insiderChecked = true;
           const shorted = CASCADE_NAMES.some((s) => b.posQty(s) < 0)
             || b.opts.some((o) => CASCADE_NAMES.indexOf(o.sym) >= 0 && o.type === 'P');
@@ -382,8 +385,8 @@
           }
         }
 
-        // Session 40: the pension fund you sold to has lawyers.
-        if (g.day === 39 && S.f.dumped && !S.f.riverbendPaid) {
+        // Session 27: the pension fund you sold to has lawyers.
+        if (g.day === 26 && S.f.dumped && !S.f.riverbendPaid) {
           S.f.riverbendPaid = true;
           b.cash -= 40000;
           if (b.dayRisk) { b.dayRisk.adj = (b.dayRisk.adj || 0) - 40000; b.dayRisk.trough -= 40000; }
@@ -391,15 +394,15 @@
           B.UI.toast('Legal: $40,000 deducted for your share of the Riverbend settlement.', 'bad');
         }
 
-        // Session 52: with limits raised and nobody watching, the firm automates the desk.
-        if (g.day === 51 && S.f.dereg && !S.f.regulation && !S.f.reported && !S.f.algoDesk) {
+        // Session 38: with limits raised and nobody watching, the firm automates the desk.
+        if (g.day === 37 && S.f.dereg && !S.f.regulation && !S.f.reported && !S.f.algoDesk) {
           S.f.algoDesk = true;
           g.inboxQueue.push({ t: 45, from: 'Desmond Kroll', text: 'FYI: risk has signed off on running flow through the automated stack next month. Cost line goes down. You\'ll like the bonus math.' });
         }
 
         this.auditAt = null;
         if (S.m.heat >= 50) {
-          const rng = B.RNG(B.hashSeed('audit|' + g.day));
+          const rng = B.RNG(B.hashSeed('audit|' + D.DAYS[g.day].sid));
           if (rng.next() < (S.m.heat - 40) / 120) this.auditAt = Math.round(rng.range(60, 300));
         }
         g.inboxQueue.sort((a, c) => a.t - c.t);
@@ -409,7 +412,7 @@
       onResume(g) {
         this.auditAt = null;
         if (S.m.heat >= 50) {
-          const rng = B.RNG(B.hashSeed('audit|' + g.day));
+          const rng = B.RNG(B.hashSeed('audit|' + D.DAYS[g.day].sid));
           if (rng.next() < (S.m.heat - 40) / 120) {
             const at = Math.round(rng.range(60, 300));
             if (at > g.market.t) this.auditAt = at;
@@ -523,10 +526,10 @@
         if (g.day === D.DAYS.length - 1 && !S.f.pulledPlug && ((S.anomalies || 0) < 8 || S.f.leftStack)) {
           S.f.aiUncontained = true;
         }
-        if (g.day === 25) {
+        if (g.day === 14) {
           S.falseDawnBear = { boundary: this.bearishExposure(g) >= 0.10, hits: 0, gaps: 0, maxGap: 0, samples: [] };
         }
-        if (g.day >= 41 && g.day <= 48) {
+        if (g.day >= 28 && g.day <= 35) {
           S.falseDawnBear = S.falseDawnBear || { boundary: false, hits: 0, gaps: 0, maxGap: 0, samples: [] };
           const ratio = this.bearishExposure(g);
           const held = ratio >= 0.10;
@@ -534,11 +537,11 @@
           if (held) { S.falseDawnBear.hits++; S.falseDawnBear.gaps = 0; }
           else { S.falseDawnBear.gaps++; S.falseDawnBear.maxGap = Math.max(S.falseDawnBear.maxGap, S.falseDawnBear.gaps); }
         }
-        if (g.day === 40) {
+        if (g.day === 27) {
           S.falseDawnBear = S.falseDawnBear || { boundary: false, hits: 0, gaps: 0, maxGap: 0, samples: [] };
           S.falseDawnBear.rallyStart = r.equity;
         }
-        if (g.day === 48) {
+        if (g.day === 35) {
           // The rally has to hurt: holding the bear case through it must have
           // cost at least 5% of the book since the rally began.
           const x = S.falseDawnBear;

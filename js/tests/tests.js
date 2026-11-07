@@ -412,22 +412,22 @@
   });
 
   // ---------- Pacing / balance ----------
-  test('Quota curve is regime-based across all 61 sessions', () => {
+  test('Quota curve is regime-based across all 46 sessions', () => {
     const Q = B.StoryData.QUOTAS;
     assert(Q.length === B.StoryData.DAYS.length, 'one quota per day');
     // V4.3 calibration: half the V4 curve, so a careful trader right two days
     // in three reaches the final decisions (js/tests/economy-run.js career bots).
     assert(Q[0] >= 0.00375 && Q[0] <= 0.005, 'day 1 quota ' + Q[0]);
-    assert(Q.length === 61, 'campaign must contain 61 sessions');
-    assert(Q[45] === Math.max(...Q), 'quota should peak after false-dawn weekend');
-    assert(Q[30] < Q[29] && Q[60] < Q[55], 'panic regimes should cut quota');
+    assert(Q.length === 46, 'campaign must contain 46 sessions');
+    assert(Q[32] === Math.max(...Q), 'quota should peak after false-dawn weekend');
+    assert(Q[17] < Q[16] && Q[45] < Q[40], 'panic regimes should cut quota');
     assert(Math.max(...Q) <= .015, 'quota curve should not extrapolate above 1.5%');
   });
 
   test('Patch 3 calendar and anomaly arithmetic is exact', () => {
-    assert(B.StoryData.DAYS.length === 61, '61 sessions');
-    assert(B.StoryData.weekOf(0) === 1 && B.StoryData.weekOf(60) === 13, 'thirteen calendar weeks');
-    assert(B.StoryData.dowOf(0) === 'Monday' && B.StoryData.dowOf(60) === 'Monday', 'orphan Monday');
+    assert(B.StoryData.DAYS.length === 46, '46 sessions');
+    assert(B.StoryData.weekOf(0) === 1 && B.StoryData.weekOf(45) === 10, 'ten calendar weeks');
+    assert(B.StoryData.dowOf(0) === 'Monday' && B.StoryData.dowOf(45) === 'Monday', 'orphan Monday');
     assert(B.StoryData.ANOMALIES.length === 12, 'twelve anomalies');
     assert(new Set(B.StoryData.ANOMALIES.map((x) => x[0])).size === 12, 'anomaly sessions unique');
   });
@@ -435,14 +435,14 @@
   test('Patch 3 market timeline preserves false hope then collapse', () => {
     const S = B.StoryMode.freshState(250000);
     S.f.billPassed = true;
-    const falseDawn = B.StoryData.DAYS.slice(41, 49).map((d) => d.scen(S).market);
+    const falseDawn = B.StoryData.DAYS.slice(28, 36).map((d) => d.scen(S).market);
     const rally = falseDawn.reduce((n, x) => n + x.target, 0);
     assert(rally >= .16 && rally <= .18, 'false dawn should compound to about 20%, got log sum ' + rally);
     assert(falseDawn.every((x) => x.target <= .022 && x.gap <= .004), 'false dawn must grind, never gap');
-    const crash = B.StoryData.DAYS.slice(55, 60).map((d) => d.scen(S).market.target);
+    const crash = B.StoryData.DAYS.slice(40, 45).map((d) => d.scen(S).market.target);
     assert(crash.join(',') === '-0.09,0.05,-0.04,-0.07,-0.11', 'vote/crash sequence drifted: ' + crash.join(','));
     S.f.pulledPlug = true;
-    const last = B.StoryData.DAYS[60].scen(S);
+    const last = B.StoryData.DAYS[45].scen(S);
     assert(last.market.gap === -.40, 'pull-the-plug opening must be -40%');
     assert(last.events.some((e) => e.script === 'pullFlatten'), 'pull-the-plug liquidation event missing');
     // The choice and The Exit both say the exchange shuts for the day at the open.
@@ -452,37 +452,37 @@
 
   test('Pre-open feed snowballs and contracts in the final sessions', () => {
     const D = B.StoryData.DAYS;
-    assert(D[0].feed.length === 4 && D[5].feed.length === 5 && D[10].feed.length === 6, 'Act I feed ramp');
-    assert(D[15].feed.length === 7 && D[21].feed.length === 8 && D[26].feed.length === 9, 'Act II feed ramp');
-    assert(D[58].feed.length === 3 && D[60].feed.length === 3, 'Act IV feed contraction');
+    assert(D[0].feed.length === 4 && D[2].feed.length === 5 && D[4].feed.length === 6, 'Act I feed ramp');
+    assert(D[8].feed.length === 7 && D[12].feed.length === 8 && D[15].feed.length === 9, 'Act II feed ramp');
+    assert(D[43].feed.length === 3 && D[45].feed.length === 3, 'Act IV feed contraction');
   });
 
   test('Storyboard: every session has an authored row and native 640x360 beats', () => {
     const SB = B.Storyboard;
-    assert(SB && SB.SHEET.length === 61, 'beat sheet must cover all 61 sessions');
-    for (let day = 0; day < 61; day++) {
+    assert(SB && SB.SHEET.length === 46, 'beat sheet must cover all 46 sessions');
+    for (let day = 0; day < 46; day++) {
       const news = B.Scenes.news({ day, brief: { title: 'Session ' + (day + 1), feed: [] } });
       assert(news.length >= 1 && news.every((b) => b.view.w === 640 && b.view.h === 360), 'session ' + (day + 1) + ' is not native 640x360');
       assert(news.some((b) => b.informative), 'session ' + (day + 1) + ' has no informative beat for short mode');
     }
     // Close-ups quote the current quota table, not a stale one.
-    const q = SB.SHEET[45][2].match(/([\d.]+)%/);
-    near(+q[1] / 100, B.StoryData.QUOTAS[45], 1e-9, 'session 46 quota insert');
-    const phone = B.Scenes.phone({ day: 60, brief: { feed: [{ source: 'WIRE', title: 'Before the bell' }] } });
+    const q = SB.SHEET[32][2].match(/([\d.]+)%/);
+    near(+q[1] / 100, B.StoryData.QUOTAS[32], 1e-9, 'session 33 quota insert');
+    const phone = B.Scenes.phone({ day: 45, brief: { feed: [{ source: 'WIRE', title: 'Before the bell' }] } });
     assert(phone.length === 2 && phone.every((beat) => beat.view.w === 640), 'phone handoff is missing');
-    assert(B.Scenes.weekend({ day: 44 }).length === 3, 'ordinary weekends are sat, sun, hold');
-    assert(B.Scenes.weekend({ day: 34 }).length === 4 && B.Scenes.weekend({ day: 54 }).length === 4, 'rescue and whip weekends get a second room');
+    assert(B.Scenes.weekend({ day: 29 }).length === 3, 'ordinary weekends are sat, sun, hold');
+    assert(B.Scenes.weekend({ day: 24 }).length === 4 && B.Scenes.weekend({ day: 39 }).length === 4, 'rescue and whip weekends get a second room');
   });
 
   test('Storyboard: four mornings follow the choice made the night before', () => {
     const SB = B.Storyboard;
     const S = (choices, f) => ({ choices: choices || {}, f: f || {} });
-    assert(SB.row(10, S({ c1: 'dump' })).arg !== SB.row(10, S({ c1: 'refuse' })).arg, 'session 11 ignores the pension dump');
-    assert(SB.row(35, S({ c5: 'fail' })).shot === 'dark' && SB.row(35, S({ c5: 'ban' })).arg !== SB.row(35, S({ c5: 'bail' })).arg, 'session 36 ignores Rescue Weekend');
-    assert(SB.row(55, S({}, { billPassed: true })).doc === 'vote' && SB.row(55, S()).shot === 'tableau', 'session 56 ignores the vote');
-    assert(SB.row(60, S({}, { pulledPlug: true })).shot === 'racks', 'session 61 ignores Pull the Plug');
+    assert(SB.row(4, S({ c1: 'dump' })).arg !== SB.row(4, S({ c1: 'refuse' })).arg, 'session 5 ignores the pension dump');
+    assert(SB.row(22, S({ c5: 'fail' })).shot === 'dark' && SB.row(22, S({ c5: 'ban' })).arg !== SB.row(22, S({ c5: 'bail' })).arg, 'session 23 ignores Rescue Weekend');
+    assert(SB.row(40, S({}, { billPassed: true })).doc === 'vote' && SB.row(40, S()).shot === 'tableau', 'session 41 ignores the vote');
+    assert(SB.row(45, S({}, { pulledPlug: true })).shot === 'racks', 'session 46 ignores Pull the Plug');
     // Variant mornings must not reuse the default morning's cached frames.
-    const ids = (S$) => B.Scenes.news({ day: 10, brief: { title: 'x', feed: [] }, game: { mode: { S: S$ } } }).map((b) => b.id).join();
+    const ids = (S$) => B.Scenes.news({ day: 4, brief: { title: 'x', feed: [] }, game: { mode: { S: S$ } } }).map((b) => b.id).join();
     assert(ids(S({ c1: 'dump' })) !== ids(S()), 'variant shares frame cache ids with the default');
     assert(SB.ANOMALY_DAYS.length === 12, 'one tell per technical anomaly');
   });
@@ -540,10 +540,10 @@
     assert(final.lines[1].includes('moved to your card') && final.lines[0].includes(B.fmt.money(evicted.card)), 'visible eviction warning must match the wallet');
   });
 
-  test('Seasons run October to January across the thirteen weeks', () => {
+  test('Seasons run October to January across the ten weeks', () => {
     const s = B.Rhythm.season;
-    assert(s(0).id === 'autumn' && s(19).id === 'autumn' && s(20).id === 'grey' && s(44).id === 'grey' && s(45).id === 'winter', 'season boundaries');
-    assert(!s(44).snow && s(60).snow === 1, 'snow arrives in winter and deepens');
+    assert(s(0).id === 'autumn' && s(10).id === 'autumn' && s(11).id === 'grey' && s(31).id === 'grey' && s(32).id === 'winter', 'season boundaries');
+    assert(!s(31).snow && s(45).snow === 1, 'snow arrives in winter and deepens');
   });
 
   test('Version 2 story saves migrate to matching Patch 3 beats', () => {
@@ -560,6 +560,34 @@
     assert(migrated.day === 12 && migrated.inDay === false, 'incompatible mid-day save did not rewind');
     assert(migrated.migrationNotice && migrated.mode.S.f.v2RewoundToBell, 'rewind was not disclosed');
     assert(migrated.market === migrated.dayOpen, 'opening tape was not promoted to a between-day snapshot');
+  });
+
+  test('Version 3 saves move to the shortened story: removed sessions go to the next kept one', () => {
+    const D = B.StoryData, sid = (n) => D.DAYS[n].sid;
+    assert(D.DAYS.length === 46 && sid(1) === 2 && sid(45) === 60, 'sessions carry their original ids');
+    const S = B.StoryMode.freshState(250000);
+    S.log = [{ day: 9, text: 'c1' }];
+    S.quotaLedger = [{ day: 3 }, { day: 19, week: 4, kind: 'week' }];
+    S.week = { w: 3 };
+    S.wallet = { weeks: { 1: { net: 1 }, 2: { net: 2 }, 3: { net: 3 } }, days: { 3: [], 4: [], 9: [] }, ledgerPaidWeek: 6 };
+    const old = { v: 3, kind: 'story', day: 28, history: [{ day: 3 }, { day: 7 }], mode: { S } };
+    const m = B.Save.migrateV3Snapshot(old);
+    assert(m.v === 4 && m.day === 16, 'old session 29 is kept as new session 17: ' + m.day);
+    assert(m.history[0].day === 2 && m.history[1].day === 3, 'history days remapped to the next kept session');
+    assert(m.mode.S.log[0].day === 3 && m.mode.S.quotaLedger[0].day === 2, 'log and ledger days remapped');
+    assert(m.mode.S.quotaLedger[1].day === 10 && m.mode.S.quotaLedger[1].week === 3, 'week strikes follow their day');
+    assert(m.mode.S.week === undefined, 'the open week is rebuilt by the next session');
+    const w = m.mode.S.wallet;
+    assert(Object.keys(w.days).join() === '3' && w.weeks[1].net === 2 && w.weeks[2].net === 3 && w.ledgerPaidWeek === 4, 'wallet records follow kept days and finished weeks');
+    // Every old session maps to a session that exists, monotonically.
+    let last = 0;
+    for (let o = 0; o < 61; o++) {
+      const day = B.Save.migrateV3Snapshot({ v: 3, kind: 'story', day: o, mode: { S: B.StoryMode.freshState(250000) } }).day;
+      assert(day >= last && day < 46 && sid(day) >= o, 'old session ' + (o + 1) + ' maps forward to a kept session');
+      last = day;
+    }
+    const mid = B.Save.migrateV3Snapshot({ v: 3, kind: 'story', day: 20, inDay: true, dayOpen: { fearLevel: 20 }, mode: { S: B.StoryMode.freshState(250000) } });
+    assert(mid.inDay === false && mid.migrationNotice && mid.market === mid.dayOpen, 'a mid-session save rewinds to the bell');
   });
 
   test('A trading day is three real minutes by default', () => {
@@ -636,7 +664,7 @@
     if (B.SqwakStory) { push(B.SqwakStory.INTRADAY); push(B.SqwakStory.PREOPEN); push(B.SqwakStory.POOLS); push(B.SqwakStory.BREAKING); }
     push(B.News.NOISE);
     if (B.Economy) { push(B.Economy.TIERS.map((t) => [t.name, t.note])); push(B.Economy.EVICT_STAGES); }
-    if (B.Mentor) for (const day of [0, 1, 2]) push(B.Mentor.LINES.map((l) => l[3]({ day, market: { events: [] } }, {})));
+    if (B.Mentor) for (const day of [0, 1]) push(B.Mentor.LINES.map((l) => l[3]({ day, market: { events: [] } }, {})));
     if (B.Life) {
       const LS = B.StoryMode.freshState(250000);
       for (const f of [{}, { insider: true }, { perryFiled: true }, { dumped: true }]) {
@@ -721,7 +749,7 @@
       }
     }
     assert(ids.length === 10, 'expected 10 decisions, found ' + ids.length);
-    assert(ids.map((id) => D.CHOICES[id].day).join(',') === '9,13,19,28,34,36,37,54,57,59', 'decision chronology drifted');
+    assert(ids.map((id) => D.CHOICES[id].day).join(',') === '3,7,10,16,21,23,24,39,42,44', 'decision chronology drifted');
   });
 
   test('Quota misses are cumulative, logged once, and terminate at the configured limit', () => {
@@ -779,16 +807,16 @@
       const g = { day:0, history:[], indexStart:500, market:{bySym:{INDX:{last:500},BSTN:{last:100},HLST:{last:100},RDGW:{last:100},FRLN:{last:100},AMVL:{last:100}}},
         broker:{ equity:()=>200000, opts:[], posQty:(sym)=>sym==='BSTN' && exposedDays.has(g.day)?-300:0 } };
       const r = (day) => ({day,date:'x',pnl:0,equity:200000,quota:0,quotaMet:true,earlyEnd:null});
-      for (const day of [25,41,42,43,44,45,46,47,48]) { g.day=day; mode.onDayEnd(g,r(day)); }
+      for (const day of [14,28,29,30,31,32,33,34,35]) { g.day=day; mode.onDayEnd(g,r(day)); }
       return S.f.rightTooEarly;
     }
-    assert(run(new Set([25,41,42,43,44,45,46])) === true, 'six repeated sessions should qualify');
-    assert(!run(new Set([25])), 'boundary-only loophole still qualifies');
-    assert(!run(new Set([41,42,43,44,45,46,47,48])), 'no boundary exposure qualifies');
+    assert(run(new Set([14,28,29,30,31,32,33])) === true, 'six repeated sessions should qualify');
+    assert(!run(new Set([14])), 'boundary-only loophole still qualifies');
+    assert(!run(new Set([28,29,30,31,32,33,34,35])), 'no boundary exposure qualifies');
   });
 
   test('Final decision priority is explicit and Nobody is not a meter fallback', () => {
-    const base = () => ({ S:B.StoryMode.freshState(250000), wealth:500000, start:250000, reason:'final', days:61, quotaMet:40 });
+    const base = () => ({ S:B.StoryMode.freshState(250000), wealth:500000, start:250000, reason:'final', days:46, quotaMet:40 });
     let c=base(); c.S.f.pulledPlug=true; c.S.f.leftStack=true; c.S.f.aiUncontained=true;
     assert(B.StoryEndings.resolve(c).id==='exit','Pull the Plug lost priority');
     c=base(); c.S.f.leftStack=true; c.S.f.aiUncontained=true; c.S.f.fled=true;
@@ -809,7 +837,7 @@
       if (i === order.length) {
         paths++;
         if (!S.f.pulledPlug && (S.anomalies < 8 || S.f.leftStack)) S.f.aiUncontained = true;
-        const ctx = { S, wealth: arch.wealth * 250000, start: 250000, reason: arch.reason, days: 61, quotaMet: 25 };
+        const ctx = { S, wealth: arch.wealth * 250000, start: 250000, reason: arch.reason, days: 46, quotaMet: 25 };
         const e = B.StoryEndings.resolve(ctx);
         assert(e, 'no ending resolved');
         reached[e.id] = (reached[e.id] || 0) + 1;
@@ -841,7 +869,7 @@
     function ctx(patch) {
       const S = B.StoryMode.freshState(250000);
       S.anomalies = 12;
-      const c = { S, wealth: 325000, start: 250000, reason: 'final', days: 61, quotaMet: 40 };
+      const c = { S, wealth: 325000, start: 250000, reason: 'final', days: 46, quotaMet: 40 };
       patch(c, S);
       return c;
     }
@@ -903,14 +931,14 @@
 
   test('Sqwak hype and engagement are deterministic for save replay', () => {
     const m = B.StoryMode();
-    for (const d of [5, 30, 55]) assert(JSON.stringify(m.scenario(d).events) === JSON.stringify(m.scenario(d).events), 'session ' + (d + 1) + ' differs between builds');
+    for (const d of [2, 17, 40]) assert(JSON.stringify(m.scenario(d).events) === JSON.stringify(m.scenario(d).events), 'session ' + (d + 1) + ' differs between builds');
     const post = { t: 115, text: 'BREAKING?? $RDGW buyout', src: '@CallsOnlyCarl' };
     assert(JSON.stringify(B.Sqwak.metrics(post)) === JSON.stringify(B.Sqwak.metrics(post)), 'metrics changed between calls');
   });
 
   test('Sqwak: every session has authored market-hours posts and a full pre-open feed', () => {
     const D = B.StoryData;
-    const counts = (d) => (d >= 58 ? 3 : d >= 26 ? 9 : d >= 21 ? 8 : d >= 15 ? 7 : d >= 10 ? 6 : d >= 5 ? 5 : 4);
+    const counts = (d) => (d >= 43 ? 3 : d >= 15 ? 9 : d >= 12 ? 8 : d >= 8 ? 7 : d >= 4 ? 6 : d >= 2 ? 5 : 4);
     assert(B.SqwakStory.INTRADAY.length === D.DAYS.length, 'intraday list must cover every session');
     D.DAYS.forEach((day, d) => {
       assert(B.SqwakStory.INTRADAY[d].length >= 3, 'session ' + (d + 1) + ' has fewer than 3 posts');
@@ -928,7 +956,7 @@
       for (const extra of [{}, { firedBy: 'boss' }, { pulledPlug: true }]) {
         const S = B.StoryMode.freshState(250000);
         if (extra.pulledPlug) S.f.pulledPlug = true;
-        const ctx = Object.assign({ S, wealth: 500000, start: 250000, reason: 'final', days: 61, quotaMet: 30 }, extra);
+        const ctx = Object.assign({ S, wealth: 500000, start: 250000, reason: 'final', days: 46, quotaMet: 30 }, extra);
         const pull = e.pull(ctx);
         const copy = [e.headline, e.deck].concat(e.story(ctx)).join(' ');
         assert(pull && copy.toLowerCase().indexOf(pull.replace(/\.$/, '').toLowerCase()) >= 0, `${e.id} pull quote "${pull}" is not in its own copy`);
@@ -939,17 +967,17 @@
   test('Sqwak Memory reveals existing posts in order without spoiling later sessions', () => {
     const T = B.SqwakStory;
     assert(T.THREADS.length === 3, 'first slice should include three threads');
-    assert(T.threadAt('ridgeway', 5, 124) === null, 'buyout claim leaked before its post');
-    assert(T.threadAt('ridgeway', 5, 125).posts.length === 1, 'claim missing at its market minute');
-    assert(T.threadAt('ridgeway', 5, 159).posts.length === 1, 'denial leaked before its post');
-    assert(T.threadAt('ridgeway', 5, 159).fact === 'UNVERIFIED', 'truth leaked before evidence');
-    assert(T.threadAt('ridgeway', 5, 240).posts.length === 3, 'rumour outcome missing');
-    assert(T.threadAt('ridgeway', 5, 240).fact === 'DENIED' && T.threadAt('ridgeway', 5, 240).price === 'HYPE FADED', 'false rumour readout wrong');
-    assert(T.threadAt('auction', 23, 149).posts.length === 1, 'zero-bid evidence leaked early');
-    assert(T.threadAt('auction', 24, 60).posts.length === 4, 'next-day price reaction missing');
-    assert(T.threadAt('auction', 24, 60).fact === 'ZERO BID' && T.threadAt('auction', 24, 60).price === 'GREEN NEXT DAY', 'fact and price should disagree here');
-    assert(T.threadAt('loop', 30, 189).posts.length === 2, 'bounce leaked early');
-    assert(T.threadAt('loop', 31, 60).posts.length === 4, 'official reaction missing');
+    assert(T.threadAt('ridgeway', 2, 124) === null, 'buyout claim leaked before its post');
+    assert(T.threadAt('ridgeway', 2, 125).posts.length === 1, 'claim missing at its market minute');
+    assert(T.threadAt('ridgeway', 2, 159).posts.length === 1, 'denial leaked before its post');
+    assert(T.threadAt('ridgeway', 2, 159).fact === 'UNVERIFIED', 'truth leaked before evidence');
+    assert(T.threadAt('ridgeway', 2, 240).posts.length === 3, 'rumour outcome missing');
+    assert(T.threadAt('ridgeway', 2, 240).fact === 'DENIED' && T.threadAt('ridgeway', 2, 240).price === 'HYPE FADED', 'false rumour readout wrong');
+    assert(T.threadAt('auction', 12, 149).posts.length === 1, 'zero-bid evidence leaked early');
+    assert(T.threadAt('auction', 13, 60).posts.length === 4, 'next-day price reaction missing');
+    assert(T.threadAt('auction', 13, 60).fact === 'ZERO BID' && T.threadAt('auction', 13, 60).price === 'GREEN NEXT DAY', 'fact and price should disagree here');
+    assert(T.threadAt('loop', 17, 189).posts.length === 2, 'bounce leaked early');
+    assert(T.threadAt('loop', 18, 60).posts.length === 4, 'official reaction missing');
     const m = B.StoryMode();
     for (const thread of T.THREADS) for (const [day, t, src, stage] of thread.posts) {
       const post = m.scenario(day).events.find((e) => e.kind === 'chirp' && e.t === t && e.src === src && e.threadId === thread.id);
@@ -1163,10 +1191,10 @@
     assert(v.notes.some((n) => /The Ledger:/.test(n)) && mode.ledgerAccess(5), 'Friday should renew the Ledger for next week');
     mode.onDayEnd(g, r());
     assert(v.notes.filter((n) => /The Ledger:/.test(n)).length === 1 && broker.cash === 250000, 'renewal repeated or touched the book');
-    // The note names the session's real scheduled moves: Fairline files on session 12.
-    const n = mode.ledgerNote(11);
-    assert(n.lines.some((x) => /Fairline Credit \(FRLN\)/.test(x) && /lower/.test(x)), 'session 12 note should call Fairline lower: ' + n.lines.join(' | '));
-    assert(JSON.stringify(mode.ledgerNote(30)) === JSON.stringify(mode.ledgerNote(30)), 'the desk note must replay identically');
+    // The note names the session's real scheduled moves: Fairline files on session 6.
+    const n = mode.ledgerNote(5);
+    assert(n.lines.some((x) => /Fairline Credit \(FRLN\)/.test(x) && /lower/.test(x)), 'session 6 note should call Fairline lower: ' + n.lines.join(' | '));
+    assert(JSON.stringify(mode.ledgerNote(20)) === JSON.stringify(mode.ledgerNote(20)), 'the desk note must replay identically');
   });
 
   test('Risk desk edge cases: flips open risk, fat fingers and sharp rumours do not breach, options can chase', () => {
@@ -1234,7 +1262,7 @@
     S.f.fled = true;
     const b = { pos: {}, opts: [], orders: [], cash: 500000, equity: () => 500000, fill: () => ({}) };
     let got = null;
-    mode.afterDay({ day: 57, broker: b, market: { bySym: { INDX: { last: 500 } } }, history: [], indexStart: 500 }, (ending) => { got = ending; });
+    mode.afterDay({ day: 42, broker: b, market: { bySym: { INDX: { last: 500 } } }, history: [], indexStart: 500 }, (ending) => { got = ending; });
     assert(!got, 'no decision that day should mean no ending yet');
     const c9 = Object.keys(B.StoryData.CHOICES).find((k) => B.StoryData.CHOICES[k].options.some((o) => /flee|plane/i.test(o.id + ' ' + o.label)));
     assert(c9, 'the plane option exists');
@@ -1300,9 +1328,9 @@
     }
     // Endings never read the wallet: the same story resolves the same way whatever the household did.
     const S = B.StoryMode.freshState(250000);
-    const base = B.StoryEndings.resolve({ S, wealth: 300000, start: 250000, reason: 'final', days: 61, quotaMet: 40 }).id;
+    const base = B.StoryEndings.resolve({ S, wealth: 300000, start: 250000, reason: 'final', days: 46, quotaMet: 40 }).id;
     S.wallet = Object.assign(E.fresh(), { pet: { kind: 'cat', sex: 'boy', name: 'Rosco' }, vet: 'neglected', teeth: 'sore', dad: 'unpaid', dadUnpaid: true });
-    assert(B.StoryEndings.resolve({ S, wealth: 300000, start: 250000, reason: 'final', days: 61, quotaMet: 40 }).id === base, 'household state changed the ending');
+    assert(B.StoryEndings.resolve({ S, wealth: 300000, start: 250000, reason: 'final', days: 46, quotaMet: 40 }).id === base, 'household state changed the ending');
     // Follow-ups only fire for the choice that earned them; names follow the sex.
     const W0 = E.fresh();
     assert(!B.Life.byId('vetCheck').when(null, W0) && !B.Life.byId('toothache').when(null, W0), 'follow-ups fired without a cause');
@@ -1310,7 +1338,7 @@
     assert(W0.pet.name === 'Jemma' && W0.pet.kind === 'cat' && W0.cash === E.P.startCash - 150, 'adoption should cost $150 and name a girl Jemma');
     B.Life.byId('adopt').options.find((o) => o.id === 'dog-boy').apply(null, W0, E);
     assert(W0.pet.name === 'Rosco', 'a boy is named Rosco');
-    assert(B.Life.byId('dadBill').day < 36, "Dad's surgery should land before most careers end");
+    assert(B.Life.byId('dadBill').day < 27, "Dad's surgery should land before most careers end");
   });
 
   test('Portraits: every face is a full 48x48 sprite in the palette, outlined like the pet', () => {
@@ -1368,7 +1396,7 @@
     assert(noPet !== cat && cat !== sadCat, 'weekend frames with and without a pet (or a neglected one) must not share a cache id');
   });
 
-  test('Imani talks in the first three sessions only, once per line, and reacts to what you do', () => {
+  test('Imani talks in the first two sessions only, once per line, and reacts to what you do', () => {
     const said = [];
     const saveInbox = B.UI && B.UI.inbox;
     B.UI = B.UI || {};
@@ -1387,8 +1415,8 @@
     g.day = 1; B.Mentor.tick(g, 60, S); B.Mentor.tick(g, 90, S);
     assert(!said.slice(3).some((x) => /SL%/.test(x)), 'the stop-loss line is said once per career, not every morning');
     const n = said.length;
-    g.day = 3; B.Mentor.tick(g, 60, S);
-    assert(said.length === n, 'Imani goes quiet after session 3');
+    g.day = 2; B.Mentor.tick(g, 60, S);
+    assert(said.length === n, 'Imani goes quiet after session 2');
     B.UI.inbox = saveInbox;
   });
 

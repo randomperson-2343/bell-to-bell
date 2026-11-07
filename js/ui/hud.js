@@ -276,7 +276,7 @@
         if (B.StoryArt) B.StoryArt.draw($('story-art'), null);
         return;
       }
-      const act = B.StoryData && B.StoryData.actIndex ? B.StoryData.actIndex(g.day) + 1 : (g.day < 4 ? 1 : g.day < 8 ? 2 : g.day < 12 ? 3 : 4);
+      const act = B.StoryData.actIndex(g.day) + 1;
       const names = ['MELT-UP', 'TREMORS', 'CONTAGION', 'RECKONING'];
       body.dataset.act = String(act);
       body.dataset.heat = g.mode.S.m.heat >= 70 ? 'high' : g.mode.S.m.heat >= 45 ? 'watch' : 'low';

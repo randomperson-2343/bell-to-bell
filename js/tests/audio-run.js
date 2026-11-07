@@ -435,10 +435,10 @@ function setup() {
 }
 function ids(S) { return S.trace.map((t) => t.id); }
 
-test('Acts: D1-15 Act I, D16-30 II, D31-45 III, D46-61 IV, for the feed and the day; Endless is Act I', () => {
+test('Acts: D1-8 Act I, D9-17 II, D18-32 III, D33-46 IV, for the feed and the day; Endless is Act I', () => {
   const S = setup();
-  for (let d = 0; d < 61; d++) {
-    const want = d < 15 ? 0 : d < 30 ? 1 : d < 45 ? 2 : 3;
+  for (let d = 0; d < 46; d++) {
+    const want = d < 8 ? 0 : d < 17 ? 1 : d < 32 ? 2 : 3;
     const g = { day: d, mode: { kind: 'story', S: { anomalies: 0 } } };
     B.Music.setGame(g);
     assert(B.Sound.plan.brief().key === 'feed' + (want + 1), `feed on day ${d + 1}`);
@@ -458,13 +458,13 @@ test('Ghost count comes from the anomaly counter and is passed to the track', ()
 
 test('Music: menu, feed and the day start in the right voice; the old ending tracks stay Classic when asked for by name', () => {
   setup();
-  B.Music.setGame({ day: 35, mode: { kind: 'story', S: { anomalies: 0 } } });
+  B.Music.setGame({ day: 25, mode: { kind: 'story', S: { anomalies: 0 } } });
   B.Music.play('menu');
   assert(B.Sound.state.trackName === 'menu' && B.Sound.state.track, 'menu');
   B.Music.play('brief');
-  assert(B.Sound.state.trackName === 'brief' && B.Sound.state.track.key === 'feed3', 'Act III day 36 plays feed 3');
+  assert(B.Sound.state.trackName === 'brief' && B.Sound.state.track.key === 'feed3', 'Act III day 26 plays feed 3');
   B.Music.play('trading');
-  assert(B.Sound.state.trackName === 'trading' && B.Sound.state.track.key === 'game3', 'Act III day 36 plays gameplay 3');
+  assert(B.Sound.state.trackName === 'trading' && B.Sound.state.track.key === 'game3', 'Act III day 26 plays gameplay 3');
   B.Music.play('endingDark');
   assert(B.Sound.state.track === null, 'new track still playing under an ending');
   assert(B.ClassicMusic.name === 'endingDark', 'ending music is Classic');
@@ -473,7 +473,7 @@ test('Music: menu, feed and the day start in the right voice; the old ending tra
 
 test('Music: each ending screen plays its own score in New and the old track in Classic', () => {
   const S = setup();
-  B.Music.setGame({ day: 60, mode: { kind: 'story', S: { anomalies: 0 } } });
+  B.Music.setGame({ day: 45, mode: { kind: 'story', S: { anomalies: 0 } } });
   for (const e of B.StoryEndings.list) {
     B.Music.ending({ id: e.id }, e.dark ? 'endingDark' : 'endingLight');
     assert(S.track && S.trackName === 'ending' && S.track.key === 'end_' + e.id, `${e.id} played ${S.track && S.track.key}`);

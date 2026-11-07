@@ -62,11 +62,11 @@ function simulate(name, cfg) {
     if (!firedAt && strikes >= B.StoryMode.QUOTA_STRIKE_LIMIT) firedAt = day + 1;
     rows.push({ day: day + 1, pnl: Math.round(pnl), quota, met, strikes, equity: Math.round(b.equity()) });
   }
-  return { strategy: name, hitRate: hit / rows.length, strikes, weekStrikes, forgiven, threshold: B.StoryMode.QUOTA_STRIKE_LIMIT, firedAt, maxMissStreak, fifthConsecutiveAt: backstopAt, finalEquity: Math.round(b.equity()), reached61: !firedAt || firedAt >= 61, rows };
+  return { strategy: name, hitRate: hit / rows.length, strikes, weekStrikes, forgiven, threshold: B.StoryMode.QUOTA_STRIKE_LIMIT, firedAt, maxMissStreak, fifthConsecutiveAt: backstopAt, finalEquity: Math.round(b.equity()), reachedEnd: !firedAt || firedAt >= 61, rows };
 }
 
 const results = Object.entries(styles).map(([name, cfg]) => simulate(name, cfg));
 for (const r of results) {
-  console.log(`${r.strategy.padEnd(12)} hit=${(r.hitRate * 100).toFixed(1)}% strikes=${String(r.strikes).padStart(2)} (weekly ${r.weekStrikes}, wiped ${r.forgiven}) thresholdAt=${r.firedAt || '-'} maxStreak=${r.maxMissStreak} fifthConsecutive=${r.fifthConsecutiveAt || '-'} equity=$${r.finalEquity.toLocaleString()} reaches61=${r.reached61}`);
+  console.log(`${r.strategy.padEnd(12)} hit=${(r.hitRate * 100).toFixed(1)}% strikes=${String(r.strikes).padStart(2)} (weekly ${r.weekStrikes}, wiped ${r.forgiven}) thresholdAt=${r.firedAt || '-'} maxStreak=${r.maxMissStreak} fifthConsecutive=${r.fifthConsecutiveAt || '-'} equity=$${r.finalEquity.toLocaleString()} reachesEnd=${r.reachedEnd}`);
 }
 console.log(JSON.stringify(results.map(({ rows, ...summary }) => summary), null, 2));

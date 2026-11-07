@@ -33,7 +33,7 @@
 
   const LIFE = [
     {
-      id: 'rentHike', day: 20, speaker: 'Your landlord', role: 'Building management',
+      id: 'rentHike', day: 11, speaker: 'Your landlord', role: 'Building management',
       // No landlord on your mother's couch.
       when: (S, W) => (W.tier | 0) > 0,
       kicker: 'YOUR MONEY', title: 'The Building Is AI-Managed Now',
@@ -54,7 +54,7 @@
       ]
     },
     {
-      id: 'advance', day: 44, speaker: 'Desmond Kroll', role: 'Head of desk, at dinner',
+      id: 'advance', day: 31, speaker: 'Desmond Kroll', role: 'Head of desk, at dinner',
       kicker: 'YOUR MONEY', title: 'The Number Is Looking Good',
       text: (S, W) => [`Kroll pays for dinner. Steak, the good wine, a toast to "the bottom being in."`,
         `"Pool closes the first of the year. Your number is looking good. HR can advance you ${money(8000)} against it tonight. Don't do anything stupid before then."`],
@@ -66,7 +66,7 @@
       ]
     },
     {
-      id: 'dadBill', day: 31, speaker: 'Mom', role: 'Calling after the close',
+      id: 'dadBill', day: 18, speaker: 'Mom', role: 'Calling after the close',
       kicker: 'YOUR MONEY', title: 'Fourteen Thousand Two Hundred',
       text: () => ['"It\'s your father. The procedure went fine. He\'s fine."',
         '"The insurance says the surgeon was out of network. It\'s fourteen thousand two hundred. I didn\'t want to ask."'],
@@ -80,7 +80,7 @@
       ]
     },
     {
-      id: 'perry', day: 49, speaker: 'Perry Nakash', role: 'Voicemail, 0:41',
+      id: 'perry', day: 36, speaker: 'Perry Nakash', role: 'Voicemail, 0:41',
       kicker: 'YOUR MONEY', title: 'Six Thousand',
       text: (S) => [S.f.insider ? '"Enforcement called. I need a lawyer and I can\'t ask my parents."'
         : S.f.perryFiled ? '"They walked me out a week after I filed. Nobody will say it was because of that."'
@@ -96,7 +96,7 @@
       ]
     },
     {
-      id: 'pension', day: 56, speaker: 'Mom', role: 'Calling after the close',
+      id: 'pension', day: 41, speaker: 'Mom', role: 'Calling after the close',
       kicker: 'YOUR MONEY', title: 'Twenty-Two Percent',
       text: (S) => ['"A letter from Riverbend. Benefits are cut twenty-two percent from January."',
         '"Your father says we\'ll manage. We won\'t."'].concat(S.f.dumped ? ['<i>The paper you sold to Riverbend at par is part of why the letter exists. She will never know that.</i>'] : []),
@@ -110,7 +110,7 @@
       ]
     },
     {
-      id: 'adopt', day: 10, speaker: 'Harbor Street Animal Shelter', role: 'Open late on Mondays',
+      id: 'adopt', day: 4, speaker: 'Harbor Street Animal Shelter', role: 'Open late',
       kicker: 'YOUR LIFE', title: 'Somebody Should Take Them Home',
       text: () => ['The shelter on your block has a sign in the window: <i>Nobody adopts in a crash. Prove us wrong.</i>',
         'The volunteer walks you down the row of kennels. The orange cats stare at you like risk managers. The brown dogs have already decided you are the one.'],
@@ -119,7 +119,7 @@
           apply: () => ['You tell the volunteer you work too much. She says everybody does, and writes nothing down.'] }]
     },
     {
-      id: 'dentist', day: 15, speaker: 'Your dentist', role: 'Front desk, voicemail',
+      id: 'dentist', day: 8, speaker: 'Your dentist', role: 'Front desk, voicemail',
       kicker: 'YOUR LIFE', title: 'Six Months Is Up',
       text: () => ['"Hi, this is the front desk. You are overdue for your cleaning. We have a 7 AM on Saturday."',
         '"Insurance covers most of it. Most."'],
@@ -131,7 +131,7 @@
       ]
     },
     {
-      id: 'vetCheck', day: 25, speaker: 'Your vet', role: 'Reminder card',
+      id: 'vetCheck', day: 14, speaker: 'Your vet', role: 'Reminder card',
       when: (S, W) => !!W.pet,
       kicker: 'YOUR LIFE', title: 'Annual Checkup',
       text: (S, W) => [`A postcard with a cartoon stethoscope: <i>${petName(W)} is due for a checkup and vaccines.</i>`,
@@ -144,7 +144,7 @@
       ]
     },
     {
-      id: 'toothache', day: 38, speaker: 'Your dentist', role: 'Emergency line',
+      id: 'toothache', day: 25, speaker: 'Your dentist', role: 'Emergency line',
       when: (S, W) => W.teeth === 'skipped',
       kicker: 'YOUR LIFE', title: 'The Back Molar',
       text: () => ['It started as a twinge during the open. By the close you are chewing on nothing at all.',
@@ -157,7 +157,7 @@
       ]
     },
     {
-      id: 'vetER', day: 40, speaker: 'Your vet', role: 'After-hours line',
+      id: 'vetER', day: 27, speaker: 'Your vet', role: 'After-hours line',
       when: (S, W) => !!W.pet && W.vet === 'skipped',
       kicker: 'YOUR LIFE', title: 'Something Is Wrong',
       text: (S, W) => [`${petName(W)} has not eaten since yesterday and will not come out from under the bed.`,

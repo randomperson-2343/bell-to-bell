@@ -13,7 +13,7 @@
   'use strict';
 
   const SLOTS = 6;
-  const VERSION = 3;
+  const VERSION = 4;
   const IDX = 'saves:index';
   const key = (i) => 'save:slot:' + i;
 
@@ -69,14 +69,14 @@
     read(i) {
       const d = B.storage.get(key(i), null);
       if (!d) return null;
-      if (d.v === VERSION) return d;
-      if (d.v === 2) return this.migrateV2Snapshot(d);
-      return null;
+      if (d.v === 2) d = this.migrateV2Snapshot(d);
+      if (d && d.v === 3) d = this.migrateV3Snapshot(d);
+      return d && d.v === VERSION ? d : null;
     },
 
     migrateV2Snapshot(d) {
       const out = JSON.parse(JSON.stringify(d));
-      out.v = VERSION;
+      out.v = 3;
       if (out.kind !== 'story') return out;
       const wasMidDay = !!out.inDay;
       // Map the shipped fifteen beats to the same beats in the expanded story.
@@ -105,6 +105,60 @@
         out.inDay = false;
         out.market = out.market || out.dayOpen;
         out.migrationNotice = 'This older mid-session save was moved to the matching session opening bell. Your book and decisions were preserved; the intraday tape restarts.';
+      }
+      return out;
+    },
+
+    // V3 -> V4: the 61-session story was cut to 46. V3 day numbers are the kept
+    // sessions' original ids (StoryData.DAYS[n].sid), so a save on a removed
+    // session moves to the next kept one. Days that no longer exist drop out of
+    // the per-day records; a mid-session save restarts at the opening bell,
+    // because the week arithmetic it was carrying has changed.
+    migrateV3Snapshot(d) {
+      const out = JSON.parse(JSON.stringify(d));
+      out.v = VERSION;
+      if (out.kind !== 'story') return out;
+      const D = B.StoryData, sids = D.DAYS.map((x) => x.sid);
+      const next = (o) => { const i = sids.findIndex((x) => x >= o); return i < 0 ? sids.length - 1 : i; };
+      const kept = (o) => sids.indexOf(+o) >= 0;
+      const byDay = (m, fn) => { const r = {}; for (const k in m || {}) if (kept(k)) r[next(+k)] = fn ? fn(m[k]) : m[k]; return r; };
+      const oldDay = out.day || 0;
+      out.day = next(oldDay);
+      out.history = (out.history || []).map((h) => Object.assign({}, h, { day: next(h.day || 0) }));
+      const S = out.mode && out.mode.S;
+      if (S) {
+        const dayed = (x) => Object.assign({}, x, { day: next(x.day || 0) });
+        S.log = (S.log || []).map(dayed);
+        S.quotaLedger = (S.quotaLedger || []).map((e) => (e.kind === 'week' ? Object.assign(dayed(e), { week: D.weekOf(next(e.day || 0)) }) : dayed(e)));
+        for (const k of ['forgivenDays', 'excusedDays']) if (S[k]) S[k] = S[k].filter(kept).map(next);
+        S.feedOpenedDays = byDay(S.feedOpenedDays);
+        S.feedSkippedDays = byDay(S.feedSkippedDays);
+        if (S.mentor) { const career = S.mentor.career; S.mentor = byDay(S.mentor); if (career) S.mentor.career = career; }
+        if (S.resqwak) S.resqwak.day = next(S.resqwak.day || 0);
+        if (S.falseDawnBear && S.falseDawnBear.samples) S.falseDawnBear.samples = S.falseDawnBear.samples.filter((x) => kept(x.day)).map(dayed);
+        // The open week was sized for the old calendar; the first session back rebuilds it.
+        delete S.week;
+        const w = S.wallet;
+        if (w) {
+          // A payslip counts only for a week that has fully gone by in the new calendar.
+          const now = D.weekOf(out.day), weeks = {};
+          for (const k in w.weeks || {}) {
+            const wk = D.weekOf(next(Math.min(k * 5 - 1, 60)));
+            if (wk < now) weeks[wk] = w.weeks[k];
+          }
+          w.weeks = weeks;
+          w.days = byDay(w.days);
+          w.ddDays = byDay(w.ddDays);
+          if (w.ledgerSub && w.ledgerSub.since != null) w.ledgerSub.since = next(w.ledgerSub.since);
+          w.ledgerPaidWeek = w.ledgerPaidWeek === Math.floor(oldDay / 5) + 1 ? now : 0;
+        }
+        S.f = S.f || {};
+        S.f.migratedV4 = true;
+      }
+      if (out.inDay) {
+        out.inDay = false;
+        out.market = out.market || out.dayOpen;
+        out.migrationNotice = 'This mid-session save was moved to the opening bell of the shortened story. Your book and decisions were preserved; the intraday tape restarts.';
       }
       return out;
     },
