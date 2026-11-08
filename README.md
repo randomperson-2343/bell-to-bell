@@ -53,6 +53,8 @@ A slot that reaches an ending becomes a read-only record and counts toward the e
 | `A` | Answer phone | `Esc` | Pause / save |
 | `A` `S` `D` | Ground during panic | Tap | Grounding buttons |
 
+On a phone the desk bar switches between **Trade** (chart and order ticket), **Positions** and **News** (Wire, Sqwak, Inbox and client orders). An incoming call pops up over whichever one is open, and the News tab shows a badge when something new lands there.
+
 ## Look and sound
 
 - **High-resolution pixel art**, rendered as cached authored storyboard frames: a locked 32-colour palette, a native 640x360 cinematic canvas scaled to fill the screen, 16:9 letterboxing, ordered dithering and bitmap-aligned typography. Every face is a pixel font: Silkscreen handles display and control lettering, Tiny5 carries interface and story copy, and VT323 is reserved for financial data, with font-size-adjust keeping their cap heights consistent. All fonts ship in `fonts/` (SIL Open Font License), so the game needs no network.
@@ -101,6 +103,7 @@ js/tests/               test suite, headless runners and their shared loader
   node js/tests/reachability-run.js      # chronological all-ending reachability
   node js/tests/render-run.js            # native canvas hashes and frame evidence
   node js/tests/browser-run.js           # Chromium viewport, mobile and flow checks
+  node js/tests/phone-run.js             # phone portrait + landscape: tabs, tap sizes, text sizes, calls, panic (screenshots in qa/phone/)
   ```
 
 To review every cinematic panel as PNGs, install `@napi-rs/canvas` in your

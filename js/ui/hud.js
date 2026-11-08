@@ -4,10 +4,36 @@
   const $ = B.el;
   const F = B.fmt;
 
-  // Dynamic tables are re-rendered several times a second, so their buttons act on
-  // pointerdown (instant, never lost to a re-render) and on keyboard "click" (detail 0).
+  // Same query as the phone layout in css/office.css and css/ui.css.
+  const PHONE_QUERY = '(max-width: 820px), (orientation: landscape) and (max-height: 500px)';
+  const TAP_SLOP = 10; // px a finger may drift and still count as a tap
+
+  // Dynamic tables are re-rendered several times a second, so their buttons can't rely
+  // on "click" (the pressed node is often gone by pointerup). A mouse acts on pointerdown
+  // (instant, never lost to a re-render). Touch and pen act on pointerup, and only if the
+  // finger stayed put: acting on pointerdown made a scroll that started on a Close button
+  // close the trade. Keyboard "click" (detail 0) still works.
   function onPress(root, fn) {
-    root.addEventListener('pointerdown', (e) => { if (e.button === 0) fn(e); });
+    let touch = null; // { id, x, y } of the finger that might still turn into a tap
+    root.addEventListener('pointerdown', (e) => {
+      if (e.pointerType === 'mouse') { if (e.button === 0) fn(e); return; }
+      touch = { id: e.pointerId, x: e.clientX, y: e.clientY };
+      // Touch captures the pointer to the pressed node, which a re-render may remove.
+      // Releasing it means pointerup is hit-tested at the release point instead, so it
+      // lands on whatever button replaced the old one.
+      try { if (e.target.releasePointerCapture) e.target.releasePointerCapture(e.pointerId); } catch (_) { /* not captured */ }
+    });
+    root.addEventListener('pointermove', (e) => {
+      if (touch && e.pointerId === touch.id && (Math.abs(e.clientX - touch.x) >= TAP_SLOP || Math.abs(e.clientY - touch.y) >= TAP_SLOP)) touch = null;
+    });
+    root.addEventListener('pointerup', (e) => {
+      const t = touch;
+      touch = null;
+      if (!t || t.id !== e.pointerId) return;
+      if (Math.abs(e.clientX - t.x) < TAP_SLOP && Math.abs(e.clientY - t.y) < TAP_SLOP) fn(e);
+    });
+    // The browser took the gesture for scrolling.
+    root.addEventListener('pointercancel', () => { touch = null; });
     root.addEventListener('click', (e) => { if (e.detail === 0) fn(e); });
   }
 
@@ -20,6 +46,9 @@
     btTab: 'positions',
     feed: { wire: [], chirp: [], inbox: [] },
     unread: 0,
+    newsUnseen: false,  // phone layout: something arrived while the News tab was closed
+    openTasks: 0,       // open client tasks, for the News tab badge
+    lastPosCount: -1,
     lastRender: 0,
     lastPx: {},
     shakeAmt: 0,
@@ -30,6 +59,17 @@
       B.Chart.init($('chart'));
       B.Ticket.init();
       window.addEventListener('resize', () => this.placeNote());
+      document.body.dataset.ptab = 'trade';
+      document.querySelectorAll('#phone-tabs button').forEach((b) => b.addEventListener('click', () => this.setPhoneTab(b.dataset.ptab)));
+      const adv = $('tk-adv');
+      if (adv) {
+        adv.addEventListener('click', () => {
+          adv.setAttribute('aria-expanded', String(document.body.classList.toggle('tk-adv-open')));
+          this.tkAdvLabel();
+        });
+        // The label mirrors the live Type / price / SL / TP inputs.
+        ['input', 'change'].forEach((ev) => $('tk-stock').addEventListener(ev, () => this.tkAdvLabel()));
+      }
 
       onPress($('watch-list'), (e) => {
         const row = e.target.closest('.wl-row');
@@ -66,7 +106,11 @@
         const rq = e.target.closest('[data-rq]');
         if (rq) { e.preventDefault(); this.resqwak(rq.dataset.rq); return; }
         const tag = e.target.closest('[data-sym]');
-        if (tag) this.select(tag.dataset.sym);
+        if (tag) {
+          this.select(tag.dataset.sym);
+          // The chart lives on the Trade tab on a phone.
+          if (this.isPhoneLayout()) this.setPhoneTab('trade');
+        }
       });
       document.querySelectorAll('.bt-tabs button').forEach((b) => b.addEventListener('click', () => {
         this.btTab = b.dataset.bt;
@@ -205,6 +249,7 @@
       $('ch-sym').textContent = sym;
       $('ch-name').textContent = tk.name;
       if ($('tk-type').value !== 'market') $('tk-price').value = tk.last.toFixed(2);
+      this.tkAdvLabel();
       B.Ticket.renderChain(true);
       this.render(true);
     },
@@ -219,6 +264,11 @@
       this.applyNarrativeSkin(g);
       this.renderMute();
       B.Ticket.reset();
+      this.tkAdvLabel();
+      this.newsUnseen = false;
+      this.openTasks = 0;
+      this.lastPosCount = -1;
+      this.setPhoneTab('trade', true);
       B.Screens.show('game');
       this.select('INDX');
     },
@@ -254,6 +304,7 @@
         this.feed.inbox.unshift({ kind: 'inbox', text, src, t: 0 });
         this.unread++;
         this.updateBadge();
+        this.noteNews();
       }
       this.renderFeed();
       this.render(true);
@@ -301,6 +352,7 @@
       if (this.feed[kind].length > 120) this.feed[kind].pop();
       B.SFX.news({ kind, big: e.big });
       this.renderFeed();
+      this.noteNews();
     },
 
     inbox(msg) {
@@ -308,6 +360,7 @@
       if (this.feedTab !== 'inbox') { this.unread++; this.updateBadge(); }
       B.SFX.news({ kind: 'inbox', from: msg.from });
       this.renderFeed();
+      this.noteNews();
       if (msg.toast !== false) this.toast(`${msg.from}: ${msg.text.length > 90 ? msg.text.slice(0, 88) + '…' : msg.text}`, 'warn');
     },
 
@@ -331,6 +384,49 @@
     updateBadge() {
       $('inbox-badge').hidden = !this.unread;
       $('inbox-badge').textContent = this.unread;
+    },
+
+    // ---- phone layout: Trade / Positions / News tabs ----
+    isPhoneLayout() { return !!(window.matchMedia && window.matchMedia(PHONE_QUERY).matches); },
+
+    setPhoneTab(tab, quiet) {
+      if (tab !== 'positions' && tab !== 'news') tab = 'trade';
+      document.body.dataset.ptab = tab;
+      document.querySelectorAll('#phone-tabs button').forEach((b) => b.classList.toggle('on', b.dataset.ptab === tab));
+      if (tab === 'news') { this.newsUnseen = false; this.updateNewsBadge(); }
+      if (tab === 'positions' && this.g) this.renderBottom(true);
+      this.placeNote();
+      if (!quiet) B.SFX.uiTab && B.SFX.uiTab();
+    },
+
+    // Something landed in the comms feed. Only matters when the News tab is hidden.
+    noteNews() {
+      this.newsUnseen = true;
+      this.updateNewsBadge();
+    },
+
+    // The badge shows the open client task count, or a dot when there is only unread news.
+    updateNewsBadge() {
+      const badge = $('ptab-news-badge');
+      if (!badge) return;
+      const show = (this.newsUnseen || this.openTasks > 0) && document.body.dataset.ptab !== 'news' && this.isPhoneLayout();
+      const text = this.openTasks > 0 ? String(this.openTasks) : '\u2022';
+      if (badge.hidden === show) badge.hidden = !show;
+      if (show && badge.textContent !== text) badge.textContent = text;
+    },
+
+    // "Market", "Limit 101.50", "Stop 99.00 · SL 5% · TP 10%" plus an arrow for open or closed.
+    tkAdvLabel() {
+      const adv = $('tk-adv');
+      if (!adv) return;
+      const type = $('tk-type').value;
+      let t = type.charAt(0).toUpperCase() + type.slice(1);
+      const px = +$('tk-price').value;
+      if (type !== 'market' && px > 0) t += ' ' + px.toFixed(2);
+      const sl = $('tk-sl').value, tp = $('tk-tp').value;
+      if (sl) t += ' \u00B7 SL ' + sl + '%';
+      if (tp) t += ' \u00B7 TP ' + tp + '%';
+      adv.textContent = t + (document.body.classList.contains('tk-adv-open') ? ' \u25B4' : ' \u25BE');
     },
 
     renderFeed() {
@@ -427,6 +523,7 @@
       this.feed.inbox.unshift({ kind: 'inbox', text, src: from, t: this.g ? this.g.market.t : 0 });
       if (this.feedTab !== 'inbox') { this.unread++; this.updateBadge(); }
       this.renderFeed();
+      this.noteNews();
       (this.noteQueue = this.noteQueue || []).push({ from, text });
       if (!this.noteOn) this.nextNote();
     },
@@ -452,13 +549,13 @@
     },
     // On a desk layout the note sits at the foot of the comms monitor, over
     // the oldest feed items, so it never covers positions or the chart.
-    // Phones keep the CSS placement: there the comms monitor is off screen.
+    // Phone layouts keep the CSS placement: there the comms monitor is a tab.
     placeNote() {
       const el = document.getElementById('mentor-note');
       if (!el || el.hidden) return;
       const scr = document.querySelector('#mon-right .screen');
       const r = scr && scr.getBoundingClientRect();
-      const docked = r && r.width > 0 && !window.matchMedia('(max-width: 820px)').matches;
+      const docked = r && r.width > 0 && !this.isPhoneLayout();
       el.classList.toggle('docked', !!docked);
       if (!docked) { el.style.left = el.style.width = el.style.bottom = ''; return; }
       el.style.left = Math.round(r.left + 8) + 'px';
@@ -484,8 +581,9 @@
       this.ringTimer = true;
       B.SFX.ring();
       this.ringAcc = 0;
-      // On a phone the comms monitor is below the fold: surface the call.
-      if (this.isTouch()) {
+      // On a touch device with the desk layout the comms monitor can be out of view:
+      // surface the call. The phone layout shows the call box itself as an overlay.
+      if (this.isTouch() && !this.isPhoneLayout()) {
         let pill = document.getElementById('ring-pill');
         if (!pill) {
           pill = document.createElement('button');
@@ -525,6 +623,8 @@
 
     renderTasks(tasks) {
       const open = (tasks || []).filter((t) => !t.done);
+      this.openTasks = open.length;
+      this.updateNewsBadge();
       $('tasks').innerHTML = open.map((t) => `<div class="task"><span>Client: <b>${B.esc(t.label)}</b> · fee ${F.money(t.fee)} <em class="muted" data-deadline="${t.id}"></em></span><button class="btn small" data-task="${t.id}">Execute</button></div>`).join('');
     },
 
@@ -791,6 +891,12 @@
       const g = this.g, b = g.broker, m = g.market;
       $('orders-count').hidden = !b.orders.length;
       $('orders-count').textContent = b.orders.length;
+      const posCount = Object.keys(b.pos).length + b.opts.length;
+      if (posCount !== this.lastPosCount) {
+        this.lastPosCount = posCount;
+        const pb = $('ptab-pos-badge');
+        if (pb) { pb.hidden = !posCount; pb.textContent = posCount; }
+      }
       $('bt-summary').textContent = `Lev ${b.leverage().toFixed(2)}x · Cash ${F.money(b.cash)} · Fees today ${F.money(b.fees - (b.dayFeesStart || 0))}`;
       let html = '';
       if (this.btTab === 'positions') {
