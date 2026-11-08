@@ -903,28 +903,28 @@
         const syms = Object.keys(b.pos);
         if (!syms.length) html = '<div class="empty">Flat. No open positions.</div>';
         else {
-          html = '<table class="tbl"><thead><tr><th>Symbol</th><th>Qty</th><th>Avg</th><th>Last</th><th>Mkt Value</th><th>Unrealized</th><th>%</th><th></th></tr></thead><tbody>' +
+          html = '<table class="tbl"><thead><tr><th>Symbol</th><th>Qty</th><th>Avg</th><th>Last</th><th>Mkt Value</th><th>Unrealized</th><th>%</th><th class="act"></th></tr></thead><tbody>' +
             syms.map((s) => {
               const p = b.pos[s], last = m.bySym[s].last;
               const u = (last - p.avg) * p.qty;
               const pc = (last / p.avg - 1) * Math.sign(p.qty);
-              return `<tr data-sym="${s}"><td>${s} <span class="${p.qty > 0 ? 'up' : 'down'}">${p.qty > 0 ? 'LONG' : 'SHORT'}</span></td><td>${F.qty(p.qty)}</td><td>${F.price(p.avg)}</td><td>${F.price(last)}</td><td>${F.money(p.qty * last)}</td><td class="${F.cls(u)}">${F.money(u, true)}</td><td class="${F.cls(pc)}">${F.pct(pc)}</td><td><button data-act="half" data-id="${s}">&frac12;</button><button data-act="close" data-id="${s}">Close</button></td></tr>`;
+              return `<tr data-sym="${s}"><td>${s} <span class="${p.qty > 0 ? 'up' : 'down'}">${p.qty > 0 ? 'LONG' : 'SHORT'}</span></td><td>${F.qty(p.qty)}</td><td>${F.price(p.avg)}</td><td>${F.price(last)}</td><td>${F.money(p.qty * last)}</td><td class="${F.cls(u)}">${F.money(u, true)}</td><td class="${F.cls(pc)}">${F.pct(pc)}</td><td class="act"><button data-act="half" data-id="${s}">&frac12;</button><button data-act="close" data-id="${s}">Close</button></td></tr>`;
             }).join('') + '</tbody></table>';
         }
       } else if (this.btTab === 'orders') {
         if (!b.orders.length) html = '<div class="empty">No working orders.</div>';
-        else html = '<table class="tbl"><thead><tr><th>Symbol</th><th>Side</th><th>Qty</th><th>Type</th><th>Price</th><th>Last</th><th></th></tr></thead><tbody>' +
+        else html = '<table class="tbl"><thead><tr><th>Symbol</th><th>Side</th><th>Qty</th><th>Type</th><th>Price</th><th>Last</th><th class="act"></th></tr></thead><tbody>' +
           b.orders.map((o) => {
             const qty = o.bracket ? -b.posQty(o.sym) : o.qty;
-            return `<tr data-sym="${o.sym}"><td>${o.sym}</td><td class="${qty > 0 ? 'up' : 'down'}">${qty > 0 ? 'BUY' : 'SELL'}</td><td>${F.qty(Math.abs(qty))}</td><td>${o.label || o.type.toUpperCase()}</td><td>${F.price(o.price)}</td><td>${F.price(m.bySym[o.sym].last)}</td><td><button data-act="cancel" data-id="${o.id}">Cancel</button></td></tr>`;
+            return `<tr data-sym="${o.sym}"><td>${o.sym}</td><td class="${qty > 0 ? 'up' : 'down'}">${qty > 0 ? 'BUY' : 'SELL'}</td><td>${F.qty(Math.abs(qty))}</td><td>${o.label || o.type.toUpperCase()}</td><td>${F.price(o.price)}</td><td>${F.price(m.bySym[o.sym].last)}</td><td class="act"><button data-act="cancel" data-id="${o.id}">Cancel</button></td></tr>`;
           }).join('') + '</tbody></table>';
       } else if (this.btTab === 'opts') {
         if (!b.opts.length) html = '<div class="empty">No options. Open the Options tab on the ticket to buy calls or puts.</div>';
-        else html = '<table class="tbl"><thead><tr><th>Contract</th><th>Qty</th><th>Avg</th><th>Mark</th><th>Value</th><th>P&amp;L</th><th></th></tr></thead><tbody>' +
+        else html = '<table class="tbl"><thead><tr><th>Contract</th><th>Qty</th><th>Avg</th><th>Mark</th><th>Value</th><th>P&amp;L</th><th class="act"></th></tr></thead><tbody>' +
           b.opts.map((o) => {
             const mark = B.Options.mid(m, o);
             const pl = (mark - o.avg) * o.qty * 100;
-            return `<tr data-sym="${o.sym}"><td>${B.Options.label(o)}</td><td>${o.qty}</td><td>${F.price(o.avg)}</td><td>${F.price(mark)}</td><td>${F.money(mark * o.qty * 100)}</td><td class="${F.cls(pl)}">${F.money(pl, true)}</td><td><button data-act="sellopt" data-id="${o.id}">Sell</button></td></tr>`;
+            return `<tr data-sym="${o.sym}"><td>${B.Options.label(o)}</td><td>${o.qty}</td><td>${F.price(o.avg)}</td><td>${F.price(mark)}</td><td>${F.money(mark * o.qty * 100)}</td><td class="${F.cls(pl)}">${F.money(pl, true)}</td><td class="act"><button data-act="sellopt" data-id="${o.id}">Sell</button></td></tr>`;
           }).join('') + '</tbody></table>';
       } else {
         const tr = b.dayTrades().slice().reverse();
