@@ -75,6 +75,16 @@ function installHelpers() {
     }
     return q.inView(r);
   };
+  // Displayed somewhere on the page, even if scrolled out of view (used to find the
+  // modal's primary button, which on a short phone sits below the fold of the modal).
+  q.shown = (el) => {
+    if (!el || el.getClientRects().length === 0) return false;
+    for (let n = el; n && n.nodeType === 1; n = n.parentElement) {
+      const c = getComputedStyle(n);
+      if (c.display === 'none' || parseFloat(c.opacity) === 0) return false;
+    }
+    return getComputedStyle(el).visibility === 'visible';
+  };
   q.roots = (sels) => sels.map((s) => document.querySelector(s)).filter(Boolean);
   q.all = (sels, selector) => {
     const seen = new Set();
@@ -112,6 +122,9 @@ function installHelpers() {
       if (!own || !q.visible(el)) continue;
       n++;
       const fs = parseFloat(getComputedStyle(el).fontSize);
+      // font-size: 0 is a deliberate way to hide a text label (e.g. the stress gauge's
+      // caption on portrait phones), not small text.
+      if (fs === 0) continue;
       if (fs < 11) bad.push(`${q.sel(el)} ${fs}px "${(el.textContent || '').trim().slice(0, 18)}"`);
     }
     return { n, bad };
@@ -166,9 +179,9 @@ async function boot(browser, ctxOpts, rep, shot) {
     if (Date.now() - t0 > 20000) throw new Error('game did not start within 20s (stuck modal or cinematic)');
     const info = await page.evaluate(() => {
       const layer = document.getElementById('modal-layer');
-      const btns = layer ? Array.from(layer.querySelectorAll('button')).filter((b) => !b.disabled && window.__qa.visible(b)) : [];
+      const btns = layer ? Array.from(layer.querySelectorAll('button')).filter((b) => !b.disabled && window.__qa.shown(b)) : [];
       const primary = btns.find((b) => b.classList.contains('primary')) || btns[btns.length - 1] || null;
-      if (primary) primary.setAttribute('data-qa-click', '1');
+      if (primary) { primary.setAttribute('data-qa-click', '1'); primary.scrollIntoView({ block: 'center' }); }
       return { n: btns.length };
     });
     if (info.n) {
@@ -180,14 +193,18 @@ async function boot(browser, ctxOpts, rep, shot) {
           const r = await page.evaluate(() => ({ d: document.documentElement.scrollWidth, b: document.body.scrollWidth, w: innerWidth }));
           return { pass: r.d <= r.w && r.b <= r.w, detail: `doc ${r.d} body ${r.b} vw ${r.w}` };
         });
-        await rep.step('briefing modal: tap targets >= 44px', async () => {
-          const r = await page.evaluate((s) => window.__qa.tapTargets(s), SCOPE);
-          return { pass: r.bad.length === 0, detail: r.bad.length ? list(r.bad) : `${r.n} checked` };
-        });
-        await rep.step('briefing modal: text >= 11px', async () => {
-          const r = await page.evaluate((s) => window.__qa.fonts(s), SCOPE);
-          return { pass: r.bad.length === 0, detail: r.bad.length ? list(r.bad) : `${r.n} checked` };
-        });
+        // Only the modal itself: the game screen behind it is checked once it is in front.
+        // The 44px and 11px rules are phone rules, so the desktop run skips them.
+        if (ctxOpts.isMobile) {
+          await rep.step('briefing modal: tap targets >= 44px', async () => {
+            const r = await page.evaluate(() => window.__qa.tapTargets(['#modal-layer']));
+            return { pass: r.bad.length === 0, detail: r.bad.length ? list(r.bad) : `${r.n} checked` };
+          });
+          await rep.step('briefing modal: text >= 11px', async () => {
+            const r = await page.evaluate(() => window.__qa.fonts(['#modal-layer']));
+            return { pass: r.bad.length === 0, detail: r.bad.length ? list(r.bad) : `${r.n} checked` };
+          });
+        }
       }
       try {
         await page.locator('[data-qa-click="1"]').first().click({ timeout: 2500 });
