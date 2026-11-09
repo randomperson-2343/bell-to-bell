@@ -98,7 +98,7 @@ function career(arch, seed) {
     const eq = b.equity();
     const report = { day, date: 'S' + (day + 1), pnl: eq - start, equity: eq, start, quota, quotaMet: eq - start >= quota, eod };
     g.history.push({ day, pnl: report.pnl, equity: eq, quotaMet: report.quotaMet });
-    mode.onDayEnd(g, report); // careers keep going past firing: we want 61 sessions of pay
+    mode.onDayEnd(g, report); // careers keep going past firing: we want every session of pay
     if (firedAt == null && mode.S.quotaStrikes >= B.StoryMode.QUOTA_STRIKE_LIMIT) firedAt = day + 1;
     if (day % 5 === 4 || day === D.DAYS.length - 1) {
       // Upgrade policy: move up one tier when cash covers the move-in and two

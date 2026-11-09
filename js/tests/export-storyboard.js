@@ -24,14 +24,14 @@ function save(group, name, beat, opts) {
 function exportBeats(group, name, beats, opts) {
   beats.forEach((beat, index) => save(group, `${name}-${String(index + 1).padStart(2, '0')}-${beat.id || 'beat'}`, beat, opts));
 }
-for (let day = 0; day < 61; day++) {
+for (let day = 0; day < B.StoryData.DAYS.length; day++) {
   const d = B.StoryData.DAYS[day], name = `session-${String(day + 1).padStart(2, '0')}`;
   const o = { day, brief: { title: d.title, feed: d.feed || [] } };
   exportBeats('news', name, B.Scenes.news(o), o);
   exportBeats('phone', name, B.Scenes.phone(o), o);
   exportBeats('close', name, B.Scenes.close({ report: { day, pnl: 0, equity: 250000, quota: 0 } }), o);
 }
-for (let day = 4; day < 60; day += 5) {
+for (let day = 4; day < B.StoryData.DAYS.length - 1; day += 5) {
   const o = { day };
   exportBeats('weekends', `after-session-${String(day + 1).padStart(2, '0')}`, B.Scenes.weekend(o), o);
 }
@@ -50,20 +50,20 @@ for (const life of B.Life.LIFE) {
 }
 // Branch-sensitive mornings and the housing ladder are separately visible.
 for (const [day, S, label] of [
-  [10, { choices: { c1: 'dump' }, f: {} }, 'pension-dump'],
-  [10, { choices: { c1: 'leak' }, f: {} }, 'pension-leak'],
-  [35, { choices: { c5: 'fail' }, f: {} }, 'rescue-fail'],
-  [35, { choices: { c5: 'ban' }, f: {} }, 'short-ban'],
-  [35, { choices: { c5: 'bail' }, f: {} }, 'rescue-bail'],
-  [55, { choices: {}, f: { billPassed: true } }, 'bill-passes'],
-  [60, { choices: {}, f: { pulledPlug: true } }, 'plug-pulled']
+  [4, { choices: { c1: 'dump' }, f: {} }, 'pension-dump'],
+  [4, { choices: { c1: 'leak' }, f: {} }, 'pension-leak'],
+  [22, { choices: { c5: 'fail' }, f: {} }, 'rescue-fail'],
+  [22, { choices: { c5: 'ban' }, f: {} }, 'short-ban'],
+  [22, { choices: { c5: 'bail' }, f: {} }, 'rescue-bail'],
+  [40, { choices: {}, f: { billPassed: true } }, 'bill-passes'],
+  [45, { choices: {}, f: { pulledPlug: true } }, 'plug-pulled']
 ]) {
   const o = { day, brief: { title: B.StoryData.DAYS[day].title }, game: { mode: { S } } };
   exportBeats('variants', label, B.Scenes.news(o), o);
 }
 for (const [tier, id] of Object.keys(B.Storyboard.HOMES).entries()) {
   const wallet = { tier, lateWeeks: id === 'couch' ? 3 : 0 };
-  const o = { day: 49, game: { mode: { S: { wallet, f: {} } } } };
+  const o = { day: 29, game: { mode: { S: { wallet, f: {} } } } };
   exportBeats('housing', id, B.Scenes.weekend(o).slice(0, 2), o);
 }
 function contact(name, group, choose, columns) {

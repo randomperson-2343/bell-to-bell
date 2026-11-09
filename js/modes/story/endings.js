@@ -196,7 +196,7 @@
       headline: 'Markets Stabilize as Reforms Take Hold',
       deck: 'Economists credit early limits and a timely guarantee with averting disaster.',
       story: (c) => [
-        'It could have been worse. Thirteen weeks took the system to the edge without pushing it over.',
+        'It could have been worse. Ten weeks took the system to the edge without pushing it over.',
         'Tighter limits kept leverage from turning every loss into a failure, and the guarantee arrived before the final break.',
         `The trader walked away with ${B.fmt.compact(c.wealth)} and a clean record. Boring. Beautiful.`
       ],
@@ -253,7 +253,7 @@
       ], wealth:(c)=>c.S.f.pulledPlug ? Math.min(c.wealth, c.start * .12) : c.wealth
     },
     {
-      id: 'grind', icon: '&#9749;', title: 'Still Standing', hint: 'Survived all thirteen weeks. No heroics, no handcuffs.', lockedHint: 'Sometimes the ending is just... Tuesday.',
+      id: 'grind', icon: '&#9749;', title: 'Still Standing', hint: 'Survived all ten weeks. No heroics, no handcuffs.', lockedHint: 'Sometimes the ending is just... Tuesday.',
       test: () => true,
       headline: 'After the Storm, Traders Return to Their Desks',
       deck: 'For survivors on the street, life goes on. Mostly.',

@@ -86,7 +86,7 @@
       this.status = 'open';
       this.halt = null;
       this.breakers = { l1: false, l2: false, l3: false };
-      this.rng = B.RNG(B.hashSeed(this.seed + '|' + day + '|' + (scen.salt || '')));
+      this.rng = B.RNG(B.hashSeed(this.seed + '|' + (scen.sid != null ? scen.sid : day) + '|' + (scen.salt || '')));
       const reg = B.REGIMES[scen.regime] || B.REGIMES.chop;
       this.regime = reg;
 

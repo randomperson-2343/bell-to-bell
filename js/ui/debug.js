@@ -22,7 +22,7 @@
       else if (a === 'stress' && g) g.stress.v = +v;
       else if (a === 'mc' && g) g.broker.cash -= g.broker.equity() * 0.9;
       else if (a === 'crash' && g && g.running) g.market.injectEvent({ t: g.market.t, text: 'DEBUG CRASH', big: true, impacts: [{ scope: 'market', id: '', pct: -0.09, over: 0.1 }] });
-      else if (a === 'story') this.jump(+prompt('Jump career to day (1-' + B.StoryData.DAYS.length + '):', '13') - 1);
+      else if (a === 'story') this.jump(+prompt('Jump career to day (1-' + B.StoryData.DAYS.length + '):', '7') - 1);
       else if (a === 'cine') B.Cinematic.play(v, { brief: { title: 'Debug cinematic', kicker: 'DEBUG' }, report: { pnl: 12345, quotaMet: true, quota: 1 }, title: 'Debug', deck: 'Debug ending card', dark: v === 'ending' }, () => {});
       else if (a === 'saveload' && g) {
         const snap = g.snapshot();

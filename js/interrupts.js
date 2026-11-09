@@ -33,7 +33,7 @@
 
     startDay(day, scripted) {
       const g = this.g;
-      const rng = B.RNG(B.hashSeed(g.mode.seed + '|calls|' + day));
+      const rng = B.RNG(B.hashSeed(g.mode.seed + '|calls|' + (g.mode.seedDay ? g.mode.seedDay(day) : day)));
       this.rng = rng;
       const freq = g.mode.callFreq == null ? 1 : g.mode.callFreq;
       const n = Math.round(rng.range(2, 4.5) * freq);

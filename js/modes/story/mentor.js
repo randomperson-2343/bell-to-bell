@@ -1,4 +1,4 @@
-// Imani's first three sessions. Not a tutorial: a colleague on the next seat
+// Imani's first two sessions. Not a tutorial: a colleague on the next seat
 // who notices what you are doing and says one thing about it. Every line is
 // triggered by the player's own state (flat too long, a position with no stop,
 // over quota, near the loss limit, a phone ringing, a hype post firing), and
@@ -8,7 +8,7 @@
 (function (B) {
   'use strict';
   const FROM = 'Imani Rhodes';
-  const LAST_DAY = 2;
+  const LAST_DAY = 1;
   const GAP = 20; // game minutes between remarks (about nine real seconds)
 
   const touch = () => !!(B.UI && B.UI.isTouch && B.UI.isTouch());
@@ -55,24 +55,23 @@
     ['feeds', [1], (g, t) => t >= 2, () => (touch()
       ? 'Two feeds under the terminal. The Wire is news somebody could be sued over. Sqwak is people. People move prices for about ten minutes.'
       : 'Two feeds on the right. The Wire is news somebody could be sued over. Sqwak is people. People move prices for about ten minutes.')],
-    ['hype', [1, 2], (g, t, said) => { const p = hypePop(g, t); if (p) said.pop = p.t; return !!p; },
+    ['hype', [1], (g, t, said) => { const p = hypePop(g, t); if (p) said.pop = p.t; return !!p; },
       (g, said) => {
         const p = (g.market.events || []).find((e) => e.hype && e.t === said.pop);
         const sym = p ? p.impacts[0].id : 'that one', up = !p || p.impacts[0].pct > 0;
         return `See ${sym}? One big account, one post, and it ${up ? 'jumped' : 'dropped'}. Watch where it is ten minutes from now.`;
       }, true],
-    ['fade', [1, 2], (g, t, said, M) => {
+    ['fade', [1], (g, t, said, M) => {
       if (said.pop == null || !M.career.hype) return false;
       const p = (g.market.events || []).find((e) => e.hype && e.t === said.pop);
       return !!p && faded(g, p) && t >= said.pop + 6;
     }, () => "And there it goes. Chasing that is how you pay for somebody else's joke. The risk desk counts it, too.", true],
-    ['quiet', [1], (g, t) => t >= 70 && !today(g).length, () => 'Quiet days still have a quota. Small and boring counts the same as clever.'],
 
-    // ---- Session 3: the rules that pay you ----
-    ['week', [2], (g, t) => t >= 2, () => 'Kroll has a weekly number as well as the daily one. Make the week and he wipes up to two bad days off your record.'],
-    ['limit', [0, 1, 2], (g) => pnl(g) <= -0.020 * g.broker.dayStartEquity,
+    // ---- Session 2 (continued): the rules that pay you ----
+    ['week', [1], (g, t) => t >= 2, () => 'Kroll has a weekly number as well as the daily one. Make the week and he wipes up to two bad days off your record.'],
+    ['limit', [0, 1], (g) => pnl(g) <= -0.020 * g.broker.dayStartEquity,
       () => "You're near the risk desk's line: three percent on the day. Hit it before three, get flat fast, keep leverage under 3.25x, and they excuse the miss once a week. Stay in and it comes out of your bonus.", true],
-    ['pay', [2], (g, t) => t >= 210, () => "Friday you get paid: a base draw, plus quota pay for every day you hit Kroll's number. Big weeks pay a bonus instead of the draw, and the risk desk decides how much of it you earned. Rent comes out the same day."]
+    ['pay', [1], (g, t) => t >= 210, () => "Friday you get paid: a base draw, plus quota pay for every day you hit Kroll's number. Big weeks pay a bonus instead of the draw, and the risk desk decides how much of it you earned. Rent comes out the same day."]
   ];
   // Lines that cannot wait for the gap.
   const URGENT = { phone: 1, limit: 1, bell: 1 };

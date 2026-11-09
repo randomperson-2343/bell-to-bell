@@ -24,7 +24,7 @@ Written 29 September 2026. **Revised 30 September 2026:** the owner approved the
 - [Certain] The author **could not open the game's GitHub repo** (`randomperson-2343/bell-to-bell`) from the chat session, so it has **never seen the existing audio code or the list of existing sound effects.** Anything below that touches existing code is marked **[Guessing]** and must be checked first.
 - [Likely] The game makes its sound with the Web Audio API and no audio files. If it plays files instead, keep the design and swap the engine section for a file player (the WAV and MP3 renders can be regenerated from the source).
 - [Certain] The old trading music's loudness was never measured. That no longer blocks anything, because the **new gameplay music is now the reference**: it sits at -21 LUFS at its middle intensity, and the sound effects were balanced against it. If the old music is kept as "Classic", match it to the new level, not the other way round.
-- [Certain] **Listening fatigue is the biggest design risk.** A player hears gameplay music for roughly three hours across 61 sessions of 3 minutes. The design answers this with adaptive layers (most of a normal day plays only quiet layers), but the author could not test it by ear. Keep the Classic fallback (7.8).
+- [Certain] **Listening fatigue is the biggest design risk.** A player hears gameplay music for roughly two and a half hours across 46 sessions of 3 minutes. The design answers this with adaptive layers (most of a normal day plays only quiet layers), but the author could not test it by ear. Keep the Classic fallback (7.8).
 
 **The one-sentence design.** One five-note tune (call it **T**) is the thread through the whole game. It opens the menu as a bell, it is bright in the Act I feed, it turns minor in Act II, it shrinks to two notes in Act III, and in Act IV it is played upside down, slowed down, on one bell. The gameplay music uses the menu's harmony and the same tune, and **gets tenser and thinner or fuller as the market does**. Reward sounds begin with the first two notes of T (A to D). Penalty sounds play that interval backwards. The feed and the gameplay music share one hidden mechanic: a **ghost** echo of the melody that grows with the anomaly counter (0 to 12).
 
@@ -115,7 +115,7 @@ The Sqwak header shows "Anomalies: n" from D16 with no explanation. The music re
 - **Buy goes up a fourth, sell goes down.** Short is three falling notes, cover is three rising.
 - **Sqwak is a bird.** Push alerts are two quick chirps (the squawk-box name joke). Wire alerts are teletype taps and bells. Kroll's messages are two low taps, Compliance's are two cold beeps a tritone apart, Imani's are warm.
 - **The anomaly sound carries the ghost.** `anomaly_logged` is a thin ping with a ghost copy that gets sharper, later and louder as the count goes up.
-- **Deliberate silences.** No sound on price ticks or continuous profit-and-loss updates (too fatiguing over 61 sessions). Dialogue blips are provided but optional.
+- **Deliberate silences.** No sound on price ticks or continuous profit-and-loss updates (too fatiguing over 46 sessions). Dialogue blips are provided but optional.
 - **Loud moments duck the music** a few dB (the opening and closing bells, strikes, crashes, endings) so they land without being louder overall.
 
 ---
@@ -291,14 +291,14 @@ Times are in seconds (the pack is a score at 60 BPM). Every sound is a list of v
 - On "New game", "Continue" or any action that leaves the menu: fade the master gain to 0 with `setTargetAtTime` (time constant 0.3 s), stop the scheduler after 2 s, then disconnect.
 
 ### 7.2 Daily feed (pre-open phone)
-- **Which act plays:** by session number. **D1 to D15: Act I. D16 to D30: Act II. D31 to D45: Act III. D46 to D61: Act IV.** (Numbers from the Patch 3 design notes: four acts of 15 sessions plus D61.)
+- **Which act plays:** by session number. **D1 to D8: Act I. D9 to D17: Act II. D18 to D32: Act III. D33 to D46: Act IV.** (The Patch 3 notes had four acts of 15 sessions plus D61; the story was later cut to 46 sessions and these are the new boundaries.)
 - Start the feed track when the pre-open phone screen opens (fade in with time constant 0.5 s). It loops until the player leaves the phone screen.
 - **Skip gesture** (always available, from D1): play `feed_skip`, fade the feed out fast (time constant 0.12 s), stop after 0.8 s. The day then starts as in 7.6.
 - **Normal exit** (player reaches the bell): fade out over about 1 s, then the day starts as in 7.6.
 - When the phone screen appears, play `phone_open`.
 - **Endless mode** [Guessing whether it has a pre-open feed]: use Act I.
 - **Weekend and Monday feeds** use the same act track.
-- The **phone-in-hand breaking-news cutscenes** (D13, D24, D31, D34, D52, D56, D57, D60) happen after the 4:00 bell, not in the pre-open feed. Use only `cutscene_hit` and `cutscene_whoosh` (7.7) where a cinematic already makes a sound today.
+- The **phone-in-hand breaking-news cutscenes** (D7, D13, D18, D21, D38, D41, D42, D45) happen after the 4:00 bell, not in the pre-open feed. Use only `cutscene_hit` and `cutscene_whoosh` (7.7) where a cinematic already makes a sound today.
 
 ### 7.3 Anomaly ghost
 - Input: the anomaly counter `n` (integer 0 to 12, the same number shown in the header).
@@ -318,8 +318,8 @@ Times are in seconds (the pack is a score at 60 BPM). Every sound is a list of v
 - Do not run audio work when the existing game pauses audio (tab hidden, etc.); follow the existing behaviour.
 
 ### 7.5 Optional polish (only if the owner asks; the ideas below are **not rendered and not heard**, apart from the sounds named)
-- **D57** (the one-session false hope): when the vote passes, play `hope_chime`. For the feed, an idea: play the Act I feed at 0.8x tempo through a lowpass around 3 kHz, like a memory of Act I.
-- **D59** (three items, none about the market): cap the gameplay intensity at 0.4 that day.
+- **D42** (the one-session false hope): when the vote passes, play `hope_chime`. For the feed, an idea: play the Act I feed at 0.8x tempo through a lowpass around 3 kHz, like a memory of Act I.
+- **D44** (three items, none about the market): cap the gameplay intensity at 0.4 that day.
 - **Report-screen bed:** after the closing bell, play the current gameplay loop at intensity 0.1 (pad, bass and ticker tape only). Not rendered. At 0.15 the loop measures about -24 to -26 LUFS.
 
 ### 7.6 Gameplay music (the trading day)
@@ -339,7 +339,7 @@ Times are in seconds (the pack is a score at 60 BPM). Every sound is a list of v
   - T: play `bell_close` (ducks 5 dB) and fade the music out with time constant 0.5 s. Stop the scheduler after 2.5 s.
   - The demo `game_session_act1.mp3` follows exactly this timing.
 - **Decisions.** `decision_prompt` when a card opens. `decision_tick` once a second while the timer is under about 8 seconds. `decision_timeout` if it runs out. `decision_confirm` when the player picks. Timers are 20 to 22 seconds on some days [Certain, from the Patch 3 notes].
-- **Big moments.** `flash_crash` when the screen shakes (the Loop on D31, the failed vote on D56). `halt` when a stock is halted (for example Ridgeway on D34). `hope_chime` when the D57 vote passes.
+- **Big moments.** `flash_crash` when the screen shakes (the Loop on D18, the failed vote on D41). `halt` when a stock is halted (for example Ridgeway on D21). `hope_chime` when the D42 vote passes.
 - **Weekends and the closing report** [Guessing whether they have music today]: keep whatever they use now, or use the report bed in 7.5. Ask the owner.
 - **Ghost:** 7.3.
 
@@ -950,7 +950,7 @@ Method (also method 17): A-weighted RMS of each sound over its own active part, 
 - Intensity mapping: for each layer and each of intensity 0, 0.3, 0.6, 1.0 the engine's target gain equals the layer curve's linear interpolation.
 - Scheduler with a fake `AudioContext`: events fire in time order, the loop wraps without dropping or doubling a note, `stop()` cancels everything.
 - SFX player with a fake clock: cooldown blocks a second play inside the window, `maxVoices` steals the oldest, ducking goes down and returns, the two-result rule (0.25 s) holds.
-- Act mapping: sessions 1 to 15 give Act I, 16 to 30 Act II, 31 to 45 Act III, 46 to 61 Act IV, for the feed and for the gameplay music.
+- Act mapping: sessions 1 to 8 give Act I, 9 to 17 Act II, 18 to 32 Act III, 33 to 46 Act IV, for the feed and for the gameplay music.
 - Close sequence: ticks at T-10 to T-4, final ticks at T-3 to T-1, riser at T-8, bell at T, music stopped by T+2.5 s.
 - Ghost parameters for n = 0 (nothing), 1, 6 and 12 match 7.3 exactly, on the feed `melody` layer and the gameplay `lead` layer; `anomaly_logged` ghost follows `nScale`.
 - Classic and New: the setting switches cleanly, only one is active, the setting is not in the save file, and a save from before this change loads.

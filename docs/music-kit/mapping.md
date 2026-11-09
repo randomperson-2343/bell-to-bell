@@ -9,7 +9,7 @@ Everything goes through `js/audio/sound.js`. Game code still calls `B.SFX.*` and
 | Where | Call in the game | New plays |
 |---|---|---|
 | Main menu, first tap | `Music.play('menu')` | **Opening Bell**, loops |
-| Pre-open phone (the briefing) | `Music.play('brief')` | **Thumb Scroll** for the act (D1-15 Act I, D16-30 II, D31-45 III, D46-61 IV). Endless uses Act I. The anomaly ghost is the Sqwak counter at the moment the phone opens |
+| Pre-open phone (the briefing) | `Music.play('brief')` | **Thumb Scroll** for the act (D1-8 Act I, D9-17 II, D18-32 III, D33-46 IV). Endless uses Act I. The anomaly ghost is the Sqwak counter at the moment the phone opens |
 | Skip Feed button | `Music.skipFeed()` | Feed music drops out fast (0.12 s) and `feed_skip` plays |
 | Ring the Opening Bell | `Music.stop()` in `enterOffice` | Feed fades out over about a second |
 | 9:30 open | `Music.play('trading')` | **Market Hours** for the act, from bar 1 at intensity 0.25, faded in. Same anomaly ghost on the `lead` layer |

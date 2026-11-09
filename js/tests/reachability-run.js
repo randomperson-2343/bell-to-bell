@@ -1,16 +1,16 @@
 // Fast chronological ending reachability harness.
-// It advances the real StoryMode through all 61 sessions, applies the shipped
+// It advances the real StoryMode through every session, applies the shipped
 // choice functions on their actual dates, and resolves through onDayEnd.
 const { load, STUBS } = require('./harness');
 const ctx = load({ groups: ['core', 'market', 'trading', 'story'], setup: STUBS.story });
-const B=ctx.BTB, D=B.StoryData;
+const B=ctx.BTB, D=B.StoryData, LAST=D.DAYS.length-1;
 const ORDER=Object.keys(D.CHOICES).sort((a,b)=>D.CHOICES[a].day-D.CHOICES[b].day);
 const clone=(o)=>JSON.parse(JSON.stringify(o));
 
-// A bear who holds through the false-dawn rally (sessions 42-49) loses about 7%.
-const eqOf=(day,arch)=>arch.bearish&&day>=41&&day<=48?arch.wealth*0.93:arch.wealth;
+// A bear who holds through the false-dawn rally (sessions 29-36) loses about 7%.
+const eqOf=(day,arch)=>arch.bearish&&day>=28&&day<=35?arch.wealth*0.93:arch.wealth;
 function game(mode, arch, day) {
-  const bearish = arch.bearish && (day === 25 || (day >= 41 && day <= 48));
+  const bearish = arch.bearish && (day === 14 || (day >= 28 && day <= 35));
   const px = {}; for (const t of B.TICKERS) px[t.sym] = { last:t.price || 100 };
   return {
     day, history:Array.from({length:day},(_,i)=>({day:i,quotaMet:true})), indexStart:512.4, inboxQueue:[], lock:null,
@@ -35,7 +35,7 @@ function advance(state, from, to, arch) {
 }
 function walk(state,index,nextDay,arch,counts,witnesses){
   if(index>=ORDER.length){
-    const end=advance(state,nextDay,60,arch);
+    const end=advance(state,nextDay,LAST,arch);
     const es=end.state;
     audit.criminalHeat=Math.max(audit.criminalHeat,(es.f.fraud||es.f.insider||es.f.raid)&&!es.f.cooperated&&!es.f.fled?es.m.heat:-Infinity);
     audit.fallGuyHeat=Math.max(audit.fallGuyHeat,es.f.externalFraud&&!es.f.cooperated?es.m.heat:-Infinity);
@@ -49,7 +49,7 @@ function walk(state,index,nextDay,arch,counts,witnesses){
       if(es.f.bailout&&es.m.firm<40){audit.wardNoLeftMin=Math.min(audit.wardNoLeftMin,es.m.stability);audit.wardNoLeftMax=Math.max(audit.wardNoLeftMax,es.m.stability);}
       if(es.f.bailout&&es.f.billPassed){audit.rallyNoLeftMin=Math.min(audit.rallyNoLeftMin,es.m.stability);audit.rallyNoLeftMax=Math.max(audit.rallyNoLeftMax,es.m.stability);}
     }
-    const rawCtx={S:es,wealth:arch.wealth,start:250000,reason:arch.reason||'final',days:61,quotaMet:arch.quotaMet};
+    const rawCtx={S:es,wealth:arch.wealth,start:250000,reason:arch.reason||'final',days:LAST+1,quotaMet:arch.quotaMet};
     const e=end.ending || B.StoryEndings.resolve(rawCtx);
     for(const ending of B.StoryEndings.list) if(ending.test(rawCtx)) {
       audit.gates[ending.id]=(audit.gates[ending.id]||0)+1;
