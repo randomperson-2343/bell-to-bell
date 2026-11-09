@@ -1,0 +1,26 @@
+name: Phone layout check
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  phone-layout:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install --no-save playwright@1.49.1
+      - run: npx playwright install --with-deps chromium
+      - run: node js/tests/phone-run.js
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: phone-screenshots
+          path: qa/phone/
+          retention-days: 14

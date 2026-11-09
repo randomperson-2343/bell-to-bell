@@ -5,3 +5,4 @@ Thumbs.db
 /dist/
 /src-tauri/target/
 __pycache__/
+qa/phone/

@@ -191,6 +191,7 @@
                         <span id="tk-max" class="muted"></span>
                       </div>
                       <div class="tk-row">
+                        <button type="button" id="tk-adv" class="tk-adv" aria-expanded="false">Market &#9662;</button>
                         <label for="tk-type">Type</label>
                         <select id="tk-type"><option value="market">Market</option><option value="limit">Limit</option><option value="stop">Stop</option></select>
                         <input id="tk-price" type="number" step="0.01" placeholder="price" disabled>
@@ -250,7 +251,12 @@
 
           <!-- the desk surface -->
           <footer id="desk">
-            <button class="desk-btn" id="btn-coffee" title="Coffee break: lowers stress, but you can't trade for 15 minutes">
+            <nav id="phone-tabs" aria-label="Desk view">
+              <button type="button" data-ptab="trade" class="on">Trade</button>
+              <button type="button" data-ptab="positions">Positions <span id="ptab-pos-badge" class="badge dim" hidden>0</span></button>
+              <button type="button" data-ptab="news">News <span id="ptab-news-badge" class="badge" hidden></span></button>
+            </nav>
+            <button class="desk-btn" id="btn-coffee" aria-label="Coffee break" title="Coffee break: lowers stress, but you can't trade for 15 minutes">
               <span class="mug"></span><span class="desk-label">Break</span>
             </button>
             <div class="desk-gauge" id="stress-gauge" data-stage="steady">
@@ -260,7 +266,7 @@
             <canvas id="story-art" aria-label="Story objects collected on the desk"></canvas>
             <div class="desk-spacer"></div>
             <button class="desk-btn" id="btn-mute" title="Mute all audio"><span class="desk-label">Audio On</span></button>
-            <button class="desk-btn" id="btn-pause" title="Pause / Save (Esc)"><span class="desk-label">&#10074;&#10074; Menu</span></button>
+            <button class="desk-btn" id="btn-pause" aria-label="Pause menu" title="Pause / Save (Esc)"><span class="desk-label">&#10074;&#10074; Menu</span></button>
           </footer>
 
           <div id="mc-banner" hidden></div>
