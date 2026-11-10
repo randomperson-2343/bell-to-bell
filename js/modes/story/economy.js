@@ -97,8 +97,8 @@
   // The desk's leverage cap for a session limit: 3.25x at 4x, scaled up with a
   // looser limit and never above 90% of it. This is the number the player is shown.
   const deskCap = (maxLev) => { const m = maxLev || 4; return Math.min(m * 0.9, P.levCap * Math.max(1, m / 4)); };
-  // Two decimals unless whole, so 3.25x never reads as "3.3x".
-  const fmtX = (x) => (Number.isInteger(x) ? String(x) : x.toFixed(2));
+  // Two decimals, floored (never above the real cap), trailing zeros dropped: 3.25, 4.87, 1.5, 2.
+  const fmtX = (x) => String(Math.floor(x * 100 + 1e-9) / 100);
 
   // The risk desk's read of one session. Pure: same inputs, same verdict.
   // Each breach has a kind; a week is cut per kind, not per incident.

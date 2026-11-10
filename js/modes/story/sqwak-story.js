@@ -222,7 +222,7 @@
   // The second vote failed (S.f.billPassed false): the lines that say it passed, or that the
   // guarantee is law, are replaced where they are read. Keyed by session index.
   const FAILED_INTRADAY = {
-    '41|100|@CallsOnlyCarl': 'they say the vote "failed" but only technically. $HLST calls. buying the dip',
+    '41|100|@CallsOnlyCarl': 'they say the vote is "stalled" not dead. $HLST calls. buying the dip',
     '41|220|@DiamondHandsDiane': 'the next vote will do it. told ALL of you. buying everything',
     '41|340|@BearCaveBets': 'no rescue and no green day. check back Wednesday',
     '42|70|@TendiesTomorrow': 'small pullback after the vote. buying $HLST',
@@ -235,10 +235,12 @@
   const FAILED_FEED = {
     41: {
       'second vote passes. i am going all in': { title: 'second vote better pass. i am going all in' },
+      'What the bill actually does': { title: 'What the bill would have done' },
       Relief: { title: 'Worry', text: 'The news says they could not fix it. Is that bad?' } },
     42: {
       'Futures slip after rescue rally': { title: 'Futures slip after the second vote fails', text: 'Leaders say a third attempt is possible.' },
-      'the rescue passed and the paper is still worth what it was worth': { title: 'the rescue failed and the paper is still worth what it was worth' }
+      'the rescue passed and the paper is still worth what it was worth': { title: 'the rescue failed and the paper is still worth what it was worth' },
+      'The rescue, priced in': { title: 'The rescue that never came' }
     },
     43: { 'Futures down four percent. Guarantee is in force. Buyers are not.': { title: 'Futures down four percent. No guarantee is coming. Buyers are not either.' } }
   };

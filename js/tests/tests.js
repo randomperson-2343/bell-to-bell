@@ -1530,11 +1530,11 @@
     assert(!E.review(Object.assign({ risk: econRisk({ peakLev: 4.4 }), maxLev: 6 }, base)).breaches.length, '4.4x is inside a 6x desk');
     const b4 = E.review(Object.assign({ risk: econRisk({ peakLev: 3.4 }), maxLev: 4 }, base)).breaches[0];
     assert(b4 && /3\.25x desk cap/.test(b4.text), 'cap should read 3.25x: ' + (b4 && b4.text));
-    assert(E.fmtX(3) === '3' && E.fmtX(3.25) === '3.25', 'whole numbers stay whole');
+    assert(E.fmtX(3) === '3' && E.fmtX(3.25) === '3.25' && E.fmtX(4.875) === '4.87' && E.fmtX(1.5) === '1.5' && E.fmtX(2.7) === '2.7', 'two decimals, floored, no trailing zeros');
     const g = mkGame('cap-shown'); g.startDay();
     g.mode.rules = () => ({ maxLev: 6, overnightLev: 3, shortBan: [] });
     const lines = g.mode.briefing(11, g).rules.join(' ');
-    assert(/Risk desk cap: 4\.88x/.test(lines), 'briefing should list the desk cap: ' + lines);
+    assert(/Risk desk cap: 4\.87x/.test(lines), 'briefing should list the desk cap: ' + lines);
   });
 
   // ---------- Fix 4-6: story money is not trading ----------
@@ -1654,6 +1654,34 @@
     const again = B.StoryMode(JSON.parse(JSON.stringify(first.S && { S: first.S })));
     assert(again.reconcileQuotaStrikes(v4.history) === limit - 1, 'a later load re-added strikes: ' + again.S.quotaStrikes);
     assert(v4.mode.S.forgivenDays.length > 0, 'the surplus is recorded as forgiven');
+  });
+
+  // ---------- Review follow-ups ----------
+  test('Pulled-plug finale: plain no-quota memo, no final warning, no quota pay for a zero-quota day', () => {
+    const g = mkGame('plug-memo'); g.startDay();
+    const m = g.mode, S = m.S, last = B.StoryData.DAYS.length - 1;
+    S.f.pulledPlug = true; g.day = last;
+    S.quotaLedger = []; for (let i = 0; i < 22; i++) S.quotaLedger.push({ day: i });
+    S.quotaStrikes = 22;
+    const memo = m.quotaMeta(last, g).memo;
+    assert(!/FINAL WARNING|Down \d+%|\$0/.test(memo) && /No quota/.test(memo), 'memo: ' + memo);
+    assert(!m.briefing(last, g).rules.some((x) => /FINAL WARNING/.test(x)), 'briefing must not warn');
+    g.history = [{ day: last, quota: 0, quotaMet: true }];
+    const lines = m.payroll(g, { equity: g.broker.equity(), start: g.broker.dayStartEquity, quotaMet: true, notes: [] }, true).join(' ');
+    assert(/Quota pay: no days made/.test(lines), 'a zero-quota day is not a made day: ' + lines.replace(/<[^>]+>/g, '').slice(0, 200));
+  });
+
+  test('Overnight breach prints the limit without trailing zeros', () => {
+    const E = B.Economy;
+    const x = E.review({ risk: econRisk(), start: 250000, maxLev: 4, overnightLev: 1.5, closeLev: 1.9, trades: [], forced: [], events: [] }).breaches.find((b) => b.id === 'overnight');
+    assert(x && /1\.5x cap/.test(x.text), x && x.text);
+  });
+
+  test('Failed second vote keeps the Carl hype event at minute 100 of session 42', () => {
+    const mode = B.StoryMode(); mode.S.f.billPassed = false;
+    const ev = mode.scenario(41).events;
+    assert(ev.some((e) => e.hype && e.src === '@CallsOnlyCarl' && e.t === 100), 'hype event missing');
+    assert(!B.SqwakStory.FAILED_FEED[42]['The rescue, priced in'] === false, 'locked Ledger item has a failed-vote version');
   });
 
   B.Tests = { results, run: () => results };

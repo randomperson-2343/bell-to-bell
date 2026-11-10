@@ -113,7 +113,7 @@
         const T = E.tier(W$);
         if (d >= 1) rules.push(`Your money: ${B.fmt.money(W$.cash)} cash${W$.card > 0 ? `, ${B.fmt.money(-W$.card)} on the card` : ''}. ${T.name}${T.rent ? `, ${B.fmt.money(T.rent * (W$.rentMult || 1))} rent due Friday` : ''}.${W$.arrears > 0 ? ` <b>${B.fmt.money(W$.arrears)} rent overdue.</b>` : ''}`);
         if (d >= 1) rules.push(`Risk desk: daily loss limit ${B.fmt.money(-E.P.lossLimit * (g && g.broker ? g.broker.equity() : capital))}. Hit it before 3:00 PM and get flat within ${E.P.flatWithin} game minutes, and a missed quota that day is excused, once a week. Each kind of breach cuts your bonus ${Math.round(E.P.breachCut * 100)}% this week and next.`);
-        if (remaining === 1) rules.push('FINAL WARNING: one more missed quota ends this career.');
+        if (remaining === 1 && this.quota(d, g) > 0) rules.push('FINAL WARNING: one more missed quota ends this career.');
         else if (remaining === 2) rules.push('WARNING: two missed quotas remain before termination.');
         if (S.f.v2RewoundToBell) rules.push('SAVE MIGRATION: this V2 mid-session save was rewound to the matching opening bell; book and decisions were preserved.');
         if (d === 0) rules.push('Tip: How to Play is under Menu, then Settings, any time.');
@@ -246,6 +246,8 @@
         const raised = d > 0 ? Math.round((pct / prev - 1) * 100) : 0;
         const amount = this.quota(d, g);
         const who = D.boss(S);
+        // The pulled-plug final session has nothing to make: no raise, no warning.
+        if (amount <= 0) return { label: labels[D.actIndex(d)], pct: 0, previousPct: prev, raised: 0, memo: `${who}: No quota today. The book is gone and so is the number.` };
         let memo = d === 0
           ? `${who}: Desk floor set at ${B.fmt.money(amount)}. This is the minimum, not the target.`
           : `${who}: New ${labels[D.actIndex(d)].toLowerCase()}: ${B.fmt.money(amount)}. ${raised > 0 ? `Up ${raised}% from yesterday.` : raised < 0 ? `Down ${-raised}% from yesterday. Do not get comfortable.` : 'No relief from yesterday.'} Volatility is not an excuse.`;
@@ -722,7 +724,8 @@
         const weekMade = last && g.day % 5 === 0
           ? !!r.quotaMet
           : !S.quotaLedger.some((e) => e.kind === 'week' && e.week === wk);
-        const metDays = (g.history || []).filter((h) => h.day >= first && h.day <= g.day && h.quotaMet).length;
+        // A day with no quota (the pulled-plug finale) is not a quota day made.
+        const metDays = (g.history || []).filter((h) => h.day >= first && h.day <= g.day && h.quotaMet && h.quota !== 0).length;
         const res = E.settle(W$, { equity: r.equity, capital, weekMade, breaches, lastBreaches, drawdown, metDays, sessions: g.day - first + 1 });
         W$.weeks[wk] = { net: res.net, bonus: res.bonus, draw: res.draw };
         W$.stressNext = (W$.stressNext || 0) + res.stress;

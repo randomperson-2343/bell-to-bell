@@ -508,7 +508,7 @@
         indexPct: m.indexDayPct(),
         earlyEnd: this.earlyEnd
       };
-      this.history.push({ day: this.day, pnl, equity: eq, quotaMet: report.quotaMet, index: m.bySym.INDX.last });
+      this.history.push({ day: this.day, pnl, equity: eq, quota: this.quota, quotaMet: report.quotaMet, index: m.bySym.INDX.last });
       const verdict = this.mode.onDayEnd(this, report) || {};
       if (this.mode.kind === 'story' && this.mode.S) {
         report.quotaStrikes = this.mode.S.quotaLedger ? this.mode.S.quotaLedger.length : (this.mode.S.quotaStrikes || 0);
