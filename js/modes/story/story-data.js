@@ -33,12 +33,14 @@
   // is most demanding at the false dawn and relents only when the system breaks.
   // V4.3 halved the whole table: at full height a careful trader who was right
   // two days in three was fired before the story's final decisions.
+  // V5 raised the anchors (at $250,000): session 1 $1,250, session 17 $3,250, the peak $5,650,
+  // scaling the rest of the curve between them so its shape is unchanged.
   const QUOTAS = [
-    .0040,.0042,.0046,.0053,.0055,.0057,.0059,.0061,.0065,.0071,
-    .0073,.0075,.0083,.0085,.0088,.0092,.0095,.0060,.0057,.0060,
-    .0055,.0050,.0055,.0057,.0060,.0063,.0065,.0070,.0075,.0080,
-    .0085,.0090,.0150,.0140,.0130,.0120,.0110,.0095,.0085,.0060,
-    .0050,.0045,.0040,.0030,.0020,.0015
+    .0050,.0053,.0058,.0067,.0070,.0073,.0076,.0079,.0085,.0093,
+    .0097,.0100,.0111,.0114,.0119,.0125,.0130,.0083,.0079,.0084,
+    .0077,.0070,.0078,.0081,.0086,.0091,.0094,.0102,.0110,.0118,
+    .0126,.0134,.0225,.0210,.0195,.0180,.0165,.0142,.0128,.0090,
+    .0075,.0067,.0060,.0045,.0030,.0023
   ];
 
   const A = [
