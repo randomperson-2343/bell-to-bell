@@ -96,8 +96,9 @@
         const day = D.DAYS[d];
         const r = this.rules(d);
         const qm = this.quotaMeta(d, g);
+        const vf = !S.f.billPassed && D.VOTE_FAIL[d];
         const rules = [];
-        if (r.maxLev !== 4) rules.push(`Leverage limit: ${r.maxLev}x intraday / ${r.maxLev / 2}x overnight`);
+        if (r.maxLev !== 4) rules.push(`Leverage limit: ${r.maxLev}x intraday / ${r.overnightLev}x overnight. Risk desk cap: ${E.fmtX(E.deskCap(r.maxLev))}x.`);
         if (r.shortBan.length) rules.push('EMERGENCY ORDER: short selling of financial stocks is banned');
         if (S.m.heat >= 50) rules.push('Compliance is watching you. Examiners may visit your desk.');
         const remaining = QUOTA_STRIKE_LIMIT - S.quotaStrikes;
@@ -119,9 +120,9 @@
         if (d === 1) rules.push('Imani: read the dull items in this morning\'s feed. Nobody hides anything in a headline.');
         return {
           kicker: D.actOf(d) + ' ·',
-          title: `Session ${d + 1}: ${day.title}`,
+          title: `Session ${d + 1}: ${(vf && vf.title) || day.title}`,
           html: day.brief(S).filter(Boolean).map((p) => `<p>${p}</p>`).join(''),
-          feed: day.feed || [],
+          feed: vf ? D.voteFailFeed(day.feed || [], vf, B.SqwakStory && B.SqwakStory.failedFeed(d)) : day.feed || [],
           anomalyCount: d >= D.ACT_START[1] ? S.anomalies : null,
           quotaStrikes: { count: S.quotaStrikes, limit: QUOTA_STRIKE_LIMIT },
           weekQuota: g && g.broker ? (this.openWeek(g), this.weekQuota(g)) : null,
@@ -231,6 +232,9 @@
       seedDay(d) { return D.DAYS[d].sid; },
 
       quota(d, g) {
+        // The stack is off and the book is flattened: the final session is a quiet
+        // goodbye, with nothing to make and no strike to take.
+        if (S.f.pulledPlug && d === D.DAYS.length - 1) return 0;
         const eq = g ? g.broker.equity() : capital;
         return Math.round(Math.max(750, eq * D.QUOTAS[d]) / 50) * 50;
       },
@@ -340,7 +344,8 @@
       calls(d) { return D.DAYS[d].calls ? D.DAYS[d].calls(S) : []; },
       inbox(d) { return D.DAYS[d].inbox ? D.DAYS[d].inbox(S) : []; },
       bossName() { return D.boss(S); },
-      wipeLevel() { return capital * 0.1; },
+      // After the plug is pulled the book sits at exactly the wipe line by design; a fee must not make that a wipe.
+      wipeLevel() { return S.f.pulledPlug ? 0 : capital * 0.1; },
 
       weekBounds(d) {
         const start = Math.floor(d / 5) * 5;
@@ -360,12 +365,22 @@
         return S.week;
       },
 
+      // Story cash (a bonus, a fine, a grant) is not trading. Book it here so the
+      // day's P&L, the day peak (stress), the risk low and the week's made-sum all move together.
+      bookAdj(g, amt) {
+        const b = g.broker, dr = b.dayRisk;
+        if (dr) { dr.adj = (dr.adj || 0) + amt; dr.trough += amt; }
+        b.dayPeak += amt;
+        const W = this.openWeek(g);
+        W.adj = (W.adj || 0) + amt;
+      },
+
       weekQuota(g, equity) {
         const W = S.week;
         // The orphan final Monday is a week of one session: the daily quota covers it.
         if (!W || W.w !== D.weekOf(g.day) || W.solo) return null;
         const eq = equity == null ? g.broker.equity() : equity;
-        return { week: W.w, target: W.target, made: eq - W.startEq, left: W.end - g.day + 1, done: W.done };
+        return { week: W.w, target: W.target, made: eq - W.startEq - (W.adj || 0), left: W.end - g.day + 1, done: W.done };
       },
 
       onDayStart(g) {
@@ -389,7 +404,7 @@
         if (g.day === 26 && S.f.dumped && !S.f.riverbendPaid) {
           S.f.riverbendPaid = true;
           b.cash -= 40000;
-          if (b.dayRisk) { b.dayRisk.adj = (b.dayRisk.adj || 0) - 40000; b.dayRisk.trough -= 40000; }
+          this.bookAdj(g, -40000);
           D.adj(S, { heat: 15 });
           B.UI.toast('Legal: $40,000 deducted for your share of the Riverbend settlement.', 'bad');
         }
@@ -428,7 +443,7 @@
             if (!p.amount) continue;
             b.cash += p.amount;
             // Booked money is not trading: it moves the day's baseline, not its P&L.
-            if (b.dayRisk) b.dayRisk.adj = (b.dayRisk.adj || 0) + p.amount;
+            this.bookAdj(g, p.amount);
             B.UI.toast(`${p.reason}: ${B.fmt.money(p.amount, true)}`, p.amount >= 0 ? 'good' : 'bad');
           } else if (p.type === 'personal') {
             // Money that is yours, not the book's.
@@ -437,7 +452,7 @@
           } else if (p.type === 'fineFrac') {
             const amt = Math.max(0, b.equity() * p.frac);
             b.cash -= amt;
-            if (b.dayRisk) { b.dayRisk.adj = (b.dayRisk.adj || 0) - amt; b.dayRisk.trough -= amt; }
+            this.bookAdj(g, -amt);
             B.UI.toast(`${p.reason}: -${B.fmt.money(amt)}`, 'bad');
           } else if (p.type === 'short') {
             const px = m.bySym[p.sym].last;
@@ -451,7 +466,7 @@
             if (cur && cur.qty > 0) { cur.avg = (cur.avg * cur.qty + px * qty) / (cur.qty + qty); cur.qty += qty; }
             else if (!cur) b.pos[p.sym] = { qty, avg: px, realized: 0 };
             else b.cash += p.value; // already short the name: take it as cash instead
-            if (b.dayRisk) b.dayRisk.adj = (b.dayRisk.adj || 0) + qty * px;
+            this.bookAdj(g, qty * px);
             B.UI.toast(`Stock grant: ${B.fmt.qty(qty)} ${p.sym}`, 'good');
           }
         }
@@ -487,8 +502,9 @@
           const target = capital * 0.10;
           const cut = Math.max(0, g.broker.equity() - target);
           g.broker.cash -= cut;
+          this.bookAdj(g, -cut);
           const dr = g.broker.dayRisk;
-          if (dr) { dr.adj = (dr.adj || 0) - cut; dr.trough = Math.min(dr.trough, g.broker.equity()); }
+          if (dr) dr.trough = Math.min(dr.trough, g.broker.equity());
           B.UI.toast('STACK OFFLINE. Risk flattened the book into the opening auction.', 'bad big');
         }
       },
@@ -578,7 +594,7 @@
             S.missStreak++;
             r.strikeAdded = true;
             if (!S.quotaLedger.some((entry) => entry.day === g.day && entry.kind !== 'week')) {
-              S.quotaLedger.push({ day: g.day, pnl: r.pnl, quota: r.quota, date: r.date });
+              S.quotaLedger.push({ day: g.day, pnl: r.pnl - (r.adj || 0), quota: r.quota, date: r.date });
               S.quotaLedger.sort((a, b) => a.day - b.day);
             }
             S.quotaStrikes = S.quotaLedger.length;
@@ -589,7 +605,7 @@
         const W = S.week;
         // Only sessions that carry a quota count toward the week.
         if (W && W.w === D.weekOf(g.day) && !W.done && !W.solo && r.quota > 0) {
-          const made = r.equity - W.startEq;
+          const made = r.equity - W.startEq - (W.adj || 0);
           if (g.day >= W.end) {
             W.done = true;
             if (made >= W.target) {
@@ -621,7 +637,7 @@
                 notes.push(`<b>Weekly quota missed:</b> ${B.fmt.money(made, true)} against ${B.fmt.money(W.target)}. Career strike ${S.quotaStrikes} of ${QUOTA_STRIKE_LIMIT}.${strikeWarning()} The week resets Monday.`);
               }
             }
-          } else if (!(r.earlyEnd === 'wiped' || r.equity < capital * 0.1)) {
+          } else if (!(r.earlyEnd === 'wiped' || (r.equity < capital * 0.1 && !S.f.pulledPlug))) {
             // A wiped-out book ends the career tonight: no week left to plan for.
             const need = W.target - made;
             const left = W.end - g.day;
@@ -630,7 +646,7 @@
               : `Week so far: ${B.fmt.money(made, true)}. Weekly quota of ${B.fmt.money(W.target)} already cleared. Hold it through Friday.`);
           }
         }
-        const wiped = r.earlyEnd === 'wiped' || r.equity < capital * 0.1;
+        const wiped = r.earlyEnd === 'wiped' || (r.equity < capital * 0.1 && !S.f.pulledPlug);
         const fired = S.quotaStrikes >= QUOTA_STRIKE_LIMIT;
         // Kroll can fire you, but not in the final week: by then the ending is yours.
         const bossFired = !S.f.defected && S.rel.kroll <= 0 && g.day < BOSS_FIRE_LAST;
@@ -668,7 +684,7 @@
         const b = g.broker;
         r.riskReview = E.review({
           risk: b.dayRisk, start: (r.start || 0) + ((b.dayRisk && b.dayRisk.adj) || 0), trades: b.dayTrades ? b.dayTrades() : [],
-          forced: r.eod && r.eod.forced, maxLev: b.rules && b.rules.maxLev,
+          forced: r.eod && r.eod.forced, maxLev: b.rules && b.rules.maxLev, overnightLev: b.rules && b.rules.overnightLev,
           closeLev: b.leverage && Number.isFinite(r.equity) && r.equity > 0 ? b.stockGross() / r.equity : 0,
           events: g.market && g.market.events
         });
@@ -683,9 +699,11 @@
         // Drawdown is measured against the running peak of the book, intraday.
         if (Number.isFinite(r.equity)) {
           // Story fines move the baseline; they are not a drawdown you traded into.
-          const low = b.dayRisk ? b.dayRisk.trough - (b.dayRisk.adj || 0) : r.equity;
+          const adj = (b.dayRisk && b.dayRisk.adj) || 0;
+          const low = b.dayRisk ? b.dayRisk.trough - adj : r.equity;
           if (low < W$.peakEq * (1 - E.P.drawdown)) (W$.ddDays = W$.ddDays || {})[g.day] = true;
-          W$.peakEq = Math.max(W$.peakEq, r.equity, b.dayPeak || 0);
+          // The baseline moves with the booking: a fine must not keep later weeks halved.
+          W$.peakEq = Math.max(W$.peakEq + adj, r.equity, b.dayPeak || 0);
         }
         r.riskReview = rv;
         out.push(E.reviewNote(rv, final));

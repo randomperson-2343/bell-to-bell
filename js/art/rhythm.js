@@ -402,7 +402,7 @@
     beat('office',`${day}:hold:${k}`,.85,(c)=>officeFrame(c,day,true,null,S),'SIT DOWN. NINE THIRTY.',{})
   ];};
   B.Scenes.close = function(o){const r=o.report||{};const story=!o.game||!o.game.mode||o.game.mode.kind==='story';
-    const sq=story&&B.SqwakStory&&B.SqwakStory.BREAKING?B.SqwakStory.BREAKING[r.day]:null;const sb=board(r.day||0);
+    const sq=story&&B.SqwakStory&&B.SqwakStory.BREAKING?B.SqwakStory.breaking(r.day,o.game&&o.game.mode&&o.game.mode.S):null;const sb=board(r.day||0);
     const tag=`${r.day||0}:${(r.pnl||0)>=0?'u':'d'}${r.quotaMet?'m':''}${Math.round(r.pnl||0)}`;
     const bell=beat('close',`${tag}:bell`,1.25,(c)=>closeFrame(c,r,false),'4:00 PM.',{sfx:'closeBell',transition:'fade'});
     const post=sq?[

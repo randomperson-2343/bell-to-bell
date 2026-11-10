@@ -70,7 +70,7 @@
     // ---- Session 2 (continued): the rules that pay you ----
     ['week', [1], (g, t) => t >= 2, () => 'Kroll has a weekly number as well as the daily one. Make the week and he wipes up to two bad days off your record.'],
     ['limit', [0, 1], (g) => pnl(g) <= -0.020 * g.broker.dayStartEquity,
-      () => "You're near the risk desk's line: three percent on the day. Hit it before three, get flat fast, keep leverage under 3.25x, and they excuse the miss once a week. Stay in and it comes out of your bonus.", true],
+      (g) => `You're near the risk desk's line: three percent on the day. Hit it before three, get flat fast, keep leverage under ${B.Economy.fmtX(B.Economy.deskCap(((g.broker || {}).rules || {}).maxLev))}x, and they excuse the miss once a week. Stay in and it comes out of your bonus.`, true],
     ['pay', [1], (g, t) => t >= 210, () => "Friday you get paid: a base draw, plus quota pay for every day you hit Kroll's number. Big weeks pay a bonus instead of the draw, and the risk desk decides how much of it you earned. Rent comes out the same day."]
   ];
   // Lines that cannot wait for the gap.

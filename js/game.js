@@ -495,6 +495,7 @@
         day: this.day,
         date: this.mode.kind === 'story' && B.Calendar.storyLabel ? B.Calendar.storyLabel(this.day) : B.Calendar.dayInfo(this.day).long,
         pnl, equity: eq, start: b.dayStartEquity,
+        adj: (b.dayRisk && b.dayRisk.adj) || 0, // story cash booked today, not trading
         quota: this.quota,
         // A story fine (a settlement, a forced unwind) is not a missed quota.
         quotaMet: this.quota <= 0 || pnl - ((b.dayRisk && b.dayRisk.adj) || 0) >= this.quota,
@@ -633,7 +634,13 @@
 
     // Called at each bell. Silent; never steals a slot that isn't ours.
     autosave() {
-      if (this.slot == null) return false;
+      if (this.slot == null) {
+        if (!this.autosaveWarned) {
+          this.autosaveWarned = true;
+          B.UI.toast('THIS RUN IS NOT BEING SAVED. All six slots are in use. Free one from Continue on the main menu.', 'bad big');
+        }
+        return false;
+      }
       const ok = B.Save.write(this.slot, this.snapshot(), this.meta());
       if (!ok && !this.autosaveWarned) {
         this.autosaveWarned = true;

@@ -34,7 +34,7 @@
     update(dt, g) {
       const b = g.broker, m = g.market;
       const eq = b.equity(), start = Math.max(1, b.dayStartEquity);
-      const pnl = eq - start;
+      const pnl = g.dayPnl ? g.dayPnl() : eq - start; // story cash is not trading
       let p = 0;
 
       // Pressure has firm ceilings. A six-figure swing should be dangerous, not
