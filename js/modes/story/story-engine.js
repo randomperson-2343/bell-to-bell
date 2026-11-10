@@ -10,7 +10,7 @@
   // to clear the sum of its daily quotas plus a margin. It resets every
   // Monday. A missed week is one more career strike, logged at Friday's close.
   // A made week wipes up to two missed days from that same week: make it back.
-  const WEEK_MULT = 1.15;
+  const WEEK_MULT = 1.25;
   // How many missed days a made week wipes. The week is the real mandate: a
   // trader who is wrong one day in three but makes the week keeps the seat.
   const WEEK_WIPES = 2;
@@ -21,8 +21,8 @@
   const CASCADE_NAMES = ['BSTN', 'HLST', 'RDGW', 'FRLN', 'AMVL'];
   // Your boss can fire you through session 42. After that he can only shout.
   const BOSS_FIRE_LAST = 42;
-  // The Ledger costs $30 a week on day one and follows the quota curve up.
-  const LEDGER_BASE = 30;
+  // The Ledger costs $100 a week on day one and follows the quota curve up, to $450 at the peak.
+  const LEDGER_BASE = 100;
   // A loss-limit stop can excuse a missed quota once a week, if it comes before 3:00 PM.
   const EXCUSE_BEFORE = 330;
 

@@ -25,7 +25,7 @@
     ['place', 'L'], ['place', 'L'], ['insert', 'L', 'MARKED AT 22 CENTS'],
     ['insert', 'L', 'AT RISK: 5.5 CENTS'], ['tableau', 'M', 11], ['place', 'M'],
     ['skyline', 'S'], ['skyline', 'S'], ['skyline', 'S'],
-    ['insert', 'M', 'VOLUME: PERFECTLY EVEN'], ['place', 'M'], ['insert', 'XL', 'QUOTA: 1.5% OF BOOK'],
+    ['insert', 'M', 'VOLUME: PERFECTLY EVEN'], ['place', 'M'], ['insert', 'XL', 'QUOTA: 2.25% OF BOOK'],
     ['insert', 'M', '9,000 WORDS · 0 READS'], ['place', 'M'], ['skyline', 'S'],
     ['insert', 'L', 'VOICEMAIL · PERRY · 0:41'], ['tableau', 'XL', 12], ['insert', 'L', 'YEAS 214 · NEEDED 218'],
     ['insert', 'M', 'MONEY FUND NAV 0.99'], ['tableau', 'XL', 13], ['floor', 'XL'],

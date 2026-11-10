@@ -417,11 +417,13 @@
     assert(Q.length === B.StoryData.DAYS.length, 'one quota per day');
     // V4.3 calibration: half the V4 curve, so a careful trader right two days
     // in three reaches the final decisions (js/tests/economy-run.js career bots).
-    assert(Q[0] >= 0.00375 && Q[0] <= 0.005, 'day 1 quota ' + Q[0]);
+    assert(Q[0] === 0.005, 'day 1 quota ' + Q[0]);
     assert(Q.length === 46, 'campaign must contain 46 sessions');
     assert(Q[32] === Math.max(...Q), 'quota should peak after false-dawn weekend');
     assert(Q[17] < Q[16] && Q[45] < Q[40], 'panic regimes should cut quota');
-    assert(Math.max(...Q) <= .015, 'quota curve should not extrapolate above 1.5%');
+    assert(Math.max(...Q) <= .0225, 'quota curve should not extrapolate above 2.25%');
+    const m = B.StoryMode();
+    assert(m.quota(0) === 1250 && m.quota(16) === 3250 && m.quota(32) === 5650, 'anchor quotas at $250,000: ' + [m.quota(0), m.quota(16), m.quota(32)]);
   });
 
   test('Patch 3 calendar and anomaly arithmetic is exact', () => {
@@ -1025,7 +1027,7 @@
     g.day = 0; mode.openWeek(g);
     const t1 = S.week.target;
     const pct = B.StoryData.QUOTAS.slice(0, 5).reduce((a, b) => a + b, 0);
-    assert(Math.abs(t1 - 250000 * pct * 1.15) <= 50, 'week 1 target should be the week\'s daily quotas plus 15%, got ' + t1);
+    assert(Math.abs(t1 - 250000 * pct * 1.25) <= 50, 'week 1 target should be the week\'s daily quotas plus 25%, got ' + t1);
     for (let d = 0; d < 4; d++) close(d, 1000);
     const fri = close(4, t1);
     assert(S.quotaStrikes === 0 && fri.notes.some((n) => /Weekly quota met/.test(n)), 'a cleared week must not strike');
@@ -1173,7 +1175,7 @@
       assert(p >= prev, 'the Ledger got cheaper on session ' + (d + 1));
       prev = p;
     }
-    assert(mode.ledgerPrice(0) === 30 && prev > mode.ledgerPrice(0) * 3, 'price should start at $30 and end well above it: ' + prev);
+    assert(mode.ledgerPrice(0) === 100 && prev === 450, 'price should start at $100 and peak at $450: ' + mode.ledgerPrice(0) + ' ' + prev);
     assert(mode.ledger(0).note === null && !mode.ledger(0).access, 'the desk note leaked before paying');
     // Subscribing midweek pays only for the rest of the week, from the wallet.
     const broker = { cash: 250000, equity: () => 250000, posQty: () => 0, opts: [], dayTrades: () => [], rules: { maxLev: 4 },
@@ -1682,6 +1684,40 @@
     const ev = mode.scenario(41).events;
     assert(ev.some((e) => e.hype && e.src === '@CallsOnlyCarl' && e.t === 100), 'hype event missing');
     assert(!B.SqwakStory.FAILED_FEED[42]['The rescue, priced in'] === false, 'locked Ledger item has a failed-vote version');
+  });
+
+  // ---------- V5 economy numbers ----------
+  test('Client commissions are a share of the day\'s quota by order size', () => {
+    const g = mkGame('client-fee'); g.startDay();
+    const share = { 2000: 0.08, 5000: 0.12, 10000: 0.18, 25000: 0.25 }, seen = {};
+    for (let i = 0; i < 80; i++) {
+      const c = { kind: 'client' };
+      g.interrupts.prepare(c);
+      const t = c.task;
+      assert(t.fee === Math.round(g.quota * share[t.qty]) && Number.isInteger(t.fee), `fee ${t.fee} for ${t.qty} on quota ${g.quota}`);
+      seen[t.qty] = 1;
+    }
+    assert(Object.keys(seen).length === 4, 'all four sizes exercised');
+  });
+
+  test('With no quota a client call keeps the old size-based commission', () => {
+    const g = mkGame('client-noquota'); g.startDay();
+    g.quota = 0;
+    for (let i = 0; i < 20; i++) {
+      const c = { kind: 'client' };
+      g.interrupts.prepare(c);
+      const t = c.task, px = g.market.bySym[t.sym].last;
+      assert(t.fee === Math.round(t.qty * px * 0.0008 / 50) * 50 + 250 && t.fee > 0, 'old fee expected, got ' + t.fee);
+    }
+  });
+
+  test('Week one target is 125% of its daily quotas, and the pulled-plug finale still has none', () => {
+    const g = mkGame('week-one'); g.startDay();
+    const W = g.mode.openWeek(g);
+    const pct = [0, 1, 2, 3, 4].reduce((a, d) => a + B.StoryData.QUOTAS[d], 0);
+    assert(W.target === Math.round(Math.max(1500, g.broker.equity() * pct * 1.25) / 50) * 50 && W.target === 9300, 'week 1 target ' + W.target);
+    g.mode.S.f.pulledPlug = true;
+    assert(g.mode.quota(45, g) === 0, 'finale quota stays 0');
   });
 
   B.Tests = { results, run: () => results };

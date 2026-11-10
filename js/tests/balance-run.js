@@ -33,7 +33,7 @@ function simulate(name, cfg) {
     if (day === ws) {
       weekEq = start;
       let pct = 0; for (let d = ws; d <= we; d++) pct += B.StoryData.QUOTAS[d];
-      weekTarget = Math.round(Math.max(1500, start * pct * 1.15) / 50) * 50;
+      weekTarget = Math.round(Math.max(1500, start * pct * 1.25) / 50) * 50;
     }
     const wrong = cfg.missEvery && day % cfg.missEvery === cfg.missEvery - 1;
     const direction = (scen.market && scen.market.target || 0) >= 0 ? 1 : -1;

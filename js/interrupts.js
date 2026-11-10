@@ -121,7 +121,11 @@
         const qty = rng.pick([2000, 5000, 10000, 25000]);
         call.from = rng.pick(['Pension client', 'Family office', 'Hedge fund client', 'Sovereign fund desk']);
         const px = g.market.bySym[tk.sym].last;
-        call.task = { sym: tk.sym, side, qty, fee: Math.round(qty * px * 0.0008 / 50) * 50 + 250 };
+        // The commission is a share of the day's quota, bigger for bigger orders.
+        const share = { 2000: 0.08, 5000: 0.12, 10000: 0.18, 25000: 0.25 }[qty];
+        // With no quota (Endless, the pulled-plug finale) the old size-based fee applies.
+        const fee = g.quota > 0 ? Math.round(g.quota * share) : Math.round(qty * px * 0.0008 / 50) * 50 + 250;
+        call.task = { sym: tk.sym, side, qty, fee };
         call.text = `Need you to ${side} ${B.fmt.qty(qty)} ${tk.sym} for us in the next few minutes. Don't screw it up.`;
       } else if (call.kind === 'family') {
         const f = rng.pick(FAMILY);
