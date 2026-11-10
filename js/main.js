@@ -14,28 +14,44 @@
     // slot: optional target slot. Otherwise the first free one is claimed at the
     // first save, so a quick play can start without touching the slot screen.
     newStory(slot) {
-      const start = () => {
+      const start = (s) => {
         const g = new B.Game(B.StoryMode());
-        g.slot = slot != null ? slot : B.Save.firstEmpty();
-        if (g.slot < 0) g.slot = null;
+        g.slot = s != null ? s : null;
         g.begin();
       };
       const existing = slot != null ? B.Save.meta(slot) : null;
       if (existing) {
         B.Screens.confirm('Overwrite this slot?', `"${B.esc(existing.name)}" will be replaced.`, 'Overwrite', () => {
           B.Save.clear(slot);
-          start();
+          start(slot);
         });
-      } else start();
+      } else if (slot != null) start(slot);
+      else this.claimSlot(start);
+    },
+
+    // A run started without a chosen slot: take a free one, or ask before using
+    // an old finished slot, or warn that nothing will be saved.
+    claimSlot(begin) {
+      const plan = B.Save.newRunPlan();
+      if (plan.kind === 'free') return begin(plan.slot);
+      if (plan.kind === 'replace') {
+        return B.Screens.confirm('All six slots are used',
+          `Replace the oldest finished run, "${B.esc(plan.name)}" (${B.esc(plan.ending)})? Its ending stays in your tally.`,
+          'Replace it', () => { B.Save.clear(plan.slot); begin(plan.slot); });
+      }
+      B.Screens.confirm('All six slots are live runs',
+        'Every slot holds a run in progress, so this new run will not be saved. Free a slot from Continue on the main menu first, or play anyway.',
+        'Play anyway', () => begin(null));
     },
 
     openEndless() { B.EndlessSetup.open(); },
 
     startEndless(cfg) {
-      const g = new B.Game(B.EndlessMode(cfg));
-      g.slot = B.Save.firstEmpty();
-      if (g.slot < 0) g.slot = null;
-      g.begin();
+      this.claimSlot((slot) => {
+        const g = new B.Game(B.EndlessMode(cfg));
+        g.slot = slot;
+        g.begin();
+      });
     },
 
     // Night skyline behind the menu, drawn on the same palette as the cutscenes.

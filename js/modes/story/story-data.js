@@ -140,6 +140,24 @@
     ['Orphan Monday','panic',-.060,-.140,'The market opens for the final time.','Whatever is in the book at four is what remains.',60]
   ];
 
+  // When the second Stabilization vote fails (S.f.billPassed false), sessions 42-44
+  // cannot say the Act passed. DAYS is built once, so these are swapped in where the
+  // text is read (brief, phone feed, scripted news), never at load. The passed-vote
+  // text above stays exactly as written.
+  const VOTE_FAIL = {
+    41: { title: 'The Second No', lead: 'The vote fails again.', brief: 'Leaders promised a different count than last time. The count is the same.' },
+    42: { lead: 'Without a rescue, selling resumes.', news: { 'Rescue rally fails; broad selling resumes': 'No rescue arrives; broad selling resumes' } },
+    43: { lead: 'The market falls with no rescue underneath it.', news: { 'Market falls seven percent despite enacted guarantee': 'Market falls seven percent with no guarantee in sight' } }
+  };
+
+  // The phone feed for a failed-vote session: the lead headline, then any listed swaps by title.
+  function voteFailFeed(feed, vf, swaps) {
+    return feed.map((it, i) => {
+      if (i === 0 && vf.lead) return Object.assign({}, it, { title: vf.title || it.title, text: vf.lead });
+      return swaps && swaps[it.title] ? Object.assign({}, it, swaps[it.title]) : it;
+    });
+  }
+
   const ACT_START = [0, 15, 30, 45].map((o) => daySpecs.findIndex((x) => x[6] >= o));
 
   const specialEvents = {
@@ -181,7 +199,8 @@
       sid: x[6], // original session id: seeds the day's noise, so choices make the same market as before the cut
       feed: feedFor(d, title, lead),
       brief: (S) => {
-        const p = [`<b>Week ${weekOf(d)} · ${dowOf(d)}.</b> ${brief}`];
+        const vf = !S.f.billPassed && VOTE_FAIL[d];
+        const p = [`<b>Week ${weekOf(d)} · ${dowOf(d)}.</b> ${(vf && vf.brief) || brief}`];
         if (d === 4 && S.f.dumped) p.push('Riverbend owns the paper now. Your bonus cleared before breakfast.');
         if (d === 8 && S.f.insiderTraded) p.push('Compliance wants the chronology of your CASCADE positions in writing.');
         if (d === 22) p.push(S.f.bailout ? 'Ridgeway opens inside a public guarantee.' : 'Ridgeway opens without a public guarantee.');
@@ -202,6 +221,8 @@
         if (d === 45 && S.f.pulledPlug) {
           events.unshift(ev(0,'AUTOMATED EXECUTION STACK DISCONNECTED BEFORE THE OPEN',[],{big:true,script:'pullFlatten'}));
         }
+        const vf = !S.f.billPassed && VOTE_FAIL[d];
+        if (vf && vf.news) events = events.map((e) => (vf.news[e.text] ? Object.assign({}, e, { text: vf.news[e.text] }) : e));
         return { regime, market: { gap: g, target: t }, events };
       },
       inbox: () => []
@@ -696,5 +717,5 @@
     });
   });
 
-  B.StoryData = { DAYS, CHOICES, QUOTAS, ACTS, ANOMALIES: A, ACT_START, actIndex, actOf, weekOf, dowOf, adj, boss, cm, FIN, STACK, ev, chirp, imp, R };
+  B.StoryData = { DAYS, CHOICES, QUOTAS, ACTS, ANOMALIES: A, ACT_START, VOTE_FAIL, voteFailFeed, actIndex, actOf, weekOf, dowOf, adj, boss, cm, FIN, STACK, ev, chirp, imp, R };
 })(window.BTB);

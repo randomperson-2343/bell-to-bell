@@ -202,7 +202,7 @@
       else a.openEnd = t + this.realMin(9);
 
       if (a.kind === 'boss') {
-        const pnl = g.broker.equity() - g.broker.dayStartEquity;
+        const pnl = g.dayPnl();
         if (pnl < 0) { a.text = `You're down ${B.fmt.money(-pnl)} on the day. I don't pay you to lose money. Fix it. NOW.`; g.stress.spike(5); }
         else if (g.quota > 0 && pnl < g.quota) { a.text = `You're ${B.fmt.money(g.quota - pnl)} short of quota. Clock's ticking, hotshot.`; g.stress.spike(3); }
         else { a.text = `Up ${B.fmt.money(pnl)}. Nice. Don't get cocky, it's not five o'clock yet.`; g.stress.spike(-4); }

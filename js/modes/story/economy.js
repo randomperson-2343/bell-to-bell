@@ -28,9 +28,10 @@
                             // stopping there got disciplined traders fired on quota.
     flatWithin: 13,         // game minutes to get flat after touching the limit (about
                             // six real seconds at normal speed; five was about two)
-    levCap: 3.25,           // gross leverage above this (or 90% of a lower limit) is a breach;
-                            // the 75% size key opens at about 3x and must not trip it
-    overnightLev: 1,        // gross exposure above 1x equity carried past the close
+    levCap: 3.25,           // gross leverage above this (at a 4x desk; it scales with the limit,
+                            // or 90% of a lower limit) is a breach; the 75% size key opens at
+                            // about 3x and must not trip it
+    overnightLev: 1,        // fallback overnight cap; the session's own rules.overnightLev wins
     hypeWindow: 3,          // minutes after a hype post that count as chasing it
     bonusCap: 0.20,         // new highs paid on are capped at this share of the book per 5 sessions
     bonusMax: 20000,        // and the gross bonus at this per 5 sessions: a big book does not
@@ -93,6 +94,12 @@
 
   const FORCED = ['LIQUIDATION', 'OVERNIGHT MARGIN', 'WIPED OUT', 'STOP-LOSS', 'TAKE-PROFIT', 'EXPIRED', 'LIQUIDATED', 'FAT FINGER', 'DESK SHORT'];
 
+  // The desk's leverage cap for a session limit: 3.25x at 4x, scaled up with a
+  // looser limit and never above 90% of it. This is the number the player is shown.
+  const deskCap = (maxLev) => { const m = maxLev || 4; return Math.min(m * 0.9, P.levCap * Math.max(1, m / 4)); };
+  // Two decimals, floored (never above the real cap), trailing zeros dropped: 3.25, 4.87, 1.5, 2.
+  const fmtX = (x) => String(Math.floor(x * 100 + 1e-9) / 100);
+
   // The risk desk's read of one session. Pure: same inputs, same verdict.
   // Each breach has a kind; a week is cut per kind, not per incident.
   function review(input) {
@@ -110,12 +117,14 @@
     }
     if (risk.liq) out.push({ id: 'margin', text: 'Margin call went unanswered. Risk liquidated the book.', zero: true });
     else if (risk.mc) out.push({ id: 'margin', text: 'Took a margin call.', zero: true });
-    const cap = Math.min(P.levCap, (input.maxLev || 4) * 0.9);
-    if (risk.peakLev > cap) out.push({ id: 'size', text: `Ran ${risk.peakLev.toFixed(1)}x leverage against a ${cap.toFixed(1)}x desk cap` });
-    if ((input.forced && input.forced.length) || input.closeLev > P.overnightLev) {
+    const cap = deskCap(input.maxLev);
+    if (risk.peakLev > cap) out.push({ id: 'size', text: `Ran ${risk.peakLev.toFixed(1)}x leverage against a ${fmtX(cap)}x desk cap` });
+    // The limit the ticket and briefing show, not a private one.
+    const onLim = input.overnightLev > 0 ? input.overnightLev : P.overnightLev;
+    if ((input.forced && input.forced.length) || input.closeLev > onLim) {
       out.push({ id: 'overnight', text: input.forced && input.forced.length
         ? `Held too much overnight. Force-sold ${input.forced.join(', ')} at the close.`
-        : `Carried ${input.closeLev.toFixed(1)}x exposure overnight against a ${P.overnightLev}x cap.` });
+        : `Carried ${input.closeLev.toFixed(1)}x exposure overnight against a ${fmtX(onLim)}x cap.` });
     }
     const chased = [];
     for (const h of hypeWindows(input.events)) {
@@ -328,5 +337,5 @@
     return true;
   }
 
-  B.Economy = { P, weekly, charge, settleUp, TIERS, EVICT_STAGES, multiplier, kinds, DEFAULT_TIER, fresh, ensure, review, reviewNote, hypeWindows, settle, netWorth, band, tier, moveOptions, move };
+  B.Economy = { P, deskCap, fmtX, weekly, charge, settleUp, TIERS, EVICT_STAGES, multiplier, kinds, DEFAULT_TIER, fresh, ensure, review, reviewNote, hypeWindows, settle, netWorth, band, tier, moveOptions, move };
 })(window.BTB);

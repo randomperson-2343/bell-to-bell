@@ -219,6 +219,42 @@
   ];
   // A thread whose post was edited away is dropped with a warning rather than
   // stopping the game from loading. The test suite still requires every link.
+  // The second vote failed (S.f.billPassed false): the lines that say it passed, or that the
+  // guarantee is law, are replaced where they are read. Keyed by session index.
+  const FAILED_INTRADAY = {
+    '41|100|@CallsOnlyCarl': 'they say the vote is "stalled" not dead. $HLST calls. buying the dip',
+    '41|220|@DiamondHandsDiane': 'the next vote will do it. told ALL of you. buying everything',
+    '41|340|@BearCaveBets': 'no rescue and no green day. check back Wednesday',
+    '42|70|@TendiesTomorrow': 'small pullback after the vote. buying $HLST',
+    '42|260|@FloorTalk': 'No rescue. Selling resumes across banks and compute.',
+    '42|340|@Quant_Kween': 'The rescue never arrived and nothing changed. Look at who is on the other side of your fills.',
+    '43|210|@FloorTalk': 'Index down seven percent with no guarantee in sight.',
+    '43|330|@BondVigilante': 'A rescue that never arrives is a promise to nobody.'
+  };
+  // Pre-open phone items, keyed by session index then by the item's original title.
+  const FAILED_FEED = {
+    41: {
+      'second vote passes. i am going all in': { title: 'second vote better pass. i am going all in' },
+      'What the bill actually does': { title: 'What the bill would have done' },
+      Relief: { title: 'Worry', text: 'The news says they could not fix it. Is that bad?' } },
+    42: {
+      'Futures slip after rescue rally': { title: 'Futures slip after the second vote fails', text: 'Leaders say a third attempt is possible.' },
+      'the rescue passed and the paper is still worth what it was worth': { title: 'the rescue failed and the paper is still worth what it was worth' },
+      'The rescue, priced in': { title: 'The rescue that never came' }
+    },
+    43: { 'Futures down four percent. Guarantee is in force. Buyers are not.': { title: 'Futures down four percent. No guarantee is coming. Buyers are not either.' } }
+  };
+  const FAILED_BREAKING = {
+    41: { head: 'Stabilization Act fails again', text: 'The second vote falls short and credit markets stay shut. The index closes down. Nobody pretends otherwise.', reply: ['@MacroMaven', 'Relief was never on the menu.'] },
+    44: { text: 'No guarantee came and neither did the buyers. Every venue, every sector, all day.' }
+  };
+  // What the close screen shows for a session, given the story state.
+  function breaking(d, S) {
+    const b = BREAKING[d], alt = !(S && S.f && S.f.billPassed) && FAILED_BREAKING[d];
+    return b && alt ? Object.assign({}, b, alt) : b;
+  }
+  const failedFeed = (d) => FAILED_FEED[d];
+
   const find = (day, t, src) => (INTRADAY[day] || []).find((p) => p[0] === t && p[1] === src);
   for (let i = THREADS.length - 1; i >= 0; i--) {
     const missing = THREADS[i].posts.find(([day, t, src]) => !find(day, t, src));
@@ -289,10 +325,14 @@
     const scen = day.scen;
     day.scen = (S) => {
       const sc = scen(S);
-      sc.events = (sc.events || []).concat(posts.map((p) => Object.assign({}, p)));
+      const failed = !S.f.billPassed;
+      sc.events = (sc.events || []).concat(posts.map((p) => {
+        const alt = failed && FAILED_INTRADAY[`${d}|${p.t}|${p.src}`];
+        return alt ? Object.assign({}, p, { text: alt }) : Object.assign({}, p);
+      }));
       return sc;
     };
   });
 
-  B.SqwakStory = { INTRADAY, PREOPEN, POOLS, BREAKING, THREADS, threadAt };
+  B.SqwakStory = { INTRADAY, PREOPEN, POOLS, BREAKING, FAILED_INTRADAY, FAILED_FEED, FAILED_BREAKING, breaking, failedFeed, THREADS, threadAt };
 })(window.BTB);

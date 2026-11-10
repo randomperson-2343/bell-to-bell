@@ -567,15 +567,15 @@
     assert(D.DAYS.length === 46 && sid(1) === 2 && sid(45) === 60, 'sessions carry their original ids');
     const S = B.StoryMode.freshState(250000);
     S.log = [{ day: 9, text: 'c1' }];
-    S.quotaLedger = [{ day: 3 }, { day: 19, week: 4, kind: 'week' }];
+    S.quotaLedger = [{ day: 3 }, { day: 2 }, { day: 19, week: 4, kind: 'week' }]; // old session 4 no longer exists
     S.week = { w: 3 };
     S.wallet = { weeks: { 1: { net: 1 }, 2: { net: 2 }, 3: { net: 3 } }, days: { 3: [], 4: [], 9: [] }, ledgerPaidWeek: 6 };
-    const old = { v: 3, kind: 'story', day: 28, history: [{ day: 3 }, { day: 7 }], mode: { S } };
+    const old = { v: 3, kind: 'story', day: 28, history: [{ day: 3 }, { day: 2 }, { day: 7 }, { day: 9 }], mode: { S } };
     const m = B.Save.migrateV3Snapshot(old);
     assert(m.v === 4 && m.day === 16, 'old session 29 is kept as new session 17: ' + m.day);
-    assert(m.history[0].day === 2 && m.history[1].day === 3, 'history days remapped to the next kept session');
-    assert(m.mode.S.log[0].day === 3 && m.mode.S.quotaLedger[0].day === 2, 'log and ledger days remapped');
-    assert(m.mode.S.quotaLedger[1].day === 10 && m.mode.S.quotaLedger[1].week === 3, 'week strikes follow their day');
+    assert(m.history.map((h) => h.day).join() === '1,3', 'history keeps rows of kept sessions only, one per day: ' + m.history.map((h) => h.day));
+    assert(m.mode.S.log[0].day === 3 && m.mode.S.quotaLedger[0].day === 1, 'log and ledger days remapped');
+    assert(m.mode.S.quotaLedger.length === 2 && m.mode.S.quotaLedger[1].day === 10 && m.mode.S.quotaLedger[1].week === 3, 'week strikes follow their day, and a removed session leaves no strike');
     assert(m.mode.S.week === undefined, 'the open week is rebuilt by the next session');
     const w = m.mode.S.wallet;
     assert(Object.keys(w.days).join() === '3' && w.weeks[1].net === 2 && w.weeks[2].net === 3 && w.ledgerPaidWeek === 4, 'wallet records follow kept days and finished weeks');
@@ -666,7 +666,7 @@
     Object.keys(B.REGIMES).forEach((k) => push(B.REGIMES[k].name));
     push(B.News.HANDLES);
     if (B.Sqwak) Object.keys(B.Sqwak.ACCOUNTS).forEach((h) => push([h, B.Sqwak.ACCOUNTS[h].name]));
-    if (B.SqwakStory) { push(B.SqwakStory.INTRADAY); push(B.SqwakStory.PREOPEN); push(B.SqwakStory.POOLS); push(B.SqwakStory.BREAKING); }
+    if (B.SqwakStory) { push(B.SqwakStory.INTRADAY); push(B.SqwakStory.PREOPEN); push(B.SqwakStory.POOLS); push(B.SqwakStory.BREAKING); push(B.SqwakStory.FAILED_INTRADAY); push(B.SqwakStory.FAILED_FEED); push(B.SqwakStory.FAILED_BREAKING); push(B.StoryData.VOTE_FAIL); }
     push(B.News.NOISE);
     if (B.Economy) { push(B.Economy.TIERS.map((t) => [t.name, t.note])); push(B.Economy.EVICT_STAGES); }
     if (B.Mentor) for (const day of [0, 1]) push(B.Mentor.LINES.map((l) => l[3]({ day, market: { events: [] } }, {})));
@@ -1479,6 +1479,209 @@
     const acc = right / total;
     assert(acc > 0.5 && acc < 0.8, 'outlook accuracy on normal days ' + acc.toFixed(2));
     assert(wolf > 0, 'the desk should sometimes cry wolf');
+  });
+
+  // ---------- Fix 1: full shelf ----------
+  test('A full shelf offers the oldest finished slot, or warns when every slot is live', () => {
+    const keepIdx = B.storage.get('saves:index', null);
+    for (let i = 0; i < B.Save.SLOTS; i++) B.Save.clear(i);
+    for (let i = 0; i < B.Save.SLOTS; i++) B.Save.write(i, { kind: 'story', day: 1 }, { mode: 'story', day: 1, equity: 1 });
+    assert(B.Save.newRunPlan().kind === 'full', 'six live runs: nothing to replace');
+    B.Save.rename(3, 'Old Career');
+    B.Save.rename(4, 'Newer Career');
+    B.Save.finish(4, { id: 'grind', title: 'Still Standing', wealth: 1 });
+    const idx = B.Save.index(); idx[4].ts = 2000; B.Save.writeIndex(idx);
+    B.Save.finish(3, { id: 'exit', title: 'The Exit', wealth: 1 });
+    const idx2 = B.Save.index(); idx2[3].ts = 1000; B.Save.writeIndex(idx2);
+    const p = B.Save.newRunPlan();
+    assert(p.kind === 'replace' && p.slot === 3 && p.name === 'Old Career' && p.ending === 'The Exit', 'oldest finished slot offered: ' + JSON.stringify(p));
+    assert(B.Save.meta(0) && !B.Save.meta(0).finished, 'live runs are never offered');
+    B.Save.clear(3);
+    assert(B.Save.newRunPlan().kind === 'free' && B.Save.newRunPlan().slot === 3, 'a free slot wins');
+    for (let i = 0; i < B.Save.SLOTS; i++) B.Save.clear(i);
+    if (keepIdx) B.storage.set('saves:index', keepIdx);
+  });
+
+  test('Autosave with no slot warns once instead of failing silently', () => {
+    const g = mkGame('no-slot'); g.slot = null;
+    const keep = B.UI.toast, seen = [];
+    B.UI.toast = (m) => seen.push(m);
+    const a = g.autosave(), b = g.autosave();
+    B.UI.toast = keep;
+    assert(a === false && b === false, 'nothing saved');
+    assert(seen.length === 1 && /not being saved/i.test(seen[0]), 'one warning expected, got ' + seen.length);
+  });
+
+  // ---------- Fix 2 and 3: the limits the desk shows are the limits it enforces ----------
+  test('Risk review uses the overnight limit the player is shown', () => {
+    const E = B.Economy;
+    const base = { risk: econRisk(), start: 250000, maxLev: 4, trades: [], forced: [], events: [] };
+    assert(!E.review(Object.assign({}, base, { overnightLev: 2, closeLev: 1.8 })).breaches.some((b) => b.id === 'overnight'), '1.8x under a 2x overnight limit is legal');
+    const over = E.review(Object.assign({}, base, { overnightLev: 2, closeLev: 2.4 })).breaches.find((b) => b.id === 'overnight');
+    assert(over && /2x cap/.test(over.text), 'breach should print the real 2x limit: ' + (over && over.text));
+    assert(E.review(Object.assign({}, base, { closeLev: 1.5 })).breaches.some((b) => b.id === 'overnight'), 'falls back to the default limit when none is given');
+  });
+
+  test('Desk leverage cap scales with the limit and is printed with two decimals', () => {
+    const E = B.Economy;
+    near(E.deskCap(4), 3.25, 1e-9, '4x desk'); near(E.deskCap(6), 4.875, 1e-9, '6x desk');
+    near(E.deskCap(3), 2.7, 1e-9, '3x desk'); near(E.deskCap(2), 1.8, 1e-9, '2x desk');
+    const base = { start: 250000, trades: [], forced: [], events: [] };
+    assert(!E.review(Object.assign({ risk: econRisk({ peakLev: 4.4 }), maxLev: 6 }, base)).breaches.length, '4.4x is inside a 6x desk');
+    const b4 = E.review(Object.assign({ risk: econRisk({ peakLev: 3.4 }), maxLev: 4 }, base)).breaches[0];
+    assert(b4 && /3\.25x desk cap/.test(b4.text), 'cap should read 3.25x: ' + (b4 && b4.text));
+    assert(E.fmtX(3) === '3' && E.fmtX(3.25) === '3.25' && E.fmtX(4.875) === '4.87' && E.fmtX(1.5) === '1.5' && E.fmtX(2.7) === '2.7', 'two decimals, floored, no trailing zeros');
+    const g = mkGame('cap-shown'); g.startDay();
+    g.mode.rules = () => ({ maxLev: 6, overnightLev: 3, shortBan: [] });
+    const lines = g.mode.briefing(11, g).rules.join(' ');
+    assert(/Risk desk cap: 4\.87x/.test(lines), 'briefing should list the desk cap: ' + lines);
+  });
+
+  // ---------- Fix 4-6: story money is not trading ----------
+  test('A story fine is not a drawdown: stress stays calm and day P&L ignores it', () => {
+    const g = mkGame('fine-stress'); g.startDay();
+    g.market.step(5);
+    const b = g.broker;
+    g.mode.bookAdj(g, -40000); b.cash -= 40000;
+    for (let i = 0; i < 20; i++) g.stress.update(0.25, g);
+    assert(g.stress.v < 8, 'stress after a fine on a quiet book: ' + g.stress.v.toFixed(1));
+    assert(Math.abs(g.dayPnl()) < 2000, 'day P&L should exclude the fine, got ' + g.dayPnl());
+    assert(b.dayPeak - b.equity() < 2000, 'the day peak moved with the booking');
+  });
+
+  test('A story bonus does not make the week by itself, and a quota-met week is not failed by a fine', () => {
+    const g = mkGame('week-adj'); g.startDay();
+    const m = g.mode, W = m.openWeek(g);
+    g.broker.cash += 45000; m.bookAdj(g, 45000);
+    const q = m.weekQuota(g);
+    assert(q && q.made < 1000, 'a $45k bonus must not count as week progress: made ' + (q && q.made));
+    g.broker.cash -= 40000; m.bookAdj(g, -40000);
+    assert(Math.abs(m.weekQuota(g).made) < 1000, 'a fine must not be a week loss: ' + m.weekQuota(g).made);
+    assert(W.adj === 5000, 'week adj is saved with the week: ' + W.adj);
+  });
+
+  test('Bonus payslip is not halved for a drawdown when equity only rose', () => {
+    const E = B.Economy;
+    const g = mkGame('pay-adj'); g.startDay();
+    const m = g.mode, b = g.broker;
+    // A bonus lands at the open, then the day trades flat.
+    b.cash += 45000; m.bookAdj(g, 45000);
+    b.trackRisk(10, 0.03);
+    const eq = b.equity();
+    const r = { equity: eq, start: b.dayStartEquity, quotaMet: true, notes: [] };
+    m.payroll(g, r, false);
+    assert(!(m.S.wallet.ddDays || {})[g.day], 'a credit created a fake drawdown');
+    // A fine must not keep the next payslips halved either (a fresh day, one payroll).
+    const g2 = mkGame('pay-fine'); g2.startDay();
+    const w = g2.mode.S.wallet, before = w.peakEq;
+    g2.broker.cash -= 40000; g2.mode.bookAdj(g2, -40000);
+    g2.mode.payroll(g2, { equity: g2.broker.equity(), start: g2.broker.dayStartEquity, quotaMet: true, notes: [] }, false);
+    assert(w.peakEq <= before - 39000, 'peak baseline should drop with the fine: ' + before + ' -> ' + w.peakEq);
+    assert(!(w.ddDays || {})[g2.day], 'a fine is not a drawdown you traded into');
+  });
+
+  // ---------- Fix 7: Pull the Plug ----------
+  test('After the plug is pulled the final session has no quota, no strike and cannot become a firing or a wipe', () => {
+    const g = mkGame('pull-plug'); g.startDay();
+    const m = g.mode, S = m.S, last = B.StoryData.DAYS.length - 1;
+    S.f.pulledPlug = true;
+    g.day = last;
+    assert(m.quota(last, g) === 0, 'final session quota should be 0, got ' + m.quota(last, g));
+    assert(m.wipeLevel(g) === 0, 'the flattened book must not trip the wipe line');
+    S.quotaLedger = []; for (let i = 0; i < 22; i++) S.quotaLedger.push({ day: i, pnl: 0 });
+    S.quotaStrikes = 22;
+    const cap = 250000;
+    const r = { day: last, date: 'x', pnl: -200000, equity: cap * 0.1 - 3, start: 225000, quota: 0, quotaMet: true, trades: 0, notes: [], eod: {} };
+    const out = m.onDayEnd(g, r);
+    assert(S.quotaStrikes === 22, 'no strike on the last session: ' + S.quotaStrikes);
+    assert(out.ending && out.ending.id === 'exit', 'ending should be The Exit, got ' + (out.ending && out.ending.id));
+    S.f.pulledPlug = false;
+    assert(m.quota(last, g) > 0, 'without the plug pull the last session keeps its quota');
+  });
+
+  // ---------- Fix 8: a failed second vote is never celebrated ----------
+  test('A failed second vote reads as failed in the briefing, feed, posts and news; a passed vote is unchanged', () => {
+    const D = B.StoryData, SS = B.SqwakStory;
+    const passRe = /vote passes|it passed|act passes|enacted|guarantee is (law|in force)|rescue rally|rescue passed|vote clears/i;
+    const read = (passed) => {
+      const mode = B.StoryMode(); mode.S.f.billPassed = passed;
+      const out = [];
+      for (const d of [41, 42, 43]) {
+        const b = mode.briefing(d, null), sc = mode.scenario(d);
+        out.push(b.title, b.html.replace(/<[^>]+>/g, ' '));
+        for (const it of b.feed) out.push(it.title, it.text);
+        for (const e of sc.events) out.push(e.text);
+      }
+      const brk = (d) => { const x = SS.breaking(d, mode.S); return x.head + ' ' + x.text; };
+      out.push(brk(41), brk(44));
+      return out.join(' | ');
+    };
+    const failed = read(false), passed = read(true);
+    assert(!passRe.test(failed), 'failed-vote text still says it passed: ' + (failed.match(new RegExp('.{30}(' + passRe.source + ').{30}', 'i')) || [''])[0]);
+    assert(/Second No|fails again|no guarantee/i.test(failed), 'failed-vote text should say it failed');
+    assert(/Hope/.test(passed) && /The vote passes/.test(passed) && /IT PASSED/.test(passed) && /Stabilization Act passes/.test(passed) && /enacted guarantee/.test(passed), 'passed-vote text must be unchanged');
+  });
+
+  // ---------- Fix 9: V3 -> V4 migration ----------
+  const v3Save = (day, missed, forgiven, excused, ledger) => {
+    const S = B.StoryMode.freshState(250000);
+    S.quotaLedger = ledger || []; S.quotaStrikes = S.quotaLedger.length;
+    S.forgivenDays = forgiven || []; S.excusedDays = excused || [];
+    const history = []; for (let d = 0; d < day; d++) history.push({ day: d, pnl: 0, equity: 250000, quotaMet: missed.indexOf(d) < 0 });
+    return { v: 3, kind: 'story', day, inDay: false, mode: { S }, history, broker: { cash: 250000 }, market: { px: {}, fearLevel: 0 }, stress: {} };
+  };
+
+  test('V3 migration drops history of removed sessions, keeps forgiveness, and does not invent strikes', () => {
+    // Missed old sessions 1, 3, 4 (3 and 4 no longer exist), the made week wiped 3 and 4, and 7 was excused.
+    const v4 = B.Save.migrateV3Snapshot(v3Save(23, [1, 3, 4, 7], [3, 4, 7], [7], [{ day: 1, pnl: -100, quota: 1000 }]));
+    const days = v4.history.map((h) => h.day);
+    assert(new Set(days).size === days.length, 'one history row per session, got ' + days);
+    assert(days.length === v4.day, 'a save on new session ' + v4.day + ' has played exactly that many: ' + days.length);
+    const mode = B.StoryMode(v4.mode);
+    const strikes = mode.reconcileQuotaStrikes(v4.history);
+    assert(strikes === 0, 'a miss on a removed session must not come back as a strike, got ' + strikes);
+    assert(!v4.history.some((h) => h.quotaMet === false), 'removed misses are not left in the history');
+  });
+
+  test('V3 migration loads an over-limit career one miss short, and stays there on later loads', () => {
+    const limit = B.StoryMode.QUOTA_STRIKE_LIMIT;
+    const sids = B.StoryData.DAYS.map((x) => x.sid);
+    const missed = sids.slice(0, 30);              // 30 misses on sessions that still exist
+    const v4 = B.Save.migrateV3Snapshot(v3Save(50, missed, [], [], missed.slice(0, 26).map((d) => ({ day: d, pnl: -1, quota: 1000 }))));
+    const first = B.StoryMode(JSON.parse(JSON.stringify(v4.mode)));
+    assert(first.reconcileQuotaStrikes(v4.history) === limit - 1, 'strikes after migration ' + first.S.quotaStrikes + ', want ' + (limit - 1));
+    // Save, restore, reconcile again: still under the limit.
+    const again = B.StoryMode(JSON.parse(JSON.stringify(first.S && { S: first.S })));
+    assert(again.reconcileQuotaStrikes(v4.history) === limit - 1, 'a later load re-added strikes: ' + again.S.quotaStrikes);
+    assert(v4.mode.S.forgivenDays.length > 0, 'the surplus is recorded as forgiven');
+  });
+
+  // ---------- Review follow-ups ----------
+  test('Pulled-plug finale: plain no-quota memo, no final warning, no quota pay for a zero-quota day', () => {
+    const g = mkGame('plug-memo'); g.startDay();
+    const m = g.mode, S = m.S, last = B.StoryData.DAYS.length - 1;
+    S.f.pulledPlug = true; g.day = last;
+    S.quotaLedger = []; for (let i = 0; i < 22; i++) S.quotaLedger.push({ day: i });
+    S.quotaStrikes = 22;
+    const memo = m.quotaMeta(last, g).memo;
+    assert(!/FINAL WARNING|Down \d+%|\$0/.test(memo) && /No quota/.test(memo), 'memo: ' + memo);
+    assert(!m.briefing(last, g).rules.some((x) => /FINAL WARNING/.test(x)), 'briefing must not warn');
+    g.history = [{ day: last, quota: 0, quotaMet: true }];
+    const lines = m.payroll(g, { equity: g.broker.equity(), start: g.broker.dayStartEquity, quotaMet: true, notes: [] }, true).join(' ');
+    assert(/Quota pay: no days made/.test(lines), 'a zero-quota day is not a made day: ' + lines.replace(/<[^>]+>/g, '').slice(0, 200));
+  });
+
+  test('Overnight breach prints the limit without trailing zeros', () => {
+    const E = B.Economy;
+    const x = E.review({ risk: econRisk(), start: 250000, maxLev: 4, overnightLev: 1.5, closeLev: 1.9, trades: [], forced: [], events: [] }).breaches.find((b) => b.id === 'overnight');
+    assert(x && /1\.5x cap/.test(x.text), x && x.text);
+  });
+
+  test('Failed second vote keeps the Carl hype event at minute 100 of session 42', () => {
+    const mode = B.StoryMode(); mode.S.f.billPassed = false;
+    const ev = mode.scenario(41).events;
+    assert(ev.some((e) => e.hype && e.src === '@CallsOnlyCarl' && e.t === 100), 'hype event missing');
+    assert(!B.SqwakStory.FAILED_FEED[42]['The rescue, priced in'] === false, 'locked Ledger item has a failed-vote version');
   });
 
   B.Tests = { results, run: () => results };

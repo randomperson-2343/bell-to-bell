@@ -272,7 +272,9 @@
 
     // ---- end of day ----
     eod(g, r, onNext) {
-      const pnlPct = r.pnl / Math.max(1, r.start);
+      // Story cash (a bonus, a fine) is shown on its own line, not as trading.
+      const trading = r.pnl - (r.adj || 0);
+      const pnlPct = trading / Math.max(1, r.start);
       const quota = r.quota > 0
         ? `<span class="stamp ${r.quotaMet ? 'good' : 'bad'}">${r.quotaMet ? 'QUOTA MET' : 'QUOTA MISSED'}</span>`
         : '';
@@ -284,8 +286,9 @@
       const notes = extra.concat(r.notes || []);
       const body = `
         <div style="text-align:center">${quota}</div>
-        <div class="eod-big ${F.cls(r.pnl)}">${F.money(r.pnl, true)}</div>
+        <div class="eod-big ${F.cls(trading)}">${F.money(trading, true)}</div>
         <div style="text-align:center" class="muted">${F.pct(pnlPct)} on the day · Index ${F.pct(r.indexPct)}</div>
+        ${r.adj ? `<div style="text-align:center" class="muted">Story cash: ${F.money(r.adj, true)}</div>` : ''}
         <div class="stats">
           <div class="stat"><div class="l">Equity</div><div class="v">${F.money(r.equity)}</div></div>
           <div class="stat"><div class="l">Quota</div><div class="v">${r.quota > 0 ? F.money(r.quota) : 'none'}</div></div>
@@ -293,7 +296,7 @@
           <div class="stat"><div class="l">Best trade</div><div class="v ${r.best == null ? 'muted' : F.cls(r.best)}">${r.best == null ? 'none closed' : F.money(r.best, true)}</div></div>
           <div class="stat"><div class="l">Worst trade</div><div class="v ${r.worst == null ? 'muted' : F.cls(r.worst)}">${r.worst == null ? 'none closed' : F.money(r.worst, true)}</div></div>
           <div class="stat"><div class="l">Stress peak</div><div class="v ${r.stressPeak > 80 ? 'down' : r.stressPeak > 50 ? 'amber' : ''}">${Math.round(r.stressPeak)}</div></div>
-          ${r.quotaStrikeLimit ? `<div class="stat strike-stat"><div class="l">Career strikes</div><div class="v">${r.quotaStrikes} / ${r.quotaStrikeLimit}</div>${r.quotaStrikeLimit - r.quotaStrikes === 1 ? '<div class="quota-delta">FINAL WARNING · ONE MISS LEFT</div>' : ''}</div>` : ''}
+          ${r.quotaStrikeLimit ? `<div class="stat strike-stat"><div class="l">Career strikes</div><div class="v">${r.quotaStrikes} / ${r.quotaStrikeLimit}</div>${r.quotaStrikeLimit - r.quotaStrikes === 1 && r.quota > 0 ? '<div class="quota-delta">FINAL WARNING · ONE MISS LEFT</div>' : ''}</div>` : ''}
         </div>
         ${notes.length ? `<ul class="notes">${notes.map((n) => `<li>${n}</li>`).join('')}</ul>` : ''}`;
       // The report's verdict, in the pack's reward and penalty motifs.
@@ -436,7 +439,8 @@
       B.SFX.ending(e);
       const leave = () => { scr.remove(); B.UI.leaveGame(); };
       $('end-menu').addEventListener('click', leave);
-      $('end-again').addEventListener('click', () => { scr.remove(); B.UI.g = null; B.Main.newStory(); });
+      // Leave the game first: a full shelf opens a confirm, and Cancel must land on the menu.
+      $('end-again').addEventListener('click', () => { scr.remove(); B.UI.g = null; B.UI.leaveGame(); B.Main.newStory(); });
       $('end-gallery').addEventListener('click', () => { scr.remove(); B.UI.g = null; B.UI.leaveGame(); this.showEndings(); });
     },
 

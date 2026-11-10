@@ -46,6 +46,21 @@
       return -1;
     },
 
+    // Where a brand-new run should live. A finished career keeps its slot, so a
+    // full shelf is common: offer the oldest finished one (its ending is already
+    // in the tally), and only if every slot is a live run say it can't be kept.
+    newRunPlan() {
+      const free = this.firstEmpty();
+      if (free >= 0) return { kind: 'free', slot: free };
+      const idx = this.index();
+      let old = -1;
+      for (let i = 0; i < SLOTS; i++) {
+        if (idx[i] && idx[i].finished && (old < 0 || (idx[i].ts || 0) < (idx[old].ts || 0))) old = i;
+      }
+      if (old < 0) return { kind: 'full' };
+      return { kind: 'replace', slot: old, name: idx[old].name, ending: idx[old].finished.title };
+    },
+
     defaultName(mode) {
       const idx = this.index();
       const base = mode === 'endless' ? 'Endless' : 'Career';
@@ -124,13 +139,34 @@
       const byDay = (m, fn) => { const r = {}; for (const k in m || {}) if (kept(k)) r[next(+k)] = fn ? fn(m[k]) : m[k]; return r; };
       const oldDay = out.day || 0;
       out.day = next(oldDay);
-      out.history = (out.history || []).map((h) => Object.assign({}, h, { day: next(h.day || 0) }));
+      // A row for a session that no longer exists is dropped, not moved onto the next
+      // kept one (that made duplicates and counted misses nobody could have forgiven).
+      const seen = {};
+      out.history = (out.history || []).filter((h) => kept(h.day || 0)).map((h) => Object.assign({}, h, { day: next(h.day || 0) }))
+        .filter((h) => !seen[h.day] && (seen[h.day] = true));
       const S = out.mode && out.mode.S;
       if (S) {
         const dayed = (x) => Object.assign({}, x, { day: next(x.day || 0) });
-        S.log = (S.log || []).map(dayed);
-        S.quotaLedger = (S.quotaLedger || []).map((e) => (e.kind === 'week' ? Object.assign(dayed(e), { week: D.weekOf(next(e.day || 0)) }) : dayed(e)));
+        S.log = (S.log || []).filter((x) => kept(x.day || 0)).map(dayed);
+        S.quotaLedger = (S.quotaLedger || []).filter((e) => kept(e.day || 0))
+          .map((e) => (e.kind === 'week' ? Object.assign(dayed(e), { week: D.weekOf(next(e.day || 0)) }) : dayed(e)));
         for (const k of ['forgivenDays', 'excusedDays']) if (S[k]) S[k] = S[k].filter(kept).map(next);
+        // The strike limit fell from 30 to 23. A career that would load at or past it
+        // loads one miss short instead: forgive the oldest surplus misses, as a made
+        // week would, so the history rebuild on later loads leaves them alone.
+        const limit = B.StoryMode && B.StoryMode.QUOTA_STRIKE_LIMIT;
+        if (limit) {
+          const forgiven = S.forgivenDays = S.forgivenDays || [];
+          const taken = {};
+          const strikes = (S.quotaLedger || []).map((e) => { if (e.kind !== 'week') taken[e.day] = true; return e; });
+          for (const h of out.history) if (h.quotaMet === false && !taken[h.day] && forgiven.indexOf(h.day) < 0) { taken[h.day] = true; strikes.push({ day: h.day, fromHistory: true }); }
+          strikes.sort((a, b) => a.day - b.day || (a.kind === 'week') - (b.kind === 'week'));
+          for (const e of strikes.slice(0, Math.max(0, strikes.length - (limit - 1)))) {
+            if (e.kind !== 'week' && forgiven.indexOf(e.day) < 0) forgiven.push(e.day);
+            if (!e.fromHistory) S.quotaLedger = S.quotaLedger.filter((x) => x !== e);
+          }
+          S.quotaStrikes = Math.min(strikes.length, limit - 1);
+        }
         S.feedOpenedDays = byDay(S.feedOpenedDays);
         S.feedSkippedDays = byDay(S.feedSkippedDays);
         if (S.mentor) { const career = S.mentor.career; S.mentor = byDay(S.mentor); if (career) S.mentor.career = career; }

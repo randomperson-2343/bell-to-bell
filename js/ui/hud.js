@@ -776,7 +776,7 @@
       $('tb-indx').innerHTML = `${F.price(m.bySym.INDX.last)} <span class="${F.cls(ip)}">${F.pct(ip)}</span>`;
       const fear = m.bySym.FEAR.last;
       $('tb-fear').innerHTML = `<span class="${fear > 30 ? 'down' : fear > 20 ? 'amber' : 'up'}">${fear.toFixed(1)}</span>`;
-      const eq = b.equity(), pnl = eq - b.dayStartEquity;
+      const eq = b.equity(), pnl = g.dayPnl();
       const pe = $('tb-pnl');
       pe.textContent = F.money(pnl, true);
       pe.className = 'v ' + F.cls(pnl);
