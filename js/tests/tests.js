@@ -473,7 +473,7 @@
     const phone = B.Scenes.phone({ day: 45, brief: { feed: [{ source: 'WIRE', title: 'Before the bell' }] } });
     assert(phone.length === 2 && phone.every((beat) => beat.view.w === 640), 'phone handoff is missing');
     assert(B.Scenes.weekend({ day: 29 }).length === 3, 'ordinary weekends are sat, sun, hold');
-    assert(B.Scenes.weekend({ day: 24 }).length === 4 && B.Scenes.weekend({ day: 39 }).length === 4, 'rescue and whip weekends get a second room');
+    assert(B.Scenes.weekend({ day: 24 }).length === 3 && B.Scenes.weekend({ day: 39 }).length === 4, 'only the whip weekend gets a second room');
   });
 
   test('Storyboard: four mornings follow the choice made the night before', () => {
@@ -1741,6 +1741,8 @@
       (day.calls ? day.calls(S) : []).forEach((c) => check(d, 'call', c.text));
     });
     SS.INTRADAY.forEach((a, d) => (a || []).forEach((p) => check(d, 'post', p[2])));
+    // Storyboard captions and cards follow the same calendar.
+    B.Storyboard.SHEET.forEach((row, d) => check(d, 'storyboard', JSON.stringify(row)));
     assert(!bad.length, 'wrong weekday in story text: ' + bad.join(' | '));
     // The Treasury decision plays on a Tuesday night.
     const c5 = Object.keys(D.CHOICES).map((k) => D.CHOICES[k]).find((c) => c.day === 21);
@@ -1844,6 +1846,57 @@
       g.quit();
     } finally { B.Music.duck = real; }
     assert(calls.join() === 'true,false', 'duck calls ' + calls.join());
+  });
+
+  test('A big limit typed at the ask waits for a real fill price; a small one and a deeper limit fill', () => {
+    const setup = () => {
+      const m = mkMarket(); for (let i = 0; i < 40; i++) m.step(0.25);
+      const b = new B.Broker({ cash: 5000000, feeMult: 0, slipMult: 1 }); b.attach(m); b.startDay();
+      return { m, b, q: m.quote('RDGW') };
+    };
+    for (const side of [1, -1]) {
+      let { b, q } = setup();
+      b.placeOrder('RDGW', side * 8000, 'limit', (side > 0 ? Math.ceil(q.ask * 100) : Math.floor(q.bid * 100)) / 100);
+      assert(b.processOrders().length === 0 && b.orders.length === 1, 'a big limit at the touch must keep working (side ' + side + ')');
+      ({ b, q } = setup());
+      b.placeOrder('RDGW', side * 8000, 'limit', side > 0 ? q.ask * 1.05 : q.bid * 0.95);
+      const done = b.processOrders();
+      assert(done.length === 1 && done[0].res.ok, 'a limit through the impact fills (side ' + side + ')');
+      assert(side > 0 ? done[0].res.price <= q.ask * 1.05 + 1e-9 : done[0].res.price >= q.bid * 0.95 - 1e-9, 'never worse than the limit');
+      ({ b, q } = setup());
+      b.placeOrder('RDGW', side * 10, 'limit', (side > 0 ? Math.ceil(q.ask * 100) : Math.floor(q.bid * 100)) / 100);
+      assert(b.processOrders().length === 1, 'a small limit at the touch fills (side ' + side + ')');
+    }
+  });
+
+  test('At full crash severity no session newly closes the market early', () => {
+    const D = B.StoryData;
+    const run = (k, stab, dereg) => {
+      const mode = B.StoryMode(), S = mode.S, m = new B.Market({ seed: mode.seed, volMult: 1 }), ends = [];
+      for (let day = 0; day < D.DAYS.length; day++) {
+        S.m.stability = stab; S.f.dereg = dereg && day >= 11; S.crashDay = day; S.crashK = k;
+        m.startDay(day, mode.scenario(day));
+        while (m.status === 'open' && m.t < B.DAY_MIN) m.step(0.25);
+        ends.push(m.t); m.close();
+      }
+      return ends;
+    };
+    for (const [stab, dereg] of [[60, false], [0, true]]) {
+      const base = run(1, stab, dereg), hard = run(1.3, stab, dereg);
+      base.forEach((t, d) => { if (t >= B.DAY_MIN - 1) assert(hard[d] >= B.DAY_MIN - 1, `session ${d} closed early at k=1.3`); else assert(Math.abs(hard[d] - t) < 1e-9 || hard[d] >= t - 1e-9, 'session ' + d + ' closed earlier at k=1.3'); });
+    }
+  });
+
+  test('A mid-day save from before crash severity resumes on the tape it was built on', () => {
+    const mk = (stab) => { const mode = B.StoryMode(); mode.S.m.stability = stab; mode.S.crashDay = 20; mode.S.crashK = 1; const g = new B.Game(mode); g.day = 20; g.startDay(); return g; };
+    const g = mk(10);
+    for (let i = 0; i < 200; i++) g.tick(0.25);
+    const snap = JSON.parse(JSON.stringify(g.snapshot()));
+    delete snap.mode.S.crashDay; delete snap.mode.S.crashK;          // an old save has neither
+    const g2 = new B.Game(B.StoryMode(snap.mode), snap);
+    g2.resumeDay();
+    for (const tk of g.market.tickers) near(g2.market.bySym[tk.sym].last, tk.last, 1e-8, tk.sym + ' price');
+    assert(g2.mode.S.crashK === 1 && g2.mode.S.crashDay === 20, 'old save is pinned to the base depth');
   });
 
   B.Tests = { results, run: () => results };

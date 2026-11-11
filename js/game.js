@@ -155,6 +155,9 @@
       const m = this.market, b = this.broker;
       this.applyRules();
       m.restore(snap.dayOpen);
+      // A save made before crash severity existed was built at the base depth.
+      const S = this.mode.S;
+      if (S && S.crashDay == null) { S.crashDay = this.day; S.crashK = 1; }
       m.startDay(this.day, this.mode.scenario(this.day, this));
       this.dayOpen = snap.dayOpen;
       for (const e of snap.injected || []) m.injectEvent(e, true);

@@ -426,7 +426,7 @@
   const WEEKENDS = {
     4: 'THE BONUS EMAIL SITS UNREAD ALL WEEKEND.',
     14: 'THE BILL IS ON EVERY CHANNEL. NOBODY HAS READ IT.',
-    24: 'RESCUE WEEKEND. THE LIGHTS AT TREASURY NEVER GO OFF.',
+    24: 'THE LIGHTS AT TREASURY ARE STILL ON.',
     34: 'KROLL PAID FOR DINNER. IT IS OVER, HE SAYS.',
     39: 'FOUR VOTES SHORT. THE PHONES RING ALL NIGHT.',
     44: '3:17 AM. THE MACHINES ARE STILL TRADING.'
@@ -709,9 +709,7 @@
       R.beat('weekend', `${key}:sat`, 1.7, (c) => apartmentShot(c, day, home, false, w), sat, { sfx: 'apartment', transition: 'fade', informative: !story }),
       R.beat('weekend', `${key}:sun`, 1.8, (c) => sundayShot(c, day, home, w), story$ || 'SUNDAY NIGHT. THE ALARM IS SET FOR 5:58.', { sfx: 'apartment', informative: !!story$ })
     ];
-    // Two weekends get a second room: Treasury with every light on, and the
-    // whip's phones the night before the vote.
-    if (day === 24 && B.DecisionArt) beats.push(R.beat('weekend', `${key}:treasury`, 1.6, (c) => B.DecisionArt.room(c, 'c5', day), '2:14 AM. THE TERM SHEET IS ON ITS NINTH DRAFT.', { sfx: 'room' }));
+    // One weekend gets a second room: the whip's phones the night before the vote.
     if (day === 39 && B.DecisionArt) beats.push(R.beat('weekend', `${key}:whip`, 1.6, (c) => B.DecisionArt.room(c, 'c8', day), 'THE WHIP HAS 214. HE NEEDS 218.', { sfx: 'room' }));
     beats.push(R.beat('weekend', `${key}:hold`, 0.8, (c) => { apartmentShot(c, day, home, true, w); c.save(); c.globalAlpha = 0.3; X.rect(c, 0, 0, V.w, V.h, P.ink); c.restore(); }, '', {}));
     if (day === 44) beats.push(R.beat('weekend', `${key}:317`, 1.6, (c) => (pulled && B.DecisionArt ? B.DecisionArt.room(c, 'c10', day, true, S) : at2x(c, (cc) => SH.tradingFloor(cc, 0.4, false, 60), day)),

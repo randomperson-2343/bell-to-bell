@@ -155,7 +155,7 @@
       cel(ctx, 240 + i * 42, 195, 33, 9, P.bone, P.white, P.putty2);
       if (i % 2) blit(ctx, MUG, 249 + i * 42, 177);
     }
-    R.text(ctx, 'TREASURY · SUNDAY', 606, 258, P.amber, 'right');
+    R.text(ctx, 'TREASURY · 2:14 AM', 606, 258, P.amber, 'right');
   }
 
   // The stairwell on forty-one, where Imani waits with a folder.
