@@ -206,6 +206,8 @@
       const excess = bonus - draw;
       repaid = Math.min(w.deficit, excess);
       w.deficit -= repaid;
+      // The bonus advance is repaid first; only what is left of it is clawed back at the end.
+      if (w.advanceGross) w.advanceGross = Math.max(0, w.advanceGross - repaid);
       gross = draw + excess - repaid;
     }
     // Quota pay: every session you made quota, paid on top and never against

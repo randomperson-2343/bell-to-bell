@@ -546,7 +546,7 @@
               <option value="short">Short (one card)</option>
               <option value="off">Skip</option>
             </select><output></output></div>
-          <div class="field"><label for="set-dl">Career day length</label>
+          <div class="field"><label for="set-dl">Career day length <small class="muted">(applies from the next session)</small></label>
             <select id="set-dl">
               <option value="120">2 minutes (frantic)</option>
               <option value="180">3 minutes (default)</option>

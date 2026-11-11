@@ -8,12 +8,16 @@ const ORDER=Object.keys(D.CHOICES).sort((a,b)=>D.CHOICES[a].day-D.CHOICES[b].day
 const clone=(o)=>JSON.parse(JSON.stringify(o));
 
 // A bear who holds through the false-dawn rally (sessions 29-36) loses about 7%.
+// A struggling (bearish) trader misses every fourth daily quota and, with a flat book, every weekly one.
+// The engine builds the strikes itself from those reports (about 21 against the limit of 23).
+// Other archetypes carry no quota, as before.
+const missed=(day,arch)=>!!arch.bearish&&day%4===0;
 const eqOf=(day,arch)=>arch.bearish&&day>=28&&day<=35?arch.wealth*0.93:arch.wealth;
 function game(mode, arch, day) {
   const bearish = arch.bearish && (day === 14 || (day >= 28 && day <= 35));
   const px = {}; for (const t of B.TICKERS) px[t.sym] = { last:t.price || 100 };
   return {
-    day, history:Array.from({length:day},(_,i)=>({day:i,quotaMet:true})), indexStart:512.4, inboxQueue:[], lock:null,
+    day, history:Array.from({length:day},(_,i)=>({day:i,quotaMet:!missed(i,arch),quota:arch.bearish?1000:0})), indexStart:512.4, inboxQueue:[], lock:null,
     market:{bySym:px},
     broker:{ cash:0, pos:{}, orders:[], opts:bearish?[{sym:'BSTN',type:'P',qty:4}]:[], equity:()=>eqOf(day,arch),
       posQty:(sym)=>bearish && sym==='BSTN'?-Math.max(1,Math.round(arch.wealth*.14/px.BSTN.last)):0,
@@ -21,7 +25,7 @@ function game(mode, arch, day) {
     setLock:()=>{}, stress:{spike:()=>{}}
   };
 }
-function report(day,arch){return {day,date:`Session ${day+1}`,pnl:0,equity:eqOf(day,arch),start:eqOf(day,arch),quota:0,quotaMet:true,earlyEnd:null};}
+function report(day,arch){return {day,date:`Session ${day+1}`,pnl:0,equity:eqOf(day,arch),start:eqOf(day,arch),quota:arch.bearish?1000:0,quotaMet:!missed(day,arch),earlyEnd:null};}
 
 function advance(state, from, to, arch) {
   const mode=B.StoryMode({S:state});
@@ -49,7 +53,8 @@ function walk(state,index,nextDay,arch,counts,witnesses){
       if(es.f.bailout&&es.m.firm<40){audit.wardNoLeftMin=Math.min(audit.wardNoLeftMin,es.m.stability);audit.wardNoLeftMax=Math.max(audit.wardNoLeftMax,es.m.stability);}
       if(es.f.bailout&&es.f.billPassed){audit.rallyNoLeftMin=Math.min(audit.rallyNoLeftMin,es.m.stability);audit.rallyNoLeftMax=Math.max(audit.rallyNoLeftMax,es.m.stability);}
     }
-    const rawCtx={S:es,wealth:arch.wealth,start:250000,reason:arch.reason||'final',days:LAST+1,quotaMet:arch.quotaMet};
+    const history=Array.from({length:LAST+1},(_,i)=>({day:i,quotaMet:!missed(i,arch)}));
+    const rawCtx={S:es,wealth:arch.wealth,start:250000,reason:arch.reason||'final',days:history.length,quotaMet:history.filter((h)=>h.quotaMet).length};
     const e=end.ending || B.StoryEndings.resolve(rawCtx);
     for(const ending of B.StoryEndings.list) if(ending.test(rawCtx)) {
       audit.gates[ending.id]=(audit.gates[ending.id]||0)+1;

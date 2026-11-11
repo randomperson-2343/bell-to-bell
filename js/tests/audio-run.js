@@ -660,6 +660,29 @@ test('Muting music stops the new score; unmuting brings it back; sound effects f
   B.Music.stop();
 });
 
+test('Re-applying settings with the music switch unchanged does not restart the track', () => {
+  const S = setup();
+  B.Music.setGame({ day: 0, mode: { kind: 'story', S: { anomalies: 0 } } });
+  B.Music.play('menu');
+  const first = S.track;
+  assert(first, 'playing');
+  B.Music.setEnabled(true); B.Music.setEnabled(true);
+  assert(S.track === first, 'new score restarted by an unchanged setting');
+  B.Sound.setStyle('classic');
+  B.Music.play('menu');
+  let starts = 0;
+  const play = B.ClassicMusic.play;
+  B.ClassicMusic.play = function () { starts++; return play.apply(this, arguments); };
+  try {
+    B.Music.setEnabled(true); B.Music.setEnabled(true);
+    assert(starts === 0, 'classic score restarted ' + starts + ' times by an unchanged setting');
+    B.Music.setEnabled(false); B.Music.setEnabled(true);
+    assert(starts === 1, 'a real off then on should restart once, got ' + starts);
+  } finally { B.ClassicMusic.play = play; }
+  B.Sound.setStyle('new');
+  B.Music.stop();
+});
+
 // ---- report ---------------------------------------------------------------------
 let fail = 0;
 for (const r of results) {

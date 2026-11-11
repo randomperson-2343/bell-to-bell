@@ -37,6 +37,40 @@
     root.addEventListener('click', (e) => { if (e.detail === 0) fn(e); });
   }
 
+  // Replace an element's HTML only when its rows or buttons changed; otherwise update
+  // text and classes in place. Rebuilding every 125 ms dropped keyboard focus from the
+  // row buttons (Close, Cancel, Sell) as fast as it could be given.
+  function sameShape(a, b) {
+    if (a.nodeType !== b.nodeType) return false;
+    if (a.nodeType !== 1) return true;
+    if (a.tagName !== b.tagName) return false;
+    let n = 0;
+    for (const at of b.attributes) {
+      if (at.name === 'class') continue;
+      if (a.getAttribute(at.name) !== at.value) return false;
+      n++;
+    }
+    let m = 0;
+    for (const at of a.attributes) if (at.name !== 'class') m++;
+    if (n !== m || a.childNodes.length !== b.childNodes.length) return false;
+    for (let i = 0; i < a.childNodes.length; i++) if (!sameShape(a.childNodes[i], b.childNodes[i])) return false;
+    return true;
+  }
+  function syncNode(a, b) {
+    if (a.nodeType !== 1) { if (a.nodeValue !== b.nodeValue) a.nodeValue = b.nodeValue; return; }
+    if (a.className !== b.className) a.className = b.className;
+    for (let i = 0; i < a.childNodes.length; i++) syncNode(a.childNodes[i], b.childNodes[i]);
+  }
+  function patchHtml(el, html) {
+    const t = document.createElement('template');
+    t.innerHTML = html;
+    const next = t.content.childNodes, cur = el.childNodes;
+    let same = cur.length === next.length;
+    for (let i = 0; same && i < cur.length; i++) same = sameShape(cur[i], next[i]);
+    if (!same) { el.innerHTML = html; return; }
+    for (let i = 0; i < cur.length; i++) syncNode(cur[i], next[i]);
+  }
+
   const UI = {
     g: null,
     sel: 'INDX',
@@ -211,6 +245,8 @@
       if (B.Cinematic.running) return;
       const typing = /INPUT|SELECT|TEXTAREA/.test(document.activeElement && document.activeElement.tagName);
       if (e.key === 'Escape') { e.preventDefault(); if (typing) document.activeElement.blur(); else g.togglePause(); return; }
+      // Browser shortcuts (Ctrl+S, Cmd+B, Alt+A) are not orders.
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
       if (g.lock && g.lock.kind === 'panic') {
         const k = e.key.toLowerCase();
         if (['a', 's', 'd'].includes(k)) {
@@ -280,6 +316,7 @@
       this.g = null;
       this.unlock();
       this.pause(false);
+      B.Music.duck(false);
       $('mc-banner').hidden = true;
       document.documentElement.style.setProperty('--stress', 0);
       $('game-root').style.transform = '';
@@ -884,7 +921,7 @@
           <div class="wl-sym">${tk.sym}${dot}${ban}</div><div class="wl-px">${F.price(tk.last)}</div>
           <div class="wl-name">${B.esc(tk.name)}</div><div class="wl-chg ${F.cls(ch)}"><b>${arrow}</b> ${F.pct(ch)}</div></div>`;
       }).join('');
-      $('watch-list').innerHTML = html;
+      patchHtml($('watch-list'), html);
     },
 
     renderBottom() {
@@ -932,7 +969,7 @@
         else html = '<table class="tbl"><thead><tr><th>Time</th><th>Symbol</th><th>Qty</th><th>Price</th><th>Realized</th><th>Note</th></tr></thead><tbody>' +
           tr.slice(0, 60).map((x) => `<tr><td>${B.Calendar.fmtTime(x.t)}</td><td>${B.esc(x.sym)}</td><td class="${x.qty > 0 ? 'up' : 'down'}">${F.qty(x.qty)}</td><td>${F.price(x.price)}</td><td class="${F.cls(x.realized)}">${F.money(x.realized, true)}</td><td class="muted">${B.esc(x.tag || '')}</td></tr>`).join('') + '</tbody></table>';
       }
-      $('bt-content').innerHTML = html;
+      patchHtml($('bt-content'), html);
     }
   };
 

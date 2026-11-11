@@ -85,6 +85,16 @@
       return null;
     }
 
+    // Price a market order of this size would actually get: the quote plus market impact,
+    // which grows with sqrt(size), scaled by the name's liquidity and by panic.
+    impactPx(sym, qty) {
+      const m = this.market, tk = m.bySym[sym], q = m.quote(sym);
+      let price = qty > 0 ? q.ask : q.bid;
+      const liq = (tk.spread || 0.0006) / 0.0006;
+      const impact = 0.0012 * liq * Math.sqrt(Math.abs(qty) * price / 1e6) * m.fearMult() * this.slipMult;
+      return price * (qty > 0 ? 1 + Math.min(impact, 0.03) : 1 - Math.min(impact, 0.03));
+    }
+
     marketOrder(sym, qty, o) {
       o = o || {};
       qty = Math.trunc(qty);
@@ -101,17 +111,9 @@
       if (!o.forced && nq < 0 && nq < cur && this.rules.shortBan.includes(tk.sector)) {
         return err('Short-sale BAN on ' + B.SECTORS[tk.sector].name.toLowerCase());
       }
-      const q = m.quote(sym);
-      let price;
-      if (o.limitPx) {
-        price = qty > 0 ? Math.min(o.limitPx, q.ask) : Math.max(o.limitPx, q.bid);
-      } else {
-        price = qty > 0 ? q.ask : q.bid;
-        // Market impact: grows with sqrt(size), scaled by the name's liquidity and by panic.
-        const liq = (tk.spread || 0.0006) / 0.0006;
-        const impact = 0.0012 * liq * Math.sqrt(Math.abs(qty) * price / 1e6) * m.fearMult() * this.slipMult;
-        price *= qty > 0 ? (1 + Math.min(impact, 0.03)) : (1 - Math.min(impact, 0.03));
-      }
+      let price = this.impactPx(sym, qty);
+      // A limit order that crosses the market pays the same impact, but never worse than its limit.
+      if (o.limitPx) price = qty > 0 ? Math.min(o.limitPx, price) : Math.max(o.limitPx, price);
       if (!o.forced && Math.abs(nq) > Math.abs(cur)) {
         const newGross = this.stockGross() - Math.abs(cur) * tk.last + Math.abs(nq) * tk.last;
         if (newGross / this.rules.maxLev > this.netLiq() + 1e-6) return err('Insufficient buying power');
@@ -167,6 +169,11 @@
         return err('Short-sale BAN on ' + B.SECTORS[tk.sector].name.toLowerCase());
       }
       const o = Object.assign({ id: OID++, sym, qty, type, price, placed: this.market.t }, extra || {});
+      // A limit typed at or through the market is taking size now: it fills only where the impact-adjusted price is inside it.
+      if (type === 'limit' && !o.bracket) {
+        const q = this.market.quote(sym);
+        if (qty > 0 ? q.ask <= price : q.bid >= price) o.crossed = true;
+      }
       this.orders.push(o);
       return { ok: true, order: o };
     }
@@ -208,6 +215,12 @@
         if (o.type === 'limit') trig = buy ? q.ask <= o.price : q.bid >= o.price;
         else trig = buy ? q.ask >= o.price : q.bid <= o.price;
         if (!trig) continue;
+        // A limit placed into the market waits until its real, impact-adjusted fill price is inside the limit.
+        if (o.crossed && !o.bracket) {
+          // Compared to the cent, so a small order at the touch fills at the touch.
+          const px = Math.round(this.impactPx(o.sym, qty) * 100) / 100;
+          if (buy ? px > o.price : px < o.price) continue;
+        }
         const res = this.marketOrder(o.sym, qty, { tag: o.label || (o.type === 'limit' ? 'LIMIT' : 'STOP'), limitPx: o.type === 'limit' ? o.price : null, forced: !!o.bracket, placed: o.placed });
         this.cancelOrder(o.id);
         if (res.ok) {

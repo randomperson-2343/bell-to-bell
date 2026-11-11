@@ -17,7 +17,8 @@
     for (const k in r || {}) S.rel[k] = B.clamp(S.rel[k] + r[k], 0, 100);
   };
   // Crash severity: low systemic stability and deregulation make every drop deeper.
-  const cm = (S) => B.clamp(1 + (60 - S.m.stability) / 60 * 0.8 + (S.f.dereg ? 0.25 : 0), 0.85, 2.2);
+  // Kept modest (1.0 to 1.3): a shaky system makes the falls a little deeper, never a different game.
+  const cm = (S) => B.clamp(1 + (60 - S.m.stability) / 60 * 0.8 + (S.f.dereg ? 0.25 : 0), 1, 1.3);
   const FIN = ['bank', 'lender', 'insurer'];
   const STACK = ['ai', 'chip', 'dc'];
   const boss = (S) => (S.f.defected ? 'Imani Rhodes' : 'Desmond Kroll');
@@ -104,7 +105,7 @@
     ['Form Four','bear',-.003,-.012,'Fairline\'s chief executive sold 40% of his stake.','Perry calls with twenty-two seconds\' worth of illegal knowledge.',13],
     ['A Circle','bear',-.008,-.018,'Thorncrest funded Halcyon, which spent the money on Thorncrest chips.','Both firms booked the same dollars as proof of demand.',15],
     ['The Physical World','bear',-.006,-.018,'Grid operators reject gigawatt-scale interconnects.','The bubble meets copper, turbines and four-year queues.',18],
-    ['Nineteen Percent','bear',-.008,-.020,'Bastion says 19% of contracted capacity may never energize.','Thorne\'s office needs an answer before Monday.',19],
+    ['Nineteen Percent','bear',-.008,-.020,'Bastion says 19% of contracted capacity may never energize.','Thorne\'s office needs an answer tonight.',19],
     ['Freedom','melt', .006,.013,'The Compute Freedom Act reprices leverage across the street.','The law changes the size of every future mistake.',20],
     ['Zero Bid','panic',-.004,-.016,'Two CASCADE tranches fail to find a price.','One bidder attends. Its bid is zero.',23],
     ['Green Close','recovery',-.003,.006,'The index closes green after the failed auction.','The cruelest session is the one that looks normal.',24],
@@ -115,8 +116,8 @@
     ['Systems Normal','chop', .006,-.006,'Exchanges report normal operations.','Nothing is repaired. It is simply no longer the newest emergency.',31],
     ['Same Model','chop',-.003,-.012,'Volatility remains while attention moves on.','Imani names the four funds and the one model beneath them.',32],
     ['The Queue','panic',-.028,-.060,'Ridgeway misses a funding call and a branch queue forms.','The camera crew creates the run it came to document.',33],
-    ['All Options','bear',-.012,-.025,'Officials say all options remain on the table.','Venn has been awake thirty-one hours. The weekend decides.',34],
-    ['Monday Gap','panic',-.035,-.045,'The market prices the rescue decision.','Ambervale is cut three notches either way.',35],
+    ['All Options','bear',-.012,-.025,'Officials say all options remain on the table.','Venn has been awake thirty-one hours. The decision will not wait.',34],
+    ['The Gap','panic',-.035,-.045,'The market prices the rescue decision.','Ambervale is cut three notches either way.',35],
     ['Twenty-Two','bear',-.008,-.020,'HLST defends marks that no trader believes.','The committee wants your signature on a price that is not a price.',36],
     ['Five and a Half','bear',-.005,-.015,'The buyer gets 75% non-recourse financing.','At risk: roughly five and a half cents against a headline mark of twenty-two.',37],
     ['Lanyards','chop',-.004,-.010,'Auditors move desk to desk.','People who do not work here open files nobody here wanted opened.',38],
@@ -125,7 +126,7 @@
     ['No Headline','recovery', .002,.018,'The false dawn begins.','The first green session is small enough to trust.',41],
     ['A Little Better','recovery', .001,.020,'Credit spreads narrow by a fraction.','Nobody rings a bell. Relief enters through posture.',42],
     ['Perfect Volume','recovery', .001,.021,'The rally continues on mechanically even volume.','The machines do not take lunch.',43],
-    ['Over','recovery', .002,.022,'The desk agrees the crisis is over.','Kroll buys dinner. Monday\'s quota is already waiting.',44],
+    ['Over','recovery', .002,.022,'The desk agrees the crisis is over.','Kroll buys dinner. Tomorrow\'s quota is already waiting.',44],
     ['Make It Back','recovery', .004,.022,'Quota spikes as the rally continues.','The desk mandate is simple: make it back, and make it back now.',45],
     ['Nobody Cares','recovery', .003,.021,'Sana\'s investigation lands on nothing.','Nine thousand words vanish beneath a green index.',46],
     ['Twenty Percent','recovery', .002,.020,'The index nears twenty percent above the low.','The short book bleeds without the mercy of a gap.',47],
@@ -223,6 +224,16 @@
         if (d === 45 && S.f.pulledPlug) {
           events.unshift(ev(0,'AUTOMATED EXECUTION STACK DISCONNECTED BEFORE THE OPEN',[],{big:true,script:'pullFlatten'}));
         }
+        // Deepen the falls only: gaps, targets and negative shocks scale with crash severity.
+        // Sessions 40, 44 and 45 already sit at or near the -20% breaker, so any extra depth would close them early.
+        if (d !== 40 && d !== 44 && d !== 45) {
+          // Frozen at the day's first build so a mid-session save replays the same tape.
+          const k = S.crashDay === d ? S.crashK : cm(S);
+          if (g < 0) g *= k;
+          if (t < 0) t *= k;
+          events = events.map((e) => (e.impacts && e.impacts.some((i) => i.pct < 0)
+            ? Object.assign({}, e, { impacts: e.impacts.map((i) => (i.pct < 0 && !e.hype ? Object.assign({}, i, { pct: i.pct * k }) : i)) }) : e));
+        }
         const vf = !S.f.billPassed && VOTE_FAIL[d];
         if (vf && vf.news) events = events.map((e) => (vf.news[e.text] ? Object.assign({}, e, { text: vf.news[e.text] }) : e));
         return { regime, market: { gap: g, target: t }, events };
@@ -237,7 +248,7 @@
   DAYS[7].calls = (S) => S.choices.c2 ? [] : [{
     t: 150, scripted: true, kind: 'choice', choiceId: 'c2', timer: 22,
     from: 'Perry Nakash', role: 'Senior Analyst, Meridian Ratings',
-    text: 'The CASCADE committee met. Current vintage goes on downgrade watch Monday. I should not be telling you this.',
+    text: 'The CASCADE committee met. Current vintage goes on downgrade watch next Friday. I should not be telling you this.',
     options: [{id:'trade',label:'Thank him. Short the stack.'},{id:'ignore',label:'You never took this call.'},{id:'warn',label:'Tell him to file it.'}], defaultOpt: 'ignore'
   }];
   DAYS[16].calls = (S) => S.choices.c4 ? [] : [{
@@ -425,11 +436,11 @@
     },
 
     c5: {
-      day: 21, speaker: 'Adele Venn', role: 'Secretary of the Treasury', title: 'Rescue Weekend',
+      day: 21, speaker: 'Adele Venn', role: 'Secretary of the Treasury', title: 'Rescue Night',
       kicker: 'DECISION 5',
       text: [
-        'You are in a conference room at Treasury at 10 PM on a Saturday because somebody on Thorne\'s staff put your name on a list.',
-        'Venn has been awake for thirty-one hours. "Ridgeway does not open Monday unless we do something. If we guarantee it, every bank on the street learns that we always will. If we don\'t, we find out what is actually connected to what."',
+        'You are in a conference room at Treasury at 10 PM on a Tuesday because somebody on Thorne\'s staff put your name on a list.',
+        'Venn has been awake for thirty-one hours. "Ridgeway does not open tomorrow unless we do something. If we guarantee it, every bank on the street learns that we always will. If we don\'t, we find out what is actually connected to what."',
         '"You trade this paper. You are going to tell me which of those is worse."'
       ],
       options: [
@@ -442,8 +453,8 @@
           },
           reply: 'Venn: "Then I own this. Thank you for being in the room."',
           after: [
-            'They announce it at 11:40 PM Sunday. Futures gap up three percent.',
-            'By Tuesday the phrase "public money, private bonuses" is on every screen in the country, and it will be for a year.',
+            'They announce it at 11:40 PM. Futures gap up three percent.',
+            'By Friday the phrase "public money, private bonuses" is on every screen in the country, and it will be for a year.',
             'It worked. That is the part people will find hardest to forgive.'
           ]
         },
@@ -456,8 +467,8 @@
           },
           reply: 'Venn: "I hope you are right. I genuinely do."',
           after: [
-            'Ridgeway files at 11:40 PM Sunday. It is the largest failure in the country\'s history by a factor of four.',
-            'On Monday, three things nobody had connected to Ridgeway stop working.',
+            'Ridgeway files at 11:40 PM. It is the largest failure in the country\'s history by a factor of four.',
+            'By the open, three things nobody had connected to Ridgeway stop working.',
             'Venn calls you at 6 AM. She does not say anything for a while. Then: "Come in."'
           ]
         },
@@ -472,7 +483,7 @@
           },
           reply: 'Venn: "The ban buys us a week. I hope a week is enough."',
           after: [
-            'The emergency order lands at 4 AM Monday. Short selling in financials is prohibited until further notice.',
+            'The emergency order lands at 4 AM. Short selling in financials is prohibited until further notice.',
             'Volumes collapse. Spreads triple. Prices stop falling, which everyone agrees is not the same thing as prices being right.',
             'Your own shorts in those names are frozen exactly where they were, which you had not thought about until now.'
           ]
@@ -485,7 +496,7 @@
       kicker: 'DECISION 6',
       text: [
         'The valuation committee needs a trading signature on the CASCADE book by 6 PM. Kroll has brought the folder to you personally, which he has never done.',
-        '"Model says sixty-one cents. The desk says twenty-two. If we print twenty-two, our capital ratio breaks, the regulator walks in on Thursday, and eleven thousand people here find out what happens next."',
+        '"Model says sixty-one cents. The desk says twenty-two. If we print twenty-two, our capital ratio breaks, the regulator walks in tomorrow, and eleven thousand people here find out what happens next."',
         '"Sign the sixty-one. It is a model output. Models are opinions. Opinions are not lies."'
       ],
       options: [
@@ -500,7 +511,7 @@
           reply: 'Kroll: "You just saved this firm. Nobody will ever thank you for it."',
           after: [
             'You sign on the second page. It takes four seconds.',
-            'The capital ratio holds. The regulator comes Thursday and leaves Thursday. Sixty thousand dollars of restricted Holloway Stern stock appears in your desk account on Friday.',
+            'The capital ratio holds. The regulator comes Friday and leaves Friday. Sixty thousand dollars of restricted Holloway Stern stock appears in your desk account on Friday.',
             'Every one of those things is a separate reason you will not sleep well.'
           ]
         },
@@ -628,8 +639,8 @@
           },
           reply: '',
           after: [
-            'Nine thousand words on a Sunday, with the valuation deck reproduced in full on page A14.',
-            'By Monday morning it is the only thing anyone is talking about. By Monday afternoon two congressional committees have demanded the same documents you already handed over.',
+            'Nine thousand words overnight, with the valuation deck reproduced in full on page A14.',
+            'By morning it is the only thing anyone is talking about. By afternoon two congressional committees have demanded the same documents you already handed over.',
             'Sana calls once, to say thank you, and then never contacts you again, which is how she protects you.'
           ]
         },
@@ -719,5 +730,5 @@
     });
   });
 
-  B.StoryData = { DAYS, CHOICES, QUOTAS, ACTS, ANOMALIES: A, ACT_START, VOTE_FAIL, voteFailFeed, actIndex, actOf, weekOf, dowOf, adj, boss, cm, FIN, STACK, ev, chirp, imp, R };
+  B.StoryData = { cm, DAYS, CHOICES, QUOTAS, ACTS, ANOMALIES: A, ACT_START, VOTE_FAIL, voteFailFeed, actIndex, actOf, weekOf, dowOf, adj, boss, FIN, STACK, ev, chirp, imp, R };
 })(window.BTB);
