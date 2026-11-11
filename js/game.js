@@ -105,6 +105,9 @@
 
     startDay() {
       const m = this.market, b = this.broker;
+      // The career-day-length setting takes effect at the next session start, so a
+      // career begun before the change follows it. Mid-day resumes keep the saved length.
+      if (this.mode.kind === 'story') this.dayLength = B.Settings.get().storyDayLength || this.dayLength;
       this.applyRules();
       // The desk sets the number before the opening gap, so the amount shown in
       // the briefing is the amount the player is actually judged against.
@@ -570,6 +573,7 @@
     quit() {
       this.running = false;
       this.alive = false;
+      B.Music.duck(false);   // quitting from pause must not leave the menu music at a third
       B.Music.play('menu');
       B.UI.leaveGame();
     }

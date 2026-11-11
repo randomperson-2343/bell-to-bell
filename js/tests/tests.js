@@ -481,7 +481,8 @@
     const S = (choices, f) => ({ choices: choices || {}, f: f || {} });
     assert(SB.row(4, S({ c1: 'dump' })).arg !== SB.row(4, S({ c1: 'refuse' })).arg, 'session 5 ignores the pension dump');
     assert(SB.row(22, S({ c5: 'fail' })).shot === 'dark' && SB.row(22, S({ c5: 'ban' })).arg !== SB.row(22, S({ c5: 'bail' })).arg, 'session 23 ignores Rescue Weekend');
-    assert(SB.row(40, S({}, { billPassed: true })).doc === 'vote' && SB.row(40, S()).shot === 'tableau', 'session 41 ignores the vote');
+    assert(SB.row(40, S({}, { billPassed: true })).shot === 'tableau' && SB.row(40, S()).shot === 'tableau', 'session 41 (the failed vote) ignores the vote');
+    assert(/PASSES/.test(SB.row(41, S({}, { billPassed: true })).arg) && !/PASSES/.test(String(SB.row(41, S()).arg)), 'the bill-passes card is on session 42, only when it passes');
     assert(SB.row(45, S({}, { pulledPlug: true })).shot === 'racks', 'session 46 ignores Pull the Plug');
     // Variant mornings must not reuse the default morning's cached frames.
     const ids = (S$) => B.Scenes.news({ day: 4, brief: { title: 'x', feed: [] }, game: { mode: { S: S$ } } }).map((b) => b.id).join();
@@ -1718,6 +1719,131 @@
     assert(W.target === Math.round(Math.max(1500, g.broker.equity() * pct * 1.25) / 50) * 50 && W.target === 9300, 'week 1 target ' + W.target);
     g.mode.S.f.pulledPlug = true;
     assert(g.mode.quota(45, g) === 0, 'finale quota stays 0');
+  });
+
+  // ---------- Minor fixes ----------
+  test('Story text names weekdays that fit the 46-session calendar', () => {
+    const D = B.StoryData, SS = B.SqwakStory, S = B.StoryMode().S;
+    S.f.billPassed = true;
+    const bad = [];
+    // Genuine references: a mother planning ahead, a transit notice.
+    const okWeekend = { 10: 1, 42: 1 };
+    const check = (d, where, t) => {
+      const text = String(t || '').replace(/<[^>]+>/g, '');
+      if (/\b(weekend|Saturday|Sunday)\b/i.test(text) && d % 5 !== 4 && !okWeekend[d]) bad.push(`${d + 1} ${where}: ${text.slice(0, 60)}`);
+      if (/\bMonday\b/.test(text) && [3, 4, 0].indexOf(d % 5) < 0) bad.push(`${d + 1} ${where}: ${text.slice(0, 60)}`);
+    };
+    D.DAYS.forEach((day, d) => {
+      check(d, 'title', day.title);
+      day.brief(S).forEach((p) => check(d, 'brief', p));
+      (day.feed || []).forEach((f) => check(d, 'feed', (f.title || '') + ' ' + (f.text || '')));
+      (day.scen(S).events || []).forEach((e) => check(d, 'event', e.text));
+      (day.calls ? day.calls(S) : []).forEach((c) => check(d, 'call', c.text));
+    });
+    SS.INTRADAY.forEach((a, d) => (a || []).forEach((p) => check(d, 'post', p[2])));
+    assert(!bad.length, 'wrong weekday in story text: ' + bad.join(' | '));
+    // The Treasury decision plays on a Tuesday night.
+    const c5 = Object.keys(D.CHOICES).map((k) => D.CHOICES[k]).find((c) => c.day === 21);
+    assert(c5 && !/Saturday|Sunday|Monday/.test(JSON.stringify(c5)), 'the rescue decision names a weekend day');
+  });
+
+  test('A marketable limit order pays the same impact as a market order, capped at its limit', () => {
+    const run = (limit) => {
+      const m = mkMarket(); for (let i = 0; i < 40; i++) m.step(0.25);
+      const b = new B.Broker({ cash: 5000000, feeMult: 0, slipMult: 1 }); b.attach(m); b.startDay();
+      const sym = 'RDGW', q = m.quote(sym), qty = 8000;
+      const r = b.marketOrder(sym, qty, limit ? { limitPx: q.ask * 1.05 } : {});
+      return { r, ask: q.ask };
+    };
+    const mk = run(false), lm = run(true);
+    assert(mk.r.price > mk.ask * 1.0001, 'market order should slip');
+    assert(Math.abs(lm.r.price - mk.r.price) < 1e-9, 'a limit through the market pays the same impact: ' + lm.r.price + ' vs ' + mk.r.price);
+    const m = mkMarket(); for (let i = 0; i < 40; i++) m.step(0.25);
+    const b = new B.Broker({ cash: 5000000, feeMult: 0, slipMult: 1 }); b.attach(m); b.startDay();
+    const q = m.quote('RDGW');
+    const capped = b.marketOrder('RDGW', 8000, { limitPx: q.ask });
+    assert(capped.price <= q.ask + 1e-9, 'never worse than the limit: ' + capped.price + ' vs ' + q.ask);
+  });
+
+  test('Bonus advance: repaid from bonus first, and only the unrepaid advance is clawed back', () => {
+    const E = B.Economy;
+    const run = (bonusWeeks) => {
+      const mode = B.StoryMode(), W = mode.S.wallet;
+      W.deficit = 9000; // ordinary unearned draw, not part of the advance
+      mode.applyLife('advance', 'take');
+      const adv = W.advanceGross;
+      for (let i = 0; i < bonusWeeks; i++) E.settle(W, { equity: 600000 + i * 200000, capital: 250000, weekMade: true, sessions: 5, metDays: 0, breaches: [] });
+      const cash = W.cash;
+      E.settleUp(W);
+      return { adv, charged: cash - W.cash, left: W.advanceGross };
+    };
+    const none = run(0), big = run(2);
+    assert(none.charged > 0, 'an advance never earned back is clawed back');
+    assert(big.left === 0 && big.charged === 0, 'a repaid advance is not charged again: left ' + big.left + ' charged ' + big.charged);
+  });
+
+  test('Crash severity deepens falls only, stays modest, and is frozen for a mid-session resume', () => {
+    const D = B.StoryData, m = B.StoryMode(), S = m.S;
+    S.m.stability = 60; S.f.dereg = false;
+    const calm = m.scenario(41);
+    S.m.stability = 10; S.f.dereg = true;
+    const shaky = m.scenario(41);
+    const k = D.cm(S);
+    assert(k > 1 && k <= 1.3, 'severity ' + k);
+    assert(shaky.market.gap < calm.market.gap && Math.abs(shaky.market.gap / calm.market.gap - k) < 1e-9, 'gaps scale by the severity');
+    const up = m.scenario(33);
+    S.m.stability = 60; S.f.dereg = false;
+    const upCalm = m.scenario(33);
+    assert(up.market.target === upCalm.market.target || up.market.target > 0, 'rising targets are not scaled');
+    // In play the factor is read once per session.
+    const g = { day: 41 };
+    S.m.stability = 60; const a = m.scenario(41, g);
+    S.m.stability = 5; const b = m.scenario(41, g);
+    assert(a.market.gap === b.market.gap, 'a mid-session stability change must not change a resumed tape');
+  });
+
+  test('The quiet Exit is reachable under the strike limit: said nothing, kept integrity, 12 or more strikes', () => {
+    const exit = B.StoryEndings.list.find((e) => e.id === 'exit');
+    const S = B.StoryMode.freshState(250000);
+    S.f.quiet = true; S.m.integrity = 70; S.quotaStrikes = 14;
+    const ctx = (strikes, integrity) => { const s = JSON.parse(JSON.stringify(S)); s.quotaStrikes = strikes; s.m.integrity = integrity; return { S: s, wealth: 400000, start: 250000, days: 46, quotaMet: 46 - strikes }; };
+    assert(strikes14(), 'unreachable');
+    function strikes14() { return exit.test(ctx(14, 70)) && !exit.test(ctx(5, 70)) && !exit.test(ctx(14, 40)) && B.StoryMode.QUOTA_STRIKE_LIMIT > 14; }
+    assert(B.StoryEndings.resolve(ctx(14, 70)).id === 'exit', 'resolves to The Exit');
+  });
+
+  test('Career day length applies from the next session start, and a mid-day resume keeps the saved length', () => {
+    const real = B.Settings.get;
+    try {
+      const g = mkGame('daylen');
+      g.day = 2;
+      g.startDay();
+      assert(g.dayLength === 180, 'starts at the length the career was begun with');
+      for (let i = 0; i < 120; i++) g.tick(0.25);
+      B.Settings.get = () => ({ storyDayLength: 240, effects: 'off', cinematics: 'off' });
+      assert(g.dayLength === 180 && Math.abs(g.rate - B.DAY_MIN / 180) < 1e-12, 'changing the setting does not alter the running session');
+      const snap = JSON.parse(JSON.stringify(g.snapshot()));
+      const g2 = new B.Game(B.StoryMode(snap.mode), snap);
+      g2.resumeDay();
+      assert(g2.dayLength === 180, 'mid-day resume keeps the length it was saved with');
+      near(g2.market.t, g.market.t, 1e-9, 'clock');
+      g2.day = 3;
+      g2.startDay();
+      assert(g2.dayLength === 240, 'the next session start picks up the new setting');
+    } finally { B.Settings.get = real; }
+  });
+
+  test('Quitting from pause releases the music duck', () => {
+    const g = mkGame('quit-duck');
+    g.startDay();
+    const calls = [];
+    const real = B.Music.duck;
+    B.Music.duck = (on) => calls.push(!!on);
+    try {
+      g.togglePause(true);
+      g.quit();
+    } finally { B.Music.duck = real; }
+    assert(calls.join() === 'true,false', 'duck calls ' + calls.join());
   });
 
   B.Tests = { results, run: () => results };

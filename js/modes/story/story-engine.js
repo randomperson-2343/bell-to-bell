@@ -211,7 +211,9 @@
         return { maxLev: lev, overnightLev: Math.max(1, lev / 2), shortBan };
       },
 
-      scenario(d) {
+      scenario(d, g) {
+        // In play, the crash severity is read once per session and saved with the story.
+        if (g && S.crashDay !== d) { S.crashDay = d; S.crashK = D.cm(S); }
         const scen = D.DAYS[d].scen(S);
         const rng = B.RNG(B.hashSeed('story-noise|' + D.DAYS[d].sid));
         const extra = B.News.randomEvents(rng, { newsFreq: 0.6, fakeShare: 0.35, volMult: 1 }).filter((e) => {

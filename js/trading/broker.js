@@ -102,16 +102,13 @@
         return err('Short-sale BAN on ' + B.SECTORS[tk.sector].name.toLowerCase());
       }
       const q = m.quote(sym);
-      let price;
-      if (o.limitPx) {
-        price = qty > 0 ? Math.min(o.limitPx, q.ask) : Math.max(o.limitPx, q.bid);
-      } else {
-        price = qty > 0 ? q.ask : q.bid;
-        // Market impact: grows with sqrt(size), scaled by the name's liquidity and by panic.
-        const liq = (tk.spread || 0.0006) / 0.0006;
-        const impact = 0.0012 * liq * Math.sqrt(Math.abs(qty) * price / 1e6) * m.fearMult() * this.slipMult;
-        price *= qty > 0 ? (1 + Math.min(impact, 0.03)) : (1 - Math.min(impact, 0.03));
-      }
+      let price = qty > 0 ? q.ask : q.bid;
+      // Market impact: grows with sqrt(size), scaled by the name's liquidity and by panic.
+      const liq = (tk.spread || 0.0006) / 0.0006;
+      const impact = 0.0012 * liq * Math.sqrt(Math.abs(qty) * price / 1e6) * m.fearMult() * this.slipMult;
+      price *= qty > 0 ? (1 + Math.min(impact, 0.03)) : (1 - Math.min(impact, 0.03));
+      // A limit order that crosses the market pays the same impact, but never worse than its limit.
+      if (o.limitPx) price = qty > 0 ? Math.min(o.limitPx, price) : Math.max(o.limitPx, price);
       if (!o.forced && Math.abs(nq) > Math.abs(cur)) {
         const newGross = this.stockGross() - Math.abs(cur) * tk.last + Math.abs(nq) * tk.last;
         if (newGross / this.rules.maxLev > this.netLiq() + 1e-6) return err('Insufficient buying power');

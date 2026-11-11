@@ -240,7 +240,9 @@
     },
     {
       id:'exit', icon:'&#128682;', title:'The Exit', hint:'Left the industry without a headline.', lockedHint:'Survival can mean refusing the next opening bell.',
-      test:(c)=>!!c.S.f.pulledPlug || (!!c.S.f.quiet && c.S.m.integrity >= 60 && c.quotaMet < c.days / 2),
+      // Quiet version: said nothing, kept their integrity, and carried at least 12 strikes (the limit is 23).
+      // The old gate (missing over half of all quotas) was nearly impossible under the strike limit.
+      test:(c)=>!!c.S.f.pulledPlug || (!!c.S.f.quiet && c.S.m.integrity >= 60 && (c.S.quotaStrikes || 0) >= 12),
       headline:'Former Trader Leaves Finance Without Comment', deck:'No book deal, no subpoena, no next desk.',
       story:(c)=>c.S.f.pulledPlug ? [
         'The automated stack died before the open. The forced unwind erased the book at the worst available prices, and the exchange shut the market for the day.',

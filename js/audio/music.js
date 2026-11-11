@@ -100,7 +100,8 @@
     },
 
     setEnabled(on) {
-      this.enabled = on;
+      if (this.enabled === !!on) return;   // an unchanged switch must not restart the track
+      this.enabled = !!on;
       this.setVolume(this.vol);
       if (!on) this.stop();
       else if (this.name) this.play(this.name, true);

@@ -142,7 +142,9 @@
       if (S.nc) S.nc.mixer.setMusic(v, S.musicOn);
     },
     setEnabled(on) {
-      S.musicOn = on;
+      // Every settings change re-applies all settings; an unchanged switch must not restart the track.
+      if (S.musicOn === !!on) return;
+      S.musicOn = !!on;
       if (S.nc) S.nc.mixer.setMusic(S.musicVol, on);
       const classic = S.name && usesClassic(S.name);
       if (!classic) C.music.name = null;       // keep the old score quiet while the new one is the voice

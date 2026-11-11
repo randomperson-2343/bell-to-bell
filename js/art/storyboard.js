@@ -57,7 +57,7 @@
     if (day === 22 && c.c5 === 'fail') return ['dark', 'L', 'NO RESCUE · DESKS CLEARED'];
     if (day === 22 && c.c5 === 'ban') return ['insert', 'L', 'SHORT SALES BANNED · 5 DAYS', 'ticket'];
     if (day === 22 && c.c5 === 'bail') return ['insert', 'L', 'GUARANTEE SIGNED · 2:14 AM', 'memo'];
-    if (day === 40 && f.billPassed) return ['insert', 'XL', 'THE BILL PASSES · 218 YEAS', 'vote'];
+    if (day === 41 && f.billPassed) return ['insert', 'XL', 'THE BILL PASSES · 218 YEAS', 'vote'];
     if (day === 45 && f.pulledPlug) return ['racks', 'XL', 'THE STACK IS OFF'];
     return null;
   }
