@@ -370,7 +370,7 @@
   }
 
   function beat(scene, id, dur, draw, line, extra) {
-    return Object.assign({ id:`${scene}:${id}`, view:V, dur, draw, line:line||'', cache:true, transition:'cut' }, extra||{});
+    return Object.assign({ id:`${scene}:${id}`, view:V, dur, draw, line:line||'', cache:true }, extra||{});
   }
   B.Rhythm = {
     view:V, endingIds:ENDING_IDS,

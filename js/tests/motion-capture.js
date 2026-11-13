@@ -1,11 +1,15 @@
 // Capture a six-frame strip (and optionally a real-time video) of one cutscene beat.
-// node js/tests/motion-capture.js <scene> <optsJSON> <beatIndex> [--video]
+// node js/tests/motion-capture.js <scene> <optsJSON> <beatIndex> [--video] [--times=a,b,c,d,e,f]
+// --times: six sample times in seconds into the beat (default 0, 0.2 ... 1 of the beat length).
 const fs = require('fs');
 const path = require('path');
 const { spawn } = require('child_process');
 const { chromium } = require('playwright');
 
-const args = process.argv.slice(2).filter((a) => a !== '--video');
+const timesArg = process.argv.find((a) => a.startsWith('--times='));
+const times = timesArg ? timesArg.slice(8).split(',').map(Number) : null;
+if (times && (times.length !== 6 || times.some((x) => !isFinite(x)))) { console.error('--times needs six numbers'); process.exit(2); }
+const args = process.argv.slice(2).filter((a) => a !== '--video' && !a.startsWith('--times='));
 const video = process.argv.includes('--video');
 const [scene, optsJSON, beatIndex] = args;
 if (!scene || !optsJSON || beatIndex == null) { console.error('usage: motion-capture.js <scene> <optsJSON> <beatIndex> [--video]'); process.exit(2); }
@@ -36,7 +40,7 @@ async function boot(page) {
   const ctx = await browser.newContext({ viewport: { width: 640, height: 360 }, deviceScaleFactor: 1 });
   const page = await ctx.newPage();
   await boot(page);
-  const dataUrl = await page.evaluate(([scene, opts, index]) => {
+  const dataUrl = await page.evaluate(([scene, opts, index, times]) => {
     const C = BTB.Cinematic;
     C.startChain('capture'); C.play(scene, opts, () => {}); C.pause();
     const beat = C.beats[index];
@@ -45,12 +49,12 @@ async function boot(page) {
     strip.width = 640 * 6; strip.height = 360;
     const sc = strip.getContext('2d');
     sc.imageSmoothingEnabled = false;
-    [0, 0.2, 0.4, 0.6, 0.8, 1].forEach((p, k) => {
-      C.seek(index, p * beat.dur);
+    (times || [0, 0.2, 0.4, 0.6, 0.8, 1].map((p) => p * beat.dur)).forEach((t, k) => {
+      C.seek(index, t);
       sc.drawImage(document.getElementById('cine-canvas'), k * 640, 0, 640, 360);
     });
     return strip.toDataURL('image/png');
-  }, [scene, opts, index]);
+  }, [scene, opts, index, times]);
   fs.writeFileSync(path.join(out, `${base}.png`), Buffer.from(dataUrl.split(',')[1], 'base64'));
   console.log(path.join(out, `${base}.png`));
   await ctx.close();

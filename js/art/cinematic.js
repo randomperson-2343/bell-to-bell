@@ -53,8 +53,9 @@
       if (!beats || !beats.length) return done && done();
       beats = beats.map((beat, index) => Object.assign({
         id: `${name}:${(opts && (opts.day != null ? opts.day : opts.id)) || 'default'}:${index}`,
-        transition: index ? 'cut' : 'fade', cache: true
+        cache: true
       }, beat));
+      beats.forEach((beat, index) => { beat.transition = B.Motion.transitionFor(beat, index); });
       if (mode === 'short') {
         const informative = beats.find((beat) => beat.informative) || beats.find((beat) => beat.line && String(beat.line).trim()) || beats[0];
         beats = [Object.assign({}, informative, { dur: 1.35, transition: 'fade' })];
@@ -68,6 +69,7 @@
       this.done = done;
       this.running = true;
       this.paused = false;
+      this.releasePictures();
       this.el.hidden = false;
       this.layout();
       B.Music.stop();
@@ -111,13 +113,9 @@
       return canvas;
     },
 
-    draw() {
-      const beat = this.beats[this.i];
-      const view = beat.view || B.Scenes.V;
-      const { ctx } = X.fit(this.canvas, view.w, view.h);
-      const progress = B.clamp(this.t / beat.dur, 0, 1);
+    // The shot picture only (camera applied); letterbox and caption are drawn by draw() afterwards.
+    paint(ctx, beat, view, progress) {
       ctx.save();
-      // The camera moves only the shot picture; letterbox, caption and fade are drawn after restore.
       if (B.Motion && B.Motion.enabled()) {
         const cam = B.Motion.cameraAt(beat.camera || B.Motion.presetFor(beat), progress);
         const cx = view.w / 2, cy = view.h / 2;
@@ -133,6 +131,50 @@
       }
       if (beat.drawDynamic) beat.drawDynamic(ctx, view, progress, this.opts);
       ctx.restore();
+    },
+
+    pictureCanvas(w, h) {
+      const c = document.createElement('canvas');
+      c.width = w; c.height = h;
+      c.getContext('2d').imageSmoothingEnabled = false;
+      return c;
+    },
+
+    // Which transition the current beat plays right now: motion off turns cross/wipe/push into fade.
+    transitionNow() {
+      const beat = this.beats[this.i];
+      let name = beat.transition || B.Motion.transitionFor(beat, this.i);
+      if (name !== 'cut' && name !== 'fade' && (this.i === 0 || !B.Motion.enabled())) name = 'fade';
+      return name;
+    },
+
+    releasePictures() {
+      this.snap = null; this.pic = null; this.snapFor = -1;
+      if (B.Motion && B.Motion.releaseScratch) B.Motion.releaseScratch();
+    },
+
+    draw() {
+      const beat = this.beats[this.i];
+      const view = beat.view || B.Scenes.V;
+      const { ctx } = X.fit(this.canvas, view.w, view.h);
+      const progress = B.clamp(this.t / beat.dur, 0, 1);
+      const name = this.transitionNow();
+      const tdur = B.Motion.TRANSITION_DUR[name] || 0;
+      if (name !== 'fade' && name !== 'cut' && this.t < tdur) {
+        // Outgoing picture: the previous beat at its end. Incoming: this beat now, camera included.
+        if (this.snapFor !== this.i) {
+          const prev = this.beats[this.i - 1], pv = prev.view || B.Scenes.V;
+          this.snap = this.pictureCanvas(pv.w, pv.h);
+          this.paint(this.snap.getContext('2d'), prev, pv, 1);
+          this.pic = this.pictureCanvas(view.w, view.h);
+          this.snapFor = this.i;
+        }
+        this.paint(this.pic.getContext('2d'), beat, view, progress);
+        B.Motion.drawTransition(ctx, view, name, this.t / tdur, this.snap, this.pic);
+      } else {
+        if (this.snapFor !== -1) this.releasePictures();
+        this.paint(ctx, beat, view, progress);
+      }
 
       const unit = view.w / 320;
       X.rect(ctx, 0, 0, view.w, Math.round(6 * unit), P.ink);
@@ -157,8 +199,8 @@
           }
         });
       }
-      if (beat.transition === 'fade') {
-        const fade = 1 - B.clamp(this.t / 0.28, 0, 1);
+      if (name === 'fade') {
+        const fade = 1 - B.clamp(this.t / B.Motion.TRANSITION_DUR.fade, 0, 1);
         if (fade > 0) { ctx.save(); ctx.globalAlpha = fade; X.rect(ctx, 0, 0, view.w, view.h, P.ink); ctx.restore(); }
       }
     },
@@ -181,6 +223,7 @@
       this.raf = null;
       if (this.onKey) window.removeEventListener('keydown', this.onKey);
       this.onKey = null;
+      this.releasePictures();
       if (this.el) this.el.hidden = true;
       const done = this.done;
       this.done = null;

@@ -43,7 +43,7 @@
   ];
 
   const Pixel = {
-    FONT,
+    FONT, BAYER,
 
     // Fit a virtual-pixel canvas to its element at an integer scale.
     // Returns the scale used, so callers can lay out in virtual pixels.

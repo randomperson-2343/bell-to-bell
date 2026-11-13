@@ -727,7 +727,7 @@
     if (r.weight === 'XL' && actTurns(day)) beats.push(R.beat('news', `${day}:act`, 1.7, (c) => actCard(c, day), act(day), { sfx: 'broadcast', transition: 'fade' }));
     const v = r.arg && variant(day, story(o)) ? ':' + r.arg : '';
     beats.push(R.beat('news', `${day}${v}:establish`, n === 1 ? 2.4 : 1.7, (c) => { framed(c, day, r, title); finePass(c, day, r, 'establish'); tell(c, day); }, n === 1 ? title : date,
-      { sfx: r.shot === 'tv' ? 'room' : r.shot === 'floor' || r.shot === 'dark' ? 'office' : 'apartment', transition: beats.length ? 'cut' : 'fade', informative: n === 1 }));
+      Object.assign({ sfx: r.shot === 'tv' ? 'room' : r.shot === 'floor' || r.shot === 'dark' ? 'office' : 'apartment', informative: n === 1 }, beats.length ? {} : { transition: 'fade' })));
     if (n >= 2) beats.push(R.beat('news', `${day}${v}:detail`, 2.3, (c) => { detailFrame(c, day, r, title); finePass(c, day, r, 'detail'); }, title, { sfx: 'broadcast', informative: true }));
     if (n >= 3) beats.push(R.beat('news', `${day}${v}:hold`, 1.1, (c) => { shotFrame(c, day, r, title); c.save(); c.globalAlpha = 0.18; X.rect(c, 0, 0, V.w, V.h, P.ink); c.restore(); }, '', {}));
     return beats;

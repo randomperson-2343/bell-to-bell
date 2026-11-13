@@ -1934,5 +1934,11 @@
     assert(M.transitionFor({ id: 'a:hold' }, 2) === 'cut' && M.transitionFor({ id: 'a:b', transition: 'cut' }, 2) === 'cut', 'hold and explicit cut');
   });
 
+  test('Storyboard: beats no longer hard-code a cut', () => {
+    const bs = B.Scenes.news({ day: 7, brief: { title: 'x', feed: [] } });
+    assert(bs[0].transition === 'fade', 'a scene must open on a fade');
+    assert(bs.slice(1).every((b, i) => B.Motion.transitionFor(b, i + 1) === (/:hold$/.test(b.id) ? 'cut' : 'cross')), 'later beats should dissolve, holds should cut');
+  });
+
   B.Tests = { results, run: () => results };
 })(window.BTB);

@@ -102,7 +102,55 @@
   }
 
   const TRANSITION_DUR = { cut: 0, fade: 0.28, cross: 0.3, wipe: 0.35, push: 0.35 };
+  // Blend two shot pictures (canvases the size of view) onto ctx. k: 0 = all from, 1 = all to.
+  // Every output pixel is a pixel of `from` or of `to`; nothing is alpha-mixed except 'fade' (ink).
+  let scratch = null;
+  const tiles = [];
+  function tile(step) {
+    if (tiles[step]) return tiles[step];
+    // 8x8 mask: each Bayer cell is 2x2 virtual pixels so the dither reads chunky.
+    const c = document.createElement('canvas'); c.width = 8; c.height = 8;
+    const g = c.getContext('2d'), bayer = B.Pixel.BAYER;
+    g.fillStyle = '#000';
+    for (let y = 0; y < 8; y++) for (let x = 0; x < 8; x++) if (bayer[(y >> 1) & 3][(x >> 1) & 3] < step) g.fillRect(x, y, 1, 1);
+    return (tiles[step] = g.createPattern(c, 'repeat'));
+  }
+  function drawTransition(ctx, view, name, k, from, to) {
+    k = clamp01(k);
+    const w = view.w, h = view.h;
+    if (!from || name === 'cut' || k >= 1) { ctx.drawImage(to, 0, 0, w, h); return; }
+    if (name === 'cross') {
+      const step = Math.round(k * 16);
+      ctx.drawImage(from, 0, 0, w, h);
+      if (step <= 0) return;
+      if (step >= 16) { ctx.drawImage(to, 0, 0, w, h); return; }
+      if (!scratch || scratch.width !== w || scratch.height !== h) {
+        scratch = document.createElement('canvas'); scratch.width = w; scratch.height = h;
+      }
+      const g = scratch.getContext('2d');
+      g.globalCompositeOperation = 'copy';
+      g.drawImage(to, 0, 0, w, h);
+      g.globalCompositeOperation = 'destination-in';
+      g.fillStyle = tile(step);
+      g.fillRect(0, 0, w, h);
+      g.globalCompositeOperation = 'source-over';
+      ctx.drawImage(scratch, 0, 0, w, h);
+    } else if (name === 'wipe') {
+      const x = Math.round(k * w);
+      ctx.drawImage(from, 0, 0, w, h);
+      if (x > 0) ctx.drawImage(to, 0, 0, x, h, 0, 0, x, h);
+    } else if (name === 'push') {
+      const x = Math.round(k * w);
+      ctx.drawImage(from, -x, 0, w, h);
+      ctx.drawImage(to, w - x, 0, w, h);
+    } else { // fade: the new picture rising out of ink
+      ctx.drawImage(to, 0, 0, w, h);
+      ctx.save(); ctx.globalAlpha = 1 - k; ctx.fillStyle = B.Pal.ink; ctx.fillRect(0, 0, w, h); ctx.restore();
+    }
+  }
+  function releaseScratch() { scratch = null; }
+
   const CACHE_BYTES = 36 * 1024 * 1024;
 
-  B.Motion = { enabled, ease, stepped, tween, keyframes, cycle, count, typed, flicker, particles, cameraAt, presetFor, PRESETS, transitionFor, TRANSITION_DUR, CACHE_BYTES };
+  B.Motion = { enabled, ease, stepped, tween, keyframes, cycle, count, typed, flicker, particles, cameraAt, presetFor, PRESETS, transitionFor, TRANSITION_DUR, drawTransition, releaseScratch, CACHE_BYTES };
 })(window.BTB);
