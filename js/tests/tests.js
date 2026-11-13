@@ -1899,5 +1899,37 @@
     assert(g2.mode.S.crashK === 1 && g2.mode.S.crashDay === 20, 'old save is pinned to the base depth');
   });
 
+  test('Motion: easing, stepping and keyframes', () => {
+    const M = B.Motion;
+    assert(M.ease.inOut(0) === 0 && M.ease.inOut(1) === 1 && M.ease.out(2) === 1 && M.ease.in(-1) === 0, 'easing is not clamped to 0..1');
+    assert(M.stepped(0.49, 4) === 0.25 && M.stepped(1, 4) === 1, 'stepped does not quantise down');
+    assert(M.tween(10, 20, 0.5) === 15, 'tween midpoint');
+    assert(M.keyframes([[0, 0], [0.5, 10], [1, 0]], 0.25) === 5 && M.keyframes([[0.2, 3], [1, 9]], 0) === 3, 'keyframes');
+    assert(M.cycle(0.26, 4, 3) === 1 && M.count(0, 41, 1) === 41 && M.typed('BELL', 0.5) === 'BE', 'cycle, count or typed');
+  });
+  test('Motion: particles and flicker repeat exactly and stay in their box', () => {
+    const M = B.Motion, o = { kind: 'snow', seed: 'a', t: 1.3, x: 10, y: 20, w: 100, h: 50, count: 30 };
+    const a = M.particles(o), b = M.particles(o);
+    assert(a.length === 30 && JSON.stringify(a) === JSON.stringify(b), 'particles are not deterministic');
+    assert(a.every((q) => Number.isInteger(q.x) && Number.isInteger(q.y) && q.x >= 10 && q.x < 110 && q.y >= 20 && q.y < 70), 'particle outside its box or off the pixel grid');
+    assert(JSON.stringify(M.particles(Object.assign({}, o, { t: 2 }))) !== JSON.stringify(a), 'particles do not move');
+    assert(M.flicker('s', 0.01, 10) === M.flicker('s', 0.09, 10), 'flicker changes inside one step');
+  });
+  test('Motion: camera and default presets', () => {
+    const M = B.Motion;
+    const c = M.cameraAt({ from: { x: 0 }, to: { x: 5, zoom: 1.08 } }, 0.5);
+    assert(Number.isInteger(c.x) && c.y === 0 && c.zoom > 1 && c.zoom < 1.08, 'camera midpoint');
+    assert(M.cameraAt(null, 0.3).zoom === 1, 'null camera is identity');
+    assert(M.presetFor({ id: 'news:3:hold', dur: 2 }) === null && M.presetFor({ id: 'news:3:detail', dur: 0.8 }) === null, 'hold and short beats must not move');
+    const p = M.presetFor({ id: 'news:3:detail', dur: 2 });
+    assert(p && JSON.stringify(p) === JSON.stringify(M.presetFor({ id: 'news:3:detail', dur: 2 })), 'preset is not stable per id');
+    assert(Object.values(M.PRESETS).every((q) => [q.from, q.to].every((e) => (e.zoom || 1) >= 1 && (e.zoom || 1) <= 1.08)), 'preset zoom out of range');
+  });
+  test('Motion: default transitions', () => {
+    const M = B.Motion;
+    assert(M.transitionFor({ id: 'a:b' }, 0) === 'fade' && M.transitionFor({ id: 'a:b' }, 2) === 'cross', 'defaults');
+    assert(M.transitionFor({ id: 'a:hold' }, 2) === 'cut' && M.transitionFor({ id: 'a:b', transition: 'cut' }, 2) === 'cut', 'hold and explicit cut');
+  });
+
   B.Tests = { results, run: () => results };
 })(window.BTB);
