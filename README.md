@@ -103,6 +103,8 @@ js/tests/               test suite, headless runners and their shared loader
   node js/tests/reachability-run.js      # chronological all-ending reachability
   node js/tests/render-run.js            # native canvas hashes and frame evidence
   node js/tests/browser-run.js           # Chromium viewport, mobile and flow checks
+  node js/tests/motion-run.js            # cutscene camera, transitions, layers, cache budget and phone frame times
+  node js/tests/motion-capture.js <scene> <optsJSON> <beat> [--video]   # frame strip and recording of one cutscene shot
   node js/tests/phone-run.js             # phone portrait + landscape: tabs, tap sizes, text sizes, calls, panic (screenshots in qa/phone/)
   ```
 
