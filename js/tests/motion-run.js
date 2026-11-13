@@ -14,6 +14,8 @@ const assert = (value, message) => { if (!value) throw new Error(message); };
   await wait(450);
   const browser = await chromium.launch();
   const page = await browser.newPage({ viewport: { width: 1280, height: 720 }, deviceScaleFactor: 1 });
+  const warnings = [];
+  page.on('console', (m) => { if (m.type() === 'warning' || m.type() === 'error') warnings.push(m.text()); });
   await page.goto(`http://127.0.0.1:${port}/index.html`, { waitUntil: 'domcontentloaded' });
   await page.keyboard.press('Enter');
   await page.waitForSelector('#screen-menu.active', { timeout: 10000 });
@@ -235,6 +237,158 @@ const assert = (value, message) => { if (!value) throw new Error(message); };
   assert(after.running === false && after.hidden === true && after.done === 1, `skip mid-transition: ${JSON.stringify(after)}`);
   assert(!after.snap && !after.pic && after.raf === null && after.key === null && after.same, 'skip left a snapshot, loop, listener or frame behind');
 
+  // ---- layered shots, cues, byte-budget cache ----
+  await page.evaluate(() => {
+    const P = BTB.Pal;
+    window.__ld = {}; window.__cue = 0;
+    BTB.SFX.qaCue = () => { window.__cue++; };
+    const count = (id) => { window.__ld[id] = (window.__ld[id] || 0) + 1; };
+    BTB.Scenes.__layers = (o) => [BTB.Motion.layered({
+      id: 'qa:layers:' + ((o && o.n) || 'a'), dur: 1.2, camera: o && o.cam ? { from: { x: 0 }, to: { x: 20 } } : undefined,
+      cues: [{ at: 0.2, sfx: 'qaCue' }],
+      layers: [
+        { id: 'bg', depth: 0, w: 800, h: 450, draw(c) { count('bg'); c.fillStyle = P.slate; c.fillRect(0, 0, 800, 450); c.fillStyle = P.bone; c.fillRect(380, 200, 16, 60); } },
+        { id: 'fg', depth: 2, w: 800, h: 450, draw(c) { count('fg'); c.fillStyle = P.white; c.fillRect(480, 200, 16, 60); },
+          animate(c, v, t) { c.fillStyle = P.putty; c.fillRect(500 + Math.round(t * 10), 300, 6, 6); } }
+      ]
+    })];
+    // layers well over the budget set below
+    BTB.Scenes.__big = () => [BTB.Motion.layered({
+      id: 'qa:big', dur: 1.2, camera: { from: { x: 0 }, to: { x: 10 } },
+      layers: ['a', 'b', 'c'].map((id, n) => ({ id, depth: n, w: 800, h: 450, draw(c) { count('big' + id); c.fillStyle = P.slate; c.fillRect(0, 0, 800, 450); } }))
+    })];
+    BTB.Scenes.__throw = () => [BTB.Motion.layered({
+      id: 'qa:throw', dur: 1.2,
+      layers: [{ id: 'bad', draw() { throw new Error('boom'); } }, { id: 'ok', draw(c) { c.fillStyle = BTB.Pal.bone; c.fillRect(0, 0, 50, 50); } }]
+    })];
+    BTB.Scenes.__throwBuilder = () => { throw new Error('builder boom'); };
+  });
+  const cols = (o, i, t) => page.evaluate(([o, i, t]) => {
+    window.openBeat('__layers', o); BTB.Cinematic.seek(i, t);
+    const cv = document.getElementById('cine-canvas'), V = BTB.Scenes.V, k = cv.width / V.w;
+    const d = cv.getContext('2d').getImageData(0, Math.round(V.h / 2 * k), cv.width, 1).data;
+    const find = (hex) => { const c = [1, 3, 5].map((j) => parseInt(hex.slice(j, j + 2), 16)); for (let x = 0; x < cv.width; x++) if (d[x * 4] === c[0] && d[x * 4 + 1] === c[1] && d[x * 4 + 2] === c[2]) return x / k; return -1; };
+    return { bg: find(BTB.Pal.bone), fg: find(BTB.Pal.white) };
+  }, [o, i, t]);
+  const c0 = await cols({ n: 'p', cam: true }, 0, 0.4), c1 = await cols({ n: 'p', cam: true }, 0, 1.2);
+  assert(c0.bg >= 0 && c0.fg >= 0 && c1.bg >= 0 && c1.fg >= 0, `parallax markers not found ${JSON.stringify([c0, c1])}`);
+  assert(Math.abs(c1.fg - c0.fg) > Math.abs(c1.bg - c0.bg) + 20, `depth 2 layer did not move further than depth 0: ${JSON.stringify([c0, c1])}`);
+
+  // each layer draw runs once across 60 seeks
+  const draws = await page.evaluate(() => {
+    window.__ld = {}; window.openBeat('__layers', { n: 'once', cam: true });
+    for (let k = 0; k < 60; k++) BTB.Cinematic.seek(0, 0.02 * k);
+    return window.__ld;
+  });
+  assert(draws.bg === 1 && draws.fg === 1, `layer draws over 60 seeks: ${JSON.stringify(draws)}`);
+
+  // identity camera: the live composite matches beat.draw(.., 1) pixel for pixel
+  const ref = await page.evaluate(() => {
+    const C = BTB.Cinematic, cv = document.getElementById('cine-canvas'), V = BTB.Scenes.V;
+    const rows = (hexOf) => hexOf;
+    const hashRef = () => {
+      const beat = BTB.Scenes.__layers({ n: 'ref' })[0], pic = document.createElement('canvas');
+      pic.width = V.w; pic.height = V.h;
+      const g = pic.getContext('2d'); g.fillStyle = BTB.Pal.ink; g.fillRect(0, 0, V.w, V.h);
+      beat.draw(g, V, 1, {});
+      const r = document.createElement('canvas'); r.width = cv.width; r.height = cv.height;
+      const h = r.getContext('2d'); h.imageSmoothingEnabled = false; h.drawImage(pic, 0, 0, cv.width, cv.height);
+      const top = Math.round(12 * cv.height / 360), end = Math.round(cv.height * 0.75), d = h.getImageData(0, top, cv.width, end - top).data;
+      let x = 2166136261; for (let i = 0; i < d.length; i++) { x ^= d[i]; x = Math.imul(x, 16777619); } return (x >>> 0).toString(16);
+    };
+    const seen = () => {
+      const top = Math.round(12 * cv.height / 360), end = Math.round(cv.height * 0.75), d = cv.getContext('2d').getImageData(0, top, cv.width, end - top).data;
+      let x = 2166136261; for (let i = 0; i < d.length; i++) { x ^= d[i]; x = Math.imul(x, 16777619); } return (x >>> 0).toString(16);
+    };
+    window.openBeat('__layers', { n: 'ref' }); C.seek(0, 1.2);
+    return { live: seen(), ref: hashRef() };
+  });
+  assert(ref.live === ref.ref, 'live layer composite differs from beat.draw(.., 1) with an identity camera');
+
+  // effects reduced: one unchanging still, equal to the final picture; back to full it moves again
+  const refShot = await shot('__layers', { n: 'ref' }, 0, 1.2);
+  const lay = (t) => shot('__layers', { n: 'm', cam: true }, 0, t);
+  await page.evaluate(() => BTB.Settings.set('effects', 'reduced'));
+  const rd = [await lay(0.5), await lay(0.9), await lay(1.2)];
+  assert(rd[0] === rd[1] && rd[1] === rd[2], 'reduced: a layered shot still changes');
+  assert(rd[0] === refShot, 'reduced: the layered still is not draw(.., 1)');
+  await page.evaluate(() => BTB.Settings.set('effects', 'full'));
+  assert(await lay(0.5) !== await lay(1.2), 'effects back to full: a layered shot with a camera does not move on the next frame');
+
+  // short mode: the final still
+  await page.evaluate(() => BTB.Settings.set('cinematics', 'short'));
+  const sh = [await lay(0.5), await lay(1.2)];
+  await page.evaluate(() => BTB.Settings.set('cinematics', 'full'));
+  assert(sh[0] === sh[1] && sh[0] === refShot, 'short: a layered shot is not its final still');
+
+  // cues: once in real time, not from seek, not on skip
+  const cues = await page.evaluate(async () => {
+    const C = BTB.Cinematic, out = {};
+    if (C.running) C.finish();
+    window.__cue = 0; C.startChain('cue'); C.play('__layers', { n: 'cue' }, () => {}); C.pause(); C.seek(0, 0.5); C.seek(0, 1.1);
+    out.seek = window.__cue; C.finish(); C.endChain();
+    window.__cue = 0; C.startChain('cue'); C.play('__layers', { n: 'cue2' }, () => { window.__fin = true; });
+    await new Promise((r) => setTimeout(r, 1600));
+    out.real = window.__cue; out.finished = !!window.__fin; C.endChain();
+    window.__cue = 0; C.startChain('cue'); C.play('__layers', { n: 'cue3' }, () => {}); C.skipAll();
+    await new Promise((r) => setTimeout(r, 400));
+    out.skip = window.__cue; C.endChain();
+    return out;
+  });
+  assert(cues.seek === 0 && cues.skip === 0, `cue fired from seek or skip: ${JSON.stringify(cues)}`);
+  assert(cues.real === 1 && cues.finished, `cue should fire exactly once in real time: ${JSON.stringify(cues)}`);
+
+  // byte-budget cache
+  const budget = await page.evaluate(() => {
+    const C = BTB.Cinematic, M = BTB.Motion, out = {};
+    if (C.running) C.finish();
+    C.endChain(); out.cleared = C.frameCache.size === 0 && C.cacheBytes === 0;
+    const run = () => {
+      C.startChain('budget');
+      for (let day = 0; day < 46; day++) {
+        window.openBeat('news', { day, brief: { title: 'SESSION ' + day, feed: [] } });
+        for (let i = 0; i < C.beats.length; i++) C.seek(i, C.beats[i].dur * 0.9);
+      }
+      const bytes = [...C.frameCache.values()].reduce((a, c) => a + c.width * c.height * 4, 0);
+      const r = { bytes: C.cacheBytes, actual: bytes, size: C.frameCache.size };
+      C.finish(); C.endChain(); return r;
+    };
+    out.real = run();
+    const keep = M.CACHE_BYTES; M.CACHE_BYTES = 8 * 1024 * 1024;
+    out.small = run();
+    // one beat whose layers alone exceed the budget: each layer still draws once
+    M.CACHE_BYTES = 1024 * 1024; window.__ld = {};
+    window.openBeat('__big', {});
+    for (let k = 0; k < 60; k++) C.seek(0, 0.02 * k);
+    out.big = { ld: Object.assign({}, window.__ld), bytes: C.cacheBytes, keys: C.frameCache.size };
+    M.CACHE_BYTES = keep; C.finish(); C.endChain();
+    out.afterChain = C.frameCache.size + C.cacheBytes;
+    // an unchained scene clears its cache when it finishes
+    C.play('__big', {}, () => {}); C.pause(); C.seek(0, 0.5); out.held = C.frameCache.size; C.finish(); out.unchained = C.frameCache.size + C.cacheBytes;
+    return out;
+  });
+  assert(budget.cleared, 'endChain did not clear the cache');
+  assert(budget.real.bytes <= 36 * 1024 * 1024 && budget.real.bytes === budget.real.actual && budget.real.size > 0, `46 news scenes: ${JSON.stringify(budget.real)}`);
+  assert(budget.small.bytes <= 8 * 1024 * 1024 && budget.small.bytes === budget.small.actual && budget.small.size > 0, `8 MB budget not honoured: ${JSON.stringify(budget.small)}`);
+  assert(budget.big.ld.biga === 1 && budget.big.ld.bigb === 1 && budget.big.ld.bigc === 1 && budget.big.keys === 3, `over-budget beat rebuilt layers: ${JSON.stringify(budget.big)}`);
+  assert(budget.afterChain === 0, 'cache not cleared at the end of the chain');
+  assert(budget.held > 0 && budget.unchained === 0, `unchained finish did not clear the cache: ${JSON.stringify([budget.held, budget.unchained])}`);
+
+  // failures warn once with the beat id; a throwing layer leaves the rest of the shot
+  const before = warnings.length;
+  const thr = await page.evaluate(() => {
+    const C = BTB.Cinematic; let built = true;
+    window.openBeat('__throw', {});
+    for (let k = 0; k < 10; k++) C.seek(0, 0.5 + 0.01 * k);
+    C.finish(); C.endChain();
+    let done = false; C.play('__throwBuilder', {}, () => { done = true; });
+    return { done, running: C.running };
+  });
+  const added = warnings.slice(before);
+  assert(thr.done && !thr.running, 'a throwing scene builder did not end the scene');
+  assert(added.length === 2 && /qa:throw/.test(added[0]) && /bad/.test(added[0]) && /__throwBuilder/.test(added[1]), `unexpected warnings for throwing layer and builder: ${JSON.stringify(added)}`);
+  warnings.length = 0;
+
   // effects reduced: a plain fade from ink, no dissolve of the old shot
   await page.evaluate(() => BTB.Settings.set('effects', 'reduced'));
   const r1 = await shot('news', day7, 1, 0.1), r29 = await shot('news', day7, 1, 0.29), rEnd = await shot('news', day7, 1, 1.0);
@@ -248,6 +402,7 @@ const assert = (value, message) => { if (!value) throw new Error(message); };
   const cam = await page.evaluate(() => BTB.Motion.enabled());
   assert(cam === false, 'enabled() true with effects reduced');
 
+  assert(warnings.length === 0, `unexpected console output: ${JSON.stringify(warnings)}`);
   console.log('motion-run: all asserts passed');
   await browser.close(); server.kill();
 })().catch((error) => { console.error(error.stack || error); server.kill(); process.exit(1); });

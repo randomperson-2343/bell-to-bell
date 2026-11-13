@@ -8,7 +8,7 @@
   const C = {
     el: null, canvas: null, running: false, beats: null, i: 0, t: 0,
     done: null, raf: null, onKey: null, opts: null, scene: '',
-    frameCache: new Map(), chain: null, skippingChain: false,
+    frameCache: new Map(), cacheBytes: 0, chain: null, skippingChain: false, short: false, fired: null, warned: new Set(),
 
     ensure() {
       if (this.el) return;
@@ -42,14 +42,43 @@
     },
 
     startChain(name) { this.chain = name || 'scene'; this.skippingChain = false; },
-    endChain() { this.chain = null; this.skippingChain = false; },
+    endChain() { this.chain = null; this.skippingChain = false; this.clearCache(); },
+
+    clearCache() { this.frameCache.clear(); this.cacheBytes = 0; },
+
+    // Store a canvas and evict oldest-first while over budget, never touching the
+    // entries of the beat being drawn, the running beat or the one before it.
+    remember(key, canvas, beat) {
+      this.frameCache.set(key, canvas);
+      this.cacheBytes += canvas.width * canvas.height * 4;
+      if (this.cacheBytes <= B.Motion.CACHE_BYTES) return;
+      const keep = [beat.id];
+      if (this.running && this.beats) {
+        const cur = this.beats[this.i], prev = this.beats[this.i - 1];
+        if (cur) keep.push(cur.id);
+        if (prev) keep.push(prev.id);
+      }
+      for (const [k, c] of this.frameCache) {
+        if (this.cacheBytes <= B.Motion.CACHE_BYTES) break;
+        if (keep.some((id) => k.startsWith(id + '|'))) continue;
+        this.frameCache.delete(k);
+        this.cacheBytes -= c.width * c.height * 4;
+      }
+    },
+
+    warnOnce(beat, what, e) {
+      const key = beat.id + '|' + what;
+      if (this.warned.has(key)) return;
+      this.warned.add(key);
+      console.warn(`cinematic: ${what} threw for beat ${beat.id}: ${e && e.message}`);
+    },
 
     play(name, opts, done) {
       const builder = B.Scenes[name];
       const mode = this.mode();
       if (this.skippingChain || !builder || mode === 'off') return done && done();
       let beats;
-      try { beats = builder(opts || {}); } catch (e) { return done && done(); }
+      try { beats = builder(opts || {}); } catch (e) { console.warn(`cinematic: scene builder ${name} threw: ${e && e.message}`); return done && done(); }
       if (!beats || !beats.length) return done && done();
       beats = beats.map((beat, index) => Object.assign({
         id: `${name}:${(opts && (opts.day != null ? opts.day : opts.id)) || 'default'}:${index}`,
@@ -60,6 +89,8 @@
         const informative = beats.find((beat) => beat.informative) || beats.find((beat) => beat.line && String(beat.line).trim()) || beats[0];
         beats = [Object.assign({}, informative, { dur: 1.35, transition: 'fade' })];
       }
+      this.short = mode === 'short';
+      this.warned.clear();
       this.ensure();
       this.scene = name;
       this.opts = opts || {};
@@ -84,6 +115,7 @@
         if (this.paused) { this.raf = requestAnimationFrame(step); return; }
         this.t += dt;
         const beat = this.beats[this.i];
+        this.fireCues(beat);
         if (this.t >= beat.dur) {
           this.i++;
           this.t = 0;
@@ -105,18 +137,41 @@
       const ctx = canvas.getContext('2d');
       ctx.imageSmoothingEnabled = false;
       try { beat.draw(ctx, view, beat.cacheAt == null ? 1 : beat.cacheAt, this.opts); }
-      catch (e) { X.rect(ctx, 0, 0, view.w, view.h, P.ink); }
-      this.frameCache.set(key, canvas);
-      // Each 640x360 frame is about 0.9 MB. 40 of them is plenty for any one
-      // scene chain; 220 (about 200 MB) could get a phone tab killed.
-      if (this.frameCache.size > 40) this.frameCache.delete(this.frameCache.keys().next().value);
+      catch (e) { this.warnOnce(beat, 'draw', e); X.rect(ctx, 0, 0, view.w, view.h, P.ink); }
+      this.remember(key, canvas, beat);
+      return canvas;
+    },
+
+    // One layer of a layered beat, drawn once into a transparent canvas of its own size.
+    layerCanvas(beat, layer, view) {
+      const w = layer.w || view.w, h = layer.h || view.h;
+      const key = `${beat.id}|${layer.id}|${w}x${h}`;
+      if (this.frameCache.has(key)) return this.frameCache.get(key);
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      ctx.imageSmoothingEnabled = false;
+      try { layer.draw(ctx, w === view.w && h === view.h ? view : Object.assign({}, view, { w, h }), this.opts); }
+      catch (e) { this.warnOnce(beat, 'layer ' + layer.id, e); }
+      this.remember(key, canvas, beat);
       return canvas;
     },
 
     // The shot picture only (camera applied); letterbox and caption are drawn by draw() afterwards.
     paint(ctx, beat, view, progress) {
       ctx.save();
-      if (B.Motion && B.Motion.enabled()) {
+      const motion = B.Motion && B.Motion.enabled();
+      if (beat.layers && motion && !this.short) {
+        // live layers: parallax camera, no preset; the beat's own camera may use x, y and zoom
+        X.rect(ctx, 0, 0, view.w, view.h, P.ink);
+        try {
+          B.Motion.composite(ctx, view, beat, progress * beat.dur, progress, this.opts, B.Motion.cameraAt(beat.camera, progress), (layer) => this.layerCanvas(beat, layer, view));
+        } catch (e) { this.warnOnce(beat, 'composite', e); X.rect(ctx, 0, 0, view.w, view.h, P.ink); }
+        if (beat.drawDynamic) beat.drawDynamic(ctx, view, progress, this.opts);
+        ctx.restore();
+        return;
+      }
+      if (motion && !beat.layers) {
         const cam = B.Motion.cameraAt(beat.camera || B.Motion.presetFor(beat), progress);
         const cx = view.w / 2, cy = view.h / 2;
         X.rect(ctx, 0, 0, view.w, view.h, P.ink); // rows a camera offset exposes stay opaque ink
@@ -124,10 +179,10 @@
         ctx.scale(cam.zoom, cam.zoom);
         ctx.translate(-cx, -cy);
       }
-      if (beat.cache !== false) ctx.drawImage(this.cachedFrame(beat, view), 0, 0, view.w, view.h);
+      if (beat.cache !== false || beat.layers) ctx.drawImage(this.cachedFrame(beat, view), 0, 0, view.w, view.h);
       else {
         try { beat.draw(ctx, view, progress, this.opts); }
-        catch (e) { X.rect(ctx, 0, 0, view.w, view.h, P.ink); }
+        catch (e) { this.warnOnce(beat, 'draw', e); X.rect(ctx, 0, 0, view.w, view.h, P.ink); }
       }
       if (beat.drawDynamic) beat.drawDynamic(ctx, view, progress, this.opts);
       ctx.restore();
@@ -212,7 +267,19 @@
     pause() { this.paused = true; },
     seek(i, t) { if (!this.running || !this.beats || i < 0 || i >= this.beats.length) return; this.i = i; this.t = t; this.draw(); },
     optsOf() { return this.opts || {}; },
+    // Timed sound cues: each fires once when the beat's clock passes `at`. Never from seek or skip.
+    fireCues(beat) {
+      if (!beat.cues || !B.SFX) return;
+      if (!this.fired || this.fired.beat !== beat) this.fired = { beat, done: new Set() };
+      beat.cues.forEach((cue, n) => {
+        if (this.t < cue.at || this.fired.done.has(n)) return;
+        this.fired.done.add(n);
+        const fn = B.SFX[cue.sfx];
+        if (typeof fn === 'function') fn.call(B.SFX);
+      });
+    },
     playBeat() {
+      this.fired = null;
       const beat = this.beats && this.beats[this.i];
       if (!beat || !beat.sfx || !B.SFX) return;
       const fn = B.SFX[beat.sfx];
@@ -227,6 +294,7 @@
       if (this.onKey) window.removeEventListener('keydown', this.onKey);
       this.onKey = null;
       this.releasePictures();
+      if (!this.chain) this.clearCache();
       if (this.el) this.el.hidden = true;
       const done = this.done;
       this.done = null;

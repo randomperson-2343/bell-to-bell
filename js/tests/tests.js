@@ -1934,6 +1934,19 @@
     assert(M.transitionFor({ id: 'a:hold' }, 2) === 'cut' && M.transitionFor({ id: 'a:b', transition: 'cut' }, 2) === 'cut', 'hold and explicit cut');
   });
 
+  test('Motion: a layered beat supplies a full draw in layer order', () => {
+    const fakeCtx = () => new Proxy({}, { get: () => () => {} });
+    const log = [];
+    const beat = B.Motion.layered({ id: 't:x', dur: 2, layers: [
+      { id: 'bg', depth: 0, draw: () => log.push('bg') },
+      { id: 'fg', depth: 1.5, draw: () => log.push('fg'), animate: (c, v, t, p) => log.push('fg@' + t + '/' + p) }
+    ] });
+    beat.draw(fakeCtx(), { w: 640, h: 360 }, 1, {});
+    assert(log.join() === 'bg,fg,fg@2/1' && beat.cache === false, 'layer order, animate time or cache flag');
+    let threw = false; try { B.Motion.layered({ id: 't:y', dur: 1, layers: [{ id: 'a', draw() {} }, { id: 'a', draw() {} }] }); } catch (e) { threw = true; }
+    assert(threw, 'duplicate layer ids must be rejected');
+  });
+
   test('Storyboard: beats no longer hard-code a cut', () => {
     const bs = B.Scenes.news({ day: 7, brief: { title: 'x', feed: [] } });
     assert(bs[0].transition === 'fade', 'a scene must open on a fade');

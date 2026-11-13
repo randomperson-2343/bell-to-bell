@@ -147,7 +147,70 @@
   }
   function releaseScratch() { scratch = null; }
 
+
+  // ---- Layered shots -------------------------------------------------------
+  const layerView = (view, layer) => {
+    const w = layer.w || view.w, h = layer.h || view.h;
+    return w === view.w && h === view.h ? view : Object.assign({}, view, { w, h });
+  };
+  const layerOrigin = (view, lv) => [Math.round((view.w - lv.w) / 2), Math.round((view.h - lv.h) / 2)];
+  const warn = (what, beat, layer, e) => {
+    if (typeof console !== 'undefined') console.warn(`motion: ${what} threw in beat ${beat.id}${layer ? ' layer ' + layer.id : ''}: ${e && e.message}`);
+  };
+
+  // Gives a beat with `layers` a complete draw(ctx, view, p, opts): every layer, then its animate, back to front.
+  // Paints straight into ctx in layer coordinates, so it needs no canvas, document or settings.
+  function layered(beat) {
+    const seen = new Set();
+    for (const layer of beat.layers) {
+      if (seen.has(layer.id)) throw new Error(`layered beat ${beat.id}: duplicate layer id ${layer.id}`);
+      seen.add(layer.id);
+    }
+    return Object.assign(beat, {
+      cache: false,
+      draw(ctx, view, p, opts) {
+        for (const layer of beat.layers) {
+          const lv = layerView(view, layer), o = layerOrigin(view, lv);
+          ctx.save();
+          ctx.translate(o[0], o[1]);
+          try {
+            layer.draw(ctx, lv, opts);
+            if (layer.animate) layer.animate(ctx, lv, p * beat.dur, p, opts);
+          } catch (e) { warn('layer draw', beat, layer, e); }
+          ctx.restore();
+        }
+      }
+    });
+  }
+
+  // Per-frame path: blit each layer's cached canvas with its parallax offset, then its animate.
+  // Zoom is about the view centre, after the offset, equally for every layer.
+  const warned = new Set();
+  function composite(ctx, view, beat, t, p, opts, cam, getLayer) {
+    ctx.save();
+    const cx = view.w / 2, cy = view.h / 2;
+    ctx.translate(cx, cy);
+    ctx.scale(cam.zoom, cam.zoom);
+    ctx.translate(-cx, -cy);
+    for (const layer of beat.layers) {
+      const lv = layerView(view, layer), o = layerOrigin(view, lv), d = layer.depth == null ? 1 : layer.depth;
+      const ox = o[0] - Math.round(cam.x * d), oy = o[1] - Math.round(cam.y * d);
+      ctx.drawImage(getLayer(layer), ox, oy);
+      if (layer.animate) {
+        ctx.save();
+        ctx.translate(ox, oy);
+        try { layer.animate(ctx, lv, t, p, opts); }
+        catch (e) {
+          const key = beat.id + '|' + layer.id;
+          if (!warned.has(key)) { warned.add(key); warn('layer animate', beat, layer, e); }
+        }
+        ctx.restore();
+      }
+    }
+    ctx.restore();
+  }
+
   const CACHE_BYTES = 36 * 1024 * 1024;
 
-  B.Motion = { enabled, ease, stepped, tween, keyframes, cycle, count, typed, flicker, particles, cameraAt, presetFor, PRESETS, transitionFor, TRANSITION_DUR, drawTransition, releaseScratch, CACHE_BYTES };
+  B.Motion = { enabled, ease, stepped, tween, keyframes, cycle, count, typed, flicker, particles, cameraAt, presetFor, PRESETS, transitionFor, TRANSITION_DUR, drawTransition, releaseScratch, layered, composite, CACHE_BYTES };
 })(window.BTB);
