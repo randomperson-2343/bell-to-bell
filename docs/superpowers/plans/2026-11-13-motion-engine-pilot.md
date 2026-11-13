@@ -36,6 +36,21 @@ node js/tests/motion-run.js
 
 `browser-run.js` and `render-run.js` rewrite files under `qa/evidence/`. Run `git checkout -- qa/evidence` afterwards unless the task says to commit new evidence.
 
+## Findings from the before review
+
+Verified facts about today's code that every task must respect.
+
+- `render-run.js` and `export-storyboard.js` load the art files with no `B.Settings` at all. `motion.js` must not touch `window.matchMedia`, `document` or `B.Settings` at load, `enabled()` must return false when `B.Settings` is missing, and a layered beat's generated `draw` must never consult settings.
+- `Pixel.fit()` (`pixel.js:50`) reassigns the canvas width and height on every call, and `cinematic.js` calls it every frame. That wipes and reallocates the backing store 60 times a second. Task 2 fixes this: resize only when the size actually changes, otherwise just reset the transform.
+- The first frame of a beat builds its cached picture, which costs tens of milliseconds. That frame is excluded from the frame-time limit (Task 5), and Task 4 must not add a second build per beat.
+- The cache key is the beat id and size only. Some ids do not capture everything the picture depends on (`close:<day>:sqwak`, `phone:<day>:*`, news charts that read the live market). Clearing the cache at the end of each chain (Task 4) is what keeps these from going stale. Do not remove that clear.
+- A `draw` that throws is cached as a black frame and nothing is logged; a scene builder that throws silently skips the scene. Task 4 adds one `console.warn` per failure with the beat id.
+- `at2x` (`storyboard.js:72`) sets the shared season and clears it to null in `finally`. A nested `at2x` therefore clears the outer one's season. Never nest it.
+- Art outside `at2x` (the weekend apartment is native 640x360 on a 3 px grid) gets its weather from `R.weather`, not from the season global.
+- `tests.js:1363-1392` calls `DecisionArt.room` with a stub context that has no `drawImage`, `arc` or `getImageData`. Not touched in this plan; noted for stage 3.
+- Today's beat lengths: news establish 1.7 s (2.4 s on one-beat days), detail 2.3 s, hold 1.1 s; office 1.45 / 1.8 / 0.85 s; close bell 1.25 s; weekend sat 1.7 s.
+- Nothing in the cutscene code reads the Screen effects setting today. `enabled()` in Task 2 is the first place that does.
+
 ## Review Focus
 
 1. **Skip during a transition or mid-layer build.** Tap or key must end the scene at once and leave no stray frame, listener or animation loop running. (Task 3)
@@ -146,7 +161,7 @@ assert(await frame('news', day7, 1, 0.5) === await frame('news', day7, 1, 2.2), 
 ```
 
 - [ ] **Step 2:** Run `node js/tests/motion-run.js`. Expected: FAIL on the first assert.
-- [ ] **Step 3:** Implement `enabled`, `pause`, `seek` and the camera in `cinematic.js` `draw()`.
+- [ ] **Step 3:** Implement `enabled`, `pause`, `seek` and the camera in `cinematic.js` `draw()`. Stop the per-frame canvas reallocation (see Findings): add an assert to `motion-run.js` that the `#cine-canvas` `width` property is assigned at most once across 30 consecutive seeks at a fixed viewport.
 - [ ] **Step 4:** Run `node js/tests/motion-run.js`, `node js/tests/node-run.js`, `node js/tests/browser-run.js`. Expected: all pass.
 - [ ] **Step 5:** Write `js/tests/motion-capture.js` and capture, with `--video`, these three: `news` day 45 beat 0, `weekend` day 4 beat 0, `decision` (`{ id: 'c1', day: 3, title: 'x' }`) beat 0. Commit code and captures.
 - [ ] **Step 6: STOP. Shimmer gate.** Report the capture paths to the coordinator and wait. The coordinator rules one of: keep the presets; or `PRESETS` becomes fixed-zoom pan only (`from.zoom === to.zoom`); or `presetFor` returns `null` for any beat without `layers`. Apply the ruling, update the Task 1 preset test to match, rerun all four runners, commit.
@@ -220,7 +235,7 @@ test('Motion: a layered beat supplies a full draw in layer order', () => {
 In `motion-run.js`, using a test scene registered on `BTB.Scenes.__layers` from inside the page (two oversized layers at depth 0 and 2 with a camera pan, one `animate`, one cue): the depth-2 layer moves further than the depth-0 layer between `t = 0` and the end; each layer's `draw` ran exactly once across 60 seeks; `seek` to the end matches `beat.draw(..., 1)` pixel for pixel when the camera is identity; effects `reduced` shows one unchanging still; `cinematics: 'short'` shows the final still; the cue fires once in real-time play and not on skip; after playing all 46 news scenes in one chain `BTB.Cinematic.cacheBytes <= BTB.Motion.CACHE_BYTES`; a beat whose layers total more than the budget still draws each layer once.
 
 - [ ] **Step 2:** Run both runners. Expected: new tests FAIL.
-- [ ] **Step 3:** Implement. `browser-run.js` reads `frameCache.size`; keep it meaningful.
+- [ ] **Step 3:** Implement. `browser-run.js` reads `frameCache.size`; keep it meaningful. Add the `console.warn` on a throwing `draw` or scene builder (see Findings).
 - [ ] **Step 4:** Run all four runners. Expected: all pass, render counts unchanged.
 - [ ] **Step 5:** Commit.
 
@@ -254,18 +269,18 @@ Common rules:
 
 **Files:** Modify `js/art/scenes.js` (`elevator`, line ~112), `js/art/storyboard.js` (`framed` case `'elevator'` ~408, `B.Scenes.news` ~722).
 **Scope:** only the beat `news:0:establish`. Other uses of `SH.elevator` stay flat.
-**Extra assert:** `B.Scenes.news({ day: 0, ... })[0].id === 'news:0:establish'` and its duration is at most 3.6 s (today 2.4 s).
+**Extra assert:** `B.Scenes.news({ day: 0, ... })[0].id === 'news:0:establish'` and its duration is at most 2.55 s (today 1.7 s). Note `framed()` already applies a 1.18 zoom to this shot before `SH.elevator` draws; the motion sheet says whether the layered version keeps it.
 
 ### Task 7: Pilot shot, the closing bell
 
 **Files:** Modify `js/art/scenes.js` (`bellScene`, line ~279), `js/art/storyboard.js` (`B.Scenes.close` ~741).
-**Scope:** the first beat of `B.Scenes.close`, every session.
+**Scope:** the first beat of `B.Scenes.close`, every session. Duration at most 1.9 s (today 1.25 s).
 **Extra asserts:** `draw` at `p = 1` for a normal day shows the same swing pose `bellScene(1, ...)` gives today; on day 42 the swing is `p * 0.45`; on day 44 and later the bell does not move between any two times and the line is `4:00 PM. NOBODY RINGS IT.`
 
 ### Task 8: Pilot shot, the weekend apartment
 
 **Files:** Modify `js/art/storyboard.js` (`apartmentShot` ~464, `petShot`, `B.Scenes.weekend` ~701).
-**Scope:** the `sat` beat of `B.Scenes.weekend`, every housing tier and pet state. The `sun` and `hold` beats stay flat.
+**Scope:** the `sat` beat of `B.Scenes.weekend`, every housing tier and pet state. The `sun` and `hold` beats stay flat. Duration at most 2.55 s (today 1.7 s). Also fix the existing bug on that beat: `informative: !story` tests a function and is always false; it should be `informative: !story$`, so short mode shows Saturday on weekends with no story line. Add a `tests.js` assert for it.
 **Extra asserts:** existing weekend tests in `tests.js` still pass (beat counts 3 and 4; ids differ with and without a pet and for a neglected pet); `render-run.js` weekendUnique is 9; for each of the homes in `B.Storyboard.HOMES` and each of no pet / cat / neglected dog the shot draws without throwing.
 
 ---
