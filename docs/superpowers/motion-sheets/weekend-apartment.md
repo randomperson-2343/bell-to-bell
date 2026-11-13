@@ -36,16 +36,16 @@ Vertical only, and no zoom. The shimmer gate ruled out sideways drift and zoom o
 | --- | --- | --- | --- | --- | --- |
 | Weather in the window | `outside` | 0-2.4 | `B.Motion.particles({ kind, seed: beat.id + ':wx', t: tp, x: wx, y: wy, w: ww, h: wh, count })` inside `ctx.save(); ctx.beginPath(); ctx.rect(wx, wy, ww, wh); ctx.clip()`. Season from `R.season(day)`. See the weather table below. | see below | `particles` |
 | Clock colon blink | `furniture` | off during 0.5-1.0 and 1.5-2.0 | When off: `X.rect(nx + 45, 204, 2, 2, P.ink2)` and `X.rect(nx + 45, 208, 2, 2, P.ink2)`, with `nx = LAYOUT[home.id].stand` (default `studio`) | `ink2` | none |
-| Phone lights | `front` | from 1.00 to end | At 1.00: `X.rect(219, 264, 21, 6, P.screenGlow)`. From 1.08, also a notification bar `X.rect(222, 266, 12, 2, c)`. Hard steps, no fade. | `screenGlow`; bar `sky`, or `crimson` when `w.lateWeeks > 0` | none |
+| Phone lights | `front` | from 1.00 to end | At 1.00: screen `X.rect(219, 264, 21, 6, c)` with `c` = `sky`, or `crimsonD` when `w.lateWeeks > 0`, plus a floor glow `X.rect(207, 276, 45, 3, g)` at alpha 0.3 with `g` = `sky`, or `crimson` when late (above the caption box). From 1.08, also a notification bar `X.rect(222, 266, 12, 2, b)`, `b` = `white`, or `crimson` when late. A second silent notification: from 1.6 to 1.7 the screen, bar and glow are not drawn (dark), lit again from 1.7. No second sound cue. Hard steps, no fade. | see left | none |
 | Pet breath | `front` | inhale 0.8-1.7 | Only if `w.pet` exists. During the inhale, draw `petRows(pet, cared).slice(0, 13)` again at `translate(420, fy - 1)` then `scale(3, 3)`, where `fy = 276 - 48 - (cared ? 6 : 0)`. Head and chest rise 1 px; the bottom three rows (haunches and feet) stay. Otherwise draw nothing extra. | the pet's own | `X.drawSprite` |
 
 | Season (`R.season(day)`) | `kind` | `count` | Pose rate | Each particle |
 | --- | --- | --- | --- | --- |
 | `autumn` | `'paper'` (drifting leaves) | `clamp(Math.round(ww / 30), 4, 14)` | 12 a second: `tp = Math.floor(t * 12) / 12` | 3x2 rect, `i % 2 ? P.amber : P.crimsonD`, as `R.weather` |
 | `grey` | `'rain'` (drizzle) | `clamp(Math.round(ww * wh / 1500), 10, 40)` | full rate: `tp = t` | 1x6 rect, `grey2` |
-| `winter` (`snow > 0`) | `'snow'` | `clamp(Math.round(ww * wh / 1000 * (0.4 + 0.6 * s.snow)), 12, 60)` | 12 a second | 2x2 rect, `s === 2 ? P.white : P.bone` |
+| `winter` (`snow > 0`) | `'snow'` | `clamp(Math.round(ww * wh / 1000 * (0.4 + 0.6 * s.snow)), 12, 40)` | 12 a second | `P.white`: 3x3 when `s === 2`, 2x2 when `s === 1` |
 
-The static speckle and the leaves from `R.weather` stay in the cached layer underneath, as weather that has settled. Worst case per frame: 60 particles plus about 200 sprite rectangles during the inhale plus 6 others.
+The static speckle and the leaves from `R.weather` stay in the cached layer underneath, as weather that has settled. Worst case per frame: 40 particles plus about 200 sprite rectangles during the inhale plus 6 others.
 
 ## 6. Timeline
 
@@ -59,19 +59,19 @@ The static speckle and the leaves from `R.weather` stay in the cached layer unde
 
 ## 7. Final frame (p = 1)
 
-Today's Saturday still, with three differences: the phone on the floor is lit (`screenGlow`) with a sky or crimson bar; weather particles are frozen in the window at their t = 2.4 positions; and the colon is on (as today). The pet is in its resting pose, the camera at 0. It reads as a complete still: the lit phone is the one point of signal colour on the floor, just above the caption.
+Today's Saturday still, with three differences: the phone on the floor is lit (sky screen, white bar and a sky floor glow; crimsonD, crimson and crimson when rent is late); weather particles sit in the window at their last 12-per-second pose (t = 2.333 s); and the colon is on (as today). The pet is in its resting pose, the camera at 0. It reads as a complete still: the lit phone is the one point of signal colour on the floor, just above the caption.
 
 ## 8. Variants
 
 | Variant | Behaviour |
 | --- | --- |
-| `couch` | Small window (141x150 at x 463); 5 leaves, 14 drizzle or 12-21 snow. Stand at 309, so the colon is at x 354. Phone in front of the couch. |
+| `couch` | Small window (141x150 at x 463); 5 leaves, 14 drizzle or 12-21 snow (cap 40). Stand at 309, so the colon is at x 354. Phone in front of the couch. |
 | `share` | 165 px brick-wall view; weather falls in front of the bricks. Stand at 255 (colon x 300). |
 | `studio` (also no-game default) | 180 px airshaft. Same as `share`. Radiator static. |
 | `onebed` | 255 px city view. Daytime windows unlit, as today. |
 | `loft` | 372 px bridges view, three panes; plant static on `furniture`. |
-| `penthouse` | 549x198 window from x 55; counts hit their caps (14, 40, 60). Mullions on `room` occlude the particles correctly. |
-| Late rent | Door, notice and envelopes are static props on `room` and `front`. The only change: the phone's notification bar is `crimson` instead of `sky`, a bill instead of a feed. No new art. |
+| `penthouse` | 549x198 window from x 55; counts hit their caps (14, 40, 40). Mullions on `room` occlude the particles correctly. |
+| Late rent | Door, notice and envelopes are static props on `room` and `front`. The only change: the phone's screen, bar and glow are crimson instead of sky and white, a bill instead of a feed. No new art. |
 | Seasons | Autumn leaves, grey drizzle, winter snow (count scales with `snow`); the wreath stays static. |
 | No pet | No breath element; everything else the same. |
 | Cat or dog, cared for | Breath as specified; cushion, bowl and toy static. |

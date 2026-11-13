@@ -689,6 +689,13 @@
       }).join('');
     });
   }
+  // The raised upper body for the breath, built once per kind, sex and care.
+  const breathSprites = new Map();
+  function breathSprite(pet, cared) {
+    const key = `${pet.kind}:${pet.sex}:${cared ? 1 : 0}`;
+    if (!breathSprites.has(key)) breathSprites.set(key, X.sprite(petRows(pet, cared).slice(0, 13)));
+    return breathSprites.get(key);
+  }
   function petShot(ctx, w) {
     const pet = w && w.pet;
     if (!pet || !PET[pet.kind]) return;
@@ -735,7 +742,7 @@
   function saturdayLayers(day, home, w, id) {
     const M = B.Motion, s = R.season(day), { wx, wy, ww, wh } = windowRect(home), lay = LAYOUT[home.id] || LAYOUT.studio;
     const part = (name) => (c) => apartmentShot(c, day, home, false, w, name);
-    const weather = s.snow ? { kind: 'snow', n: clampN(Math.round(ww * wh / 1000 * (0.4 + 0.6 * s.snow)), 12, 60), rate: 12 }
+    const weather = s.snow ? { kind: 'snow', n: clampN(Math.round(ww * wh / 1000 * (0.4 + 0.6 * s.snow)), 12, 40), rate: 12 }
       : s.id === 'autumn' ? { kind: 'paper', n: clampN(Math.round(ww / 30), 4, 14), rate: 12 }
       : { kind: 'rain', n: clampN(Math.round(ww * wh / 1500), 10, 40), rate: 0 };
     return [
@@ -747,7 +754,7 @@
           M.particles({ kind: weather.kind, seed: id + ':wx', t: tp, x: wx, y: wy, w: ww, h: wh, count: weather.n }).forEach((q, i) => {
             if (weather.kind === 'paper') X.rect(c, q.x, q.y, 3, 2, i % 2 ? P.amber : P.crimsonD);
             else if (weather.kind === 'rain') X.rect(c, q.x, q.y, 1, 6, P.grey2);
-            else X.rect(c, q.x, q.y, 2, 2, q.s === 2 ? P.white : P.bone);
+            else X.rect(c, q.x, q.y, q.s === 2 ? 3 : 2, q.s === 2 ? 3 : 2, P.white);
           });
           c.restore();
         }
@@ -763,14 +770,19 @@
       {
         id: 'front', depth: 1.2, draw: part('front'),
         animate(c, v, t) {
-          // the phone on the floor lights at 1.0 s, the notification bar follows at 1.08 s
-          if (t >= 1.0) X.rect(c, 219, 264, 21, 6, P.screenGlow);
-          if (t >= 1.08) X.rect(c, 222, 266, 12, 2, w && w.lateWeeks > 0 ? P.crimson : P.sky);
+          // the phone on the floor lights at 1.0 s (a sky screen and floor glow, crimson when rent is late),
+          // the notification bar follows at 1.08 s, and a second silent notification blinks it dark from 1.6 to 1.7 s
+          const late = w && w.lateWeeks > 0;
+          if (t >= 1.0 && !(t >= 1.6 && t < 1.7)) {
+            X.rect(c, 219, 264, 21, 6, late ? P.crimsonD : P.sky);
+            if (t >= 1.08) X.rect(c, 222, 266, 12, 2, late ? P.crimson : P.white);
+            c.save(); c.globalAlpha = 0.3; X.rect(c, 207, 276, 45, 3, late ? P.crimson : P.sky); c.restore();
+          }
           // the pet's head and chest rise one pixel for one breath
           if (w && w.pet && PET[w.pet.kind] && t >= 0.8 && t < 1.7) {
             const cared = w.vet !== 'neglected';
             c.save(); c.translate(420, 276 - 48 - (cared ? 6 : 0) - 1); c.scale(3, 3);
-            X.drawSprite(c, X.sprite(petRows(w.pet, cared).slice(0, 13)), 0, 0);
+            X.drawSprite(c, breathSprite(w.pet, cared), 0, 0);
             c.restore();
           }
         }
@@ -833,7 +845,7 @@
               if (floor < 41) SH.elevator(cc, 0, floor, 'arrow');
               if (slide >= 1) {
                 for (let k = 0; k < 8; k++) {
-                  cc.save(); cc.globalAlpha = k < 4 ? 0.14 : 0.08;
+                  cc.save(); cc.globalAlpha = k < 4 ? 0.2 : 0.1;
                   X.rect(cc, 160 - (2 + slide) - k, 133 + k, 2 * (2 + slide + k), 1, P.bone);
                   cc.restore();
                 }

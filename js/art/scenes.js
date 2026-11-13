@@ -150,8 +150,11 @@
         k1(ctx, x, 24, 62, 108, P.plastic, P.plastic2, P.plasticD);
         for (let i = 6; i < 58; i += 6) X.rect(ctx, x + i, 27, 1, 102, P.plastic2);
       };
+      // Clipped to the frame opening: the doors slide away behind the posts, never over the wall panels or the call button.
+      ctx.save(); ctx.beginPath(); ctx.rect(90, 18, 140, 118); ctx.clip();
       door(96 - slide);
       door(162 + slide);
+      ctx.restore();
     }
     if (has('frame')) {
       // The frame.

@@ -530,6 +530,15 @@ async function run() {
     assert(await shot('weekend', o, 0, 0.9) !== await shot('weekend', o, 0, 1.05), 'sat: the phone does not light at 1.0 s');
     assert(await shot('weekend', o, 0, 1.05) !== await shot('weekend', o, 0, 1.2), 'sat: the notification bar does not appear at 1.08 s');
   }
+  // second silent notification: the phone goes dark 1.6-1.7 s and lights again; no extra cue
+  const blink = await page.evaluate((o) => {
+    const b = BTB.Scenes.weekend(o)[0], front = b.layers.find((l) => l.id === 'front'), at = (t) => {
+      const c = document.createElement('canvas'); c.width = 640; c.height = 360; const g = c.getContext('2d');
+      front.animate(g, { w: 640, h: 360 }, t, t / b.dur, {}); const d = g.getImageData(200, 262, 60, 20).data, px = (x, y) => Array.from(d.slice(((y - 262) * 60 + x - 200) * 4, ((y - 262) * 60 + x - 200) * 4 + 4)).join(); return px(230, 266) + '|' + px(210, 277);
+    };
+    return { dark: at(0.9), lit: at(1.3), off: at(1.65), back: at(1.8), cues: b.cues.length };
+  }, wk4);
+  assert(blink.lit === blink.back && blink.dark === blink.off && blink.dark !== blink.lit && blink.cues === 1, `sat: phone blink: ${JSON.stringify(blink)}`);
   // the pet is in the shot
   const petBox = await page.evaluate(([withPet, without]) => {
     const rows = (o) => { window.openBeat('weekend', o); BTB.Cinematic.seek(0, 1.2); const cv = document.getElementById('cine-canvas'), k = cv.width / 640; return cv.getContext('2d').getImageData(Math.round(420 * k), Math.round(210 * k), Math.round(48 * k), Math.round(66 * k)).data.join(); };
@@ -542,7 +551,7 @@ async function run() {
       const c = document.createElement('canvas'); c.width = 640; c.height = 360; const g = c.getContext('2d');
       front.animate(g, { w: 640, h: 360 }, t, t / b.dur, {}); return g.getImageData(0, 0, 640, 360).data;
     };
-    const cnt = (a, b2) => { let n = 0, out = 0; for (let i = 0; i < a.length; i += 4) if (a[i + 3] !== b2[i + 3] || a[i] !== b2[i]) { n++; const x = (i / 4) % 640, y = Math.floor(i / 4 / 640); if ((x < 420 || x >= 480 || y < 216 || y >= 276) && !(x >= 219 && x < 240 && y >= 264 && y < 270)) out++; } return { n, out }; };
+    const cnt = (a, b2) => { let n = 0, out = 0; for (let i = 0; i < a.length; i += 4) if (a[i + 3] !== b2[i + 3] || a[i] !== b2[i]) { n++; const x = (i / 4) % 640, y = Math.floor(i / 4 / 640); if ((x < 420 || x >= 480 || y < 216 || y >= 276) && !(x >= 219 && x < 240 && y >= 264 && y < 270) && !(x >= 207 && x < 252 && y >= 276 && y < 279)) out++; } return { n, out }; };
     const before = get(0.7), during = get(1.2), after = get(1.8);
     return { up: cnt(before, during), down: cnt(during, after), same: cnt(before, after) };
   }, wkCat);
@@ -562,7 +571,7 @@ async function run() {
   });
   assert(drawAll, 'sat: a tier / pet / season combination did not draw five layers');
   // p = 1 is today's still plus the sheet's additions: it differs from the flat apartmentShot only in the window opening
-  // (weather particles frozen at 2.4 s) and the phone screen (lit, with its bar).
+  // (weather particles at their last pose), the phone screen rect and the floor glow rect.
   const flatDiff = await page.evaluate((cases) => {
     const SB = BTB.Storyboard, out = [];
     for (const [day, w] of cases) {
@@ -576,7 +585,7 @@ async function run() {
         if (a[i] === g[i] && a[i + 1] === g[i + 1] && a[i + 2] === g[i + 2] && a[i + 3] === g[i + 3]) continue;
         const x = (i / 4) % 640, y = Math.floor(i / 4 / 640);
         if (x >= rect.wx && x < rect.wx + rect.ww && y >= rect.wy && y < rect.wy + rect.wh) win++;
-        else if (x >= 219 && x < 240 && y >= 264 && y < 270) phone++;
+        else if ((x >= 219 && x < 240 && y >= 264 && y < 270) || (x >= 207 && x < 252 && y >= 276 && y < 279)) phone++;
         else elsewhere++;
       }
       out.push({ day, tier: w.tier, win, phone, elsewhere });
