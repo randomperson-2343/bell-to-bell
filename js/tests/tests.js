@@ -1927,10 +1927,17 @@
     const c = M.cameraAt({ from: { x: 0 }, to: { x: 5, zoom: 1.08 } }, 0.5);
     assert(Number.isInteger(c.x) && c.y === 0 && c.zoom > 1 && c.zoom < 1.08, 'camera midpoint');
     assert(M.cameraAt(null, 0.3).zoom === 1, 'null camera is identity');
-    assert(M.presetFor({ id: 'news:3:hold', dur: 2 }) === null && M.presetFor({ id: 'news:3:detail', dur: 1.4 }) === null, 'hold and short beats must not move');
+    assert(M.presetFor({ id: 'news:3:hold', dur: 2 }) === null && M.presetFor({ id: 'news:3:detail', dur: 1.1 }) === null, 'hold and short beats must not move');
     const p = M.presetFor({ id: 'news:3:detail', dur: 2 });
     assert(p && JSON.stringify(p) === JSON.stringify(M.presetFor({ id: 'news:3:detail', dur: 2 })), 'preset is not stable per id');
     assert(Object.values(M.PRESETS).every((q) => [q.from, q.to].every((e) => (e.zoom || 1) === 1 && (e.x || 0) === 0 && Math.abs(e.y || 0) <= 6)), 'preset must be zoom 1, no x, |y| <= 6');
+  });
+  test('Motion: office hold beats are holds, and 1.4 s beats get a camera', () => {
+    const M = B.Motion, bs = B.Scenes.office({ day: 3 }), last = bs[bs.length - 1];
+    assert(/^office:3:hold:/.test(last.id), 'office last beat id is ' + last.id);
+    assert(M.transitionFor(last, bs.length - 1) === 'cut', 'office hold must cut');
+    assert(M.presetFor(Object.assign({}, last, { dur: 2 })) === null, 'office hold must not get a camera');
+    assert(M.presetFor({ id: 'phone:3:handoff', dur: 1.4 }) !== null && M.presetFor({ id: 'office:3:wide', dur: 1.45 }) !== null, 'beats of 1.2 s or more get a camera');
   });
   test('Motion: default transitions', () => {
     const M = B.Motion;
@@ -1954,7 +1961,7 @@
   test('Storyboard: beats no longer hard-code a cut', () => {
     const bs = B.Scenes.news({ day: 7, brief: { title: 'x', feed: [] } });
     assert(bs[0].transition === 'fade', 'a scene must open on a fade');
-    assert(bs.slice(1).every((b, i) => B.Motion.transitionFor(b, i + 1) === (/:hold$/.test(b.id) ? 'cut' : 'cross')), 'later beats should dissolve, holds should cut');
+    assert(bs.slice(1).every((b, i) => B.Motion.transitionFor(b, i + 1) === (/:hold(:|$)/.test(b.id) ? 'cut' : 'cross')), 'later beats should dissolve, holds should cut');
   });
 
   B.Tests = { results, run: () => results };

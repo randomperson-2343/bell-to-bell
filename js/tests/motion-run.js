@@ -115,6 +115,50 @@ async function run() {
   }
   await page.setViewportSize({ width: 1280, height: 720 });
 
+  // supersampling: the bitmap is an exact whole multiple of 640 at the smallest k that covers the device pixels
+  for (const [w, h, dpr, k] of [[1440, 900, 1, 3], [1280, 720, 1, 2], [390, 844, 3, 2], [844, 390, 3, 4]]) {
+    const vctx = await browser.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: dpr });
+    const vp = await vctx.newPage();
+    try {
+      await vp.goto(`http://127.0.0.1:${port}/index.html`, { waitUntil: 'domcontentloaded' });
+      await vp.keyboard.press('Enter');
+      await vp.waitForSelector('#screen-menu.active', { timeout: 10000 });
+      const r = await vp.evaluate(() => {
+        const S = BTB.Settings; S.set('sound', false); S.set('music', false); S.set('effects', 'full'); S.set('cinematics', 'full');
+        const C = BTB.Cinematic; C.startChain('scale-qa'); C.play('weekend', { day: 4 }, () => {}); C.pause(); C.seek(0, 0.6);
+        const cv = document.getElementById('cine-canvas'), rc = cv.getBoundingClientRect();
+        return { w: cv.width, h: cv.height, css: rc.width, dpr: window.devicePixelRatio };
+      });
+      assert(r.w === 640 * k && r.h === 360 * k, `${w}x${h} dpr ${dpr}: bitmap ${r.w}x${r.h}, expected k=${k}`);
+      assert(r.w % 640 === 0 && r.h % 360 === 0, `${w}x${h} dpr ${dpr}: bitmap ${r.w}x${r.h} is not a whole multiple of 640x360`);
+      assert(r.w >= r.css * r.dpr - 1e-6 && r.w - 640 < r.css * r.dpr, `${w}x${h}: k is not the smallest covering scale`);
+    } finally { await vctx.close().catch(() => {}); }
+  }
+
+  // play() while a scene runs ends the first scene once, and leaves one loop and one key listener
+  const twice = await page.evaluate(async () => {
+    const C = BTB.Cinematic;
+    if (C.running) C.finish();
+    let adds = 0, removes = 0, raf = 0, cancel = 0;
+    const live = new Set(), rafs = new Set();
+    const oa = window.addEventListener, orm = window.removeEventListener, orf = window.requestAnimationFrame, ocf = window.cancelAnimationFrame;
+    window.addEventListener = function (t, f) { if (t === 'keydown') live.add(f); return oa.apply(this, arguments); };
+    window.removeEventListener = function (t, f) { if (t === 'keydown') live.delete(f); return orm.apply(this, arguments); };
+    window.requestAnimationFrame = function (f) { const id = orf.call(window, (ts) => { rafs.delete(id); f(ts); }); rafs.add(id); return id; };
+    window.cancelAnimationFrame = function (id) { rafs.delete(id); return ocf.call(window, id); };
+    let first = 0, second = 0;
+    C.play('weekend', { day: 4 }, () => { first++; });
+    C.play('weekend', { day: 4 }, () => { second++; });
+    const afterTwo = { first, second, keys: live.size, loops: rafs.size };
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'x' }));
+    const afterKey = { first, second, running: C.running, keys: live.size, loops: rafs.size };
+    window.addEventListener = oa; window.removeEventListener = orm; window.requestAnimationFrame = orf; window.cancelAnimationFrame = ocf;
+    return { afterTwo, afterKey };
+  });
+  assert(twice.afterTwo.first === 1 && twice.afterTwo.second === 0, 'second play() must end the first scene exactly once: ' + JSON.stringify(twice.afterTwo));
+  assert(twice.afterTwo.keys === 1 && twice.afterTwo.loops === 1, 'one keydown listener and one animation loop after two play() calls: ' + JSON.stringify(twice.afterTwo));
+  assert(twice.afterKey.first === 1 && twice.afterKey.second === 1 && !twice.afterKey.running && twice.afterKey.keys === 0 && twice.afterKey.loops === 0, 'a key press must end the second scene once: ' + JSON.stringify(twice.afterKey));
+
   // ink underlay: an explicit sideways camera exposes a column that must be opaque P.ink
   const under = await page.evaluate(() => {
     const P = BTB.Pal, C = BTB.Cinematic;
@@ -655,7 +699,7 @@ async function run() {
 
   // One real-time playback of the whole scene; returns per-frame draw() times.
   const perfRun = async (scene, opts) => {
-    const ctx = await browser.newContext({ viewport: { width: 844, height: 390 }, deviceScaleFactor: 2 });
+    const ctx = await browser.newContext({ viewport: { width: 844, height: 390 }, deviceScaleFactor: 3 });
     const pg = await ctx.newPage();
     let cdp = null, timer = null;
     try {
@@ -727,7 +771,7 @@ async function run() {
     const outDir = path.join(root, 'qa', 'evidence', 'motion');
     fs.mkdirSync(outDir, { recursive: true });
     fs.writeFileSync(path.join(outDir, 'perf.json'), JSON.stringify({
-      viewport: '844x390', deviceScaleFactor: 2, cpuThrottle: 4, limits: { avgMs: PERF_AVG_MS, maxMs: PERF_MAX_MS }, scenes: results
+      viewport: '844x390', deviceScaleFactor: 3, cpuThrottle: 4, limits: { avgMs: PERF_AVG_MS, maxMs: PERF_MAX_MS }, scenes: results
     }, null, 2) + '\n');
     const failed = results.filter((r) => r.status !== 'pass');
     assert(!failed.length, `perf limits exceeded: ${failed.map((r) => r.scene).join(', ')}`);

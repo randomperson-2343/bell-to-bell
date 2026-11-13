@@ -63,6 +63,23 @@
       return { ctx, scale: s, vw, vh };
     },
 
+    // Supersampled fit for a canvas the browser scales smoothly (image-rendering: auto).
+    // The bitmap is view * k, with k the smallest whole number that covers the device pixels
+    // the element occupies, so each virtual pixel is exactly k x k bitmap pixels.
+    // Uses the real devicePixelRatio (no cap of 2); k is clamped to 1..maxK.
+    fitSuper(canvas, vw, vh, maxK) {
+      const r = canvas.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      const k = Math.max(1, Math.min(maxK || 6, Math.ceil(r.width * dpr / vw - 1e-6)));
+      const w = vw * k, h = vh * k;
+      const ctx = canvas.getContext('2d');
+      if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; }
+      else { ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over'; ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, w, h); }
+      ctx.setTransform(k, 0, 0, k, 0, 0);
+      ctx.imageSmoothingEnabled = false;
+      return { ctx, scale: k, vw, vh };
+    },
+
     rect(ctx, x, y, w, h, col) {
       if (!col) return;
       ctx.fillStyle = col;

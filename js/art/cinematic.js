@@ -74,6 +74,7 @@
     },
 
     play(name, opts, done) {
+      if (this.running) this.finish(); // end the scene in progress: loop stopped, listener removed, its done called once
       const builder = B.Scenes[name];
       const mode = this.mode();
       if (this.skippingChain || !builder || mode === 'off') return done && done();
@@ -215,7 +216,7 @@
     draw() {
       const beat = this.beats[this.i];
       const view = beat.view || B.Scenes.V;
-      const { ctx } = X.fit(this.canvas, view.w, view.h);
+      const { ctx } = X.fitSuper(this.canvas, view.w, view.h);
       const progress = B.clamp(this.t / beat.dur, 0, 1);
       const name = this.transitionNow();
       // never longer than the beat, so the blend always finishes by its last frame

@@ -88,10 +88,10 @@
     return true;
   }
 
-  const isHold = (beat) => /:hold$/.test(beat.id);
+  const isHold = (beat) => /:hold(:|$)/.test(beat.id);
 
   function presetFor(beat) {
-    if (beat.dur < 1.5 || isHold(beat)) return null;
+    if (beat.dur < 1.2 || isHold(beat)) return null;
     return PRESETS[PRESET_NAMES[B.hashSeed(beat.id) % PRESET_NAMES.length]];
   }
 
