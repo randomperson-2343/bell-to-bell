@@ -465,9 +465,22 @@
     onebed: { stand: 255 }, loft: { stand: 255, plant: 327 }, penthouse: { stand: 255, plant: 327 }
   };
 
-  function apartmentShot(ctx, day, home, night, w) {
+  // The window opening grows with the rent; layers and animate steps share this.
+  function windowRect(home) {
+    const L = home.look, ww = Math.round(V.w * L.win / U) * U;
+    return { wx: V.w - ww - 36, wy: 42, ww, wh: L.win > 0.8 ? 198 : 150 };
+  }
+  // `part` picks one layer of the layered Saturday shot: 'outside' (sky, view, still weather in the opening),
+  // 'room' (walls, floor, window frame, curtains, wall props), 'furniture', 'front' (floor props and the pet), 'grain'.
+  // With no part it draws the whole flat picture, back to front, exactly as before.
+  function apartmentShot(ctx, day, home, night, w, part) {
     const L = home.look, week = Math.floor(day / 5) + 1, s = R.season(day), lay = LAYOUT[home.id] || LAYOUT.studio;
     const late = w ? w.lateWeeks | 0 : 0;
+    const on = (name) => !part || part === name;
+    const { wx, wy, ww, wh } = windowRect(home);
+    if (on('room')) {
+    // As a layer the wall leaves the window opening unpainted (even-odd clip, source-over only).
+    if (part) { ctx.save(); ctx.beginPath(); ctx.rect(0, 0, V.w, V.h); ctx.rect(wx, wy, ww, wh); ctx.clip('evenodd'); }
     X.rect(ctx, 0, 0, V.w, V.h, P.ink);
     // Wall: the tier's paint, a quiet stripe, a picture rail.
     X.gradient(ctx, 0, 0, V.w, 240, night ? L.wall : L.wall2, night ? P.ink2 : L.wall, 10);
@@ -489,9 +502,11 @@
       }
     }
     box(ctx, -U, 237, V.w + 2 * U, 15, night ? P.slate2 : P.putty2, night ? P.grey : P.bone, night ? P.slate : P.putty);
+    if (part) ctx.restore();
+    }
 
-    // The window grows with the rent. What is outside it changes too.
-    const ww = Math.round(V.w * L.win / U) * U, wx = V.w - ww - 36, wy = 42, wh = L.win > 0.8 ? 198 : 150;
+    // What is outside the window changes with the rent too.
+    if (on('outside')) {
     ctx.save(); ctx.beginPath(); ctx.rect(wx, wy, ww, wh); ctx.clip();
     X.gradient(ctx, wx, wy, ww, wh, night ? P.ink2 : P.sky, night ? P.ink : P.slate2, 8);
     if (!night) X.dither(ctx, wx, wy + wh / 2, ww, wh / 2, P.slate2, s.dawn, s.glow);
@@ -511,6 +526,8 @@
     }
     R.weather(ctx, wx, wy, ww, wh, day);
     ctx.restore();
+    }
+    if (on('room')) {
     const fr = night ? P.slate2 : P.plastic2, frH = night ? P.grey : P.white, frS = night ? P.slate : P.plasticD;
     box(ctx, wx - 9, wy - 9, ww + 18, 12, fr, frH, frS); box(ctx, wx - 9, wy + wh - 3, ww + 18, 12, fr, frH, frS);
     box(ctx, wx - 9, wy, 12, wh, fr, frH, frS); box(ctx, wx + ww - 3, wy, 12, wh, fr, frH, frS);
@@ -559,6 +576,9 @@
       }
     }
 
+    }
+
+    if (on('furniture')) {
     // Furniture: Mom's couch, a mattress on a shared floor, or a bed you pay for.
     const V1 = '#b4a7d0', V2 = '#76699a';
     let top = 204; // where things on the bed sit
@@ -617,7 +637,9 @@
     blit(ctx, LAMP, nx, 162);
     if (night) X.rect(ctx, nx + 3, 180, 36, U, P.amber);
     box(ctx, nx + 33, 198, 27, 18, P.ink2, P.slate, P.ink); clockFace(ctx, nx + 37, 202, P.crimson);
+    }
 
+    if (on('front')) {
     // The door's envelopes, where you can see them over the caption.
     if (late > 0) for (let i = 0; i < Math.min(5, late * 2); i++) box(ctx, 105 + i * 21, 258 - (i % 2) * 3, 30, 15, P.bone, P.white, P.putty2);
     // Your phone, face up on the floor. It never stops.
@@ -633,8 +655,11 @@
       ctx.save(); ctx.globalAlpha = 0.18; X.rect(ctx, 213, fy + 6, 36, 24, P.screenGlow); ctx.restore();
     }
     petShot(ctx, w);
+    }
+    if (on('grain')) {
     if (night) { ctx.save(); ctx.globalAlpha = 0.28; X.rect(ctx, 0, 0, V.w, V.h, P.ink); ctx.restore(); }
     X.scanlines(ctx, 0, 0, V.w, V.h, P.ink, 0.05);
+    }
   }
   // The pet from the adoption beat, in the sprite DSL (js/art/palette.js keys):
   // 1 outline, a/A amber coat, 8 bone, h eyes, 0 pupils, D/d/e dog browns and
@@ -701,6 +726,59 @@
     X.rect(ctx, 0, 0, 44, 2, P.amberD);
   }
 
+  // Saturday, five layers back to front. The window frame overlaps the opening by 3 px, which hides the
+  // outside layer's parallax: keep CAM_Y * (depth.room - depth.outside) <= 3.
+  const SAT_DUR = 2.4, CAM_Y = 8;
+  const clampN = (v, a, b) => Math.max(a, Math.min(b, v));
+  // `when`: a time t (s) is in [a, b) for any of the given spans.
+  const within = (t, spans) => spans.some((sp) => t >= sp[0] && t < sp[1]);
+  function saturdayLayers(day, home, w, id) {
+    const M = B.Motion, s = R.season(day), { wx, wy, ww, wh } = windowRect(home), lay = LAYOUT[home.id] || LAYOUT.studio;
+    const part = (name) => (c) => apartmentShot(c, day, home, false, w, name);
+    const weather = s.snow ? { kind: 'snow', n: clampN(Math.round(ww * wh / 1000 * (0.4 + 0.6 * s.snow)), 12, 60), rate: 12 }
+      : s.id === 'autumn' ? { kind: 'paper', n: clampN(Math.round(ww / 30), 4, 14), rate: 12 }
+      : { kind: 'rain', n: clampN(Math.round(ww * wh / 1500), 10, 40), rate: 0 };
+    return [
+      {
+        id: 'outside', depth: 0.25, draw: part('outside'),
+        animate(c, v, t) {
+          const tp = weather.rate ? Math.floor(t * weather.rate) / weather.rate : t;
+          c.save(); c.beginPath(); c.rect(wx, wy, ww, wh); c.clip();
+          M.particles({ kind: weather.kind, seed: id + ':wx', t: tp, x: wx, y: wy, w: ww, h: wh, count: weather.n }).forEach((q, i) => {
+            if (weather.kind === 'paper') X.rect(c, q.x, q.y, 3, 2, i % 2 ? P.amber : P.crimsonD);
+            else if (weather.kind === 'rain') X.rect(c, q.x, q.y, 1, 6, P.grey2);
+            else X.rect(c, q.x, q.y, 2, 2, q.s === 2 ? P.white : P.bone);
+          });
+          c.restore();
+        }
+      },
+      { id: 'room', depth: 0.5, draw: part('room') },
+      {
+        id: 'furniture', depth: 0.85, draw: part('furniture'),
+        animate(c, v, t) {
+          // the 5:58 alarm's colon blinks off twice
+          if (within(t, [[0.5, 1.0], [1.5, 2.0]])) { X.rect(c, lay.stand + 45, 204, 2, 2, P.ink2); X.rect(c, lay.stand + 45, 208, 2, 2, P.ink2); }
+        }
+      },
+      {
+        id: 'front', depth: 1.2, draw: part('front'),
+        animate(c, v, t) {
+          // the phone on the floor lights at 1.0 s, the notification bar follows at 1.08 s
+          if (t >= 1.0) X.rect(c, 219, 264, 21, 6, P.screenGlow);
+          if (t >= 1.08) X.rect(c, 222, 266, 12, 2, w && w.lateWeeks > 0 ? P.crimson : P.sky);
+          // the pet's head and chest rise one pixel for one breath
+          if (w && w.pet && PET[w.pet.kind] && t >= 0.8 && t < 1.7) {
+            const cared = w.vet !== 'neglected';
+            c.save(); c.translate(420, 276 - 48 - (cared ? 6 : 0) - 1); c.scale(3, 3);
+            X.drawSprite(c, X.sprite(petRows(w.pet, cared).slice(0, 13)), 0, 0);
+            c.restore();
+          }
+        }
+      },
+      { id: 'grain', depth: 0, draw: part('grain') }
+    ];
+  }
+
   function story(o) { const g = o && o.game; return g && g.mode && g.mode.S; }
   B.Scenes.weekend = function (o) {
     const day = o.day || 0, week = Math.floor(day / 5) + 1, w = wallet(o), home = homeOf(w), S = story(o);
@@ -709,8 +787,14 @@
     const pet = w && w.pet ? `${w.pet.kind}-${w.pet.sex}-${w.vet === 'neglected' ? 'n' : 'c'}` : '';
     const key = `${week}:${home.id}:${w ? Math.min(3, w.lateWeeks | 0) : 0}:${pulled ? 'p' : ''}:${pet}`;
     const sat = w && w.weeks && w.weeks[week] ? `WEEK ${week} · ${home.name.toUpperCase()} · PAYSLIP ${B.fmt.money(w.weeks[week].net, true)}` : `WEEK ${week} · SATURDAY · ${home.name.toUpperCase()}`;
+    const satId = `weekend:${key}:sat`;
     const beats = [
-      R.beat('weekend', `${key}:sat`, 1.7, (c) => apartmentShot(c, day, home, false, w), sat, { sfx: 'apartment', transition: 'fade', informative: !story }),
+      B.Motion.layered(R.beat('weekend', `${key}:sat`, SAT_DUR, null, sat, {
+        sfx: 'apartment', transition: 'fade', informative: !story$, cache: false,
+        cues: [{ at: 1.0, sfx: 'news' }],
+        camera: { from: { x: 0, y: CAM_Y, zoom: 1 }, to: { x: 0, y: 0, zoom: 1 }, ease: B.Motion.ease.inOut },
+        layers: saturdayLayers(day, home, w, satId)
+      })),
       R.beat('weekend', `${key}:sun`, 1.8, (c) => sundayShot(c, day, home, w), story$ || 'SUNDAY NIGHT. THE ALARM IS SET FOR 5:58.', { sfx: 'apartment', informative: !!story$ })
     ];
     // One weekend gets a second room: the whip's phones the night before the vote.
@@ -721,7 +805,7 @@
     return beats;
   };
 
-  B.Storyboard = { PET, petRows, SHEET, DOCS, ANOMALY_DAYS, row, variant, lit, actTurns, HOMES, WEEKENDS, insertShot, shotFrame, at2x, finePass, bellSwing };
+  B.Storyboard = { PET, petRows, SHEET, DOCS, ANOMALY_DAYS, row, variant, lit, actTurns, HOMES, WEEKENDS, insertShot, shotFrame, at2x, finePass, bellSwing, apartmentShot, windowRect, homeOf, SAT_DUR };
 
   // Session 1 opens in the lobby: the counter climbs to 41, the car arrives, the doors part.
   // Five parts of SH.elevator, back to front: car, lobby wall (doorway left open), doors and counter animated on it, frame, screen-space marks.

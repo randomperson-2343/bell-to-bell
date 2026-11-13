@@ -1,5 +1,6 @@
 // Capture a six-frame strip (and optionally a real-time video) of one cutscene beat.
 // node js/tests/motion-capture.js <scene> <optsJSON> <beatIndex> [--video] [--times=a,b,c,d,e,f]
+// --name=<label>: file name suffix, so two captures of one day do not collide (files are <scene>-<day>-<beat>[-<label>]).
 // --times: six sample times in seconds into the beat (default 0, 0.2 ... 1 of the beat length).
 const fs = require('fs');
 const path = require('path');
@@ -9,7 +10,8 @@ const { chromium } = require('playwright');
 const timesArg = process.argv.find((a) => a.startsWith('--times='));
 const times = timesArg ? timesArg.slice(8).split(',').map(Number) : null;
 if (times && (times.length !== 6 || times.some((x) => !isFinite(x)))) { console.error('--times needs six numbers'); process.exit(2); }
-const args = process.argv.slice(2).filter((a) => a !== '--video' && !a.startsWith('--times='));
+const nameArg = process.argv.find((a) => a.startsWith('--name='));
+const args = process.argv.slice(2).filter((a) => a !== '--video' && !a.startsWith('--times=') && !a.startsWith('--name='));
 const video = process.argv.includes('--video');
 const [scene, optsJSON, beatIndex] = args;
 if (!scene || !optsJSON || beatIndex == null) { console.error('usage: motion-capture.js <scene> <optsJSON> <beatIndex> [--video]'); process.exit(2); }
@@ -19,7 +21,7 @@ const port = +(process.env.QA_PORT || 4180);
 const out = path.join(root, 'qa', 'evidence', 'motion');
 fs.mkdirSync(out, { recursive: true });
 const id = opts.day != null ? opts.day : opts.id != null ? opts.id : opts.report && opts.report.day != null ? opts.report.day : 'default';
-const base = `${scene}-${id}-${index}`;
+const base = `${scene}-${id}-${index}${nameArg ? '-' + nameArg.slice(7).replace(/[^\w-]/g, '') : ''}`;
 const server = spawn('python3', ['-m', 'http.server', String(port), '--bind', '127.0.0.1'], { cwd: root, stdio: 'ignore' });
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const url = `http://127.0.0.1:${port}/index.html`;

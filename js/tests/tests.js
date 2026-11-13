@@ -474,6 +474,10 @@
     assert(phone.length === 2 && phone.every((beat) => beat.view.w === 640), 'phone handoff is missing');
     assert(B.Scenes.weekend({ day: 29 }).length === 3, 'ordinary weekends are sat, sun, hold');
     assert(B.Scenes.weekend({ day: 24 }).length === 3 && B.Scenes.weekend({ day: 39 }).length === 4, 'only the whip weekend gets a second room');
+    // short mode shows Saturday when the weekend has no story line, and Sunday when it has one
+    const sat = (day, game) => B.Scenes.weekend({ day, game })[0];
+    assert(/:sat$/.test(sat(9).id) && sat(9).informative === true && sat(19).informative === true, 'a weekend with no story line should show Saturday in short mode');
+    assert(sat(4).informative === false && sat(44).informative === false && B.Scenes.weekend({ day: 4 })[1].informative === true, 'a weekend with a story line should show Sunday in short mode');
   });
 
   test('Storyboard: four mornings follow the choice made the night before', () => {

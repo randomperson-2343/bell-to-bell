@@ -518,6 +518,100 @@ async function run() {
   assert(await shot('close', bell30, 0, 0.5) === await shot('close', bell30, 0, 1.7), 'bell (empty floor): reduced effects still moves');
   await page.evaluate(() => BTB.Settings.set('effects', 'full'));
 
+  // ---- pilot shot: the weekend apartment, Saturday (weekend:<key>:sat) ----
+  const wk = (day, w) => ({ day, game: w ? { mode: { S: { wallet: w } } } : undefined });
+  const wk4 = wk(4), wkCat = wk(44, { tier: 3, lateWeeks: 1, pet: { kind: 'cat', sex: 'boy' } });
+  const satInfo = await page.evaluate((o) => { const b = BTB.Scenes.weekend(o)[0]; return { id: b.id, dur: b.dur, layers: (b.layers || []).map((l) => l.id).join(), depths: (b.layers || []).map((l) => l.depth).join(), cue: (b.cues || []).map((c) => c.at + ':' + c.sfx).join(), cam: b.camera && b.camera.from.y + '>' + b.camera.to.y, n: BTB.Scenes.weekend(o).length }; }, wk4);
+  assert(/^weekend:.*:sat$/.test(satInfo.id) && satInfo.dur <= 2.55 && satInfo.dur > 1.7, `sat beat id/duration: ${JSON.stringify(satInfo)}`);
+  assert(satInfo.layers === 'outside,room,furniture,front,grain' && satInfo.depths === '0.25,0.5,0.85,1.2,0' && satInfo.cue === '1:news' && satInfo.cam === '8>0' && satInfo.n === 3, `sat layers/cues/camera: ${JSON.stringify(satInfo)}`);
+  for (const o of [wk4, wkCat]) {
+    assert(await shot('weekend', o, 0, 0.4) !== await shot('weekend', o, 0, 2.3), 'sat: start and end frames are identical');
+    assert(await shot('weekend', o, 0, 1.6) === await shot('weekend', o, 0, 1.6), 'sat: same time gave different pictures');
+    assert(await shot('weekend', o, 0, 0.9) !== await shot('weekend', o, 0, 1.05), 'sat: the phone does not light at 1.0 s');
+    assert(await shot('weekend', o, 0, 1.05) !== await shot('weekend', o, 0, 1.2), 'sat: the notification bar does not appear at 1.08 s');
+  }
+  // the pet is in the shot
+  const petBox = await page.evaluate(([withPet, without]) => {
+    const rows = (o) => { window.openBeat('weekend', o); BTB.Cinematic.seek(0, 1.2); const cv = document.getElementById('cine-canvas'), k = cv.width / 640; return cv.getContext('2d').getImageData(Math.round(420 * k), Math.round(210 * k), Math.round(48 * k), Math.round(66 * k)).data.join(); };
+    return rows(withPet) !== rows(without);
+  }, [wkCat, wk(44, { tier: 3, lateWeeks: 1 })]);
+  assert(petBox, 'sat: the pet is missing from the shot');
+  // the inhale itself: the front layer's animate at 1.2 s differs from 0.7 s and 1.8 s only in the pet's box (and the phone, which lights at 1.0 s)
+  const inhale = await page.evaluate((o) => {
+    const b = BTB.Scenes.weekend(o)[0], front = b.layers.find((l) => l.id === 'front'), get = (t) => {
+      const c = document.createElement('canvas'); c.width = 640; c.height = 360; const g = c.getContext('2d');
+      front.animate(g, { w: 640, h: 360 }, t, t / b.dur, {}); return g.getImageData(0, 0, 640, 360).data;
+    };
+    const cnt = (a, b2) => { let n = 0, out = 0; for (let i = 0; i < a.length; i += 4) if (a[i + 3] !== b2[i + 3] || a[i] !== b2[i]) { n++; const x = (i / 4) % 640, y = Math.floor(i / 4 / 640); if ((x < 420 || x >= 480 || y < 216 || y >= 276) && !(x >= 219 && x < 240 && y >= 264 && y < 270)) out++; } return { n, out }; };
+    const before = get(0.7), during = get(1.2), after = get(1.8);
+    return { up: cnt(before, during), down: cnt(during, after), same: cnt(before, after) };
+  }, wkCat);
+  assert(inhale.up.n > 0 && inhale.up.out === 0 && inhale.down.n > 0 && inhale.down.out === 0 && inhale.same.out === 0, `sat: the pet's breath does not rise and settle: ${JSON.stringify(inhale)}`);
+  // each tier x pet state x season draws five layers in the browser, with no game in opts too
+  const drawAll = await page.evaluate(() => {
+    const out = [];
+    const pets = [null, { pet: { kind: 'cat', sex: 'boy' } }, { pet: { kind: 'dog', sex: 'girl' }, vet: 'neglected' }];
+    for (let tier = 0; tier < 6; tier++) for (const pet of pets) for (const day of [4, 24, 44]) {
+      const w = Object.assign({ tier, lateWeeks: tier % 4 }, pet || {});
+      const b = BTB.Scenes.weekend({ day, game: { mode: { S: { wallet: w } } } })[0], c = document.createElement('canvas'); c.width = 640; c.height = 360;
+      b.draw(c.getContext('2d'), { w: 640, h: 360 }, 1, {});
+      b.draw(c.getContext('2d'), { w: 640, h: 360 }, 0, undefined);
+      out.push(b.layers.length);
+    }
+    return out.every((n) => n === 5) && out.length === 54;
+  });
+  assert(drawAll, 'sat: a tier / pet / season combination did not draw five layers');
+  // p = 1 is today's still plus the sheet's additions: it differs from the flat apartmentShot only in the window opening
+  // (weather particles frozen at 2.4 s) and the phone screen (lit, with its bar).
+  const flatDiff = await page.evaluate((cases) => {
+    const SB = BTB.Storyboard, out = [];
+    for (const [day, w] of cases) {
+      const b = BTB.Scenes.weekend({ day, game: { mode: { S: { wallet: w } } } })[0], home = SB.homeOf(w), rect = SB.windowRect(home);
+      const mk = () => { const c = document.createElement('canvas'); c.width = 640; c.height = 360; return c.getContext('2d'); };
+      const got = mk(); b.draw(got, { w: 640, h: 360 }, 1, {});
+      const ref = mk(); SB.apartmentShot(ref, day, home, false, w);
+      const a = ref.getImageData(0, 0, 640, 360).data, g = got.getImageData(0, 0, 640, 360).data;
+      let win = 0, phone = 0, elsewhere = 0;
+      for (let i = 0; i < a.length; i += 4) {
+        if (a[i] === g[i] && a[i + 1] === g[i + 1] && a[i + 2] === g[i + 2] && a[i + 3] === g[i + 3]) continue;
+        const x = (i / 4) % 640, y = Math.floor(i / 4 / 640);
+        if (x >= rect.wx && x < rect.wx + rect.ww && y >= rect.wy && y < rect.wy + rect.wh) win++;
+        else if (x >= 219 && x < 240 && y >= 264 && y < 270) phone++;
+        else elsewhere++;
+      }
+      out.push({ day, tier: w.tier, win, phone, elsewhere });
+    }
+    return out;
+  }, [
+    [4, { tier: 2 }], [24, { tier: 0, lateWeeks: 3 }], [14, { tier: 3, pet: { kind: 'dog', sex: 'girl' }, vet: 'neglected' }],
+    [44, { tier: 5, pet: { kind: 'cat', sex: 'boy' } }], [34, { tier: 1, lateWeeks: 1 }], [44, { tier: 4 }]
+  ]);
+  for (const d of flatDiff) assert(d.elsewhere === 0 && d.win > 0 && d.phone > 0, `sat p=1 differs from the flat picture outside the window and phone: ${JSON.stringify(d)}`);
+  // no gap between the window frame and the outside layer at any camera position, any tier
+  const gaps = await page.evaluate(() => {
+    const M = BTB.Motion, bad = [];
+    for (let tier = 0; tier < 6; tier++) for (const day of [4, 44]) {
+      const b = BTB.Scenes.weekend({ day, game: { mode: { S: { wallet: { tier } } } } })[0], cache = {};
+      for (let y = 0; y <= 8; y++) {
+        const cv = document.createElement('canvas'); cv.width = 640; cv.height = 360;
+        const g = cv.getContext('2d'); g.fillStyle = '#ff00ff'; g.fillRect(0, 0, 640, 360);
+        M.composite(g, { w: 640, h: 360 }, b, 1, 0.5, {}, { x: 0, y, zoom: 1 }, (layer) => {
+          if (cache[layer.id]) return cache[layer.id];
+          const lc = document.createElement('canvas'); lc.width = 640; lc.height = 360; layer.draw(lc.getContext('2d'), { w: 640, h: 360 }, {}); return (cache[layer.id] = lc);
+        });
+        const d = g.getImageData(0, 0, 640, 348).data; let n = 0;
+        for (let i = 0; i < d.length; i += 4) if (d[i] === 255 && d[i + 1] === 0 && d[i + 2] === 255) n++;
+        if (n) bad.push({ tier, day, y, n });
+      }
+    }
+    return bad;
+  });
+  assert(!gaps.length, `sat: gaps show above the letterbox: ${JSON.stringify(gaps.slice(0, 4))}`);
+  await page.evaluate(() => BTB.Settings.set('effects', 'reduced'));
+  assert(await shot('weekend', wk4, 0, 0.5) === await shot('weekend', wk4, 0, 2.2), 'sat: reduced effects still moves');
+  assert(await shot('weekend', wkCat, 0, 0.5) === await shot('weekend', wkCat, 0, 2.2), 'sat (pet): reduced effects still moves');
+  await page.evaluate(() => BTB.Settings.set('effects', 'full'));
+
   // effects reduced: a plain fade from ink, no dissolve of the old shot
   await page.evaluate(() => BTB.Settings.set('effects', 'reduced'));
   const r1 = await shot('news', day7, 1, 0.1), r29 = await shot('news', day7, 1, 0.29), rEnd = await shot('news', day7, 1, 1.0);
@@ -541,7 +635,10 @@ async function run() {
     { scene: 'news', opts: { day: 7, brief: { title: 'FOUR FUNDS, ONE MODEL', feed: [] } } },
     { scene: 'close', opts: { report: { day: 3, pnl: 1200, quotaMet: true, quota: 900 } } },
     { scene: 'close', opts: { report: { day: 30, pnl: 1200, quotaMet: true, quota: 900 } } },
-    { scene: 'weekend', opts: { day: 4 } }
+    { scene: 'weekend', opts: { day: 4 } },
+    // heaviest variants: winter snow plus the breath on a cat in a penthouse, and autumn leaves with no pet
+    { scene: 'weekend', opts: { day: 44, game: { mode: { S: { wallet: { tier: 5, pet: { kind: 'cat', sex: 'boy' } } } } } } },
+    { scene: 'weekend', opts: { day: 9, game: { mode: { S: { wallet: { tier: 3 } } } } } }
   ];
   const PERF_AVG_MS = 8, PERF_MAX_MS = 33, PERF_ATTEMPTS = 3, PERF_TIMEOUT_MS = 20000;
   const pct = (sorted, q) => sorted.length ? sorted[Math.min(sorted.length - 1, Math.ceil(q * sorted.length) - 1)] : 0;
@@ -615,7 +712,8 @@ async function run() {
     for (const { scene, opts } of PERF_SCENES) {
       const r = await perf(scene, opts);
       results.push(r);
-      console.log(`perf ${scene}: ${r.status} attempts=${r.attempts.length} framesMeasured=${r.framesMeasured}/${r.framesTotal} avg=${r.avgMs} p95=${r.p95Ms} max=${r.maxMs} firstMax=${Math.max(0, ...r.firstFrameMs.map((f) => f.ms))}`);
+      r.day = opts.day; r.tier = opts.game ? opts.game.mode.S.wallet.tier : undefined; r.pet = !!(opts.game && opts.game.mode.S.wallet.pet);
+      console.log(`perf ${scene}${opts.day != null ? ' day ' + opts.day : ''}${r.tier != null ? ' tier ' + r.tier : ''}${r.pet ? ' pet' : ''}: ${r.status} attempts=${r.attempts.length} framesMeasured=${r.framesMeasured}/${r.framesTotal} avg=${r.avgMs} p95=${r.p95Ms} max=${r.maxMs} firstMax=${Math.max(0, ...r.firstFrameMs.map((f) => f.ms))}`);
     }
     const outDir = path.join(root, 'qa', 'evidence', 'motion');
     fs.mkdirSync(outDir, { recursive: true });
