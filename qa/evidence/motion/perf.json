@@ -1,0 +1,80 @@
+{
+  "viewport": "844x390",
+  "deviceScaleFactor": 2,
+  "cpuThrottle": 4,
+  "limits": {
+    "avgMs": 8,
+    "maxMs": 33
+  },
+  "scenes": [
+    {
+      "scene": "news",
+      "status": "pass",
+      "attempts": 1,
+      "frames": 273,
+      "avgMs": 1.09,
+      "p95Ms": 2.4,
+      "maxMs": 11.9,
+      "firstFrameMs": [
+        {
+          "beat": 0,
+          "ms": 214.7
+        },
+        {
+          "beat": 1,
+          "ms": 175.5
+        },
+        {
+          "beat": 2,
+          "ms": 243.1
+        }
+      ]
+    },
+    {
+      "scene": "close",
+      "status": "fail",
+      "attempts": 3,
+      "frames": 174,
+      "avgMs": 6.01,
+      "p95Ms": 45.5,
+      "maxMs": 52.1,
+      "firstFrameMs": [
+        {
+          "beat": 0,
+          "ms": 91.5
+        },
+        {
+          "beat": 1,
+          "ms": 210.8
+        },
+        {
+          "beat": 2,
+          "ms": 181.7
+        }
+      ]
+    },
+    {
+      "scene": "weekend",
+      "status": "pass",
+      "attempts": 1,
+      "frames": 239,
+      "avgMs": 1.06,
+      "p95Ms": 4.2,
+      "maxMs": 11.9,
+      "firstFrameMs": [
+        {
+          "beat": 0,
+          "ms": 214.9
+        },
+        {
+          "beat": 1,
+          "ms": 120.8
+        },
+        {
+          "beat": 2,
+          "ms": 156.6
+        }
+      ]
+    }
+  ]
+}

@@ -1,5 +1,6 @@
 // Motion QA in Chromium: camera, determinism, letterbox, motion off, resize, canvas reallocation.
 // node js/tests/motion-run.js
+const fs = require('fs');
 const path = require('path');
 const { spawn } = require('child_process');
 const { chromium } = require('playwright');
@@ -454,5 +455,83 @@ const assert = (value, message) => { if (!value) throw new Error(message); };
 
   assert(warnings.length === 0, `unexpected console output: ${JSON.stringify(warnings)}`);
   console.log('motion-run: all asserts passed');
+
+  // ---- Performance (phone, CPU throttled 4x). SKIP_PERF=1 skips it. ----
+  // Scenes measured; later tasks add their shots here.
+  const PERF_SCENES = [
+    { scene: 'news', opts: { day: 7, brief: { title: 'FOUR FUNDS, ONE MODEL', feed: [] } } },
+    { scene: 'close', opts: { report: { day: 3, pnl: 1200, quotaMet: true, quota: 900 } } },
+    { scene: 'weekend', opts: { day: 4 } }
+  ];
+  const PERF_AVG_MS = 8, PERF_MAX_MS = 33, PERF_ATTEMPTS = 3;
+  const pct = (sorted, q) => sorted.length ? sorted[Math.min(sorted.length - 1, Math.ceil(q * sorted.length) - 1)] : 0;
+  const round = (x) => Math.round(x * 100) / 100;
+
+  // One real-time playback of the whole scene; returns per-frame draw() times.
+  const perfRun = async (scene, opts) => {
+    const ctx = await browser.newContext({ viewport: { width: 844, height: 390 }, deviceScaleFactor: 2 });
+    const pg = await ctx.newPage();
+    try {
+      await pg.goto(`http://127.0.0.1:${port}/index.html`, { waitUntil: 'domcontentloaded' });
+      await pg.keyboard.press('Enter');
+      await pg.waitForSelector('#screen-menu.active', { timeout: 10000 });
+      await pg.evaluate(() => {
+        const S = BTB.Settings;
+        S.set('sound', false); S.set('music', false); S.set('effects', 'full'); S.set('cinematics', 'full');
+      });
+      const cdp = await ctx.newCDPSession(pg);
+      await cdp.send('Emulation.setCPUThrottlingRate', { rate: 4 });
+      const frames = await pg.evaluate(([s, o]) => new Promise((resolve) => {
+        const C = BTB.Cinematic, orig = C.draw, out = [];
+        let lastBeat = -1;
+        C.draw = function () {
+          const t0 = performance.now();
+          const r = orig.apply(this, arguments);
+          const ms = performance.now() - t0;
+          out.push({ beat: this.i, first: this.i !== lastBeat, ms });
+          lastBeat = this.i;
+          return r;
+        };
+        if (C.running) C.finish();
+        C.startChain('perf-qa');
+        C.play(s, o, () => { C.draw = orig; resolve(out); });
+      }), [scene, opts]);
+      return frames;
+    } finally { await ctx.close(); }
+  };
+
+  const perf = async (scene, opts) => {
+    let result;
+    for (let attempt = 1; attempt <= PERF_ATTEMPTS; attempt++) {
+      const frames = await perfRun(scene, opts);
+      const rest = frames.filter((f) => !f.first).map((f) => f.ms);
+      const sorted = rest.slice().sort((a, b) => a - b);
+      const avg = rest.length ? rest.reduce((a, b) => a + b, 0) / rest.length : 0;
+      const max = sorted.length ? sorted[sorted.length - 1] : 0;
+      const firstFrames = frames.filter((f) => f.first).map((f) => ({ beat: f.beat, ms: round(f.ms) }));
+      const pass = rest.length > 0 && avg < PERF_AVG_MS && max <= PERF_MAX_MS;
+      result = { scene, status: pass ? 'pass' : 'fail', attempts: attempt, frames: rest.length, avgMs: round(avg), p95Ms: round(pct(sorted, 0.95)), maxMs: round(max), firstFrameMs: firstFrames };
+      if (pass) break;
+    }
+    return result;
+  };
+
+  if (process.env.SKIP_PERF === '1') console.log('motion-run: perf skipped (SKIP_PERF=1)');
+  else {
+    const results = [];
+    for (const { scene, opts } of PERF_SCENES) {
+      const r = await perf(scene, opts);
+      results.push(r);
+      console.log(`perf ${scene}: ${r.status} attempts=${r.attempts} frames=${r.frames} avg=${r.avgMs} p95=${r.p95Ms} max=${r.maxMs} firstMax=${Math.max(0, ...r.firstFrameMs.map((f) => f.ms))}`);
+    }
+    const outDir = path.join(root, 'qa', 'evidence', 'motion');
+    fs.mkdirSync(outDir, { recursive: true });
+    fs.writeFileSync(path.join(outDir, 'perf.json'), JSON.stringify({
+      viewport: '844x390', deviceScaleFactor: 2, cpuThrottle: 4, limits: { avgMs: PERF_AVG_MS, maxMs: PERF_MAX_MS }, scenes: results
+    }, null, 2) + '\n');
+    const failed = results.filter((r) => r.status !== 'pass');
+    assert(!failed.length, `perf limits exceeded: ${failed.map((r) => r.scene).join(', ')}`);
+    console.log('motion-run: perf within limits');
+  }
   await browser.close(); server.kill();
 })().catch((error) => { console.error(error.stack || error); server.kill(); process.exit(1); });
