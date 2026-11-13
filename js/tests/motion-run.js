@@ -261,6 +261,10 @@ const assert = (value, message) => { if (!value) throw new Error(message); };
       id: 'qa:throw', dur: 1.2,
       layers: [{ id: 'bad', draw() { throw new Error('boom'); } }, { id: 'ok', draw(c) { c.fillStyle = BTB.Pal.bone; c.fillRect(0, 0, 50, 50); } }]
     })];
+    // a layer with transparent holes, and cues at and past the duration
+    BTB.Scenes.__holes = () => [BTB.Motion.layered({ id: 'qa:holes', dur: 1.2, layers: [{ id: 'dot', draw(c) { c.fillStyle = P.bone; c.fillRect(100, 40, 20, 20); } }] })];
+    BTB.Scenes.__lateCue = () => [BTB.Motion.layered({ id: 'qa:late', dur: 0.4, cues: [{ at: 0.4, sfx: 'qaCue' }, { at: 9, sfx: 'qaCue' }], layers: [{ id: 'x', draw() {} }] })];
+    BTB.Scenes.__click = () => [BTB.Motion.layered({ id: 'qa:click', dur: 0.5, cues: [{ at: 0.1, sfx: 'click' }], layers: [{ id: 'x', draw() {} }] })];
     BTB.Scenes.__throwBuilder = () => { throw new Error('builder boom'); };
   });
   const cols = (o, i, t) => page.evaluate(([o, i, t]) => {
@@ -321,6 +325,29 @@ const assert = (value, message) => { if (!value) throw new Error(message); };
   await page.evaluate(() => BTB.Settings.set('cinematics', 'full'));
   assert(sh[0] === sh[1] && sh[0] === refShot, 'short: a layered shot is not its final still');
 
+  // the still path paints ink first: transparent holes show ink, never the previous frame
+  const hole = await page.evaluate(() => {
+    const C = BTB.Cinematic, V = BTB.Scenes.V;
+    BTB.Settings.set('effects', 'reduced');
+    window.openBeat('__layers', { n: 'stale' }); C.seek(0, 0.6); // fills the canvas with slate
+    window.openBeat('__holes', {}); C.seek(0, 0.6);
+    const cv = document.getElementById('cine-canvas'), k = cv.width / V.w, ink = [1, 3, 5].map((j) => parseInt(BTB.Pal.ink.slice(j, j + 2), 16));
+    const at = (x, y) => Array.from(cv.getContext('2d').getImageData(Math.round(x * k), Math.round(y * k), 1, 1).data);
+    const a = at(10, 90), b = at(110, 50);
+    BTB.Settings.set('effects', 'full');
+    return { holeInk: a[0] === ink[0] && a[1] === ink[1] && a[2] === ink[2] && a[3] === 255, dot: b[0] !== ink[0] };
+  });
+  assert(hole.holeInk && hole.dot, `layered still left stale pixels in a transparent hole: ${JSON.stringify(hole)}`);
+
+  // effects toggled between two seeks of the same layered beat: still, then live again
+  const tog = [];
+  await page.evaluate(() => { BTB.Settings.set('effects', 'full'); window.openBeat('__layers', { n: 'm', cam: true }); BTB.Cinematic.seek(0, 0.5); });
+  const grab = () => page.evaluate(() => { BTB.Cinematic.seek(0, 0.5); return window.hashCanvas(Math.round(document.getElementById('cine-canvas').height * 0.75)); });
+  tog.push(await grab());
+  await page.evaluate(() => BTB.Settings.set('effects', 'reduced')); tog.push(await grab());
+  await page.evaluate(() => BTB.Settings.set('effects', 'full')); tog.push(await grab());
+  assert(tog[0] !== tog[1] && tog[1] === rd[0] && tog[2] === tog[0], 'toggling Screen effects mid-beat did not switch the next frame to the still and back');
+
   // cues: once in real time, not from seek, not on skip
   const cues = await page.evaluate(async () => {
     const C = BTB.Cinematic, out = {};
@@ -336,6 +363,29 @@ const assert = (value, message) => { if (!value) throw new Error(message); };
     return out;
   });
   assert(cues.seek === 0 && cues.skip === 0, `cue fired from seek or skip: ${JSON.stringify(cues)}`);
+  const late = await page.evaluate(async () => {
+    const C = BTB.Cinematic; if (C.running) C.finish();
+    window.__cue = 0; C.startChain('late'); C.play('__lateCue', {}, () => {});
+    await new Promise((r) => setTimeout(r, 900)); C.endChain();
+    return window.__cue;
+  });
+  assert(late === 2, `cues at or past the duration should fire on the last frame, fired ${late}`);
+  // sound gate: the real B.SFX gate decides; spy on the audio nodes the cue would create
+  const gate = await page.evaluate(async () => {
+    const C = BTB.Cinematic, proto = (window.AudioContext || window.webkitAudioContext).prototype, orig = {};
+    let nodes = 0;
+    ['createOscillator', 'createBufferSource'].forEach((n) => { orig[n] = proto[n]; proto[n] = function () { nodes++; return orig[n].apply(this, arguments); }; });
+    const play = async () => {
+      if (C.running) C.finish(); nodes = 0;
+      C.startChain('gate'); C.play('__click', {}, () => {});
+      await new Promise((r) => setTimeout(r, 900)); C.endChain(); return nodes;
+    };
+    BTB.Settings.set('sound', true); const on = await play();
+    BTB.Settings.set('sound', false); const off = await play();
+    Object.keys(orig).forEach((n) => { proto[n] = orig[n]; });
+    return { on, off };
+  });
+  assert(gate.on > 0 && gate.off === 0, `cue sound gate: ${JSON.stringify(gate)}`);
   assert(cues.real === 1 && cues.finished, `cue should fire exactly once in real time: ${JSON.stringify(cues)}`);
 
   // byte-budget cache

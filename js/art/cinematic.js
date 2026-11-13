@@ -115,7 +115,7 @@
         if (this.paused) { this.raf = requestAnimationFrame(step); return; }
         this.t += dt;
         const beat = this.beats[this.i];
-        this.fireCues(beat);
+        this.fireCues(beat, this.t >= beat.dur);
         if (this.t >= beat.dur) {
           this.i++;
           this.t = 0;
@@ -165,7 +165,7 @@
         // live layers: parallax camera, no preset; the beat's own camera may use x, y and zoom
         X.rect(ctx, 0, 0, view.w, view.h, P.ink);
         try {
-          B.Motion.composite(ctx, view, beat, progress * beat.dur, progress, this.opts, B.Motion.cameraAt(beat.camera, progress), (layer) => this.layerCanvas(beat, layer, view));
+          B.Motion.composite(ctx, view, beat, progress * beat.dur, progress, this.opts, B.Motion.cameraAt(beat.camera, progress), (layer) => this.layerCanvas(beat, layer, view), (layer, e) => this.warnOnce(beat, 'layer ' + layer.id + ' animate', e));
         } catch (e) { this.warnOnce(beat, 'composite', e); X.rect(ctx, 0, 0, view.w, view.h, P.ink); }
         if (beat.drawDynamic) beat.drawDynamic(ctx, view, progress, this.opts);
         ctx.restore();
@@ -179,6 +179,7 @@
         ctx.scale(cam.zoom, cam.zoom);
         ctx.translate(-cx, -cy);
       }
+      if (beat.layers) X.rect(ctx, 0, 0, view.w, view.h, P.ink); // the still may have transparent holes; never show stale pixels
       if (beat.cache !== false || beat.layers) ctx.drawImage(this.cachedFrame(beat, view), 0, 0, view.w, view.h);
       else {
         try { beat.draw(ctx, view, progress, this.opts); }
@@ -268,11 +269,13 @@
     seek(i, t) { if (!this.running || !this.beats || i < 0 || i >= this.beats.length) return; this.i = i; this.t = t; this.draw(); },
     optsOf() { return this.opts || {}; },
     // Timed sound cues: each fires once when the beat's clock passes `at`. Never from seek or skip.
-    fireCues(beat) {
+    // The B.SFX functions gate themselves on the Sound effects setting (B.SFX.setEnabled), exactly as playBeat relies on.
+    // `last`: the beat's final frame, so a cue at or past the duration still fires.
+    fireCues(beat, last) {
       if (!beat.cues || !B.SFX) return;
       if (!this.fired || this.fired.beat !== beat) this.fired = { beat, done: new Set() };
       beat.cues.forEach((cue, n) => {
-        if (this.t < cue.at || this.fired.done.has(n)) return;
+        if ((this.t < cue.at && !last) || this.fired.done.has(n)) return;
         this.fired.done.add(n);
         const fn = B.SFX[cue.sfx];
         if (typeof fn === 'function') fn.call(B.SFX);
@@ -294,6 +297,8 @@
       if (this.onKey) window.removeEventListener('keydown', this.onKey);
       this.onKey = null;
       this.releasePictures();
+      this.fired = null;
+      this.warned.clear();
       if (!this.chain) this.clearCache();
       if (this.el) this.el.hidden = true;
       const done = this.done;

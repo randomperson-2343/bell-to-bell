@@ -158,11 +158,19 @@
     if (typeof console !== 'undefined') console.warn(`motion: ${what} threw in beat ${beat.id}${layer ? ' layer ' + layer.id : ''}: ${e && e.message}`);
   };
 
+  // Layer shape: { id, depth = 1, w, h, draw(ctx, view, opts), animate?(ctx, view, t, p, opts) }.
+  // `draw` and `animate` receive a view sized to the layer ({ w, h } of the layer canvas, not of the shot);
+  // w and h default to the shot view and must be positive when given.
+  // Layers must paint source-over only (no clearRect, destination-out or copy): the live path blits a
+  // transparent canvas per layer while the still path paints straight into the shot, and an eraser
+  // would give different pictures. Each layer runs inside save/restore with source-over and alpha 1.
+  //
   // Gives a beat with `layers` a complete draw(ctx, view, p, opts): every layer, then its animate, back to front.
   // Paints straight into ctx in layer coordinates, so it needs no canvas, document or settings.
   function layered(beat) {
     const seen = new Set();
     for (const layer of beat.layers) {
+      if ((layer.w != null && !(layer.w > 0)) || (layer.h != null && !(layer.h > 0))) throw new Error(`layered beat ${beat.id}: layer ${layer.id} needs a positive w and h`);
       if (seen.has(layer.id)) throw new Error(`layered beat ${beat.id}: duplicate layer id ${layer.id}`);
       seen.add(layer.id);
     }
@@ -172,6 +180,7 @@
         for (const layer of beat.layers) {
           const lv = layerView(view, layer), o = layerOrigin(view, lv);
           ctx.save();
+          ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1;
           ctx.translate(o[0], o[1]);
           try {
             layer.draw(ctx, lv, opts);
@@ -185,8 +194,8 @@
 
   // Per-frame path: blit each layer's cached canvas with its parallax offset, then its animate.
   // Zoom is about the view centre, after the offset, equally for every layer.
-  const warned = new Set();
-  function composite(ctx, view, beat, t, p, opts, cam, getLayer) {
+  // onError(layer, e), when given, receives a throwing animate (the player dedupes it per play).
+  function composite(ctx, view, beat, t, p, opts, cam, getLayer, onError) {
     ctx.save();
     const cx = view.w / 2, cy = view.h / 2;
     ctx.translate(cx, cy);
@@ -195,17 +204,15 @@
     for (const layer of beat.layers) {
       const lv = layerView(view, layer), o = layerOrigin(view, lv), d = layer.depth == null ? 1 : layer.depth;
       const ox = o[0] - Math.round(cam.x * d), oy = o[1] - Math.round(cam.y * d);
+      ctx.save();
+      ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1;
       ctx.drawImage(getLayer(layer), ox, oy);
       if (layer.animate) {
-        ctx.save();
         ctx.translate(ox, oy);
         try { layer.animate(ctx, lv, t, p, opts); }
-        catch (e) {
-          const key = beat.id + '|' + layer.id;
-          if (!warned.has(key)) { warned.add(key); warn('layer animate', beat, layer, e); }
-        }
-        ctx.restore();
+        catch (e) { if (onError) onError(layer, e); else warn('layer animate', beat, layer, e); }
       }
+      ctx.restore();
     }
     ctx.restore();
   }
