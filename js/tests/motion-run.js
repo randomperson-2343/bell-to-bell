@@ -440,6 +440,27 @@ const assert = (value, message) => { if (!value) throw new Error(message); };
   assert(added.length === 2 && /qa:throw/.test(added[0]) && /bad/.test(added[0]) && /__throwBuilder/.test(added[1]), `unexpected warnings for throwing layer and builder: ${JSON.stringify(added)}`);
   warnings.length = 0;
 
+  // ---- pilot shot: session 1 elevator (news:0:establish) ----
+  const day0 = { day: 0, brief: { title: 'FIRST DAY', feed: [] } };
+  const elev = await page.evaluate((o) => { const b = BTB.Scenes.news(o)[0]; return { id: b.id, dur: b.dur, layers: (b.layers || []).map((l) => l.id), cue: (b.cues || []).map((c) => c.at + ':' + c.sfx).join() }; }, day0);
+  assert(elev.id === 'news:0:establish' && elev.dur <= 2.55 && elev.dur > 1.7, `elevator beat id/duration: ${JSON.stringify(elev)}`);
+  assert(elev.layers.join() === 'car,lobby,frame,marks' && elev.cue === '1.05:elevator', `elevator layers/cues: ${JSON.stringify(elev)}`);
+  assert(await shot('news', day0, 0, 0.4) !== await shot('news', day0, 0, 2.3), 'elevator: start and end frames are identical');
+  assert(await shot('news', day0, 0, 1.6) === await shot('news', day0, 0, 1.6), 'elevator: same time gave different pictures');
+  assert(await shot('news', day0, 0, 0.4) !== await shot('news', day0, 0, 1.0), 'elevator: the counter does not move');
+  assert(await shot('news', day0, 0, 1.6) !== await shot('news', day0, 0, 1.9), 'elevator: the doors do not move');
+  const elevPlain = await page.evaluate((o) => {
+    // draws with no game and with no settings consulted: the generated draw at p = 1
+    const b = BTB.Scenes.news(o)[0], c = document.createElement('canvas'); c.width = 640; c.height = 360;
+    b.draw(c.getContext('2d'), { w: 640, h: 360 }, 1, {});
+    const d = c.getContext('2d').getImageData(0, 0, 640, 360).data; let a = 0; for (let i = 3; i < d.length; i += 4) a += d[i] === 255 ? 1 : 0;
+    return a;
+  }, day0);
+  assert(elevPlain > 640 * 360 * 0.5, 'elevator: draw(p=1) without a game left the picture mostly empty');
+  await page.evaluate(() => BTB.Settings.set('effects', 'reduced'));
+  assert(await shot('news', day0, 0, 0.5) === await shot('news', day0, 0, 2.2), 'elevator: reduced effects still moves');
+  await page.evaluate(() => BTB.Settings.set('effects', 'full'));
+
   // effects reduced: a plain fade from ink, no dissolve of the old shot
   await page.evaluate(() => BTB.Settings.set('effects', 'reduced'));
   const r1 = await shot('news', day7, 1, 0.1), r29 = await shot('news', day7, 1, 0.29), rEnd = await shot('news', day7, 1, 1.0);
@@ -459,6 +480,7 @@ const assert = (value, message) => { if (!value) throw new Error(message); };
   // ---- Performance (phone, CPU throttled 4x). SKIP_PERF=1 skips it. ----
   // Scenes measured; later tasks add their shots here.
   const PERF_SCENES = [
+    { scene: 'news', opts: { day: 0, brief: { title: 'FIRST DAY', feed: [] } } },
     { scene: 'news', opts: { day: 7, brief: { title: 'FOUR FUNDS, ONE MODEL', feed: [] } } },
     { scene: 'close', opts: { report: { day: 3, pnl: 1200, quotaMet: true, quota: 900 } } },
     { scene: 'weekend', opts: { day: 4 } }

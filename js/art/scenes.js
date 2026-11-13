@@ -109,34 +109,52 @@
   }
 
   // Lobby elevator. `open` 0..1 slides the doors apart.
-  function elevator(ctx, open, floor) {
-    X.rect(ctx, 0, 0, V.w, V.h, P.ink2);
-    X.gradient(ctx, 0, 0, V.w, 132, P.slate, P.ink2, 7);
-    // Stone panels either side.
-    for (const px of [6, 40, 234, 268]) { k1(ctx, px, 14, 32, 114, P.slate, P.slate2, P.ink2); X.dither(ctx, px + 2, 16, 28, 110, P.slate, P.slate2, 0.12); }
-    X.rect(ctx, 0, 132, V.w, V.h - 132, P.carpetD);
-    X.dither(ctx, 0, 133, V.w, V.h - 133, P.carpetD, P.carpet, 0.12); X.rect(ctx, 0, 132, V.w, 1, P.ink);
-    // The car behind the doors: lit ceiling, back wall, handrail, floor.
-    X.rect(ctx, 96, 24, 128, 108, P.slate);
-    X.gradient(ctx, 96, 24, 128, 108, P.slate2, P.ink2, 6);
-    X.rect(ctx, 96, 24, 128, 4, P.bone); stepGlow(ctx, 160, 30, [60, 36], P.white, 0.05);
-    k1(ctx, 100, 72, 120, 4, P.plastic, P.plastic2, P.plasticD);
-    X.rect(ctx, 96, 124, 128, 8, P.carpet);
-    // Floor indicator and the call button.
-    k1(ctx, 132, 6, 56, 16, P.plastic, P.plastic2, P.plasticD);
-    k1(ctx, 136, 9, 48, 10, P.ink, P.screenD, P.ink, P.ink2);
-    X.text(ctx, String(floor || 41), 160, 11, P.amber, { align: 'center' });
-    k1(ctx, 232, 66, 10, 18, P.plastic, P.plastic2, P.plasticD); X.rect(ctx, 235, 70, 4, 4, P.amber); X.rect(ctx, 235, 77, 4, 4, P.slate2);
-    // Doors: brushed steel, a seam, outlined.
-    const slide = Math.round(open * 62);
-    const door = (x) => {
-      k1(ctx, x, 24, 62, 108, P.plastic, P.plastic2, P.plasticD);
-      for (let i = 6; i < 58; i += 6) X.rect(ctx, x + i, 27, 1, 102, P.plastic2);
-    };
-    door(96 - slide);
-    door(162 + slide);
-    // The frame.
-    k1(ctx, 90, 18, 8, 118, P.plasticD, P.plastic, P.slate2); k1(ctx, 222, 18, 8, 118, P.plasticD, P.plastic, P.slate2); k1(ctx, 90, 18, 140, 8, P.plasticD, P.plastic, P.slate2);
+  // `part` draws one layer of it for the layered opening shot; undefined draws the whole picture, as ever.
+  // Parts: 'car' (the lit car), 'lobby' (wall, panels, carpet with the doorway left unpainted, indicator housing, call button),
+  // 'number' (the indicator well and its floor number), 'arrow' (the up glyph), 'doors', 'frame'.
+  function elevator(ctx, open, floor, part) {
+    const all = part == null, has = (n) => all || part === n;
+    if (has('lobby')) {
+      ctx.save();
+      if (!all) { ctx.beginPath(); ctx.rect(0, 0, 320, 180); ctx.rect(98, 26, 124, 105); ctx.clip('evenodd'); }
+      X.rect(ctx, 0, 0, V.w, V.h, P.ink2);
+      X.gradient(ctx, 0, 0, V.w, 132, P.slate, P.ink2, 7);
+      // Stone panels either side.
+      for (const px of [6, 40, 234, 268]) { k1(ctx, px, 14, 32, 114, P.slate, P.slate2, P.ink2); X.dither(ctx, px + 2, 16, 28, 110, P.slate, P.slate2, 0.12); }
+      X.rect(ctx, 0, 132, V.w, V.h - 132, P.carpetD);
+      X.dither(ctx, 0, 133, V.w, V.h - 133, P.carpetD, P.carpet, 0.12); X.rect(ctx, 0, 132, V.w, 1, P.ink);
+      ctx.restore();
+    }
+    if (has('car')) {
+      // The car behind the doors: lit ceiling, back wall, handrail, floor.
+      X.rect(ctx, 96, 24, 128, 108, P.slate);
+      X.gradient(ctx, 96, 24, 128, 108, P.slate2, P.ink2, 6);
+      X.rect(ctx, 96, 24, 128, 4, P.bone); stepGlow(ctx, 160, 30, [60, 36], P.white, 0.05);
+      k1(ctx, 100, 72, 120, 4, P.plastic, P.plastic2, P.plasticD);
+      X.rect(ctx, 96, 124, 128, 8, P.carpet);
+    }
+    if (has('lobby') || has('number')) {
+      // Floor indicator and the call button.
+      if (has('lobby')) k1(ctx, 132, 6, 56, 16, P.plastic, P.plastic2, P.plasticD);
+      k1(ctx, 136, 9, 48, 10, P.ink, P.screenD, P.ink, P.ink2);
+      if (!part || part === 'number') X.text(ctx, String(floor || 41), 160, 11, P.amber, { align: 'center' });
+      if (has('lobby')) { k1(ctx, 232, 66, 10, 18, P.plastic, P.plastic2, P.plasticD); X.rect(ctx, 235, 70, 4, 4, P.amber); X.rect(ctx, 235, 77, 4, 4, P.slate2); }
+    }
+    if (part === 'arrow') X.text(ctx, '\u2191', 140, 11, P.amberD);
+    if (has('doors')) {
+      // Doors: brushed steel, a seam, outlined.
+      const slide = Math.round(open * 62);
+      const door = (x) => {
+        k1(ctx, x, 24, 62, 108, P.plastic, P.plastic2, P.plasticD);
+        for (let i = 6; i < 58; i += 6) X.rect(ctx, x + i, 27, 1, 102, P.plastic2);
+      };
+      door(96 - slide);
+      door(162 + slide);
+    }
+    if (has('frame')) {
+      // The frame.
+      k1(ctx, 90, 18, 8, 118, P.plasticD, P.plastic, P.slate2); k1(ctx, 222, 18, 8, 118, P.plasticD, P.plastic, P.slate2); k1(ctx, 90, 18, 140, 8, P.plasticD, P.plastic, P.slate2);
+    }
   }
 
   // Wide shot of the trading floor. `zoom` 0..1 pushes toward your desk.

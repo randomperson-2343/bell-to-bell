@@ -315,13 +315,16 @@
   // The underlying set pieces have 320-pixel silhouettes. These fine marks
   // live on the 640-pixel canvas, giving glass, paper and architecture their
   // own scale without changing a storyboard's subject or blocking its caption.
-  function finePass(ctx, day, r, phase) {
+  function finePass(ctx, day, r, phase, which) {
+    // `which`: 'world' draws only the shot's own marks, 'frame' only the corner brackets, undefined both.
+    const world = which !== 'frame', corners = which !== 'world';
     const signal = R.colors((B.StoryData.actIndex(day) + 1)).signal;
     const top = phase === 'detail' ? 19 : 12;
     if (r.shot === 'insert' && phase === 'detail') return; // native documents already have fine linework
     ctx.save();
     ctx.globalAlpha = 0.5;
-    if (r.shot === 'floor' || r.shot === 'dark' || r.shot === 'place') {
+    if (!world) { /* corner brackets only */ }
+    else if (r.shot === 'floor' || r.shot === 'dark' || r.shot === 'place') {
       for (let i = 0; i < 8; i++) {
         const x = 82 + i * 69 + ((day * 11) % 17);
         X.rect(ctx, x, 119 + (i % 3) * 5, 1, 61, P.grey2);
@@ -332,7 +335,7 @@
     } else if (r.shot === 'elevator') {
       for (let i = 0; i < 9; i++) X.rect(ctx, 199 + i * 28, 58, 1, 178, P.bone);
       X.rect(ctx, 187, 245, 266, 1, signal);
-      X.rect(ctx, 308, 28, 24, 1, P.amber);
+      X.rect(ctx, 308, 45, 24, 1, P.amber); // below the indicator housing, clear of the digits
     } else if (r.shot === 'tableau' || r.shot === 'tv') {
       for (let y = 48; y < 239; y += 8) X.rect(ctx, 14, y, 1, 2, signal);
       for (let y = 48; y < 239; y += 8) X.rect(ctx, V.w - 15, y, 1, 2, signal);
@@ -352,6 +355,7 @@
     } else if (r.shot === 'bell') {
       for (let i = 0; i < 12; i++) X.rect(ctx, 217 + i * 17, 218 - i % 3, 9, 1, P.amber);
     }
+    if (!corners) { ctx.restore(); return; }
     ctx.globalAlpha = 0.65;
     X.rect(ctx, 16, top, 38, 1, signal);
     X.rect(ctx, 16, top, 1, 10, signal);
@@ -719,6 +723,47 @@
 
   B.Storyboard = { PET, petRows, SHEET, DOCS, ANOMALY_DAYS, row, variant, lit, actTurns, HOMES, WEEKENDS, insertShot, shotFrame };
 
+  // Session 1 opens in the lobby: the counter climbs to 41, the car arrives, the doors part.
+  // Five parts of SH.elevator, back to front: car, lobby wall (doorway left open), doors and counter animated on it, frame, screen-space marks.
+  function elevatorOpening(day, r, date) {
+    const E = (name, open, floor) => (c) => at2x(c, (cc) => SH.elevator(cc, open, floor, name), 0);
+    const M = B.Motion, rr = { shot: 'elevator' };
+    const slideAt = (t) => Math.round(0.6 * M.ease.inOut((t - 1.25) / 0.9) * 62);
+    return M.layered({
+      id: `news:${day}:establish`, view: V, dur: 2.4, line: date, cache: false, sfx: 'apartment', informative: false, transition: 'fade',
+      cues: [{ at: 1.05, sfx: 'elevator' }],
+      camera: { from: { x: 0, y: -8, zoom: 1 }, to: { x: 0, y: 0, zoom: 1 }, ease: M.ease.inOut },
+      layers: [
+        {
+          id: 'car', depth: 0.75, draw: E('car'),
+          animate(c, v, t) {
+            if ((t >= 1.45 && t < 1.53) || (t >= 1.62 && t < 1.70)) at2x(c, (cc) => { cc.save(); cc.globalAlpha = 0.2; X.rect(cc, 96, 24, 128, 108, P.ink); cc.restore(); }, 0);
+          }
+        },
+        {
+          id: 'lobby', depth: 1, draw: E('lobby'),
+          animate(c, v, t) {
+            const floor = 38 + Math.min(3, Math.floor(t / 0.35)), slide = slideAt(t);
+            at2x(c, (cc) => {
+              SH.elevator(cc, 0, floor, 'number');
+              if (floor < 41) SH.elevator(cc, 0, floor, 'arrow');
+              if (slide >= 1) {
+                for (let k = 0; k < 8; k++) {
+                  cc.save(); cc.globalAlpha = k < 4 ? 0.14 : 0.08;
+                  X.rect(cc, 160 - (2 + slide) - k, 133 + k, 2 * (2 + slide + k), 1, P.bone);
+                  cc.restore();
+                }
+              }
+              SH.elevator(cc, 0.6 * M.ease.inOut((t - 1.25) / 0.9), 41, 'doors');
+            }, 0);
+          }
+        },
+        { id: 'frame', depth: 1, draw(c) { at2x(c, (cc) => SH.elevator(cc, 0, 41, 'frame'), 0); finePass(c, day, rr, 'establish', 'world'); } },
+        { id: 'marks', depth: 0, draw(c) { finePass(c, day, rr, 'establish', 'frame'); tell(c, day); } }
+      ]
+    });
+  }
+
   B.Scenes.news = function (o) {
     const day = o.day || 0, r = row(day, story(o)), n = WEIGHTS[r.weight] || 2;
     const title = R.clean((o.brief || {}).title);
@@ -726,7 +771,8 @@
     const beats = [];
     if (r.weight === 'XL' && actTurns(day)) beats.push(R.beat('news', `${day}:act`, 1.7, (c) => actCard(c, day), act(day), { sfx: 'broadcast', transition: 'fade' }));
     const v = r.arg && variant(day, story(o)) ? ':' + r.arg : '';
-    beats.push(R.beat('news', `${day}${v}:establish`, n === 1 ? 2.4 : 1.7, (c) => { framed(c, day, r, title); finePass(c, day, r, 'establish'); tell(c, day); }, n === 1 ? title : date,
+    if (day === 0 && r.shot === 'elevator') beats.push(elevatorOpening(day, r, date));
+    else beats.push(R.beat('news', `${day}${v}:establish`, n === 1 ? 2.4 : 1.7, (c) => { framed(c, day, r, title); finePass(c, day, r, 'establish'); tell(c, day); }, n === 1 ? title : date,
       Object.assign({ sfx: r.shot === 'tv' ? 'room' : r.shot === 'floor' || r.shot === 'dark' ? 'office' : 'apartment', informative: n === 1 }, beats.length ? {} : { transition: 'fade' })));
     if (n >= 2) beats.push(R.beat('news', `${day}${v}:detail`, 2.3, (c) => { detailFrame(c, day, r, title); finePass(c, day, r, 'detail'); }, title, { sfx: 'broadcast', informative: true }));
     if (n >= 3) beats.push(R.beat('news', `${day}${v}:hold`, 1.1, (c) => { shotFrame(c, day, r, title); c.save(); c.globalAlpha = 0.18; X.rect(c, 0, 0, V.w, V.h, P.ink); c.restore(); }, '', {}));
