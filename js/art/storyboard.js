@@ -721,7 +721,7 @@
     return beats;
   };
 
-  B.Storyboard = { PET, petRows, SHEET, DOCS, ANOMALY_DAYS, row, variant, lit, actTurns, HOMES, WEEKENDS, insertShot, shotFrame };
+  B.Storyboard = { PET, petRows, SHEET, DOCS, ANOMALY_DAYS, row, variant, lit, actTurns, HOMES, WEEKENDS, insertShot, shotFrame, at2x, finePass, bellSwing };
 
   // Session 1 opens in the lobby: the counter climbs to 41, the car arrives, the doors part.
   // Five parts of SH.elevator, back to front: car, lobby wall (doorway left open), doors and counter animated on it, frame, screen-space marks.
@@ -784,21 +784,51 @@
   // at all at the end.
   const close = B.Scenes.close;
   function bellSwing(day, p) { return day === 42 ? p * 0.45 : p; }
+  // 7 half-swings of the bell at 0.26 s each: the bell passes centre on each of the five closeBell strikes.
+  const BELL_DUR = 1.82;
+  // Layers back to front: wall (static room, the bell animated on it), desks (walkers and fine dashes animated on them), frame (corner brackets).
+  // draw(ctx, view, 1, opts) is the old flat picture: wall, bell, desks, walkers, dashes, brackets.
+  function bellLayers(day, empty) {
+    const rr = { shot: 'bell' };
+    return [
+      {
+        id: 'wall', depth: 0.5,
+        draw(c) { at2x(c, (cc) => SH.bellScene(cc, 1, empty, 'wall'), day); },
+        animate(c, v, t, p) { at2x(c, (cc) => SH.bellScene(cc, bellSwing(day, p), empty, 'bell'), day); }
+      },
+      {
+        id: 'desks', depth: 1,
+        draw(c) { at2x(c, (cc) => SH.bellScene(cc, 1, empty, 'desks'), day); },
+        animate(c, v, t, p) {
+          if (empty) at2x(c, (cc) => SH.bellScene(cc, bellSwing(day, p), true, 'walkers'), day);
+          finePass(c, day, rr, 'establish', 'world');
+        }
+      },
+      { id: 'frame', depth: 0, draw() {}, animate(c) { finePass(c, day, rr, 'establish', 'frame'); } }
+    ];
+  }
   B.Scenes.close = function (o) {
     const beats = close(o);
     const r = o.report || {}, day = r.day || 0, silent = day >= 44;
-    if (beats[0]) {
+    if (beats[0] && silent) {
+      // Nobody rings it: one still picture for the whole beat, no layers, no camera.
       beats[0] = Object.assign({}, beats[0], {
-        cache: false,
-        line: silent ? '4:00 PM. NOBODY RINGS IT.' : beats[0].line,
-        draw: (c, v, p) => {
+        dur: BELL_DUR, cache: true, sfx: 'room', line: '4:00 PM. NOBODY RINGS IT.',
+        camera: { from: { y: 0 }, to: { y: 0 } },
+        draw: (c) => {
           at2x(c, (cc) => {
-            SH.bellScene(cc, silent ? 1 : bellSwing(day, p == null ? 1 : p), day >= 25);
-            if (silent) { cc.save(); cc.globalAlpha = 0.45; X.rect(cc, 0, 0, 320, 180, P.ink); cc.restore(); }
+            SH.bellScene(cc, 1, day >= 25);
+            cc.save(); cc.globalAlpha = 0.45; X.rect(cc, 0, 0, 320, 180, P.ink); cc.restore();
           }, day);
           finePass(c, day, { shot: 'bell' }, 'establish');
         }
       });
+    } else if (beats[0]) {
+      beats[0] = B.Motion.layered(Object.assign({}, beats[0], {
+        dur: BELL_DUR,
+        camera: { from: { x: 0, y: -8, zoom: 1 }, to: { x: 0, y: 0, zoom: 1 }, ease: B.Motion.ease.out },
+        layers: bellLayers(day, day >= 25)
+      }));
     }
     // The report says the one number the desk cares about.
     const rep = beats.find((b) => /:report$/.test(b.id));

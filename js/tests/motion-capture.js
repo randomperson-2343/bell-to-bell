@@ -18,7 +18,7 @@ const root = process.env.PROJECT_ROOT || path.join(__dirname, '..', '..');
 const port = +(process.env.QA_PORT || 4180);
 const out = path.join(root, 'qa', 'evidence', 'motion');
 fs.mkdirSync(out, { recursive: true });
-const id = opts.day != null ? opts.day : opts.id != null ? opts.id : 'default';
+const id = opts.day != null ? opts.day : opts.id != null ? opts.id : opts.report && opts.report.day != null ? opts.report.day : 'default';
 const base = `${scene}-${id}-${index}`;
 const server = spawn('python3', ['-m', 'http.server', String(port), '--bind', '127.0.0.1'], { cwd: root, stdio: 'ignore' });
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));

@@ -31,6 +31,8 @@
   // A seated or standing figure seen from behind, in outline.
   const BACK = ['..1111..', '.122221.', '.122221.', '..1221..', '.111111.', '12222221', '12222221', '12222221', '12222221'];
   const WALKER = ['.111.', '1dD11', '1DD1.', '.11..', '1221.', '12211', '12211', '1221.', '1.1..', '1.1..'];
+  // Second walking pose: the back leg steps in (last two rows differ from WALKER).
+  const WALKER_B = WALKER.map((r, i) => (i >= WALKER.length - 2 ? '.11..' : r));
   const tint = (rows, map) => rows.map((r) => r.replace(/[2dD]/g, (ch) => map[ch] || ch));
   function stepGlow(ctx, cx, cy, radii, col, a) {
     for (const rad of radii) {
@@ -294,7 +296,12 @@
   }
 
   // Closing bell on the wall, with the floor emptying out below it.
-  function bellScene(ctx, swing, empty) {
+  // `part` draws one layer of it for the layered closing shot; undefined draws the whole picture, as ever.
+  // Parts: 'wall' (wall, floor, clock, window), 'bell' (bracket, bell, sound waves), 'desks', 'walkers' (only when `empty`).
+  // 'walkers' alternates two leg poses with the shuffle step; the whole picture keeps the single pose.
+  function bellScene(ctx, swing, empty, part) {
+    const all = part == null, has = (n) => all || part === n;
+    if (has('wall')) {
     X.rect(ctx, 0, 0, V.w, V.h, P.putty);
     X.gradient(ctx, 0, 0, V.w, 132, P.putty2, P.putty, 7);
     k1(ctx, -1, 124, V.w + 2, 8, P.plastic, P.plastic2, P.plasticD, P.ink2);
@@ -322,8 +329,10 @@
       windowWeather(ctx, 233, 15, 62, 42, 9);
       X.rect(ctx, 263, 15, 2, 42, P.plasticD);
     }
+    }
 
     // The bell: bracket, yoke, flared body with an ink outline, rim, clapper.
+    if (has('bell')) {
     const a = Math.round(Math.sin(swing * Math.PI * 7) * (1 - swing) * 6);
     const bx = 160 + a;
     k1(ctx, 144, 12, 32, 6, P.plasticD, P.plastic, P.slate2, P.ink2);
@@ -345,9 +354,10 @@
       X.rect(ctx, bx - r, 42 - i * 3, 5, 2, P.bone); X.rect(ctx, bx - r - 2, 44 - i * 3, 3, 2, P.bone);
       X.rect(ctx, bx + r - 5, 42 - i * 3, 5, 2, P.bone); X.rect(ctx, bx + r - 1, 44 - i * 3, 3, 2, P.bone);
     }
+    }
 
     // Desks, high enough to stay clear of the caption box.
-    for (let i = 0; i < 5; i++) {
+    if (has('desks')) for (let i = 0; i < 5; i++) {
       const x = 10 + i * 62;
       k1(ctx, x, 82, 50, 28, P.plastic, P.plastic2, P.plasticD, P.ink2);
       X.rect(ctx, x + 4, 86, 42, 18, empty ? P.screenD : P.screen);
@@ -357,10 +367,11 @@
     }
 
     // People walking out between the desk rows once the floor empties.
-    if (empty) {
+    if (empty && (all || part === 'walkers')) {
+      const shuffle = Math.round(swing * 14), pose = part === 'walkers' && shuffle % 2 ? WALKER_B : WALKER;
       for (let i = 0; i < 4; i++) {
-        const px = 58 + i * 62 + Math.round(swing * 14);
-        ctx.save(); ctx.translate(px, 96); ctx.scale(2, 2); X.drawSprite(ctx, X.sprite(tint(WALKER, { 2: i % 2 ? '1' : '2', d: 'e', D: 'D' })), 0, 0); ctx.restore();
+        const px = 58 + i * 62 + shuffle;
+        ctx.save(); ctx.translate(px, 96); ctx.scale(2, 2); X.drawSprite(ctx, X.sprite(tint(pose, { 2: i % 2 ? '1' : '2', d: 'e', D: 'D' })), 0, 0); ctx.restore();
       }
     }
   }

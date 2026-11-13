@@ -11,9 +11,10 @@ const server = spawn('python3', ['-m', 'http.server', String(port), '--bind', '1
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const assert = (value, message) => { if (!value) throw new Error(message); };
 
-(async () => {
+let browser = null;
+async function run() {
   await wait(450);
-  const browser = await chromium.launch();
+  browser = await chromium.launch();
   const page = await browser.newPage({ viewport: { width: 1280, height: 720 }, deviceScaleFactor: 1 });
   const warnings = [];
   page.on('console', (m) => { if (m.type() === 'warning' || m.type() === 'error') warnings.push(m.text()); });
@@ -461,6 +462,62 @@ const assert = (value, message) => { if (!value) throw new Error(message); };
   assert(await shot('news', day0, 0, 0.5) === await shot('news', day0, 0, 2.2), 'elevator: reduced effects still moves');
   await page.evaluate(() => BTB.Settings.set('effects', 'full'));
 
+  // ---- pilot shot: the closing bell (first beat of close) ----
+  const closeOpts = (day) => ({ report: { day, pnl: 1200, quotaMet: true, quota: 900 } });
+  const bellInfo = await page.evaluate((list) => list.map((d) => {
+    const b = BTB.Scenes.close({ report: { day: d, pnl: 1200, quotaMet: true, quota: 900 } })[0];
+    return { d, id: b.id, dur: b.dur, layers: (b.layers || []).map((l) => l.id).join(), sfx: b.sfx, transition: b.transition, line: b.line, cache: b.cache, camera: !!b.camera };
+  }), [3, 30, 42, 43, 44, 50]);
+  for (const b of bellInfo) {
+    assert(/^close:.*:bell$/.test(b.id) && b.dur === 1.82 && b.transition === 'fade', `bell beat id/duration/transition: ${JSON.stringify(b)}`);
+    if (b.d >= 44) {
+      assert(b.layers === '' && b.sfx === 'room' && b.cache === true && b.camera && b.line === '4:00 PM. NOBODY RINGS IT.', `silent bell beat: ${JSON.stringify(b)}`);
+    } else {
+      assert(b.layers === 'wall,desks,frame' && b.sfx === 'closeBell' && b.line === '4:00 PM.', `ringing bell beat: ${JSON.stringify(b)}`);
+    }
+  }
+  // p = 1 is the old flat picture, pixel for pixel. The reference is built from the flat functions the old beat called.
+  // Returns how many bytes differ between beat.draw(p) and the flat reference at the same swing (null: size mismatch).
+  const bellDiff = (day, p) => page.evaluate(([day, p]) => {
+    const SB = BTB.Storyboard, SH = BTB.Shots, X = BTB.Pixel, P = BTB.Pal, V = BTB.Rhythm.view;
+    const mk = () => { const c = document.createElement('canvas'); c.width = V.w; c.height = V.h; const g = c.getContext('2d'); return g; };
+    const silent = day >= 44, swing = silent ? 1 : day === 42 ? p * 0.45 : p;
+    const ref = mk();
+    SB.at2x(ref, (cc) => {
+      SH.bellScene(cc, swing, day >= 25);
+      if (silent) { cc.save(); cc.globalAlpha = 0.45; X.rect(cc, 0, 0, 320, 180, P.ink); cc.restore(); }
+    }, day);
+    SB.finePass(ref, day, { shot: 'bell' }, 'establish');
+    const got = mk();
+    BTB.Scenes.close({ report: { day, pnl: 1200, quotaMet: true, quota: 900 } })[0].draw(got, V, p, {}); // no game in opts
+    const a = ref.getImageData(0, 0, V.w, V.h).data, b = got.getImageData(0, 0, V.w, V.h).data;
+    let n = 0; for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) n++;
+    return n;
+  }, [day, p]);
+  for (const day of [3, 30, 42, 43, 44, 50]) {
+    assert(await bellDiff(day, 1) === 0, `bell day ${day}: draw(p=1) is not pixel-identical to the flat picture`);
+  }
+  // mid-beat: the layered picture equals the flat one at the same swing (swing p, or p * 0.45 on session index 42); p picked so the walker pose matches
+  for (const day of [3, 30, 42]) assert(await bellDiff(day, 0.3) === 0, `bell day ${day}: draw(p=0.3) differs from the flat picture at the same swing`);
+  assert(await bellDiff(30, 0.5) > 0, 'bell: the second walker pose never shows (round(swing * 14) odd)');
+  assert(await bellDiff(3, 0.5) === 0, 'bell: normal day at p=0.5 differs from the flat picture');
+  const bell3 = closeOpts(3), bell30 = closeOpts(30), bell42 = closeOpts(42), bell44 = closeOpts(44);
+  for (const o of [bell3, bell30, bell42]) {
+    assert(await shot('close', o, 0, 0.35) !== await shot('close', o, 0, 1.7), `bell day ${o.report.day}: start and end frames are identical`);
+    assert(await shot('close', o, 0, 0.9) === await shot('close', o, 0, 0.9), `bell day ${o.report.day}: same time gave different pictures`);
+    assert(await shot('close', o, 0, 0.5) !== await shot('close', o, 0, 0.65), `bell day ${o.report.day}: the bell does not swing`);
+  }
+  assert(await shot('close', bell30, 0, 1.0) !== await shot('close', bell3, 0, 1.0), 'bell: empty floor looks like a normal day');
+  // silent: nothing moves between any two times once the fade is over, and the camera is still
+  const silentShots = [];
+  for (const t of [0.3, 0.7, 1.2, 1.7, 1.82]) silentShots.push(await shot('close', bell44, 0, t));
+  assert(new Set(silentShots).size === 1, `bell silent day: something moves: ${JSON.stringify(silentShots)}`);
+  assert(await band('close', bell44, 0, 0.5) === await band('close', bell44, 0, 1.7), 'bell silent day: letterbox moved');
+  await page.evaluate(() => BTB.Settings.set('effects', 'reduced'));
+  assert(await shot('close', bell3, 0, 0.5) === await shot('close', bell3, 0, 1.7), 'bell: reduced effects still moves');
+  assert(await shot('close', bell30, 0, 0.5) === await shot('close', bell30, 0, 1.7), 'bell (empty floor): reduced effects still moves');
+  await page.evaluate(() => BTB.Settings.set('effects', 'full'));
+
   // effects reduced: a plain fade from ink, no dissolve of the old shot
   await page.evaluate(() => BTB.Settings.set('effects', 'reduced'));
   const r1 = await shot('news', day7, 1, 0.1), r29 = await shot('news', day7, 1, 0.29), rEnd = await shot('news', day7, 1, 1.0);
@@ -483,9 +540,10 @@ const assert = (value, message) => { if (!value) throw new Error(message); };
     { scene: 'news', opts: { day: 0, brief: { title: 'FIRST DAY', feed: [] } } },
     { scene: 'news', opts: { day: 7, brief: { title: 'FOUR FUNDS, ONE MODEL', feed: [] } } },
     { scene: 'close', opts: { report: { day: 3, pnl: 1200, quotaMet: true, quota: 900 } } },
+    { scene: 'close', opts: { report: { day: 30, pnl: 1200, quotaMet: true, quota: 900 } } },
     { scene: 'weekend', opts: { day: 4 } }
   ];
-  const PERF_AVG_MS = 8, PERF_MAX_MS = 33, PERF_ATTEMPTS = 3;
+  const PERF_AVG_MS = 8, PERF_MAX_MS = 33, PERF_ATTEMPTS = 3, PERF_TIMEOUT_MS = 20000;
   const pct = (sorted, q) => sorted.length ? sorted[Math.min(sorted.length - 1, Math.ceil(q * sorted.length) - 1)] : 0;
   const round = (x) => Math.round(x * 100) / 100;
 
@@ -493,6 +551,7 @@ const assert = (value, message) => { if (!value) throw new Error(message); };
   const perfRun = async (scene, opts) => {
     const ctx = await browser.newContext({ viewport: { width: 844, height: 390 }, deviceScaleFactor: 2 });
     const pg = await ctx.newPage();
+    let cdp = null, timer = null;
     try {
       await pg.goto(`http://127.0.0.1:${port}/index.html`, { waitUntil: 'domcontentloaded' });
       await pg.keyboard.press('Enter');
@@ -501,9 +560,13 @@ const assert = (value, message) => { if (!value) throw new Error(message); };
         const S = BTB.Settings;
         S.set('sound', false); S.set('music', false); S.set('effects', 'full'); S.set('cinematics', 'full');
       });
-      const cdp = await ctx.newCDPSession(pg);
+      cdp = await ctx.newCDPSession(pg);
       await cdp.send('Emulation.setCPUThrottlingRate', { rate: 4 });
-      const frames = await pg.evaluate(([s, o]) => new Promise((resolve) => {
+      // A scene that never finishes (or a throw that stops the loop) must not hang the runner.
+      const timeout = new Promise((resolve, reject) => {
+        timer = setTimeout(() => reject(new Error(`perf: scene '${scene}' did not finish within ${PERF_TIMEOUT_MS / 1000} s`)), PERF_TIMEOUT_MS);
+      });
+      const playing = pg.evaluate(([s, o]) => new Promise((resolve) => {
         const C = BTB.Cinematic, orig = C.draw, out = [];
         let lastBeat = -1;
         C.draw = function () {
@@ -518,12 +581,18 @@ const assert = (value, message) => { if (!value) throw new Error(message); };
         C.startChain('perf-qa');
         C.play(s, o, () => { C.draw = orig; resolve(out); });
       }), [scene, opts]);
-      return frames;
-    } finally { await ctx.close(); }
+      playing.catch(() => {}); // the context is closed on timeout; its late rejection is not news
+      return await Promise.race([playing, timeout]);
+    } finally {
+      clearTimeout(timer);
+      if (cdp) await cdp.send('Emulation.setCPUThrottlingRate', { rate: 1 }).catch(() => {});
+      await ctx.close().catch(() => {});
+    }
   };
 
   const perf = async (scene, opts) => {
     let result;
+    const attempts = [];
     for (let attempt = 1; attempt <= PERF_ATTEMPTS; attempt++) {
       const frames = await perfRun(scene, opts);
       const rest = frames.filter((f) => !f.first).map((f) => f.ms);
@@ -532,7 +601,9 @@ const assert = (value, message) => { if (!value) throw new Error(message); };
       const max = sorted.length ? sorted[sorted.length - 1] : 0;
       const firstFrames = frames.filter((f) => f.first).map((f) => ({ beat: f.beat, ms: round(f.ms) }));
       const pass = rest.length > 0 && avg < PERF_AVG_MS && max <= PERF_MAX_MS;
-      result = { scene, status: pass ? 'pass' : 'fail', attempts: attempt, frames: rest.length, avgMs: round(avg), p95Ms: round(pct(sorted, 0.95)), maxMs: round(max), firstFrameMs: firstFrames };
+      attempts.push({ avgMs: round(avg), p95Ms: round(pct(sorted, 0.95)), maxMs: round(max) });
+      // Top level: the passing attempt, or the last one when none passed.
+      result = { scene, status: pass ? 'pass' : 'fail', framesMeasured: rest.length, framesTotal: frames.length, avgMs: round(avg), p95Ms: round(pct(sorted, 0.95)), maxMs: round(max), firstFrameMs: firstFrames, attempts };
       if (pass) break;
     }
     return result;
@@ -544,7 +615,7 @@ const assert = (value, message) => { if (!value) throw new Error(message); };
     for (const { scene, opts } of PERF_SCENES) {
       const r = await perf(scene, opts);
       results.push(r);
-      console.log(`perf ${scene}: ${r.status} attempts=${r.attempts} frames=${r.frames} avg=${r.avgMs} p95=${r.p95Ms} max=${r.maxMs} firstMax=${Math.max(0, ...r.firstFrameMs.map((f) => f.ms))}`);
+      console.log(`perf ${scene}: ${r.status} attempts=${r.attempts.length} framesMeasured=${r.framesMeasured}/${r.framesTotal} avg=${r.avgMs} p95=${r.p95Ms} max=${r.maxMs} firstMax=${Math.max(0, ...r.firstFrameMs.map((f) => f.ms))}`);
     }
     const outDir = path.join(root, 'qa', 'evidence', 'motion');
     fs.mkdirSync(outDir, { recursive: true });
@@ -555,5 +626,13 @@ const assert = (value, message) => { if (!value) throw new Error(message); };
     assert(!failed.length, `perf limits exceeded: ${failed.map((r) => r.scene).join(', ')}`);
     console.log('motion-run: perf within limits');
   }
-  await browser.close(); server.kill();
-})().catch((error) => { console.error(error.stack || error); server.kill(); process.exit(1); });
+}
+
+// Every path (pass, failed assert, throw) closes the browser, stops the server and sets the exit code.
+(async () => {
+  try { await run(); }
+  finally {
+    try { if (browser) await browser.close(); } catch (e) { /* already gone */ }
+    server.kill();
+  }
+})().then(() => process.exit(0), (error) => { console.error(error.stack || error); process.exit(1); });
