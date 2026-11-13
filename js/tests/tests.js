@@ -1905,6 +1905,8 @@
     assert(M.stepped(0.49, 4) === 0.25 && M.stepped(1, 4) === 1, 'stepped does not quantise down');
     assert(M.tween(10, 20, 0.5) === 15, 'tween midpoint');
     assert(M.keyframes([[0, 0], [0.5, 10], [1, 0]], 0.25) === 5 && M.keyframes([[0.2, 3], [1, 9]], 0) === 3, 'keyframes');
+    assert(M.stepped(0.4, 0) === 0.4 && M.cycle(1, 4, 0) === 0, 'stepped or cycle with n < 1');
+    assert(M.keyframes([], 0.5) === 0, 'empty keyframes');
     assert(M.cycle(0.26, 4, 3) === 1 && M.count(0, 41, 1) === 41 && M.typed('BELL', 0.5) === 'BE', 'cycle, count or typed');
   });
   test('Motion: particles and flicker repeat exactly and stay in their box', () => {
@@ -1913,6 +1915,7 @@
     assert(a.length === 30 && JSON.stringify(a) === JSON.stringify(b), 'particles are not deterministic');
     assert(a.every((q) => Number.isInteger(q.x) && Number.isInteger(q.y) && q.x >= 10 && q.x < 110 && q.y >= 20 && q.y < 70), 'particle outside its box or off the pixel grid');
     assert(JSON.stringify(M.particles(Object.assign({}, o, { t: 2 }))) !== JSON.stringify(a), 'particles do not move');
+    assert(M.particles(Object.assign({}, o, { x: 10.4, y: 20.6 })).every((q) => Number.isInteger(q.x) && Number.isInteger(q.y)), 'fractional box origin gives off-grid particles');
     assert(M.flicker('s', 0.01, 10) === M.flicker('s', 0.09, 10), 'flicker changes inside one step');
   });
   test('Motion: camera and default presets', () => {

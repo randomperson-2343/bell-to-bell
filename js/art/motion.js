@@ -14,10 +14,11 @@
     inOut: (p) => { p = clamp01(p); return p * p * (3 - 2 * p); }
   };
 
-  const stepped = (p, n) => Math.floor(clamp01(p) * n) / n;
+  const stepped = (p, n) => (n < 1 ? clamp01(p) : Math.floor(clamp01(p) * n) / n);
   const tween = (a, b, p, fn) => a + (b - a) * (fn ? fn(p) : p);
 
   function keyframes(frames, p) {
+    if (!frames.length) return 0;
     const last = frames.length - 1;
     if (p <= frames[0][0]) return frames[0][1];
     if (p >= frames[last][0]) return frames[last][1];
@@ -30,7 +31,7 @@
     return frames[last][1];
   }
 
-  const cycle = (t, fps, n) => wrap(Math.floor(t * fps), n);
+  const cycle = (t, fps, n) => (n < 1 ? 0 : wrap(Math.floor(t * fps), n));
   const count = (from, to, p) => Math.round(tween(from, to, clamp01(p)));
   const typed = (str, p) => str.slice(0, Math.floor(str.length * clamp01(p)));
 
@@ -47,13 +48,13 @@
 
   function particles(o) {
     const k = KINDS[o.kind] || KINDS.dust, out = [];
-    const w = Math.max(1, o.w), h = Math.max(1, o.h);
+    const w = Math.max(1, o.w), h = Math.max(1, o.h), ox = Math.round(o.x), oy = Math.round(o.y);
     for (let i = 0; i < o.count; i++) {
       const r = B.RNG(B.hashSeed(o.seed + ':' + o.kind + ':' + i));
       const x0 = r.next() * w, y0 = r.next() * h, sp = 0.7 + r.next() * 0.6, ph = r.next() * 6.2832, big = r.next() < k.big;
       const px = wrap(x0 + k.vx * sp * o.t + Math.sin(o.t * 1.3 * sp + ph) * k.sway, w);
       const py = wrap(y0 + k.vy * sp * o.t, h);
-      out.push({ x: o.x + Math.floor(px), y: o.y + Math.floor(py), s: big ? 2 : 1 });
+      out.push({ x: ox + Math.floor(px), y: oy + Math.floor(py), s: big ? 2 : 1 });
     }
     return out;
   }
