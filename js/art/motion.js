@@ -77,6 +77,16 @@
     };
   }
 
+  // True only when the Screen effects setting is full and the OS does not ask for reduced motion.
+  function enabled() {
+    if (!B.Settings || typeof B.Settings.motion !== 'function' || !B.Settings.motion()) return false;
+    try {
+      if (typeof window !== 'undefined' && typeof window.matchMedia === 'function' &&
+          window.matchMedia('(prefers-reduced-motion: reduce)').matches) return false;
+    } catch (e) { /* no media query support: treat as allowed */ }
+    return true;
+  }
+
   const isHold = (beat) => /:hold$/.test(beat.id);
 
   function presetFor(beat) {
@@ -93,5 +103,5 @@
   const TRANSITION_DUR = { cut: 0, fade: 0.28, cross: 0.3, wipe: 0.35, push: 0.35 };
   const CACHE_BYTES = 36 * 1024 * 1024;
 
-  B.Motion = { ease, stepped, tween, keyframes, cycle, count, typed, flicker, particles, cameraAt, presetFor, PRESETS, transitionFor, TRANSITION_DUR, CACHE_BYTES };
+  B.Motion = { enabled, ease, stepped, tween, keyframes, cycle, count, typed, flicker, particles, cameraAt, presetFor, PRESETS, transitionFor, TRANSITION_DUR, CACHE_BYTES };
 })(window.BTB);

@@ -52,9 +52,12 @@
       const dpr = Math.min(2, window.devicePixelRatio || 1);
       let s = Math.max(1, Math.floor(Math.min(r.width / vw, r.height / vh)));
       if (maxScale) s = Math.min(s, maxScale);
-      canvas.width = Math.round(vw * s * dpr);
-      canvas.height = Math.round(vh * s * dpr);
+      const w = Math.round(vw * s * dpr), h = Math.round(vh * s * dpr);
       const ctx = canvas.getContext('2d');
+      // Assigning width/height reallocates and clears the backing store, so only do it
+      // when the size really changes; otherwise reset the transform and clear by hand.
+      if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; }
+      else { ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, w, h); }
       ctx.setTransform(s * dpr, 0, 0, s * dpr, 0, 0);
       ctx.imageSmoothingEnabled = false;
       return { ctx, scale: s, vw, vh };

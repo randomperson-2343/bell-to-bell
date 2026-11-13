@@ -67,6 +67,7 @@
       this.t = 0;
       this.done = done;
       this.running = true;
+      this.paused = false;
       this.el.hidden = false;
       this.layout();
       B.Music.stop();
@@ -78,6 +79,7 @@
         if (!this.running) return;
         const dt = Math.min(0.08, (ts - this.last) / 1000);
         this.last = ts;
+        if (this.paused) { this.raf = requestAnimationFrame(step); return; }
         this.t += dt;
         const beat = this.beats[this.i];
         if (this.t >= beat.dur) {
@@ -115,6 +117,14 @@
       const { ctx } = X.fit(this.canvas, view.w, view.h);
       const progress = B.clamp(this.t / beat.dur, 0, 1);
       ctx.save();
+      // The camera moves only the shot picture; letterbox, caption and fade are drawn after restore.
+      if (B.Motion && B.Motion.enabled()) {
+        const cam = B.Motion.cameraAt(beat.camera || B.Motion.presetFor(beat), progress);
+        const cx = view.w / 2, cy = view.h / 2;
+        ctx.translate(cx + cam.x, cy + cam.y);
+        ctx.scale(cam.zoom, cam.zoom);
+        ctx.translate(-cx, -cy);
+      }
       if (beat.cache !== false) ctx.drawImage(this.cachedFrame(beat, view), 0, 0, view.w, view.h);
       else {
         try { beat.draw(ctx, view, progress, this.opts); }
@@ -152,6 +162,9 @@
       }
     },
 
+    // Test hooks: freeze the loop, and draw one frame at a chosen beat and time (no sound).
+    pause() { this.paused = true; },
+    seek(i, t) { this.i = i; this.t = t; this.draw(); },
     optsOf() { return this.opts || {}; },
     playBeat() {
       const beat = this.beats && this.beats[this.i];
