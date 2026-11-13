@@ -133,10 +133,13 @@
       ctx.restore();
     },
 
-    pictureCanvas(w, h) {
-      const c = document.createElement('canvas');
-      c.width = w; c.height = h;
-      c.getContext('2d').imageSmoothingEnabled = false;
+    // Reused scratch picture: allocated once, resized only when the view size changes.
+    pictureCanvas(c, w, h) {
+      if (!c) c = document.createElement('canvas');
+      if (c.width !== w || c.height !== h) { c.width = w; c.height = h; }
+      const g = c.getContext('2d');
+      g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, w, h);
+      g.imageSmoothingEnabled = false;
       return c;
     },
 
@@ -159,20 +162,20 @@
       const { ctx } = X.fit(this.canvas, view.w, view.h);
       const progress = B.clamp(this.t / beat.dur, 0, 1);
       const name = this.transitionNow();
-      const tdur = B.Motion.TRANSITION_DUR[name] || 0;
+      // never longer than the beat, so the blend always finishes by its last frame
+      const tdur = Math.min(B.Motion.TRANSITION_DUR[name] || 0, beat.dur);
       if (name !== 'fade' && name !== 'cut' && this.t < tdur) {
         // Outgoing picture: the previous beat at its end. Incoming: this beat now, camera included.
         if (this.snapFor !== this.i) {
           const prev = this.beats[this.i - 1], pv = prev.view || B.Scenes.V;
-          this.snap = this.pictureCanvas(pv.w, pv.h);
+          this.snap = this.pictureCanvas(this.snap, pv.w, pv.h);
           this.paint(this.snap.getContext('2d'), prev, pv, 1);
-          this.pic = this.pictureCanvas(view.w, view.h);
           this.snapFor = this.i;
         }
+        this.pic = this.pictureCanvas(this.pic, view.w, view.h);
         this.paint(this.pic.getContext('2d'), beat, view, progress);
         B.Motion.drawTransition(ctx, view, name, this.t / tdur, this.snap, this.pic);
       } else {
-        if (this.snapFor !== -1) this.releasePictures();
         this.paint(ctx, beat, view, progress);
       }
 
@@ -200,7 +203,7 @@
         });
       }
       if (name === 'fade') {
-        const fade = 1 - B.clamp(this.t / B.Motion.TRANSITION_DUR.fade, 0, 1);
+        const fade = 1 - B.clamp(this.t / Math.min(B.Motion.TRANSITION_DUR.fade, beat.dur), 0, 1);
         if (fade > 0) { ctx.save(); ctx.globalAlpha = fade; X.rect(ctx, 0, 0, view.w, view.h, P.ink); ctx.restore(); }
       }
     },

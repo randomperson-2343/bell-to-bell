@@ -146,24 +146,49 @@ const assert = (value, message) => { if (!value) throw new Error(message); };
   const d0 = await shot('news', day7, 1, 0), d15 = await shot('news', day7, 1, 0.15), d1 = await shot('news', day7, 1, 1.0);
   assert(d15 !== d0 && d15 !== d1, 'no mid-dissolve picture at t=0.15 of beat 1');
 
-  // cross is on-palette: every pixel of the dissolve is a pixel of the old or of the new picture
+  // cross is on-palette: every pixel of the dissolve is a pixel of the old picture (beat 0 at its end)
+  // or of the new one (beat 1 at t=0.15, painted without a transition)
   const palette = await page.evaluate(() => {
     const C = BTB.Cinematic, cv = document.getElementById('cine-canvas');
-    const grab = (i, t) => { C.seek(i, t); return cv.getContext('2d').getImageData(0, 0, cv.width, Math.round(cv.height * 0.75)).data; };
     window.openBeat('news', { day: 7, brief: { title: 'Headline', feed: [] } });
-    const from = grab(0, C.beats[0].dur - 0.0001), to = grab(1, 0.15 + 0.15); // t=0.3: dissolve over, plain new picture
-    const mid = grab(1, 0.15);
-    let bad = 0, both = 0;
+    const top = Math.round(12 * cv.height / 360), rows = Math.round(cv.height * 0.75); // below the top letterbox bar
+    const refer = (beat, p) => {
+      const view = beat.view || BTB.Scenes.V, pic = document.createElement('canvas');
+      pic.width = view.w; pic.height = view.h;
+      C.paint(pic.getContext('2d'), beat, view, p);
+      const r = document.createElement('canvas'); r.width = cv.width; r.height = cv.height;
+      const g = r.getContext('2d'); g.imageSmoothingEnabled = false; g.drawImage(pic, 0, 0, cv.width, cv.height);
+      return g.getImageData(0, top, cv.width, rows - top).data;
+    };
+    const oldP = refer(C.beats[0], 1), newP = refer(C.beats[1], 0.15 / C.beats[1].dur);
+    C.seek(1, 0.15);
+    const mid = cv.getContext('2d').getImageData(0, top, cv.width, rows - top).data;
+    let bad = 0, fromOld = 0, fromNew = 0;
     for (let i = 0; i < mid.length; i += 4) {
-      const a = mid[i] === from[i] && mid[i + 1] === from[i + 1] && mid[i + 2] === from[i + 2];
-      const b = mid[i] === to[i] && mid[i + 1] === to[i + 1] && mid[i + 2] === to[i + 2];
+      const a = mid[i] === oldP[i] && mid[i + 1] === oldP[i + 1] && mid[i + 2] === oldP[i + 2];
+      const b = mid[i] === newP[i] && mid[i + 1] === newP[i + 1] && mid[i + 2] === newP[i + 2];
       if (!a && !b) bad++;
-      if (a && !b) both++;
+      if (a && !b) fromOld++;
+      if (b && !a) fromNew++;
     }
-    return { bad, mixed: both, total: mid.length / 4 };
+    return { bad, fromOld, fromNew, total: mid.length / 4 };
   });
-  assert(palette.mixed > 1000, 'mid-dissolve shows no pixels of the old picture');
   assert(palette.bad === 0, `${palette.bad} of ${palette.total} dissolve pixels are neither old nor new`);
+  assert(palette.fromOld > palette.total * 0.1 && palette.fromNew > palette.total * 0.1, `dissolve is not a mix: ${palette.fromOld} old-only, ${palette.fromNew} new-only of ${palette.total}`);
+
+  // a beat shorter than its transition still finishes the blend by its last frame
+  const short = await page.evaluate(() => {
+    const P = BTB.Pal, C = BTB.Cinematic;
+    const still = { from: {}, to: {} };
+    const a = { id: 'qa:short:a', dur: 0.5, camera: still, draw(ctx, view) { ctx.fillStyle = P.ink; ctx.fillRect(0, 0, view.w, view.h); } };
+    const b = (tr) => ({ id: 'qa:short:b', dur: 0.2, transition: tr, camera: still, draw(ctx, view) { ctx.fillStyle = P.bone; ctx.fillRect(0, 0, view.w, view.h); ctx.fillStyle = P.slate; ctx.fillRect(40, 40, 80, 80); } });
+    BTB.Scenes.qaShort = () => [a, b('push')];
+    BTB.Scenes.qaShortRef = () => [b('cut')];
+    const hash = (scene, i, t) => { window.openBeat(scene, {}); C.seek(i, t); return window.hashCanvas(Math.round(document.getElementById('cine-canvas').height * 0.75)); };
+    return { end: hash('qaShort', 1, 0.2), own: hash('qaShortRef', 0, 0.2), early: hash('qaShort', 1, 0.05) };
+  });
+  assert(short.end === short.own, 'a beat shorter than its transition does not end on its own picture');
+  assert(short.early !== short.own, 'the short beat shows no transition at all');
 
   // wipe and push are hard edges in whole pixels (checked on flat two-colour test shots)
   const edges = await page.evaluate(() => {

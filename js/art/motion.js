@@ -103,7 +103,7 @@
 
   const TRANSITION_DUR = { cut: 0, fade: 0.28, cross: 0.3, wipe: 0.35, push: 0.35 };
   // Blend two shot pictures (canvases the size of view) onto ctx. k: 0 = all from, 1 = all to.
-  // Every output pixel is a pixel of `from` or of `to`; nothing is alpha-mixed except 'fade' (ink).
+  // Every output pixel is a pixel of `from` or of `to`; nothing is alpha-mixed. cross, wipe and push only; the player draws fade as an ink overlay.
   let scratch = null;
   const tiles = [];
   function tile(step) {
@@ -143,9 +143,6 @@
       const x = Math.round(k * w);
       ctx.drawImage(from, -x, 0, w, h);
       ctx.drawImage(to, w - x, 0, w, h);
-    } else { // fade: the new picture rising out of ink
-      ctx.drawImage(to, 0, 0, w, h);
-      ctx.save(); ctx.globalAlpha = 1 - k; ctx.fillStyle = B.Pal.ink; ctx.fillRect(0, 0, w, h); ctx.restore();
     }
   }
   function releaseScratch() { scratch = null; }
