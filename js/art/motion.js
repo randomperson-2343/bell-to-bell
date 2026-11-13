@@ -73,6 +73,7 @@
     return {
       x: Math.round(tween(f.x || 0, t.x || 0, p, e)),
       y: Math.round(tween(f.y || 0, t.y || 0, p, e)),
+      // zoom other than 1 is only for layered shots; presets never zoom
       zoom: tween(f.zoom || 1, t.zoom || 1, p, e)
     };
   }

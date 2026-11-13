@@ -20,7 +20,7 @@
       this.el = wrap;
       this.canvas = wrap.querySelector('#cine-canvas');
       wrap.addEventListener('pointerdown', () => this.skipAll());
-      window.addEventListener('resize', () => this.layout());
+      window.addEventListener('resize', () => { this.layout(); if (this.running && this.paused) this.draw(); });
       this.layout();
     },
 
@@ -165,7 +165,7 @@
 
     // Test hooks: freeze the loop, and draw one frame at a chosen beat and time (no sound).
     pause() { this.paused = true; },
-    seek(i, t) { this.i = i; this.t = t; this.draw(); },
+    seek(i, t) { if (!this.running || !this.beats || i < 0 || i >= this.beats.length) return; this.i = i; this.t = t; this.draw(); },
     optsOf() { return this.opts || {}; },
     playBeat() {
       const beat = this.beats && this.beats[this.i];

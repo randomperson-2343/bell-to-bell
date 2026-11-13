@@ -29,7 +29,7 @@ const assert = (value, message) => { if (!value) throw new Error(message); };
       for (let i = 0; i < d.length; i++) { x ^= d[i]; x = Math.imul(x, 16777619); }
       return (x >>> 0).toString(16);
     };
-    window.open = (scene, opts) => {
+    window.openBeat = (scene, opts) => {
       const C = BTB.Cinematic;
       if (C.running) C.finish();
       C.startChain('motion-qa');
@@ -38,28 +38,28 @@ const assert = (value, message) => { if (!value) throw new Error(message); };
     };
   });
   const frame = (scene, opts, i, t) => page.evaluate(([s, o, i, t]) => {
-    window.open(s, o); BTB.Cinematic.seek(i, t); return window.hashCanvas(0);
+    window.openBeat(s, o); BTB.Cinematic.seek(i, t); return window.hashCanvas(0);
   }, [scene, opts, i, t]);
   const band = (scene, opts, i, t) => page.evaluate(([s, o, i, t]) => {
-    window.open(s, o); BTB.Cinematic.seek(i, t);
+    window.openBeat(s, o); BTB.Cinematic.seek(i, t);
     const cv = document.getElementById('cine-canvas');
     return window.hashCanvas(Math.round(12 * cv.width / 640));
   }, [scene, opts, i, t]);
   // the shot above the caption box (captions type in over time, so they are left out here)
   const shot = (scene, opts, i, t) => page.evaluate(([s, o, i, t]) => {
-    window.open(s, o); BTB.Cinematic.seek(i, t);
+    window.openBeat(s, o); BTB.Cinematic.seek(i, t);
     return window.hashCanvas(Math.round(document.getElementById('cine-canvas').height * 0.75));
   }, [scene, opts, i, t]);
   const day7 = { day: 7, brief: { title: 'Headline', feed: [] } };
 
-  assert(await frame('news', day7, 1, 0.5) !== await frame('news', day7, 1, 2.2), 'default camera does not move the shot');
-  assert(await frame('news', day7, 1, 1.0) === await frame('news', day7, 1, 1.0), 'same time gives a different picture');
+  assert(await shot('news', day7, 1, 0.5) !== await shot('news', day7, 1, 2.2), 'default camera does not move the shot');
+  assert(await frame('news', day7, 1, 1.0) === await frame('news', day7, 1, 1.0), 'same time must give the same picture');
   assert(await band('news', day7, 1, 0.5) === await band('news', day7, 1, 2.2), 'the camera moved the letterbox');
 
   // default camera: opaque rows 12..347 and zoom exactly 1 at start, middle and end
   for (const t of [0.5, 1.15, 2.29]) {
     const r = await page.evaluate((t) => {
-      window.open('news', { day: 7, brief: { title: 'Headline', feed: [] } }); BTB.Cinematic.seek(1, t);
+      window.openBeat('news', { day: 7, brief: { title: 'Headline', feed: [] } }); BTB.Cinematic.seek(1, t);
       const cv = document.getElementById('cine-canvas'), k = cv.height / 360;
       const d = cv.getContext('2d').getImageData(0, Math.round(12 * k), cv.width, Math.round(335 * k)).data;
       let clear = 0; for (let i = 3; i < d.length; i += 4) if (d[i] === 0) clear++;
@@ -74,7 +74,7 @@ const assert = (value, message) => { if (!value) throw new Error(message); };
   const sfx = await page.evaluate(() => {
     let fired = 0; const orig = BTB.Cinematic.playBeat;
     BTB.Cinematic.playBeat = function () { fired++; return orig.apply(this, arguments); };
-    window.open('news', { day: 7, brief: { title: 'Headline', feed: [] } });
+    window.openBeat('news', { day: 7, brief: { title: 'Headline', feed: [] } });
     const before = fired; BTB.Cinematic.seek(1, 1.0); BTB.Cinematic.seek(2, 0.3);
     BTB.Cinematic.playBeat = orig; return fired - before;
   });
@@ -82,7 +82,7 @@ const assert = (value, message) => { if (!value) throw new Error(message); };
 
   // canvas width assigned at most once over 30 seeks at a fixed viewport
   const widthWrites = await page.evaluate(() => {
-    window.open('news', { day: 7, brief: { title: 'Headline', feed: [] } });
+    window.openBeat('news', { day: 7, brief: { title: 'Headline', feed: [] } });
     const cv = document.getElementById('cine-canvas');
     const desc = Object.getOwnPropertyDescriptor(HTMLCanvasElement.prototype, 'width');
     let n = 0;
@@ -94,7 +94,7 @@ const assert = (value, message) => { if (!value) throw new Error(message); };
   assert(widthWrites <= 1, `canvas width assigned ${widthWrites} times in 30 seeks`);
 
   // resize mid-shot: still drawing, no blank frame, canvas follows the new size
-  await page.evaluate(() => { window.open('news', { day: 7, brief: { title: 'Headline', feed: [] } }); BTB.Cinematic.seek(1, 1.0); });
+  await page.evaluate(() => { window.openBeat('news', { day: 7, brief: { title: 'Headline', feed: [] } }); BTB.Cinematic.seek(1, 1.0); });
   for (const size of [{ width: 800, height: 450 }, { width: 390, height: 844 }, { width: 1280, height: 720 }]) {
     await page.setViewportSize(size);
     const r = await page.evaluate(() => {
@@ -111,7 +111,36 @@ const assert = (value, message) => { if (!value) throw new Error(message); };
   }
   await page.setViewportSize({ width: 1280, height: 720 });
 
-  assert(await shot('news', day7, 1, 0.5) !== await shot('news', day7, 1, 2.2), 'control: shot hash blind to the camera');
+  // ink underlay: an explicit sideways camera exposes a column that must be opaque P.ink
+  const under = await page.evaluate(() => {
+    const P = BTB.Pal, C = BTB.Cinematic;
+    const V = BTB.Scenes.V;
+    BTB.Scenes.qaCam = (o) => [{
+      id: 'qa:cam:' + o.n, dur: 2, transition: 'cut', camera: o.camera,
+      draw(ctx, view) { ctx.fillStyle = P.bone; ctx.fillRect(0, 0, view.w, view.h); ctx.fillStyle = P.slate; ctx.fillRect(100, 60, 60, 60); }
+    }];
+    const rgb = (hex) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+    const run = (n, camera) => {
+      window.openBeat('qaCam', { n, camera }); C.seek(0, 1);
+      const cv = document.getElementById('cine-canvas'), k = cv.width / V.w;
+      const d = cv.getContext('2d').getImageData(0, 0, cv.width, cv.height).data;
+      const px = (x, y) => { const i = (Math.round(y * k) * cv.width + Math.round(x * k)) * 4; return [d[i], d[i + 1], d[i + 2], d[i + 3]]; };
+      return { px, hash: window.hashCanvas(0) };
+    };
+    const a = run('x', { from: { x: 40, zoom: 1 }, to: { x: 40, zoom: 1 } });
+    const same = (c, e) => c[0] === e[0] && c[1] === e[1] && c[2] === e[2];
+    const y = V.h / 2;
+    const out = {
+      exposedInk: [5, 20, 38].every((x) => { const c = a.px(x, y); return same(c, rgb(P.ink)) && c[3] === 255; }),
+      restFill: [45, 200, V.w - 5].every((x) => { const c = a.px(x, y); return same(c, rgb(P.bone)) && c[3] === 255; })
+    };
+    const flat = run('f', null).hash, zoomed = run('z', { from: { zoom: 1 }, to: { zoom: 1.5 } }).hash;
+    out.zoomChanges = flat !== zoomed;
+    return out;
+  });
+  assert(under.exposedInk, 'rows exposed by a camera offset are not opaque ink');
+  assert(under.restFill, 'the shifted picture is not the fill colour');
+  assert(under.zoomChanges, 'an explicit zoom camera does not change the picture');
 
   // motion off: every frame of the beat is identical
   await page.evaluate(() => BTB.Settings.set('effects', 'reduced'));
