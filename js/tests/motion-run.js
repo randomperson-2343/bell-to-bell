@@ -56,6 +56,20 @@ const assert = (value, message) => { if (!value) throw new Error(message); };
   assert(await frame('news', day7, 1, 1.0) === await frame('news', day7, 1, 1.0), 'same time gives a different picture');
   assert(await band('news', day7, 1, 0.5) === await band('news', day7, 1, 2.2), 'the camera moved the letterbox');
 
+  // default camera: opaque rows 12..347 and zoom exactly 1 at start, middle and end
+  for (const t of [0.5, 1.15, 2.29]) {
+    const r = await page.evaluate((t) => {
+      window.open('news', { day: 7, brief: { title: 'Headline', feed: [] } }); BTB.Cinematic.seek(1, t);
+      const cv = document.getElementById('cine-canvas'), k = cv.height / 360;
+      const d = cv.getContext('2d').getImageData(0, Math.round(12 * k), cv.width, Math.round(335 * k)).data;
+      let clear = 0; for (let i = 3; i < d.length; i += 4) if (d[i] === 0) clear++;
+      const beat = BTB.Cinematic.beats[1];
+      return { clear, zoom: BTB.Motion.cameraAt(beat.camera || BTB.Motion.presetFor(beat), t / beat.dur).zoom };
+    }, t);
+    assert(r.clear === 0, `transparent pixels in the shot rows at t=${t}`);
+    assert(r.zoom === 1, `default camera zoom ${r.zoom} at t=${t}`);
+  }
+
   // seek works while paused and does not fire sound effects
   const sfx = await page.evaluate(() => {
     let fired = 0; const orig = BTB.Cinematic.playBeat;

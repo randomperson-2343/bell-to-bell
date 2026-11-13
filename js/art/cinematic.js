@@ -121,6 +121,7 @@
       if (B.Motion && B.Motion.enabled()) {
         const cam = B.Motion.cameraAt(beat.camera || B.Motion.presetFor(beat), progress);
         const cx = view.w / 2, cy = view.h / 2;
+        X.rect(ctx, 0, 0, view.w, view.h, P.ink); // rows a camera offset exposes stay opaque ink
         ctx.translate(cx + cam.x, cy + cam.y);
         ctx.scale(cam.zoom, cam.zoom);
         ctx.translate(-cx, -cy);

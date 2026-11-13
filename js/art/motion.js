@@ -59,11 +59,11 @@
     return out;
   }
 
+  // Whole-pixel vertical tilts only: zoom or sideways drift makes dithered walls band and crawl.
+  // The few rows a tilt exposes sit under the 12 px letterbox bars.
   const PRESETS = {
-    pushIn: { from: { zoom: 1 }, to: { zoom: 1.06 } },
-    pullBack: { from: { zoom: 1.06 }, to: { zoom: 1 } },
-    driftLeft: { from: { x: 3, zoom: 1.04 }, to: { x: -3, zoom: 1.04 } },
-    driftRight: { from: { x: -3, zoom: 1.04 }, to: { x: 3, zoom: 1.04 } }
+    tiltUp: { from: { y: 4 }, to: { y: -4 }, ease: ease.inOut },
+    tiltDown: { from: { y: -4 }, to: { y: 4 }, ease: ease.inOut }
   };
   const PRESET_NAMES = Object.keys(PRESETS);
 
@@ -90,7 +90,7 @@
   const isHold = (beat) => /:hold$/.test(beat.id);
 
   function presetFor(beat) {
-    if (beat.dur < 1 || isHold(beat)) return null;
+    if (beat.dur < 1.5 || isHold(beat)) return null;
     return PRESETS[PRESET_NAMES[B.hashSeed(beat.id) % PRESET_NAMES.length]];
   }
 

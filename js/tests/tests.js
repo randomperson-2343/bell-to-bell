@@ -1923,10 +1923,10 @@
     const c = M.cameraAt({ from: { x: 0 }, to: { x: 5, zoom: 1.08 } }, 0.5);
     assert(Number.isInteger(c.x) && c.y === 0 && c.zoom > 1 && c.zoom < 1.08, 'camera midpoint');
     assert(M.cameraAt(null, 0.3).zoom === 1, 'null camera is identity');
-    assert(M.presetFor({ id: 'news:3:hold', dur: 2 }) === null && M.presetFor({ id: 'news:3:detail', dur: 0.8 }) === null, 'hold and short beats must not move');
+    assert(M.presetFor({ id: 'news:3:hold', dur: 2 }) === null && M.presetFor({ id: 'news:3:detail', dur: 1.4 }) === null, 'hold and short beats must not move');
     const p = M.presetFor({ id: 'news:3:detail', dur: 2 });
     assert(p && JSON.stringify(p) === JSON.stringify(M.presetFor({ id: 'news:3:detail', dur: 2 })), 'preset is not stable per id');
-    assert(Object.values(M.PRESETS).every((q) => [q.from, q.to].every((e) => (e.zoom || 1) >= 1 && (e.zoom || 1) <= 1.08)), 'preset zoom out of range');
+    assert(Object.values(M.PRESETS).every((q) => [q.from, q.to].every((e) => (e.zoom || 1) === 1 && (e.x || 0) === 0 && Math.abs(e.y || 0) <= 6)), 'preset must be zoom 1, no x, |y| <= 6');
   });
   test('Motion: default transitions', () => {
     const M = B.Motion;
