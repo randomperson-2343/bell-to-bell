@@ -2018,7 +2018,9 @@
     };
     const covered = (c) => { const set = new Map(); c.rects.forEach((q) => { for (let j = 0; j < q.h; j++) for (let i = 0; i < q.w; i++) set.set((q.x + i) + ',' + (q.y + j), q.fillStyle); }); return set; };
     let fewer = 0;
-    [[0, 0, 40, 20, 0.5], [3, 5, 37, 19, 0.3], [7, 2, 13, 9, 0.9], [0, 0, 8, 8, 0], [1, 1, 9, 7, 1], [5, 6, 31, 5, 0.06], [2, 3, 1, 1, 0.5], [0, 0, 64, 36, 0.47], [13, 11, 21, 17, 0.75]].forEach(([x, y, w, h, f]) => {
+    [[0, 0, 40, 20, 0.5], [3, 5, 37, 19, 0.3], [7, 2, 13, 9, 0.9], [0, 0, 8, 8, 0], [1, 1, 9, 7, 1], [5, 6, 31, 5, 0.06], [2, 3, 1, 1, 0.5], [0, 0, 64, 36, 0.47], [13, 11, 21, 17, 0.75],
+      // fractional widths and heights: the last partial cell is covered as the per-pixel loop covers it
+      [0, 0, 5.5, 4, 0.5], [2, 1, 10.3, 4.6, 0.6], [0, 0, 0.5, 2, 0.9], [3, 2, 7.9, 3.2, 0.3], [1, 0, 8.01, 8.5, 0.8]].forEach(([x, y, w, h, f]) => {
       const a = recOf((c) => old(c, x, y, w, h, B.Pal.ink, B.Pal.amber, f)), b = recOf((c) => X.dither(c, x, y, w, h, B.Pal.ink, B.Pal.amber, f));
       const sa = covered(a), sb = covered(b);
       assert(sa.size === sb.size && [...sa].every(([k, v]) => sb.get(k) === v), `dither pixels differ for ${[x, y, w, h, f]}`);

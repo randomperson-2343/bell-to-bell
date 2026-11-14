@@ -146,9 +146,9 @@
     text(ctx, 'OVERNIGHT WIRE', x+10, y+h-42, P.bone);
     X.wrap(clean(headline), w-24).slice(0,3).forEach((line,i) => text(ctx, line, x+10, y+h-29+i*10, P.ink));
   }
-  // part: undefined draws the screen and the line; 'screen' only the CRT; 'line' only the points.
+  // part: undefined draws the screen and the line; 'screen' only the CRT.
   function chart(ctx, x, y, w, h, seed, down, part) {
-    if (part !== 'line') X.crt(ctx, x, y, w, h, true);
+    X.crt(ctx, x, y, w, h, true);
     if (part === 'screen') return;
     let py = y + h/2;
     for (let i = 0; i < w-12; i += 5) {
@@ -234,21 +234,21 @@
     X.scanlines(ctx, 0, 0, V.w, V.h, P.ink, .08);
   }
 
-  // Everything this call draws goes inside one clip that leaves `r` unpainted (the phone read's glass layer).
-  function clipOutside(ctx, r, fn) {
-    if (!r) { fn(); return; }
-    ctx.save(); ctx.beginPath(); ctx.rect(0, 0, V.w, V.h); ctx.rect(r.x, r.y, r.w, r.h); ctx.clip('evenodd');
-    fn();
-    ctx.restore();
-  }
   // o (all optional; absent draws exactly the flat phone): rows (default feed.slice(0, 4)), count (the printed number),
   // glow (leading rows with screenGlow, default 1), part (undefined all, 'back' without the row cards, 'rows' only the
-  // row cards, unclipped), noDigits (no status count), clipOut (a rect left unpainted).
+  // row cards, unclipped), noDigits (no status count).
+  // The phone's screen rect inside its plate (x, y, w, h).
+  const phoneScreen = (x, y, w, h) => ({ sx: x + 8, sy: y + 12, sw: w - 16, sh: h - 24 });
+  // The device and its screen for a feed of rowCount rows: the big one (226x308) when close or more than two rows, else the small one.
+  function phoneGeom(rowCount, close) {
+    const big = close || Math.min(rowCount, 4) > 2, w = big ? 226 : 180, h = big ? 308 : 250, x = (V.w - w) / 2, y = 18;
+    return Object.assign({ x, y, w, h }, phoneScreen(x, y, w, h));
+  }
   function phone(ctx, x, y, w, h, feed, act, day, o) {
     o = o || {};
     const c = colors(act), rows = o.rows || (feed || []).slice(0, 4), compact = Math.min(rows.length, 4) <= 2, part = o.part;
     const count = o.count != null ? o.count : rows.length, glow = o.glow == null ? 1 : o.glow;
-    const sx=x+8, sy=y+12, sw=w-16, sh=h-24, rowH = compact ? 52 : 39;
+    const { sx, sy, sw, sh } = phoneScreen(x, y, w, h), rowH = compact ? 52 : 39;
     const cards = () => rows.forEach((item,i) => {
       const yy=sy+25+i*(rowH+5);
       X.rect(ctx, sx+5, yy, sw-10, rowH, i<glow ? P.screenGlow : P.screenD);
@@ -256,48 +256,48 @@
       text(ctx, clean(item.source || 'WIRE').slice(0,18), sx+14, yy+6, c.wash);
       X.wrap(clean(item.title || ''), sw-34).slice(0, compact?3:2).forEach((line,k) => text(ctx,line,sx+14,yy+19+k*10,P.bone));
     });
-    clipOutside(ctx, o.clipOut, () => {
-      if (part === 'rows') { cards(); return; }
-      // Glow is behind the device and never becomes an opaque slab.
-      ctx.save(); ctx.globalAlpha = .12 + act*.025; X.rect(ctx, x-8, y-8, w+16, h+16, c.signal); ctx.restore();
-      X.plate(ctx, x, y, w, h, P.ink2, P.slate2, P.ink);
-      X.rect(ctx, sx, sy, sw, sh, P.screen);
-      X.rect(ctx, x+w/2-18, y+4, 36, 4, P.ink);
-      const minute = String(31 + ((day || 0) % 24)).padStart(2,'0');
-      text(ctx, `6:${minute}`, sx+7, sy+6, P.grey2);
-      if (!o.noDigits) text(ctx, `${count}`, sx+sw-8, sy+6, c.wash, 'right');
-      if (part === 'back') return;
-      ctx.save();
-      ctx.beginPath(); ctx.rect(sx+2, sy+21, sw-4, sh-24); ctx.clip();
-      cards();
-      ctx.restore();
-    });
+    if (part === 'rows') { cards(); return rows.length; }
+    // Glow is behind the device and never becomes an opaque slab.
+    ctx.save(); ctx.globalAlpha = .12 + act*.025; X.rect(ctx, x-8, y-8, w+16, h+16, c.signal); ctx.restore();
+    X.plate(ctx, x, y, w, h, P.ink2, P.slate2, P.ink);
+    X.rect(ctx, sx, sy, sw, sh, P.screen);
+    X.rect(ctx, x+w/2-18, y+4, 36, 4, P.ink);
+    const minute = String(31 + ((day || 0) % 24)).padStart(2,'0');
+    text(ctx, `6:${minute}`, sx+7, sy+6, P.grey2);
+    if (!o.noDigits) text(ctx, `${count}`, sx+sw-8, sy+6, c.wash, 'right');
+    if (part === 'back') return rows.length;
+    ctx.save();
+    ctx.beginPath(); ctx.rect(sx+2, sy+21, sw-4, sh-24); ctx.clip();
+    cards();
+    ctx.restore();
     return rows.length;
   }
 
-  // The room background (ink, then the 10-band ink2 gradient) restricted to rect r: the same pixels as the full room inside r
-  // (the dither phase is absolute), without computing the rest.
+  // The room background (ink, then the 10-band ink2 gradient) restricted to rect r: the same pixels as the full room inside r,
+  // for any r. Each band is dithered from a start aligned to the 4x4 pattern (x to a multiple of 4, y to a multiple of 4 from the
+  // band's own top, which is itself a multiple of 4) and clipped to r, so the phase is the full frame's.
   function roomArea(ctx, r) {
     X.rect(ctx, r.x, r.y, r.w, r.h, P.ink);
-    const n = 10, bh = Math.ceil(V.h / n);
+    const n = 10, bh = Math.ceil(V.h / n), xa = r.x - (((r.x % 4) + 4) % 4);
+    ctx.save(); ctx.beginPath(); ctx.rect(r.x, r.y, r.w, r.h); ctx.clip();
     for (let i = 0; i < n; i++) {
-      const y0 = Math.max(i * bh, r.y), y1 = Math.min(i * bh + Math.min(bh, V.h - i * bh), r.y + r.h);
-      if (y1 > y0) X.dither(ctx, r.x, y0, r.w, y1 - y0, P.ink2, P.ink, i / (n - 1));
+      const top = i * bh, y0 = Math.max(top, r.y), y1 = Math.min(top + Math.min(bh, V.h - top), r.y + r.h);
+      if (y1 > y0) { const ya = y0 - (y0 - top) % 4; X.dither(ctx, xa, ya, r.x + r.w - xa, y1 - ya, P.ink2, P.ink, i / (n - 1)); }
     }
+    ctx.restore();
   }
-  // o (all optional; absent draws exactly the flat frame): rows, count, glow, noDigits, clipOut as phone(); labelX (default 92 close, 88);
+  // o (all optional; absent draws exactly the flat frame): rows, count, glow, noDigits as phone(); labelX (default 92 close, 88);
   // part: 'room' (background and the two left labels), 'device' (the phone and its edges), 'back' (room and device without the row cards),
   // 'rows' (only the row cards). noDigits leaves the leading digit off the left label, which then starts 12 px further right.
+  // area: a rect that everything is clipped to (the room inside it is the full room's pixels).
   function phoneFrame(ctx, sb, feed, close, o) {
     o = o || {};
-    const part = o.part, rows = o.rows || (feed||[]).slice(0,4), size = Math.min(rows.length, 4);
+    const part = o.part, rows = o.rows || (feed||[]).slice(0,4), G = phoneGeom(rows.length, close), { x, y, w, h } = G;
     const count = o.count != null ? o.count : rows.length, lx = o.labelX != null ? o.labelX : (close ? 92 : 88);
-    const w = close || size>2 ? 226 : 180, h = close || size>2 ? 308 : 250;
-    const x=(V.w-w)/2, y=18;
-    const inner = Object.assign({}, o, { part: part === 'back' || part === 'rows' ? part : undefined, clipOut: undefined });
+    const inner = Object.assign({}, o, { part: part === 'back' || part === 'rows' ? part : undefined });
     if (o.area) { ctx.save(); ctx.beginPath(); ctx.rect(o.area.x, o.area.y, o.area.w, o.area.h); ctx.clip(); }
-    clipOutside(ctx, o.clipOut, () => {
-      if (part === 'rows') { phone(ctx,x,y,w,h,feed,sb.act,sb.day,inner); return; }
+    if (part === 'rows') phone(ctx,x,y,w,h,feed,sb.act,sb.day,inner);
+    else {
       const room = !part || part === 'room' || part === 'back', device = !part || part === 'device' || part === 'back';
       if (room) {
         if (o.area) roomArea(ctx, o.area);
@@ -319,7 +319,7 @@
         if (o.noDigits) text(ctx,`NOTIFICATION${count===1?'':'S'}`,lx+12,110,P.bone);
         else text(ctx,`${count} NOTIFICATION${count===1?'':'S'}`,lx,110,P.bone);
       }
-    });
+    }
     if (o.area) ctx.restore();
   }
 
@@ -330,12 +330,21 @@
   // speckle left out), 'monitors' (the five screens), 'desk' (the desk, the keyboard and, with detail, your desk), 'top' (only
   // the two top sheets at x offset o.slipNow, then the CASCADE label). With part 'desk': noTopSheets leaves sheets 2 and 3 and the
   // label out, deskChart 'screen' draws only the desk chart's CRT.
+  // Where things are on the floor, for the drawing below and the layered office and close shots: the six windows (x, y, w, h, and the
+  // sky inside), the five monitors (cel, screen, and the bar a dead screen shows), your desk's chart screen, how many monitors are dead
+  // (one more each act) and how far the CASCADE stack slips (stability falls).
+  function officeGeom(day, S) {
+    const dead = board(day).act - 1, st = S && S.m ? S.m.stability : 100, slip = Math.round((100 - st) / 12), windows = [], monitors = [];
+    for (let i = 0; i < 6; i++) { const x = 18 + i * 104; windows.push({ x, y: 16, w: 90, h: 44, sky: { x: x + 2, y: 18, w: 86, h: 40 } }); }
+    for (let i = 0; i < 5; i++) { const x = 24 + i * 124; monitors.push({ i, x, y: 78, w: 104, h: 126, off: i >= 5 - dead, screen: { x: x + 10, y: 92, w: 84, h: 78 }, bar: { x: x + 20, y: 176, w: 64, h: 3 } }); }
+    return { dead, live: 5 - dead, st, slip, windows, monitors, deskChart: { x: 540, y: 218, w: 86, h: 50 } };
+  }
   function officeFrame(ctx, day, detail, down, S, o) {
     o = o || {};
     const part = o.part, wall = !part || part === 'wall', mons = !part || part === 'monitors', desk = !part || part === 'desk';
     const sb=board(day), c=colors(sb.act), s=season(day);
     if (down == null) down = marketDown(day - 1);
-    const st=S&&S.m?S.m.stability:100, slip=Math.round((100-st)/12), f=(S&&S.f)||{};
+    const G=officeGeom(day,S), st=G.st, slip=G.slip, f=(S&&S.f)||{};
     const sheet = (i, sl) => {const x=58+i*4+(i>1?sl:0),y=250-i*9;X.rect(ctx,x+4,y+4,110,16,P.deskD);cel3(ctx,x,y,110,16,P.bone,P.white,P.plasticD);X.rect(ctx,x+6,y+5,40,2,i>1&&st<60?P.crimsonD:P.sky);X.rect(ctx,x+6,y+10,80,1,P.grey);};
     if (part === 'top') {
       const sl = o.slipNow == null ? slip : o.slipNow;
@@ -347,14 +356,13 @@
     if (desk) X.rect(ctx,0,235,V.w,125,P.desk);
     if (wall) {
       // A strip of windows: the season outside the forty-first floor.
-      for(let i=0;i<6;i++){const wx=18+i*104;celIn(ctx,wx,16,90,44,P.slate2,P.putty2,P.plasticD);sky(ctx,wx+2,18,86,40,day,P.sky);
+      for(let i=0;i<6;i++){const W=G.windows[i],wx=W.x;celIn(ctx,wx,W.y,W.w,W.h,P.slate2,P.putty2,P.plasticD);sky(ctx,W.sky.x,W.sky.y,W.sky.w,W.sky.h,day,P.sky);
         for(let b=0;b<5;b++){const bh=8+((i*5+b*11+day)%20);X.rect(ctx,wx+4+b*17,58-bh,13,bh,P.slate);if(s.snow)X.rect(ctx,wx+4+b*17,58-bh,13,1,P.bone);}
-        weather(ctx,wx+2,18,86,30,day+i,part==='wall');}
+        weather(ctx,W.sky.x,W.sky.y,W.sky.w,30,day+i,part==='wall');}
     }
     if (mons) {
-      const dead=sb.act-1;
-      for(let i=0;i<5;i++){const x=24+i*124,off=i>=5-dead;cel3(ctx,x,78,104,126,P.plastic,P.plastic2,P.plasticD);
-        if(off){X.rect(ctx,x+10,92,84,78,P.screenD);X.rect(ctx,x+20,176,64,3,P.plasticD);}else chart(ctx,x+10,92,84,78,day+i,down);}
+      for(const m of G.monitors){const i=m.i,sc=m.screen,bar=m.bar;cel3(ctx,m.x,m.y,m.w,m.h,P.plastic,P.plastic2,P.plasticD);
+        if(m.off){X.rect(ctx,sc.x,sc.y,sc.w,sc.h,P.screenD);X.rect(ctx,bar.x,bar.y,bar.w,bar.h,P.plasticD);}else chart(ctx,sc.x,sc.y,sc.w,sc.h,day+i,down);}
     }
     if (desk) {
       cel3(ctx,196,242,248,30,P.plasticD,P.plastic2,P.ink2);
@@ -365,7 +373,7 @@
         if(top) text(ctx,'CASCADE',64,216,c.signal);
         if(st<40){X.rect(ctx,176+slip,262,8,4,P.crimson);X.rect(ctx,188+slip,266,5,3,P.crimsonD);}
         if(S&&S.m&&(S.m.heat>=50||f.insiderTraded||f.raid)){cel3(ctx,470,236,56,34,P.crimsonD,P.crimson,P.ink);text(ctx,'HOLD',498,246,P.white,'center');text(ctx,'FILES',498,256,P.bone,'center');}
-        chart(ctx,540,218,86,50,day,down,o.deskChart==='screen'?'screen':undefined);
+        const dc=G.deskChart;chart(ctx,dc.x,dc.y,dc.w,dc.h,day,down,o.deskChart==='screen'?'screen':undefined);
       }
     }
   }
@@ -459,7 +467,7 @@
   B.Rhythm = {
     view:V, endingIds:ENDING_IDS,
     // Drawing helpers for js/art/storyboard.js.
-    placeFrame, phoneFrame, officeFrame, closeFrame, weekendFrame, skyline, season, sky, weather, text, colors, clean, chart, chartSeries, person, marketDown, beat,
+    placeFrame, phoneFrame, phoneGeom, officeFrame, officeGeom, closeFrame, weekendFrame, skyline, season, sky, weather, text, colors, clean, chart, chartSeries, person, marketDown, beat,
     phoneRowCount(feed){return Math.min(4,(feed||[]).length);},
     storyboard:board,
     frameMap(day){const sb=this.storyboard(day);return [
@@ -480,7 +488,7 @@
     beat('phone',`${sb.day}:handoff`,1.4,(c)=>phoneFrame(c,sb,feed,false),'',{sfx:'apartment',transition:'fade'}),
     beat('phone',`${sb.day}:read`,2.0,(c)=>phoneFrame(c,sb,feed,true),'PRE-OPEN FEED',{sfx:'news',informative:true})
   ];};
-  B.Scenes.office = function(o){const day=o.day||0,g=o.game,S=g&&g.mode&&g.mode.S,k=S&&S.m?`${Math.round((100-S.m.stability)/12)}${S.m.heat>=50?'h':''}`:'';const dead=board(day).act-1;return [
+  B.Scenes.office = function(o){const day=o.day||0,g=o.game,S=g&&g.mode&&g.mode.S,k=S&&S.m?`${Math.round((100-S.m.stability)/12)}${S.m.heat>=50?'h':''}`:'';const dead=officeGeom(day,S).dead;return [
     beat('office',`${day}:wide`,1.45,(c)=>officeFrame(c,day,false,null,S),'FORTY-FIRST FLOOR.',{sfx:'elevator',transition:'fade'}),
     beat('office',`${day}:desk:${k}`,1.8,(c)=>officeFrame(c,day,true,null,S),dead?`${['','ONE DESK','TWO DESKS','THREE DESKS'][dead]} ON YOUR ROW. NOBODY SITS THERE NOW.`:'THE DESK IS ALREADY AWAKE.',{sfx:'office',informative:true}),
     beat('office',`${day}:hold:${k}`,.85,(c)=>officeFrame(c,day,true,null,S),'SIT DOWN. NINE THIRTY.',{})

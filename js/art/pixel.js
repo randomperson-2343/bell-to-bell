@@ -111,7 +111,7 @@
       for (let j = 0; j < h; j++) {
         const row = BAYER[j & 3], yy = (y + j) | 0;
         let start = -1;
-        for (let i = 0; i <= w; i++) {
+        for (let i = 0, n = Math.ceil(w); i <= n; i++) {
           const on = i < w && row[i & 3] < lvl;
           if (on) { if (start < 0) start = i; }
           else if (start >= 0) { ctx.fillRect((x + start) | 0, yy, i - start, 1); start = -1; }

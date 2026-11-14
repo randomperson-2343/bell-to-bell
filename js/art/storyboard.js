@@ -938,24 +938,25 @@
   // Window weather in the six office windows: the pilot weather, counts set per window (the kit's area formula is too big for 40 px).
   // Each window uses the same day as the static art in it (day + i, as officeFrame), so leaves and particles always match.
   function officeWeather(c, day, t, t0) {
-    for (let i = 0; i < 6; i++) {
+    R.officeGeom(day).windows.forEach((W, i) => {
       const s = R.season(day + i), n = s.snow ? 3 + Math.round(3 * s.snow) : s.id === 'autumn' ? 3 : 4;
-      B.MotionKit.weather(c, 18 + 104 * i + 2, 18, 86, 40, day + i, wxSeed(day, i), t, { t0, count: n, rainLen: 5 });
-    }
+      B.MotionKit.weather(c, W.sky.x, W.sky.y, W.sky.w, W.sky.h, day + i, wxSeed(day, i), t, { t0, count: n, rainLen: 5 });
+    });
   }
   // The backlog on days with five or more items: the handoff shows items 2 to 5, the read brings the lead in on top.
   const phoneBacklog = (feed) => (feed.length >= 5 ? feed.slice(1, 5) : feed.slice(0, 4));
 
   // Handoff: the room is pinned at depth 0, the dark device rises into it at depth 1 and wakes at 0.80 s.
   function phoneHandoffLayers(sb, feed) {
-    const K = B.MotionKit, L = phoneBacklog(feed), big = L.length > 2, o = { rows: L, labelX: big ? 92 : 88 };
-    const w = big ? 226 : 180, h = big ? 308 : 250, sx = (V.w - w) / 2 + 8, sy = 30, sw = w - 16, sh = h - 24;
+    // The device is always the read's big one (close = true), so the dissolve into the read does not change its size.
+    const K = B.MotionKit, L = phoneBacklog(feed), o = { rows: L, labelX: 92 };
+    const { sx, sy, sw, sh } = R.phoneGeom(L.length, true);
     const mm = String(31 + (sb.day % 24)).padStart(2, '0');
     return [
-      { id: 'room', depth: 0, draw(c) { R.phoneFrame(c, sb, feed, false, Object.assign({ part: 'room' }, o)); } },
+      { id: 'room', depth: 0, draw(c) { R.phoneFrame(c, sb, feed, true, Object.assign({ part: 'room' }, o)); } },
       {
         id: 'device', depth: 1,
-        draw(c) { R.phoneFrame(c, sb, feed, false, Object.assign({ part: 'device' }, o)); },
+        draw(c) { R.phoneFrame(c, sb, feed, true, Object.assign({ part: 'device' }, o)); },
         animate(c, v, t) {
           // asleep until 0.80 s: the cached rows and status bar are covered, 6:MM shows at 2x; then one bone flare
           K.ping(c, t, { at: 0.80, off: [{ x: sx, y: sy, w: sw, h: sh, col: P.screenD }], on: [], flare: { x: sx, y: sy, w: sw, h: sh, col: P.bone, a: 0.15, dur: 0.08 } });
@@ -1005,15 +1006,15 @@
   // Office: wall (windows, weather), monitors (refresh on the wide) and desk (your desk, the ticking chart and the slipping stack).
   function officeLayers(day, S, down, beatKind) {
     const K = B.MotionKit, M = B.Motion, wide = beatKind === 'wide', hold = beatKind === 'hold';
-    const dead = R.storyboard(day).act - 1, st = S && S.m ? S.m.stability : 100, slip = Math.round((100 - st) / 12);
+    const G = R.officeGeom(day, S), dc = G.deskChart, slip = G.slip;
     const t0 = wide ? 0 : hold ? 3.25 : 1.45, tc0 = hold ? 1.8 : 0;
-    const Y = R.chartSeries(218, 50, day, down, 25).map(Math.floor), col = down ? P.crimson : P.jade;
+    const Y = R.chartSeries(dc.y, dc.h, day, down, 25).map(Math.floor), col = down ? P.crimson : P.jade;
     const layers = [
       { id: 'wall', depth: 0.5, draw(c) { R.officeFrame(c, day, false, down, S, { part: 'wall' }); }, animate(c, v, t) { officeWeather(c, day, t, t0); } },
       { id: 'monitors', depth: 0.75, draw(c) { R.officeFrame(c, day, false, down, S, { part: 'monitors' }); } }
     ];
     if (wide) {
-      layers[1].animate = (c, v, t) => { for (let i = 0; i < 5 - dead; i++) K.crt(c, 24 + 124 * i + 10, 92, 84, 78, t, { mode: 'roll', at: 0.35 + 0.12 * i, dur: 0.36 }); };
+      layers[1].animate = (c, v, t) => { G.monitors.forEach((m) => { if (!m.off) K.crt(c, m.screen.x, m.screen.y, m.screen.w, m.screen.h, t, { mode: 'roll', at: 0.35 + 0.12 * m.i, dur: 0.36 }); }); };
       layers.push({ id: 'desk', depth: 1, draw(c) { R.officeFrame(c, day, false, down, S, { part: 'desk' }); } });
     } else {
       layers.push({
@@ -1025,7 +1026,7 @@
           // the top two sheets slip into their place between 0.90 and 1.20 s; on the hold they already sit there
           const slipNow = hold ? slip : slip >= 1 ? Math.round(slip * M.ease.out(K.span(t, 0.90, 1.20))) : 0;
           R.officeFrame(c, day, true, down, S, { part: 'top', slipNow });
-          K.trace(c, Y, t, { x0: 546, step: 5, from: s, n: 15, w: 3, h: 2, col, head });
+          K.trace(c, Y, t, { x0: dc.x + 6, step: 5, from: s, n: 15, w: 3, h: 2, col, head });
         }
       });
     }

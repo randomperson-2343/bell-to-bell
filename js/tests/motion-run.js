@@ -733,6 +733,19 @@ async function run() {
     }
     return res;
   });
+  // the room restricted to an area is the full room's pixels there, for any rect (odd x and y, spanning several bands)
+  const areaBad = await page.evaluate(() => {
+    const R = BTB.Rhythm, sb = R.storyboard(3), mk = () => { const c = document.createElement('canvas'); c.width = 640; c.height = 360; return c.getContext('2d'); };
+    const full = mk(); R.phoneFrame(full, sb, [], true, { part: 'room' });
+    let bad = 0;
+    for (const r of [{ x: 0, y: 0, w: 640, h: 51 }, { x: 3, y: 37, w: 101, h: 79 }, { x: 13, y: 5, w: 57, h: 200 }, { x: 250, y: 301, w: 90, h: 59 }, { x: 7, y: 71, w: 33, h: 3 }]) {
+      const g = mk(); R.phoneFrame(g, sb, [], true, { part: 'room', area: r });
+      const a = full.getImageData(r.x, r.y, r.w, r.h).data, b = g.getImageData(r.x, r.y, r.w, r.h).data;
+      for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) bad++;
+    }
+    return bad;
+  });
+  assert(areaBad === 0, `phoneFrame area: the room differs from the full room in ${areaBad} bytes`);
   for (const k of Object.keys(FLAT_REF)) assert(flatNow[k] === FLAT_REF[k], `flat ${k}: the picture changed (${flatNow[k]}, was ${FLAT_REF[k]})`);
 
   await page.evaluate(() => {
@@ -805,10 +818,12 @@ async function run() {
   }, [o, n, rows, lx]);
   assert((await handFinal(ph3, 5, 'back', 92)).bad === 0, 'phone handoff (5 items): the final picture is not the backlog list at labelX 92');
   assert((await handFinal(ph4, 4, 'all', 92)).bad === 0, 'phone handoff (4 items): the final picture is not the flat list at labelX 92');
-  const handSmall = await page.evaluate((o) => { const R = BTB.Rhythm, sb = R.storyboard(o.day); return window.finalDiff('phone', o, 0, (g) => R.phoneFrame(g, sb, o.brief.feed, false), []); }, ph2);
-  assert(handSmall.bad === 0, 'phone handoff (2 items): the final picture is not today\'s flat small phone');
-  const handEmpty = await page.evaluate((o) => { const R = BTB.Rhythm, sb = R.storyboard(o.day); return window.finalDiff('phone', o, 0, (g) => R.phoneFrame(g, sb, o.brief.feed, false), []); }, ph0);
-  assert(handEmpty.bad === 0, 'phone handoff (empty feed): the final picture is not today\'s flat picture');
+  // one or two items (or none): the handoff draws the same big device as the read, so the dissolve between them does not jump
+  const handSmall = await page.evaluate((o) => { const R = BTB.Rhythm, sb = R.storyboard(o.day); return window.finalDiff('phone', o, 0, (g) => R.phoneFrame(g, sb, o.brief.feed, true), []); }, ph2);
+  assert(handSmall.bad === 0, 'phone handoff (2 items): the final picture is not the read\'s big phone');
+  const handEmpty = await page.evaluate((o) => { const R = BTB.Rhythm, sb = R.storyboard(o.day); return window.finalDiff('phone', o, 0, (g) => R.phoneFrame(g, sb, o.brief.feed, true), []); }, ph0);
+  assert(handEmpty.bad === 0, 'phone handoff (empty feed): the final picture is not the read\'s big phone');
+  for (const o of [ph2, ph0]) assert(await page.evaluate((o) => { const R = BTB.Rhythm, b = BTB.Scenes.phone(o); return window.finalDiff('phone', o, 0, (g) => b[1].draw(g, { w: 640, h: 360 }, 1, {}), []).bad === 0; }, o), 'phone handoff (2 or 0 items): its final picture differs from the read\'s final picture');
   // the dark screen shows the lock-screen time and hides the list until 0.80 s
   assert(await page.evaluate((o) => { const a = window.layerPic('phone', o, 0, 'device', 0.5, false), b = window.layerPic('phone', o, 0, 'device', 0.9, false); return a !== b; }, ph3), 'phone handoff: the device layer does not change at the wake');
   assert(await page.evaluate((o) => window.layerPic('phone', o, 0, 'device', 0.2, true) === window.layerPic('phone', o, 0, 'device', 0.7, true), ph3), 'phone handoff: the asleep screen changes before the wake');
