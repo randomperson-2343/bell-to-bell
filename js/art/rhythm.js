@@ -275,6 +275,16 @@
     return rows.length;
   }
 
+  // The room background (ink, then the 10-band ink2 gradient) restricted to rect r: the same pixels as the full room inside r
+  // (the dither phase is absolute), without computing the rest.
+  function roomArea(ctx, r) {
+    X.rect(ctx, r.x, r.y, r.w, r.h, P.ink);
+    const n = 10, bh = Math.ceil(V.h / n);
+    for (let i = 0; i < n; i++) {
+      const y0 = Math.max(i * bh, r.y), y1 = Math.min(i * bh + Math.min(bh, V.h - i * bh), r.y + r.h);
+      if (y1 > y0) X.dither(ctx, r.x, y0, r.w, y1 - y0, P.ink2, P.ink, i / (n - 1));
+    }
+  }
   // o (all optional; absent draws exactly the flat frame): rows, count, glow, noDigits, clipOut as phone(); labelX (default 92 close, 88);
   // part: 'room' (background and the two left labels), 'device' (the phone and its edges), 'back' (room and device without the row cards),
   // 'rows' (only the row cards). noDigits leaves the leading digit off the left label, which then starts 12 px further right.
@@ -285,10 +295,14 @@
     const w = close || size>2 ? 226 : 180, h = close || size>2 ? 308 : 250;
     const x=(V.w-w)/2, y=18;
     const inner = Object.assign({}, o, { part: part === 'back' || part === 'rows' ? part : undefined, clipOut: undefined });
+    if (o.area) { ctx.save(); ctx.beginPath(); ctx.rect(o.area.x, o.area.y, o.area.w, o.area.h); ctx.clip(); }
     clipOutside(ctx, o.clipOut, () => {
       if (part === 'rows') { phone(ctx,x,y,w,h,feed,sb.act,sb.day,inner); return; }
       const room = !part || part === 'room' || part === 'back', device = !part || part === 'device' || part === 'back';
-      if (room) { X.rect(ctx,0,0,V.w,V.h,P.ink); X.gradient(ctx,0,0,V.w,V.h,P.ink2,P.ink,10); }
+      if (room) {
+        if (o.area) roomArea(ctx, o.area);
+        else { X.rect(ctx,0,0,V.w,V.h,P.ink); X.gradient(ctx,0,0,V.w,V.h,P.ink2,P.ink,10); }
+      }
       if (device) {
         // A thin reflected edge keeps the handoff and the close view grounded
         // as one physical device, while leaving the notification text untouched.
@@ -306,6 +320,7 @@
         else text(ctx,`${count} NOTIFICATION${count===1?'':'S'}`,lx,110,P.bone);
       }
     });
+    if (o.area) ctx.restore();
   }
 
   // The floor empties by act: one more dead desk each act. Your own desk

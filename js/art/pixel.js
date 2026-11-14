@@ -107,9 +107,14 @@
       if (lvl <= 0) return;
       if (lvl >= 16) { this.rect(ctx, x, y, w, h, colB); return; }
       ctx.fillStyle = colB;
+      // The same pixels as one 1x1 fill per set cell, merged into horizontal runs (far fewer calls).
       for (let j = 0; j < h; j++) {
-        for (let i = 0; i < w; i++) {
-          if (BAYER[j & 3][i & 3] < lvl) ctx.fillRect((x + i) | 0, (y + j) | 0, 1, 1);
+        const row = BAYER[j & 3], yy = (y + j) | 0;
+        let start = -1;
+        for (let i = 0; i <= w; i++) {
+          const on = i < w && row[i & 3] < lvl;
+          if (on) { if (start < 0) start = i; }
+          else if (start >= 0) { ctx.fillRect((x + start) | 0, yy, i - start, 1); start = -1; }
         }
       }
     },

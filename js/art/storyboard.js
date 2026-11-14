@@ -964,8 +964,9 @@
       }
     ];
   }
-  // Read: `back` is everything but the cards, `rows` the cards (the only layer the camera moves), `glass` the picture again with the
-  // list window left unpainted, so a row outside the window never shows. The two counters are drawn whole on `glass`.
+  // Read: `back` is everything but the cards, `rows` the cards (the only layer the camera moves), `glass` repaints the picture above
+  // the list window (y < 51, the only place a row can leave the window: it starts 44 px up and never goes sideways or below),
+  // so a row outside the window never shows. It is the same pixels as `back` there; drawing only that band avoids a second full room. The two counters are drawn whole on `glass`.
   function phoneReadLayers(sb, feed) {
     const K = B.MotionKit, n = feed.length, arrival = n >= 5, L = arrival ? feed.slice(0, 5) : feed.slice(0, 4);
     const o = { rows: L, count: arrival ? 5 : L.length, glow: arrival ? 2 : 1, noDigits: true, labelX: 92 };
@@ -976,7 +977,7 @@
       { id: 'rows', depth: 1, draw(c) { frame(c, { part: 'rows' }); } },
       {
         id: 'glass', depth: 0,
-        draw(c) { frame(c, { part: 'back', clipOut: { x: 217, y: 51, w: 206, h: 260 } }); },
+        draw(c) { frame(c, { part: 'back', area: { x: 0, y: 0, w: V.w, h: 51 } }); },
         animate(c, v, t) {
           const k = arrival && t >= 0.85 ? 5 : Math.min(4, n);
           R.text(c, String(k), 417, 36, wash, 'right');
