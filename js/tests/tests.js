@@ -2279,11 +2279,12 @@
     assert(KIT_PX(run(0.5, { t0: 0.5 })) === KIT_PX(run(1)), 't0 shifts time');
   });
 
-  test('B.Rhythm.person: pose 0 and no pose draw what they always drew; pose 1 is deterministic', () => {
-    const none = recOf((c) => B.Rhythm.person(c, 100, 200, 2, 1, 1, 2)), zero = recOf((c) => B.Rhythm.person(c, 100, 200, 2, 1, 1, 2, 0));
-    assert(none.rects.length > 100 && KIT_PX(none) === KIT_PX(zero), 'pose 0 equals today');
-    const one = recOf((c) => B.Rhythm.person(c, 100, 200, 2, 1, 1, 2, 1)), again = recOf((c) => B.Rhythm.person(c, 100, 200, 2, 1, 1, 2, 1));
-    assert(KIT_PX(one) === KIT_PX(again) && one.rects.length > 100, 'pose 1 deterministic');
+  test('B.Rhythm.person: no pose is today, pose 1 lifts the left foot, pose 2 the right', () => {
+    const rec = (pose) => recOf((c) => B.Rhythm.person(c, 100, 200, 2, 1, 1, 2, pose));
+    const none = recOf((c) => B.Rhythm.person(c, 100, 200, 2, 1, 1, 2)), p0 = rec(0), p1 = rec(1), p2 = rec(2);
+    assert(none.rects.length > 100 && KIT_PX(none) === KIT_PX(p0), 'pose 0 equals no pose');
+    assert(p1.rects.length < p0.rects.length && p2.rects.length < p0.rects.length && KIT_PX(p1) !== KIT_PX(p2) && KIT_PX(p1) !== KIT_PX(p0), 'poses 1 and 2 are shorter and differ');
+    assert(KIT_PX(p1) === KIT_PX(rec(1)) && KIT_PX(p2) === KIT_PX(rec(2)), 'deterministic');
   });
 
   test('MotionKit.figure: person and walker cross in whole steps, idle breathes', () => {
@@ -2301,6 +2302,15 @@
       assert(dropped.length === base.length && dropped.every((q, i) => q.dy === base[i].dy + 2 && q.dx === base[i].dx), kind + ': idle drops by dy during [at, at + 0.8)');
       assert(KIT_PX(idle(1.9)) === KIT_PX(idle(0.5)) && KIT_PX(idle(1 + 2.4 + 0.1)) === KIT_PX(idle(1.5)) && KIT_PX(idle(1 + 0.8)) === KIT_PX(idle(0.5)), kind + ': idle repeats every period');
     });
+    // a crossing person alternates poses 1 and 2 and stands in pose 0
+    const per = (t) => KIT_PX(run('person', t));
+    const stand = recOf((c) => B.Rhythm.person(c, 40, 100, 1, 0, 1, 0, 0)), l = recOf((c) => B.Rhythm.person(c, 40, 100, 1, 0, 1, 0, 1)), r2 = recOf((c) => B.Rhythm.person(c, 40, 100, 1, 0, 1, 0, 2));
+    assert(per(0.5) === KIT_PX(stand), 'person stands in pose 0 before at');
+    const shape = (c) => c.rects.map((q) => `${q.dx - c.rects[0].dx},${q.dy - c.rects[0].dy}`).join('|');
+    let usedL = false, usedR = false;
+    for (let t = 1.05; t < 1.95; t += 1 / 12) { const g = shape(run('person', t)); if (g === shape(l)) usedL = true; if (g === shape(r2)) usedR = true; }
+    assert(usedL && usedR, 'a walk uses both lifted poses');
+    assert(per(5) === KIT_PX(recOf((c) => B.Rhythm.person(c, 140, 100, 1, 0, 1, 0, 0))), 'pose 0 after the walk');
     // the walker uses the scenes.js sprites, the person the commuter sprite
     const w0 = recOf((c) => K.figure(c, 40, 100, 0, { kind: 'walker', mode: 'idle', at: 5, scale: 1 }));
     const spr = recOf((c) => B.Pixel.drawSprite(c, B.Pixel.sprite(B.Shots.WALKER), 40, 100));

@@ -235,11 +235,12 @@
   const spriteCache = new WeakMap();
   const spriteOf = (rows) => { let s = spriteCache.get(rows); if (!s) { s = X.sprite(rows); spriteCache.set(rows, s); } return s; };
 
-  // A person: the commuter sprite of B.Rhythm.person or the WALKER sprites of scenes.js.
+  // A person: the commuter sprite of B.Rhythm.person (about 400 rects) or the WALKER sprites of scenes.js (36 rects).
+  // The bible's original pose wording (swap the leg columns) was replaced by the coordinator's ruling: person poses 1 and 2 lift one foot.
   // 'cross' steps from x to o.x1 between o.at and o.at + o.dur; 'idle' drops the sprite o.dy px for 0.8 s of every o.period.
   function figure(ctx, x, y, t, o) {
     const T = timeOf(t, o);
-    let px = R(x), py = R(y), pose = 0;
+    let px = R(x), py = R(y), pose = 0, lift = 0;
     if (o.mode === 'cross') {
       const step = o.step || 2, tp = Math.floor(T * 12) / 12, q = span(tp, o.at, o.at + o.dur);
       if (T >= o.at + o.dur) px = R(o.x1);
@@ -247,6 +248,7 @@
         const steps = R((o.x1 - x) * q / step);
         px = R(x) + steps * step;
         pose = Math.abs(steps) % 2;
+        lift = steps === 0 ? 0 : pose ? 1 : 2;
       }
     } else if (o.mode === 'idle') {
       if (T >= o.at && wrap(T - o.at, o.period || 2.4) < 0.8) py += o.dy == null ? 2 : o.dy;
@@ -257,7 +259,7 @@
       X.drawSprite(ctx, spriteOf(pose ? S.WALKER_B : S.WALKER), 0, 0);
       ctx.restore();
     } else {
-      B.Rhythm.person(ctx, px, py, o.scale || 1, o.act || 0, o.face == null ? 1 : o.face, o.who || 0, pose);
+      B.Rhythm.person(ctx, px, py, o.scale || 1, o.act || 0, o.face == null ? 1 : o.face, o.who || 0, lift);
     }
   }
 

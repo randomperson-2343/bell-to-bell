@@ -117,17 +117,17 @@
   ];
   const FIG_SP = {};
   function figureSprite(who, late, pose) {
-    const key = who + (late ? 'L' : '') + (pose ? 'P' : '');
+    const key = who + (late ? 'L' : '') + (pose === 1 || pose === 2 ? 'P' + pose : '');
     if (FIG_SP[key]) return FIG_SP[key];
     const m = Object.assign({}, CAST[who]);
     if (late && who === 0) Object.assign(m, { K: '3', k: '4', x: '2' });
     let rows = HEADS[m.head].concat(BODY).map((r) => r.replace(/[HhSsKkxWTLl]/g, (ch) => m[ch]));
-    // pose 1 (a step): the two leg columns (cols 5-7 and 9-11) swap in the last five rows of the body
-    if (pose) rows = rows.map((r, i) => (i < rows.length - 5 ? r : r.slice(0, 5) + r.slice(9, 12) + r.slice(8, 9) + r.slice(5, 8) + r.slice(12)));
+    // pose 1 lifts the left foot, pose 2 the right: the bottom outline row under that leg (cols 4-7 or 9-12) is not drawn
+    if (pose === 1 || pose === 2) rows = rows.map((r, i) => (i < rows.length - 1 ? r : pose === 1 ? '....' + '....' + r.slice(8) : r.slice(0, 9) + '....' + r.slice(13)));
     return (FIG_SP[key] = X.sprite(rows));
   }
   // who: 0 is you; 1-3 are the strangers on your commute.
-  // pose: 0 or undefined is the standing figure; 1 is the other half of a step.
+  // pose: 0 or undefined is the standing figure; 1 lifts the left foot, 2 the right (one sprite row shorter on that leg).
   function person(ctx, x, y, scale, act, face, who, pose) {
     const s = scale || 1;
     ctx.save();
