@@ -56,9 +56,11 @@
     X.dither(ctx, x, y0 + Math.round(h * 0.55), w, Math.round(h * 0.45), P.ink, s.dawn, s.glow);
     return s;
   }
-  function weather(ctx, x, y0, w, h, day) {
+  // noSpeckle: the layered office windows swap the still snow texture for falling snow; autumn leaves stay.
+  function weather(ctx, x, y0, w, h, day, noSpeckle) {
     const s = season(day);
     if (s.snow) {
+      if (noSpeckle) return s;
       X.speckle(ctx, x, y0, w, h, P.bone, 0.006 + s.snow * 0.01, 7 + (day | 0));
       X.speckle(ctx, x, y0, w, h, P.white, 0.002 + s.snow * 0.004, 31 + (day | 0));
     } else if (s.id === 'autumn') {
@@ -144,13 +146,25 @@
     text(ctx, 'OVERNIGHT WIRE', x+10, y+h-42, P.bone);
     X.wrap(clean(headline), w-24).slice(0,3).forEach((line,i) => text(ctx, line, x+10, y+h-29+i*10, P.ink));
   }
-  function chart(ctx, x, y, w, h, seed, down) {
-    X.crt(ctx, x, y, w, h, true);
+  // part: undefined draws the screen and the line; 'screen' only the CRT; 'line' only the points.
+  function chart(ctx, x, y, w, h, seed, down, part) {
+    if (part !== 'line') X.crt(ctx, x, y, w, h, true);
+    if (part === 'screen') return;
     let py = y + h/2;
     for (let i = 0; i < w-12; i += 5) {
       py = B.clamp(py + (((i*19+seed)%13)-6) * .7 + (down ? .5 : -.25), y+10, y+h-18);
       X.rect(ctx, x+6+i, py, 3, 2, down ? P.crimson : P.jade);
     }
+  }
+  // The chart line's y values (unrounded) for points i = 0, 5, 10, ...; n = 15 is the line chart() draws at w = 86.
+  function chartSeries(y, h, seed, down, n) {
+    const out = [];
+    let py = y + h/2;
+    for (let k = 0, i = 0; k < n; k++, i += 5) {
+      py = B.clamp(py + (((i*19+seed)%13)-6) * .7 + (down ? .5 : -.25), y+10, y+h-18);
+      out.push(py);
+    }
+    return out;
   }
 
   function placeFrame(ctx, sb, headline, detail) {
@@ -220,72 +234,124 @@
     X.scanlines(ctx, 0, 0, V.w, V.h, P.ink, .08);
   }
 
-  function phone(ctx, x, y, w, h, feed, act, day) {
-    const c = colors(act), rows = (feed || []).slice(0, 4), compact = rows.length <= 2;
-    // Glow is behind the device and never becomes an opaque slab.
-    ctx.save(); ctx.globalAlpha = .12 + act*.025; X.rect(ctx, x-8, y-8, w+16, h+16, c.signal); ctx.restore();
-    X.plate(ctx, x, y, w, h, P.ink2, P.slate2, P.ink);
-    const sx=x+8, sy=y+12, sw=w-16, sh=h-24;
-    X.rect(ctx, sx, sy, sw, sh, P.screen);
-    X.rect(ctx, x+w/2-18, y+4, 36, 4, P.ink);
-    const minute = String(31 + ((day || 0) % 24)).padStart(2,'0');
-    text(ctx, `6:${minute}`, sx+7, sy+6, P.grey2);
-    text(ctx, `${rows.length}`, sx+sw-8, sy+6, c.wash, 'right');
-    ctx.save();
-    ctx.beginPath(); ctx.rect(sx+2, sy+21, sw-4, sh-24); ctx.clip();
-    const rowH = compact ? 52 : 39;
-    rows.forEach((item,i) => {
+  // Everything this call draws goes inside one clip that leaves `r` unpainted (the phone read's glass layer).
+  function clipOutside(ctx, r, fn) {
+    if (!r) { fn(); return; }
+    ctx.save(); ctx.beginPath(); ctx.rect(0, 0, V.w, V.h); ctx.rect(r.x, r.y, r.w, r.h); ctx.clip('evenodd');
+    fn();
+    ctx.restore();
+  }
+  // o (all optional; absent draws exactly the flat phone): rows (default feed.slice(0, 4)), count (the printed number),
+  // glow (leading rows with screenGlow, default 1), part (undefined all, 'back' without the row cards, 'rows' only the
+  // row cards, unclipped), noDigits (no status count), clipOut (a rect left unpainted).
+  function phone(ctx, x, y, w, h, feed, act, day, o) {
+    o = o || {};
+    const c = colors(act), rows = o.rows || (feed || []).slice(0, 4), compact = Math.min(rows.length, 4) <= 2, part = o.part;
+    const count = o.count != null ? o.count : rows.length, glow = o.glow == null ? 1 : o.glow;
+    const sx=x+8, sy=y+12, sw=w-16, sh=h-24, rowH = compact ? 52 : 39;
+    const cards = () => rows.forEach((item,i) => {
       const yy=sy+25+i*(rowH+5);
-      X.rect(ctx, sx+5, yy, sw-10, rowH, i===0 ? P.screenGlow : P.screenD);
+      X.rect(ctx, sx+5, yy, sw-10, rowH, i<glow ? P.screenGlow : P.screenD);
       X.rect(ctx, sx+5, yy, 3, rowH, item.kind==='chirp'?P.violet:item.kind==='mail'?P.amber:P.sky);
       text(ctx, clean(item.source || 'WIRE').slice(0,18), sx+14, yy+6, c.wash);
       X.wrap(clean(item.title || ''), sw-34).slice(0, compact?3:2).forEach((line,k) => text(ctx,line,sx+14,yy+19+k*10,P.bone));
     });
-    ctx.restore();
+    clipOutside(ctx, o.clipOut, () => {
+      if (part === 'rows') { cards(); return; }
+      // Glow is behind the device and never becomes an opaque slab.
+      ctx.save(); ctx.globalAlpha = .12 + act*.025; X.rect(ctx, x-8, y-8, w+16, h+16, c.signal); ctx.restore();
+      X.plate(ctx, x, y, w, h, P.ink2, P.slate2, P.ink);
+      X.rect(ctx, sx, sy, sw, sh, P.screen);
+      X.rect(ctx, x+w/2-18, y+4, 36, 4, P.ink);
+      const minute = String(31 + ((day || 0) % 24)).padStart(2,'0');
+      text(ctx, `6:${minute}`, sx+7, sy+6, P.grey2);
+      if (!o.noDigits) text(ctx, `${count}`, sx+sw-8, sy+6, c.wash, 'right');
+      if (part === 'back') return;
+      ctx.save();
+      ctx.beginPath(); ctx.rect(sx+2, sy+21, sw-4, sh-24); ctx.clip();
+      cards();
+      ctx.restore();
+    });
     return rows.length;
   }
 
-  function phoneFrame(ctx, sb, feed, close) {
-    X.rect(ctx,0,0,V.w,V.h,P.ink); X.gradient(ctx,0,0,V.w,V.h,P.ink2,P.ink,10);
-    const count=(feed||[]).slice(0,4).length;
-    const w = close || count>2 ? 226 : 180, h = close || count>2 ? 308 : 250;
+  // o (all optional; absent draws exactly the flat frame): rows, count, glow, noDigits, clipOut as phone(); labelX (default 92 close, 88);
+  // part: 'room' (background and the two left labels), 'device' (the phone and its edges), 'back' (room and device without the row cards),
+  // 'rows' (only the row cards). noDigits leaves the leading digit off the left label, which then starts 12 px further right.
+  function phoneFrame(ctx, sb, feed, close, o) {
+    o = o || {};
+    const part = o.part, rows = o.rows || (feed||[]).slice(0,4), size = Math.min(rows.length, 4);
+    const count = o.count != null ? o.count : rows.length, lx = o.labelX != null ? o.labelX : (close ? 92 : 88);
+    const w = close || size>2 ? 226 : 180, h = close || size>2 ? 308 : 250;
     const x=(V.w-w)/2, y=18;
-    // A thin reflected edge keeps the handoff and the close view grounded
-    // as one physical device, while leaving the notification text untouched.
-    X.rect(ctx,x-12,y+16,1,h-24,P.slate2);
-    X.rect(ctx,x+w+11,y+16,1,h-24,P.slate2);
-    phone(ctx,x,y,w,h,feed,sb.act,sb.day);
-    X.rect(ctx,x+3,y+14,1,h-28,P.grey2);
-    X.rect(ctx,x+w-4,y+19,1,h-38,P.slate2);
-    X.rect(ctx,x+Math.round(w/2)-9,y+h-8,18,1,P.slate2);
-    for(let i=0;i<5;i++) X.rect(ctx,x+14+i*8,y+h+12,4,1,colors(sb.act).signal);
-    text(ctx,'SQWAK · PRE-OPEN', close?92:88, 92, colors(sb.act).wash);
-    text(ctx,`${count} NOTIFICATION${count===1?'':'S'}`,close?92:88,110,P.bone);
+    const inner = Object.assign({}, o, { part: part === 'back' || part === 'rows' ? part : undefined, clipOut: undefined });
+    clipOutside(ctx, o.clipOut, () => {
+      if (part === 'rows') { phone(ctx,x,y,w,h,feed,sb.act,sb.day,inner); return; }
+      const room = !part || part === 'room' || part === 'back', device = !part || part === 'device' || part === 'back';
+      if (room) { X.rect(ctx,0,0,V.w,V.h,P.ink); X.gradient(ctx,0,0,V.w,V.h,P.ink2,P.ink,10); }
+      if (device) {
+        // A thin reflected edge keeps the handoff and the close view grounded
+        // as one physical device, while leaving the notification text untouched.
+        X.rect(ctx,x-12,y+16,1,h-24,P.slate2);
+        X.rect(ctx,x+w+11,y+16,1,h-24,P.slate2);
+        phone(ctx,x,y,w,h,feed,sb.act,sb.day,inner);
+        X.rect(ctx,x+3,y+14,1,h-28,P.grey2);
+        X.rect(ctx,x+w-4,y+19,1,h-38,P.slate2);
+        X.rect(ctx,x+Math.round(w/2)-9,y+h-8,18,1,P.slate2);
+        for(let i=0;i<5;i++) X.rect(ctx,x+14+i*8,y+h+12,4,1,colors(sb.act).signal);
+      }
+      if (room) {
+        text(ctx,'SQWAK · PRE-OPEN', lx, 92, colors(sb.act).wash);
+        if (o.noDigits) text(ctx,`NOTIFICATION${count===1?'':'S'}`,lx+12,110,P.bone);
+        else text(ctx,`${count} NOTIFICATION${count===1?'':'S'}`,lx,110,P.bone);
+      }
+    });
   }
 
   // The floor empties by act: one more dead desk each act. Your own desk
   // carries the story: the CASCADE stack slips as stability falls, and the
   // red HOLD files arrive once the heat is on.
-  function officeFrame(ctx, day, detail, down, S) {
+  // o (optional; absent draws the whole flat frame): part 'wall' (putty, gradient and the six windows, with the still snow
+  // speckle left out), 'monitors' (the five screens), 'desk' (the desk, the keyboard and, with detail, your desk), 'top' (only
+  // the two top sheets at x offset o.slipNow, then the CASCADE label). With part 'desk': noTopSheets leaves sheets 2 and 3 and the
+  // label out, deskChart 'screen' draws only the desk chart's CRT.
+  function officeFrame(ctx, day, detail, down, S, o) {
+    o = o || {};
+    const part = o.part, wall = !part || part === 'wall', mons = !part || part === 'monitors', desk = !part || part === 'desk';
     const sb=board(day), c=colors(sb.act), s=season(day);
     if (down == null) down = marketDown(day - 1);
-    X.rect(ctx,0,0,V.w,V.h,P.putty); X.gradient(ctx,0,0,V.w,235,P.putty2,P.putty,10); X.rect(ctx,0,235,V.w,125,P.desk);
-    // A strip of windows: the season outside the forty-first floor.
-    for(let i=0;i<6;i++){const wx=18+i*104;celIn(ctx,wx,16,90,44,P.slate2,P.putty2,P.plasticD);sky(ctx,wx+2,18,86,40,day,P.sky);
-      for(let b=0;b<5;b++){const bh=8+((i*5+b*11+day)%20);X.rect(ctx,wx+4+b*17,58-bh,13,bh,P.slate);if(s.snow)X.rect(ctx,wx+4+b*17,58-bh,13,1,P.bone);}
-      weather(ctx,wx+2,18,86,30,day+i);}
-    const dead=sb.act-1;
-    for(let i=0;i<5;i++){const x=24+i*124,off=i>=5-dead;cel3(ctx,x,78,104,126,P.plastic,P.plastic2,P.plasticD);
-      if(off){X.rect(ctx,x+10,92,84,78,P.screenD);X.rect(ctx,x+20,176,64,3,P.plasticD);}else chart(ctx,x+10,92,84,78,day+i,down);}
-    cel3(ctx,196,242,248,30,P.plasticD,P.plastic2,P.ink2);
-    for(let i=0;i<12;i++) X.rect(ctx,208+i*18,250,12,5,i%4?P.slate:P.slate2);
-    if(detail){
-      const st=S&&S.m?S.m.stability:100, slip=Math.round((100-st)/12), f=(S&&S.f)||{};
-      for(let i=0;i<4;i++){const x=58+i*4+(i>1?slip:0),y=250-i*9;X.rect(ctx,x+4,y+4,110,16,P.deskD);cel3(ctx,x,y,110,16,P.bone,P.white,P.plasticD);X.rect(ctx,x+6,y+5,40,2,i>1&&st<60?P.crimsonD:P.sky);X.rect(ctx,x+6,y+10,80,1,P.grey);}
+    const st=S&&S.m?S.m.stability:100, slip=Math.round((100-st)/12), f=(S&&S.f)||{};
+    const sheet = (i, sl) => {const x=58+i*4+(i>1?sl:0),y=250-i*9;X.rect(ctx,x+4,y+4,110,16,P.deskD);cel3(ctx,x,y,110,16,P.bone,P.white,P.plasticD);X.rect(ctx,x+6,y+5,40,2,i>1&&st<60?P.crimsonD:P.sky);X.rect(ctx,x+6,y+10,80,1,P.grey);};
+    if (part === 'top') {
+      const sl = o.slipNow == null ? slip : o.slipNow;
+      sheet(2, sl); sheet(3, sl);
       text(ctx,'CASCADE',64,216,c.signal);
-      if(st<40){X.rect(ctx,176+slip,262,8,4,P.crimson);X.rect(ctx,188+slip,266,5,3,P.crimsonD);}
-      if(S&&S.m&&(S.m.heat>=50||f.insiderTraded||f.raid)){cel3(ctx,470,236,56,34,P.crimsonD,P.crimson,P.ink);text(ctx,'HOLD',498,246,P.white,'center');text(ctx,'FILES',498,256,P.bone,'center');}
-      chart(ctx,540,218,86,50,day,down);
+      return;
+    }
+    if (wall) { X.rect(ctx,0,0,V.w,V.h,P.putty); X.gradient(ctx,0,0,V.w,235,P.putty2,P.putty,10); }
+    if (desk) X.rect(ctx,0,235,V.w,125,P.desk);
+    if (wall) {
+      // A strip of windows: the season outside the forty-first floor.
+      for(let i=0;i<6;i++){const wx=18+i*104;celIn(ctx,wx,16,90,44,P.slate2,P.putty2,P.plasticD);sky(ctx,wx+2,18,86,40,day,P.sky);
+        for(let b=0;b<5;b++){const bh=8+((i*5+b*11+day)%20);X.rect(ctx,wx+4+b*17,58-bh,13,bh,P.slate);if(s.snow)X.rect(ctx,wx+4+b*17,58-bh,13,1,P.bone);}
+        weather(ctx,wx+2,18,86,30,day+i,part==='wall');}
+    }
+    if (mons) {
+      const dead=sb.act-1;
+      for(let i=0;i<5;i++){const x=24+i*124,off=i>=5-dead;cel3(ctx,x,78,104,126,P.plastic,P.plastic2,P.plasticD);
+        if(off){X.rect(ctx,x+10,92,84,78,P.screenD);X.rect(ctx,x+20,176,64,3,P.plasticD);}else chart(ctx,x+10,92,84,78,day+i,down);}
+    }
+    if (desk) {
+      cel3(ctx,196,242,248,30,P.plasticD,P.plastic2,P.ink2);
+      for(let i=0;i<12;i++) X.rect(ctx,208+i*18,250,12,5,i%4?P.slate:P.slate2);
+      if(detail){
+        const top = !o.noTopSheets;
+        for(let i=0;i<(top?4:2);i++) sheet(i, slip);
+        if(top) text(ctx,'CASCADE',64,216,c.signal);
+        if(st<40){X.rect(ctx,176+slip,262,8,4,P.crimson);X.rect(ctx,188+slip,266,5,3,P.crimsonD);}
+        if(S&&S.m&&(S.m.heat>=50||f.insiderTraded||f.raid)){cel3(ctx,470,236,56,34,P.crimsonD,P.crimson,P.ink);text(ctx,'HOLD',498,246,P.white,'center');text(ctx,'FILES',498,256,P.bone,'center');}
+        chart(ctx,540,218,86,50,day,down,o.deskChart==='screen'?'screen':undefined);
+      }
     }
   }
   function closeFrame(ctx, report, detail) {
@@ -378,7 +444,7 @@
   B.Rhythm = {
     view:V, endingIds:ENDING_IDS,
     // Drawing helpers for js/art/storyboard.js.
-    placeFrame, phoneFrame, officeFrame, closeFrame, weekendFrame, skyline, season, sky, weather, text, colors, clean, chart, person, marketDown, beat,
+    placeFrame, phoneFrame, officeFrame, closeFrame, weekendFrame, skyline, season, sky, weather, text, colors, clean, chart, chartSeries, person, marketDown, beat,
     phoneRowCount(feed){return Math.min(4,(feed||[]).length);},
     storyboard:board,
     frameMap(day){const sb=this.storyboard(day);return [

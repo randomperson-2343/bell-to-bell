@@ -932,6 +932,111 @@
     return beats;
   };
 
+  // ---- The morning: phone handoff and read, office wide, desk and hold ----
+  // The phone beats and the office beats of rhythm.js, each rebuilt as layers (stage 3, batch 2).
+  const wxSeed = (day, i) => `office:${day}:wx${i}`;
+  // Window weather in the six office windows: the pilot weather, counts set per window (the kit's area formula is too big for 40 px).
+  function officeWeather(c, day, t, t0) {
+    const s = R.season(day), n = s.snow ? 3 + Math.round(3 * s.snow) : s.id === 'autumn' ? 3 : 4;
+    for (let i = 0; i < 6; i++) B.MotionKit.weather(c, 18 + 104 * i + 2, 18, 86, 40, day, wxSeed(day, i), t, { t0, min: n, max: n, rainLen: 5 });
+  }
+  // The backlog on days with five or more items: the handoff shows items 2 to 5, the read brings the lead in on top.
+  const phoneBacklog = (feed) => (feed.length >= 5 ? feed.slice(1, 5) : feed.slice(0, 4));
+
+  // Handoff: the room is pinned at depth 0, the dark device rises into it at depth 1 and wakes at 0.80 s.
+  function phoneHandoffLayers(sb, feed) {
+    const K = B.MotionKit, L = phoneBacklog(feed), big = L.length > 2, o = { rows: L, labelX: big ? 92 : 88 };
+    const w = big ? 226 : 180, h = big ? 308 : 250, sx = (V.w - w) / 2 + 8, sy = 30, sw = w - 16, sh = h - 24;
+    const mm = String(31 + (sb.day % 24)).padStart(2, '0');
+    return [
+      { id: 'room', depth: 0, draw(c) { R.phoneFrame(c, sb, feed, false, Object.assign({ part: 'room' }, o)); } },
+      {
+        id: 'device', depth: 1,
+        draw(c) { R.phoneFrame(c, sb, feed, false, Object.assign({ part: 'device' }, o)); },
+        animate(c, v, t) {
+          // asleep until 0.80 s: the cached rows and status bar are covered, 6:MM shows at 2x; then one bone flare
+          K.ping(c, t, { at: 0.80, off: [{ x: sx, y: sy, w: sw, h: sh, col: P.screenD }], on: [], flare: { x: sx, y: sy, w: sw, h: sh, col: P.bone, a: 0.15, dur: 0.08 } });
+          if (t < 0.80) { c.save(); c.scale(2, 2); X.textShadow(c, '6:' + mm, 160, 39, P.grey2, P.ink, { align: 'center' }); c.restore(); }
+        }
+      }
+    ];
+  }
+  // Read: `back` is everything but the cards, `rows` the cards (the only layer the camera moves), `glass` the picture again with the
+  // list window left unpainted, so a row outside the window never shows. The two counters are drawn whole on `glass`.
+  function phoneReadLayers(sb, feed) {
+    const K = B.MotionKit, n = feed.length, arrival = n >= 5, L = arrival ? feed.slice(0, 5) : feed.slice(0, 4);
+    const o = { rows: L, count: arrival ? 5 : L.length, glow: arrival ? 2 : 1, noDigits: true, labelX: 92 };
+    const frame = (c, extra) => R.phoneFrame(c, sb, feed, true, Object.assign({}, o, extra));
+    const wash = R.colors(sb.act).wash, landing = arrival ? 1.0 : 0.70;
+    return [
+      { id: 'back', depth: 0, draw(c) { frame(c, { part: 'back' }); } },
+      { id: 'rows', depth: 1, draw(c) { frame(c, { part: 'rows' }); } },
+      {
+        id: 'glass', depth: 0,
+        draw(c) { frame(c, { part: 'back', clipOut: { x: 217, y: 51, w: 206, h: 260 } }); },
+        animate(c, v, t) {
+          const k = arrival && t >= 0.85 ? 5 : Math.min(4, n);
+          R.text(c, String(k), 417, 36, wash, 'right');
+          R.text(c, String(k), 92, 110, P.bone);
+          if (n > 0) K.ping(c, t, { at: landing, off: [], on: [], flare: { x: 220, y: 55, w: 200, h: 39, col: P.bone, a: 0.15, dur: 0.08 } });
+        }
+      }
+    ];
+  }
+  const phone = B.Scenes.phone;
+  B.Scenes.phone = function (o) {
+    const beats = phone(o), sb = R.storyboard(o.day || 0), feed = (o.brief && o.brief.feed) || [], K = B.MotionKit, M = B.Motion;
+    const arrival = feed.length >= 5;
+    beats[0] = M.layered(Object.assign({}, beats[0], { camera: K.rise(56, beats[0].dur, 0.15, 0.75), layers: phoneHandoffLayers(sb, feed) }));
+    const read = Object.assign({}, beats[1], {
+      cues: [{ at: 0.70, sfx: 'news' }],
+      camera: arrival ? { from: { x: 0, y: 44, zoom: 1 }, to: { x: 0, y: 0, zoom: 1 }, ease: K.camSpan(beats[1].dur, 0.70, 1.00, M.ease.out) } : null,
+      layers: phoneReadLayers(sb, feed)
+    });
+    delete read.sfx;
+    beats[1] = M.layered(read);
+    return beats;
+  };
+
+  // Office: wall (windows, weather), monitors (refresh on the wide) and desk (your desk, the ticking chart and the slipping stack).
+  function officeLayers(day, S, down, beatKind) {
+    const K = B.MotionKit, M = B.Motion, wide = beatKind === 'wide', hold = beatKind === 'hold';
+    const dead = R.storyboard(day).act - 1, st = S && S.m ? S.m.stability : 100, slip = Math.round((100 - st) / 12);
+    const t0 = wide ? 0 : hold ? 3.25 : 1.45, tc0 = hold ? 1.8 : 0;
+    const Y = R.chartSeries(218, 50, day, down, 25).map(Math.floor), col = down ? P.crimson : P.jade;
+    const layers = [
+      { id: 'wall', depth: 0.5, draw(c) { R.officeFrame(c, day, false, down, S, { part: 'wall' }); }, animate(c, v, t) { officeWeather(c, day, t, t0); } },
+      { id: 'monitors', depth: 0.75, draw(c) { R.officeFrame(c, day, false, down, S, { part: 'monitors' }); } }
+    ];
+    if (wide) {
+      layers[1].animate = (c, v, t) => { for (let i = 0; i < 5 - dead; i++) K.crt(c, 24 + 124 * i + 10, 92, 84, 78, t, { mode: 'roll', at: 0.35 + 0.12 * i, dur: 0.36 }); };
+      layers.push({ id: 'desk', depth: 1, draw(c) { R.officeFrame(c, day, false, down, S, { part: 'desk' }); } });
+    } else {
+      layers.push({
+        id: 'desk', depth: 1,
+        draw(c) { R.officeFrame(c, day, true, down, S, { part: 'desk', noTopSheets: true, deskChart: 'screen' }); },
+        animate(c, v, t) {
+          const tc = t + tc0, s = Math.max(0, Math.min(10, Math.floor((tc - 0.25) / 0.25) + 1));
+          const head = s >= 1 && tc - (0.25 + (s - 1) * 0.25) < 0.12 ? P.bone : null;
+          // the top two sheets slip into their place between 0.90 and 1.20 s; on the hold they already sit there
+          const slipNow = hold ? slip : slip >= 1 ? Math.round(slip * M.ease.out(K.span(t, 0.90, 1.20))) : 0;
+          R.officeFrame(c, day, true, down, S, { part: 'top', slipNow });
+          K.trace(c, Y, t, { x0: 546, step: 5, from: s, n: 15, w: 3, h: 2, col, head });
+        }
+      });
+    }
+    return layers;
+  }
+  const office = B.Scenes.office;
+  B.Scenes.office = function (o) {
+    const beats = office(o), day = o.day || 0, g = o.game, S = g && g.mode && g.mode.S, down = R.marketDown(day - 1), M = B.Motion;
+    const kinds = ['wide', 'desk', 'hold'];
+    return beats.map((b, i) => M.layered(Object.assign({}, b, {
+      camera: i === 0 ? { from: { x: 0, y: -8, zoom: 1 }, to: { x: 0, y: 0, zoom: 1 }, ease: M.ease.inOut } : null,
+      layers: officeLayers(day, S, down, kinds[i])
+    })));
+  };
+
   // ---- Endings: the hand-drawn city and a prop for each of the 22 ----
   function endingWorld(ctx, o, p, card) {
     at2x(ctx, (c) => {

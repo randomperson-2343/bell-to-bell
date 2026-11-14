@@ -665,6 +665,266 @@ async function run() {
   assert(await shot('weekend', wkCat, 0, 0.5) === await shot('weekend', wkCat, 0, 2.2), 'sat (pet): reduced effects still moves');
   await page.evaluate(() => BTB.Settings.set('effects', 'full'));
 
+  // ---- stage 3 batch 2: the morning (phone handoff and read, office wide, desk and hold) ----
+  // Flat reference hashes of phoneFrame, officeFrame and chart, recorded from the code before the batch (no options passed).
+  const FLAT_REF = {
+    'phone:3:0:false': 'eee16bbf',
+    'phone:3:1:false': '10849baf',
+    'phone:3:2:true': 'abdaf654',
+    'phone:3:4:false': '7423760f',
+    'phone:3:4:true': '49a711ff',
+    'phone:3:5:true': '49a711ff',
+    'phone:3:nofeed': 'e3ecb386',
+    'office:3:wide': '9fe8dfe1',
+    'office:3:wideDown': '211f6389',
+    'office:3:desk': '4b4ab536',
+    'office:3:deskDown': '5dacdeb0',
+    'office:3:deskNoS': '7a410ff0',
+    'chart:3': '43de43c2',
+    'phone:20:0:false': '487e3260',
+    'phone:20:1:false': '574391d6',
+    'phone:20:2:true': 'd9c5b647',
+    'phone:20:4:false': 'c8c9f674',
+    'phone:20:4:true': 'f46a23b4',
+    'phone:20:5:true': 'f46a23b4',
+    'phone:20:nofeed': 'c9f0f8d',
+    'office:20:wide': 'd1905a0e',
+    'office:20:wideDown': '876629a1',
+    'office:20:desk': '6407dd25',
+    'office:20:deskDown': 'e47b55bb',
+    'office:20:deskNoS': '2b62e17f',
+    'chart:20': '7dec358a',
+    'phone:40:0:false': '7af4fc0a',
+    'phone:40:1:false': '3c834902',
+    'phone:40:2:true': '24bfb8d',
+    'phone:40:4:false': '8f84f82',
+    'phone:40:4:true': 'a8811f02',
+    'phone:40:5:true': 'a8811f02',
+    'phone:40:nofeed': '28014c63',
+    'office:40:wide': '8e47dba',
+    'office:40:wideDown': '566314e9',
+    'office:40:desk': '35ccb039',
+    'office:40:deskDown': '17988d37',
+    'office:40:deskNoS': '559eee3f',
+    'chart:40': '179ce022'
+  };
+  const flatNow = await page.evaluate(() => {
+    const R = BTB.Rhythm, res = {};
+    const hashOf = (fn) => {
+      const cv = document.createElement('canvas'); cv.width = 640; cv.height = 360;
+      const g = cv.getContext('2d'); fn(g);
+      const d = g.getImageData(0, 0, 640, 360).data; let x = 2166136261;
+      for (let i = 0; i < d.length; i += 1) { x ^= d[i]; x = Math.imul(x, 16777619); }
+      return (x >>> 0).toString(16);
+    };
+    const feed = (n) => Array.from({ length: n }, (_, i) => ({ source: 'WIRE ' + i, title: 'Headline number ' + i + ' about the overnight session', kind: ['chirp', 'mail', 'wire'][i % 3] }));
+    for (const day of [3, 20, 40]) {
+      const sb = R.storyboard(day);
+      for (const [n, close] of [[0, false], [1, false], [2, true], [4, false], [4, true], [5, true]]) res[`phone:${day}:${n}:${close}`] = hashOf((g) => R.phoneFrame(g, sb, feed(n), close));
+      res[`phone:${day}:nofeed`] = hashOf((g) => R.phoneFrame(g, sb, undefined, true));
+      const S = { m: { stability: 40, heat: 60 }, f: { raid: true } }, S2 = { m: { stability: 100, heat: 0 }, f: {} };
+      for (const [name, detail, down, st] of [['wide', false, false, undefined], ['wideDown', false, true, undefined], ['desk', true, false, S], ['deskDown', true, true, S2], ['deskNoS', true, false, undefined]]) res[`office:${day}:${name}`] = hashOf((g) => R.officeFrame(g, day, detail, down, st));
+      res[`chart:${day}`] = hashOf((g) => R.chart(g, 100, 100, 86, 50, day, day % 2 === 0));
+    }
+    return res;
+  });
+  for (const k of Object.keys(FLAT_REF)) assert(flatNow[k] === FLAT_REF[k], `flat ${k}: the picture changed (${flatNow[k]}, was ${FLAT_REF[k]})`);
+
+  await page.evaluate(() => {
+    const view = { w: 640, h: 360 };
+    const fnv = (d) => { let x = 2166136261; for (let i = 0; i < d.length; i++) { x ^= d[i]; x = Math.imul(x, 16777619); } return (x >>> 0).toString(16); };
+    const canvas = () => { const cv = document.createElement('canvas'); cv.width = 640; cv.height = 360; const g = cv.getContext('2d'); g.imageSmoothingEnabled = false; return g; };
+    // hash of one layer's own animate (animOnly) or of draw + animate, in a rect
+    window.layerPic = (scene, opts, i, id, t, animOnly, r) => {
+      const b = BTB.Scenes[scene](opts)[i], layer = b.layers.find((l) => l.id === id), g = canvas();
+      if (!animOnly) layer.draw(g, view, {});
+      if (layer.animate) layer.animate(g, view, t, t / b.dur, {});
+      const rr = r || [0, 0, 640, 360];
+      return fnv(g.getImageData(rr[0], rr[1], rr[2], rr[3]).data);
+    };
+    // first row with any pixel of one layer composited through the beat's camera at t
+    window.layerTop = (scene, opts, i, id, t) => {
+      const b = BTB.Scenes[scene](opts)[i], layer = b.layers.find((l) => l.id === id), lc = canvas(), g = canvas();
+      layer.draw(lc, view, {});
+      BTB.Motion.composite(g, view, { id: b.id, layers: [layer] }, t, t / b.dur, {}, BTB.Motion.cameraAt(b.camera, t / b.dur), () => lc.canvas, null);
+      const d = g.getImageData(0, 0, 640, 360).data;
+      for (let y = 0; y < 360; y++) for (let x = 0; x < 640; x++) if (d[(y * 640 + x) * 4 + 3]) return y;
+      return -1;
+    };
+    // the beat's final picture against a flat picture: how many pixels differ outside the allowed rects
+    window.finalDiff = (scene, opts, i, flat, allowed) => {
+      const b = BTB.Scenes[scene](opts)[i], g1 = canvas(), g2 = canvas();
+      b.draw(g1, view, 1, {}); flat(g2);
+      const a = g1.getImageData(0, 0, 640, 360).data, c = g2.getImageData(0, 0, 640, 360).data;
+      let bad = 0, inside = 0;
+      for (let k = 0; k < a.length; k += 4) {
+        if (a[k] === c[k] && a[k + 1] === c[k + 1] && a[k + 2] === c[k + 2]) continue;
+        const x = (k / 4) % 640, y = Math.floor(k / 4 / 640);
+        if ((allowed || []).some((r) => x >= r[0] && x < r[0] + r[2] && y >= r[1] && y < r[1] + r[3])) inside++; else bad++;
+      }
+      return { bad, inside };
+    };
+    window.regionPic = (scene, opts, i, t, r) => {
+      window.openBeat(scene, opts); BTB.Cinematic.seek(i, t);
+      const cv = document.getElementById('cine-canvas'), k = cv.width / 640;
+      return fnv(cv.getContext('2d').getImageData(Math.round(r[0] * k), Math.round(r[1] * k), Math.round(r[2] * k), Math.round(r[3] * k)).data);
+    };
+  });
+  const mkFeed = (n) => Array.from({ length: n }, (_, i) => ({ source: 'WIRE ' + i, title: 'Overnight headline ' + i + ' moves the whole index lower again', kind: ['chirp', 'mail', 'wire'][i % 3] }));
+  const phoneOpts = (day, n) => ({ day, brief: { title: 'H', feed: mkFeed(n) } });
+  const gameS = (st, heat) => ({ mode: { S: { m: { stability: st, heat }, f: {} } } });
+  const lp = (scene, opts, i, id, t, animOnly, r) => page.evaluate(([a, b, c, d, e, f, g]) => window.layerPic(a, b, c, d, e, f, g), [scene, opts, i, id, t, animOnly, r]);
+  const info = (scene, opts, i) => page.evaluate(([s, o, i]) => { const b = BTB.Scenes[s](o)[i]; return { id: b.id, dur: b.dur, layers: (b.layers || []).map((l) => l.id).join(), depths: (b.layers || []).map((l) => l.depth).join(), cues: (b.cues || []).map((c) => c.at + ':' + c.sfx).join(), sfx: b.sfx || '', cam: b.camera ? b.camera.from.y + '>' + b.camera.to.y : 'none', tr: b.transition || '', inf: !!b.informative, line: b.line, n: BTB.Scenes[s](o).length }; }, [scene, opts, i]);
+
+  // phone handoff
+  const ph3 = phoneOpts(3, 5), ph4 = phoneOpts(3, 4), ph2 = phoneOpts(3, 2), ph0 = phoneOpts(3, 0);
+  for (const o of [ph3, ph4, ph2, ph0]) {
+    const h = await info('phone', o, 0);
+    assert(h.id === 'phone:3:handoff' && h.dur === 1.4 && h.layers === 'room,device' && h.depths === '0,1' && h.cam === '-56>0' && h.sfx === 'apartment' && h.tr === 'fade' && h.cues === '' && h.n === 2, `phone handoff beat: ${JSON.stringify(h)}`);
+    assert(await shot('phone', o, 0, 0.45) !== await shot('phone', o, 0, 1.3), 'phone handoff: start and end frames are identical');
+    assert(await shot('phone', o, 0, 1.0) === await shot('phone', o, 0, 1.0), 'phone handoff: same time gave different pictures');
+    assert(await shot('phone', o, 0, 0.7) !== await shot('phone', o, 0, 0.9), 'phone handoff: the screen does not wake at 0.80 s');
+    assert(await shot('phone', o, 0, 0.82) !== await shot('phone', o, 0, 0.95), 'phone handoff: no wake flare');
+    assert(await shot('phone', o, 0, 0.95) === await shot('phone', o, 0, 1.3), 'phone handoff: still moving after 0.88 s');
+  }
+  const top = (o, t) => page.evaluate(([o, t]) => window.layerTop('phone', o, 0, 'device', t), [o, t]);
+  assert(await top(ph3, 0.1) === 66, `phone handoff: the dark device starts at ${await top(ph3, 0.1)}, not at 66`);
+  assert(await top(ph3, 0.2) >= await top(ph3, 1.0) + 30, 'phone handoff: the device is not lower at 0.2 s than at 1.0 s');
+  assert(await top(ph3, 1.0) === 10 && await top(ph3, 1.35) === 10, 'phone handoff: the device is not at rest by 1.0 s');
+  assert(await top(ph3, 0.5) > await top(ph3, 0.9) && await top(ph3, 0.5) < await top(ph3, 0.2), 'phone handoff: the rise does not ease');
+  assert(await page.evaluate((o) => BTB.Scenes.phone(o)[0].layers.find((l) => l.id === 'room').depth === 0, ph3), 'phone handoff: the room must be pinned at depth 0');
+  // the final picture is today's handoff with labels at 92 on the big phone and the backlog list on 5-item days
+  const handFinal = (o, n, rows, lx) => page.evaluate(([o, n, rows, lx]) => {
+    const R = BTB.Rhythm, sb = R.storyboard(o.day), feed = o.brief.feed;
+    return window.finalDiff('phone', o, 0, (g) => R.phoneFrame(g, sb, feed, false, { rows: rows === 'back' ? feed.slice(1, 5) : feed.slice(0, 4), labelX: lx }), []);
+  }, [o, n, rows, lx]);
+  assert((await handFinal(ph3, 5, 'back', 92)).bad === 0, 'phone handoff (5 items): the final picture is not the backlog list at labelX 92');
+  assert((await handFinal(ph4, 4, 'all', 92)).bad === 0, 'phone handoff (4 items): the final picture is not the flat list at labelX 92');
+  const handSmall = await page.evaluate((o) => { const R = BTB.Rhythm, sb = R.storyboard(o.day); return window.finalDiff('phone', o, 0, (g) => R.phoneFrame(g, sb, o.brief.feed, false), []); }, ph2);
+  assert(handSmall.bad === 0, 'phone handoff (2 items): the final picture is not today\'s flat small phone');
+  const handEmpty = await page.evaluate((o) => { const R = BTB.Rhythm, sb = R.storyboard(o.day); return window.finalDiff('phone', o, 0, (g) => R.phoneFrame(g, sb, o.brief.feed, false), []); }, ph0);
+  assert(handEmpty.bad === 0, 'phone handoff (empty feed): the final picture is not today\'s flat picture');
+  // the dark screen shows the lock-screen time and hides the list until 0.80 s
+  assert(await page.evaluate((o) => { const a = window.layerPic('phone', o, 0, 'device', 0.5, false), b = window.layerPic('phone', o, 0, 'device', 0.9, false); return a !== b; }, ph3), 'phone handoff: the device layer does not change at the wake');
+  assert(await page.evaluate((o) => window.layerPic('phone', o, 0, 'device', 0.2, true) === window.layerPic('phone', o, 0, 'device', 0.7, true), ph3), 'phone handoff: the asleep screen changes before the wake');
+  assert(await page.evaluate((o) => window.layerPic('phone', o, 0, 'device', 0.9, true) === window.layerPic('phone', o, 0, 'device', 1.2, true), ph3), 'phone handoff: the awake screen still has animate work');
+  // phone read
+  const readInfo = (o) => info('phone', o, 1);
+  for (const [o, arrival] of [[ph3, true], [ph4, false], [ph2, false], [ph0, false]]) {
+    const r = await readInfo(o);
+    assert(r.id === 'phone:3:read' && r.dur === 2.0 && r.layers === 'back,rows,glass' && r.depths === '0,1,0' && r.cues === '0.7:news' && r.sfx === '' && r.inf && r.line === 'PRE-OPEN FEED' && r.cam === (arrival ? '44>0' : 'none'), `phone read beat: ${JSON.stringify(r)}`);
+    assert(await shot('phone', o, 1, 1.5) === await shot('phone', o, 1, 1.5), 'phone read: same time gave different pictures');
+    const empty = o.brief.feed.length === 0;
+    assert((await shot('phone', o, 1, 0.5) !== await shot('phone', o, 1, arrival ? 1.2 : 0.74)) === !empty, `phone read: ${empty ? 'something moves with an empty feed' : 'nothing lands'}`);
+    // the final frame (also the short-mode still) is today's read, plus a fifth row and two highlights on arrival days
+    const feed = o.brief.feed;
+    const d = await page.evaluate(([o, arrival]) => {
+      const R = BTB.Rhythm, sb = R.storyboard(o.day), feed = o.brief.feed;
+      return window.finalDiff('phone', o, 1, (g) => (arrival ? R.phoneFrame(g, sb, feed, true, { rows: feed.slice(0, 5), count: 5, glow: 2, labelX: 92 }) : R.phoneFrame(g, sb, feed, true)), []);
+    }, [o, arrival]);
+    assert(d.bad === 0, `phone read (${feed.length} items): the final picture is not the flat read (${d.bad} px)`);
+  }
+  // the landing flare and the counters
+  assert(await shot('phone', ph4, 1, 0.66) !== await shot('phone', ph4, 1, 0.74) && await shot('phone', ph4, 1, 0.74) !== await shot('phone', ph4, 1, 0.86), 'phone read (no arrival): the top row does not flare at 0.70 s');
+  assert(await shot('phone', ph4, 1, 0.86) === await shot('phone', ph4, 1, 1.9), 'phone read (no arrival): something moves after the flare');
+  assert(await shot('phone', ph3, 1, 0.5) === await shot('phone', ph3, 0, 1.3), 'phone read (arrival): the start is not the handoff\'s last picture');
+  assert(await shot('phone', ph3, 1, 0.8) !== await shot('phone', ph3, 1, 0.9) && await shot('phone', ph3, 1, 0.9) !== await shot('phone', ph3, 1, 0.98), 'phone read (arrival): the stack does not slide');
+  assert(await shot('phone', ph3, 1, 1.1) === await shot('phone', ph3, 1, 1.9) && await shot('phone', ph3, 1, 1.02) !== await shot('phone', ph3, 1, 1.1), 'phone read (arrival): no flare at 1.00 s, or still moving at 1.1 s');
+  const digit = (t) => page.evaluate((t) => window.regionPic('phone', { day: 3, brief: { title: 'H', feed: Array.from({ length: 5 }, (_, i) => ({ source: 'WIRE ' + i, title: 'Overnight headline ' + i + ' moves the whole index lower again', kind: 'wire' })) } }, 1, t, [405, 34, 14, 10]), t);
+  assert(await digit(0.8) !== await digit(0.9), 'phone read (arrival): the status count does not step at 0.85 s');
+  const labelDigit = (t) => page.evaluate((t) => window.regionPic('phone', { day: 3, brief: { title: 'H', feed: Array.from({ length: 5 }, (_, i) => ({ source: 'WIRE ' + i, title: 'Overnight headline ' + i + ' moves the whole index lower again', kind: 'wire' })) } }, 1, t, [90, 108, 8, 10]), t);
+  assert(await labelDigit(0.8) !== await labelDigit(0.9), 'phone read (arrival): the label count does not step at 0.85 s');
+  // reduced effects show one still
+  await page.evaluate(() => BTB.Settings.set('effects', 'reduced'));
+  for (const o of [ph3, ph4, ph0]) {
+    assert(await shot('phone', o, 0, 0.5) === await shot('phone', o, 0, 1.3), 'phone handoff: reduced effects still moves');
+    assert(await shot('phone', o, 1, 0.5) === await shot('phone', o, 1, 1.9), 'phone read: reduced effects still moves');
+  }
+  await page.evaluate(() => BTB.Settings.set('effects', 'full'));
+
+  // office wide, desk and hold: day 3 (act 1, autumn), day 20 (act 3, grey) and day 40 (act 4, winter, three dead desks)
+  const of = (day, game) => ({ day, game, brief: { title: 'H', feed: [] } });
+  const offDays = [of(3), of(20, gameS(70, 20)), of(40, gameS(30, 60))];
+  const slipOf = (o) => (o.game ? Math.round((100 - o.game.mode.S.m.stability) / 12) + (o.game.mode.S.m.heat >= 50 ? 'h' : '') : '');
+  for (const o of offDays) {
+    const day = o.day, k = slipOf(o);
+    const w = await info('office', o, 0), d = await info('office', o, 1), h = await info('office', o, 2);
+    assert(w.id === `office:${day}:wide` && w.dur === 1.45 && w.layers === 'wall,monitors,desk' && w.depths === '0.5,0.75,1' && w.cam === '-8>0' && w.sfx === 'elevator' && w.tr === 'fade' && w.cues === '' && w.n === 3, `office wide beat: ${JSON.stringify(w)}`);
+    assert(d.id === `office:${day}:desk:${k}` && d.dur === 1.8 && d.layers === 'wall,monitors,desk' && d.cam === 'none' && d.sfx === 'office' && d.inf && d.cues === '', `office desk beat: ${JSON.stringify(d)}`);
+    assert(h.id === `office:${day}:hold:${k}` && h.dur === 0.85 && h.layers === 'wall,monitors,desk' && h.cam === 'none' && h.sfx === '' && h.cues === '', `office hold beat: ${JSON.stringify(h)}`);
+    for (const [i, a, b] of [[0, 0.1, 1.35], [1, 0.1, 1.7], [2, 0.05, 0.8]]) {
+      assert(await shot('office', o, i, a) !== await shot('office', o, i, b), `office ${i} day ${day}: start and end frames are identical`);
+      assert(await shot('office', o, i, 0.6) === await shot('office', o, i, 0.6), `office ${i} day ${day}: same time gave different pictures`);
+    }
+  }
+  // the wide: the tilt, then a refresh band down each live monitor in turn, left to right; the dead stay black
+  const mon = (i) => [24 + 124 * i + 10, 92, 84, 78];
+  for (const [o, live] of [[offDays[0], 5], [offDays[1], 3], [offDays[2], 2]]) {
+    for (let i = 0; i < 5; i++) {
+      const at = 0.35 + 0.12 * i;
+      const before = await lp('office', o, 0, 'monitors', at - 0.05, true, mon(i)), during = await lp('office', o, 0, 'monitors', at + 0.18, true, mon(i)), after = await lp('office', o, 0, 'monitors', at + 0.4, true, mon(i));
+      if (i < live) assert(before === after && before !== during, `office wide day ${o.day}: monitor ${i} refresh band wrong`);
+      else assert(before === during && during === after, `office wide day ${o.day}: dead monitor ${i} reacts`);
+    }
+    // band at 0.35 on monitor 0 is on while monitor 1's has not started (left to right)
+    assert(await lp('office', o, 0, 'monitors', 0.45, true, mon(1)) === await lp('office', o, 0, 'monitors', 0.3, true, mon(1)), `office wide day ${o.day}: monitor 1 starts with monitor 0`);
+  }
+  assert(await page.evaluate(() => { const b = BTB.Scenes.office({ day: 3 })[0], w = b.layers.find((l) => l.id === 'wall'), m = b.layers.find((l) => l.id === 'monitors'); return !!w.animate && !!m.animate; }), 'office wide: wall (weather) and monitors (refresh) need animate');
+  const winRect = [18, 18, 640 - 18, 42];
+  // weather falls in the six windows (autumn leaves, grey drizzle, winter snow) and keeps going across the chain
+  for (const o of offDays) {
+    assert(await lp('office', o, 0, 'wall', 0.2, true, winRect) !== await lp('office', o, 0, 'wall', 0.5, true, winRect), `office wide day ${o.day}: the window weather does not move`);
+    assert(await lp('office', o, 0, 'wall', 1.45, true, winRect) === await lp('office', o, 1, 'wall', 0, true, winRect), `office day ${o.day}: weather jumps across the wide-to-desk cut`);
+    assert(await lp('office', o, 1, 'wall', 1.8, true, winRect) === await lp('office', o, 2, 'wall', 0, true, winRect), `office day ${o.day}: weather jumps across the desk-to-hold cut`);
+  }
+  // the final wide is today's wide except inside the six windows; the final desk also except the chart and its newest points
+  for (const o of offDays) {
+    const sOf = o.game && o.game.mode.S;
+    const dw = await page.evaluate(([o]) => { const R = BTB.Rhythm, S = o.game && o.game.mode.S; return window.finalDiff('office', o, 0, (g) => R.officeFrame(g, o.day, false, null, S), [[0, 16, 640, 46]]); }, [o]);
+    assert(dw.bad === 0, `office wide day ${o.day}: the final picture differs from today's wide outside the windows (${dw.bad} px)`);
+    const dd = await page.evaluate(([o]) => { const R = BTB.Rhythm, S = o.game && o.game.mode.S; return window.finalDiff('office', o, 1, (g) => R.officeFrame(g, o.day, true, null, S), [[0, 16, 640, 46], [540, 218, 86, 50]]); }, [o]);
+    assert(dd.bad === 0, `office desk day ${o.day}: the final picture differs from today's desk outside the windows and the chart (${dd.bad} px)`);
+    const dh = await page.evaluate(([o]) => { const R = BTB.Rhythm, S = o.game && o.game.mode.S; return window.finalDiff('office', o, 2, (g) => R.officeFrame(g, o.day, true, null, S), [[0, 16, 640, 46], [540, 218, 86, 50]]); }, [o]);
+    assert(dh.bad === 0, `office hold day ${o.day}: the final picture differs from today's desk outside the windows and the chart (${dh.bad} px)`);
+  }
+  // the desk chart ticks every 0.25 s from 0.25 s; a new point is bone for 0.12 s; the line at 0.2 s is today's line
+  const chartR = [540, 218, 86, 50];
+  for (const o of [offDays[0], offDays[2]]) {
+    const at = (i, t) => lp('office', o, i, 'desk', t, false, chartR);
+    const flatChart = await page.evaluate(([o]) => { const R = BTB.Rhythm, g = document.createElement('canvas'); g.width = 640; g.height = 360; const c = g.getContext('2d'); R.officeFrame(c, o.day, true, null, o.game && o.game.mode.S); const d = c.getImageData(540, 218, 86, 50).data; let x = 2166136261; for (let i = 0; i < d.length; i++) { x ^= d[i]; x = Math.imul(x, 16777619); } return (x >>> 0).toString(16); }, [o]);
+    assert(await at(1, 0.2) === flatChart, `office desk day ${o.day}: before the first tick the chart is not today's`);
+    const pics = [];
+    for (const t of [0.2, 0.3, 0.45, 0.55, 0.8, 1.05, 1.3, 1.55, 1.8]) pics.push(await at(1, t));
+    assert(new Set(pics).size === pics.length, `office desk day ${o.day}: two tick times show the same chart`);
+    assert(await at(1, 0.27) !== await at(1, 0.4) && await at(1, 0.4) === await at(1, 0.49), `office desk day ${o.day}: the new point is not bone for 0.12 s`);
+    assert(await at(1, 1.8) === await at(2, 0), `office day ${o.day}: the chart jumps across the desk-to-hold cut`);
+    assert(await at(2, 0.1) !== await at(2, 0.25) && await at(2, 0.25) !== await at(2, 0.5) && await at(2, 0.5) !== await at(2, 0.75), `office hold day ${o.day}: the chart does not tick at 0.20, 0.45 and 0.70`);
+    assert(await at(2, 0.85) !== await at(2, 0.75) && await at(2, 0.85) === await at(2, 0.9), `office hold day ${o.day}: the last point is not back to the line colour by the end`);
+  }
+  // the stack: starts square, slips 0.90 to 1.20 s when stability is low, never moves at stability 100
+  const stackR = [50, 205, 150, 70];
+  assert(await lp('office', offDays[2], 1, 'desk', 0.8, false, stackR) !== await lp('office', offDays[2], 1, 'desk', 1.3, false, stackR), 'office desk (stability 30): the stack does not slip');
+  assert(await lp('office', offDays[2], 1, 'desk', 1.2, false, stackR) === await lp('office', offDays[2], 1, 'desk', 1.7, false, stackR), 'office desk (stability 30): the stack is still moving after 1.20 s');
+  assert(await lp('office', offDays[2], 1, 'desk', 0.95, false, stackR) !== await lp('office', offDays[2], 1, 'desk', 1.05, false, stackR), 'office desk (stability 30): the slip is not stepping');
+  assert(await lp('office', offDays[0], 1, 'desk', 0.8, false, stackR) === await lp('office', offDays[0], 1, 'desk', 1.3, false, stackR), 'office desk (no game): the stack moves');
+  assert(await lp('office', offDays[1], 2, 'desk', 0.3, false, stackR) === await lp('office', offDays[1], 2, 'desk', 0.8, false, stackR), 'office hold: the stack moves');
+  // camera: the tilt only on the wide, at whole pixels
+  assert(await page.evaluate(() => { const b = BTB.Scenes.office({ day: 3 })[0]; const ys = [0, 0.1, 0.3, 0.5, 0.8, 1].map((p) => BTB.Motion.cameraAt(b.camera, p).y); return ys[0] === -8 && ys[5] === 0 && ys.every((y) => y === Math.round(y)); }), 'office wide: the tilt is not 8 px to 0 in whole pixels');
+  // every beat draws with no game and an empty feed, and draw(p=1) never reads settings
+  for (const [scene, o] of [['phone', { day: 3 }], ['phone', { day: 3, brief: { feed: [] } }], ['office', { day: 3 }], ['office', { day: 40 }]]) {
+    const n = await page.evaluate(([s, o]) => BTB.Scenes[s](o).map((b) => { const c = document.createElement('canvas'); c.width = 640; c.height = 360; b.draw(c.getContext('2d'), { w: 640, h: 360 }, 1, {}); const d = c.getContext('2d').getImageData(0, 0, 640, 360).data; let a = 0; for (let i = 3; i < d.length; i += 4) a += d[i] === 255 ? 1 : 0; return a; }), [scene, o]);
+    assert(n.every((a) => a > 640 * 360 * 0.9), `${scene} ${JSON.stringify(o)}: draw(p=1) left holes ${n}`);
+  }
+  // effects reduced: one still per beat
+  await page.evaluate(() => BTB.Settings.set('effects', 'reduced'));
+  for (const o of offDays) {
+    assert(await shot('office', o, 0, 0.5) === await shot('office', o, 0, 1.2), `office wide day ${o.day}: reduced effects still moves`);
+    assert(await shot('office', o, 1, 0.5) === await shot('office', o, 1, 1.7), `office desk day ${o.day}: reduced effects still moves`);
+    assert(await shot('office', o, 2, 0.1) === await shot('office', o, 2, 0.8), `office hold day ${o.day}: reduced effects still moves`);
+  }
+  await page.evaluate(() => BTB.Settings.set('effects', 'full'));
+  warnings.length = 0;
+
   // effects reduced: a plain fade from ink, no dissolve of the old shot
   await page.evaluate(() => BTB.Settings.set('effects', 'reduced'));
   const r1 = await shot('news', day7, 1, 0.1), r29 = await shot('news', day7, 1, 0.29), rEnd = await shot('news', day7, 1, 1.0);
@@ -683,6 +943,7 @@ async function run() {
 
   // ---- Performance (phone, CPU throttled 4x). SKIP_PERF=1 skips it. ----
   // Scenes measured; later tasks add their shots here.
+  const FEED5 = Array.from({ length: 5 }, (_, i) => ({ source: 'WIRE ' + i, title: 'Overnight headline ' + i + ' moves the whole index lower again', kind: ['chirp', 'mail', 'wire'][i % 3] }));
   const PERF_SCENES = [
     { scene: 'news', opts: { day: 0, brief: { title: 'FIRST DAY', feed: [] } } },
     { scene: 'news', opts: { day: 7, brief: { title: 'FOUR FUNDS, ONE MODEL', feed: [] } } },
@@ -691,7 +952,13 @@ async function run() {
     { scene: 'weekend', opts: { day: 4 } },
     // heaviest variants: winter snow plus the breath on a cat in a penthouse, and autumn leaves with no pet
     { scene: 'weekend', opts: { day: 44, game: { mode: { S: { wallet: { tier: 5, pet: { kind: 'cat', sex: 'boy' } } } } } } },
-    { scene: 'weekend', opts: { day: 9, game: { mode: { S: { wallet: { tier: 3 } } } } } }
+    { scene: 'weekend', opts: { day: 9, game: { mode: { S: { wallet: { tier: 3 } } } } } },
+    // the morning: an early day, a grey day and a winter day (three dead desks, stability 30, heat 60, snow in the windows)
+    { scene: 'phone', opts: { day: 3, brief: { title: 'H', feed: FEED5 } } },
+    { scene: 'phone', opts: { day: 40, brief: { title: 'H', feed: FEED5 } } },
+    { scene: 'office', opts: { day: 3 } },
+    { scene: 'office', opts: { day: 20, game: { mode: { S: { m: { stability: 70, heat: 20 }, f: {} } } } } },
+    { scene: 'office', opts: { day: 40, game: { mode: { S: { m: { stability: 30, heat: 60 }, f: {} } } } } }
   ];
   const PERF_AVG_MS = 8, PERF_MAX_MS = 33, PERF_ATTEMPTS = 3, PERF_TIMEOUT_MS = 20000;
   const pct = (sorted, q) => sorted.length ? sorted[Math.min(sorted.length - 1, Math.ceil(q * sorted.length) - 1)] : 0;
@@ -765,7 +1032,7 @@ async function run() {
     for (const { scene, opts } of PERF_SCENES) {
       const r = await perf(scene, opts);
       results.push(r);
-      r.day = opts.day; r.tier = opts.game ? opts.game.mode.S.wallet.tier : undefined; r.pet = !!(opts.game && opts.game.mode.S.wallet.pet);
+      r.day = opts.day; const wal = opts.game && opts.game.mode.S.wallet; r.tier = wal ? wal.tier : undefined; r.pet = !!(wal && wal.pet);
       console.log(`perf ${scene}${opts.day != null ? ' day ' + opts.day : ''}${r.tier != null ? ' tier ' + r.tier : ''}${r.pet ? ' pet' : ''}: ${r.status} attempts=${r.attempts.length} framesMeasured=${r.framesMeasured}/${r.framesTotal} avg=${r.avgMs} p95=${r.p95Ms} max=${r.maxMs} firstMax=${Math.max(0, ...r.firstFrameMs.map((f) => f.ms))}`);
     }
     const outDir = path.join(root, 'qa', 'evidence', 'motion');
