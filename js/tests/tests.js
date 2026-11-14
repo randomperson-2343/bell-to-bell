@@ -2171,6 +2171,15 @@
     assert(KIT_PX(at(0.5, { t0: 1 }).c) === KIT_PX(mid.c) && at(0.5, { t0: 1 }).v === mid.v, 't0 shifts time');
     const rt = recOf((c) => K.tally(c, 100, 20, 9, Object.assign({}, o, { align: 'right' })));
     assert(KIT_PX(rt) === KIT_PX(recOf((c) => B.Pixel.textShadow(c, '$1234.6', 100, 20, P.jade, P.ink, { align: 'right' }))), 'align right');
+    // anchor 'final': the end is exactly the unanchored end; shorter values keep the final string's right edge; the default is unchanged
+    ['left', 'center', 'right'].forEach((al) => {
+      const a = (t) => recOf((c) => K.tally(c, 100, 20, t, Object.assign({}, o, { align: al, anchor: 'final' })));
+      assert(KIT_PX(a(2)) === KIT_PX(recOf((c) => K.tally(c, 100, 20, 2, Object.assign({}, o, { align: al })))), 'anchor final: the end equals the plain end (' + al + ')');
+      const edge = (r) => Math.max(...r.rects.map((q) => q.x + q.w));
+      assert(edge(a(1.3)) === edge(a(1.7)) && edge(a(1.7)) === edge(a(2)), 'anchor final: the right edge moves (' + al + ')');
+      assert(Math.min(...a(1.3).rects.map((q) => q.x)) > Math.min(...a(2).rects.map((q) => q.x)), 'anchor final: digits do not appear at the left (' + al + ')');
+    });
+    assert(KIT_PX(at(1.5).c) === KIT_PX(recOf((c) => K.tally(c, 10, 20, 1.5, Object.assign({}, o, { anchor: undefined })))), 'anchor off by default');
   });
 
   test('MotionKit: the end state holds even when the end falls between two steps', () => {

@@ -932,7 +932,7 @@
         id: 'card', depth: 1, draw(c) { R.closeFrame(c, r, true, { part: 'card', noPnl: true, noDashes: true }); },
         animate(c, v, t) {
           const at = rest ? -1 : 0.30, atStamp = rest ? -1 : 1.26;
-          K.tally(c, G.pnlAt.x, G.pnlAt.y, t, { from: 0, to: G.pnl, at, dur: rest ? 0.01 : 0.60, ease: M.ease.out, fps: 15, fmt: (x) => B.fmt.money(x, true), col: G.good ? P.jade : P.crimson, align: 'center' });
+          K.tally(c, G.pnlAt.x, G.pnlAt.y, t, { from: 0, to: G.pnl, at, dur: rest ? 0.01 : 0.60, ease: M.ease.out, fps: 15, fmt: (x) => B.fmt.money(x, true), col: G.good ? P.jade : P.crimson, align: 'center', anchor: 'final' });
           K.lamps(c, G.dashes, t, { at, step: 0.0667, on: G.met ? P.jadeD : P.crimsonD });
           if (!G.verdict) return;
           // the label is hidden on the box's flat ink until the stamp's second frame
@@ -951,19 +951,20 @@
   // Insert and read: city (skyline), phone (hand and post; the flag blinks, in the read the counts climb) and grain (scanlines, in the
   // insert the act wash), all drawn by sqwakFrame parts. The camera lifts only the phone layer.
   function sqwakLayers(sb, b, full) {
-    const K = B.MotionKit, M = B.Motion, G = R.sqwakGeom(full), F = G.flag, dur = full ? 2.6 : 1.0, period = b.flag === 'LIVE' ? 0.5 : 0.8;
+    const K = B.MotionKit, M = B.Motion, G = R.sqwakGeom(full), F = G.flag, dur = full ? 2.6 : 1.0, period = 1.0; // the kit's standby rate (bible C5)
     const stats = R.sqwakStats(b).map(String);
     return [
       { id: 'city', depth: full ? 0 : 0.25, draw(c) { R.sqwakFrame(c, sb, b, full, { part: 'city' }); } },
       {
-        id: 'phone', depth: 1, draw(c) { R.sqwakFrame(c, sb, b, full, { part: 'phone', noFlag: true, noStats: full }); },
+        id: 'phone', depth: 1, draw(c) { R.sqwakFrame(c, sb, b, full, { part: 'phone', noFlag: true, noStats: true }); },
         animate(c, v, t) {
-          K.blink(c, F.x, F.y, F.w, F.h, t, { on: P.crimson, period, duty: 0.6, end: dur });
-          if (!full) return;
+          K.blink(c, F.x, F.y, F.w, F.h, t, { on: P.crimson, period, duty: 0.5, end: dur });
+          // the insert shows the read's starting counts (80%), static; the read counts from them to the authored strings
+          const at = full ? 0.6 : 1e9;
           let x = G.stats.x;
           stats.forEach((src, k) => {
             const n = statCount(src);
-            if (n) K.tally(c, x, G.stats.y, t, { from: Math.round(0.8 * n.v), to: n.v, at: 0.6, dur: 1.6, ease: M.ease.linear, fps: 8, before: 'from', col: P.grey2, fmt: n.fmt });
+            if (n) K.tally(c, x, G.stats.y, t, { from: Math.round(0.8 * n.v), to: n.v, at, dur: 1.6, ease: M.ease.linear, fps: 8, before: 'from', col: P.grey2, fmt: n.fmt });
             else R.text(c, src, x, G.stats.y, P.grey2);
             x += 6 * (src.length + 3);
           });

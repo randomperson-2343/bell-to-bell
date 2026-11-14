@@ -951,7 +951,7 @@ async function run() {
 
   // ---- stage 3 batch 3: the close (report, hold, Sqwak insert and read) ----
   // Flat references recorded from the code before the batch: closeFrame and sqwakFrame with no options, and the final pictures of the
-  // two Sqwak beats (a day with the failed-vote alternate included: 41 and 44 have none of the passed story state here).
+  // Sqwak read (the insert's final picture now shows the read's starting counts, checked below) (a day with the failed-vote alternate included: 41 and 44 have none of the passed story state here).
   const CLOSE_REF = {
     'close:A:false': '1df1fd81', 'close:A:true': '84b1c03f', 'close:B:false': '8f1b9c83', 'close:B:true': '9091fa72',
     'close:C:false': '50b30c38', 'close:C:true': 'af4d7592', 'close:D:false': '7becda6d', 'close:D:true': 'e008ebec',
@@ -959,8 +959,7 @@ async function run() {
     'sqwak:6:L:false': 'e75db5dc', 'sqwak:6:L:true': '121603b8', 'sqwak:6:N:false': 'dd0e28d2', 'sqwak:6:N:true': 'f6faad7a',
     'sqwak:20:L:false': 'f5e7a355', 'sqwak:20:L:true': 'a1976a89', 'sqwak:20:N:false': '6c13736f', 'sqwak:20:N:true': '9eb47c33',
     'sqwak:40:L:false': '718afa0a', 'sqwak:40:L:true': 'ba61ab98', 'sqwak:40:N:false': '295cfe0e', 'sqwak:40:N:true': '1cb614f6',
-    'beat:6:sqwak': 'fb5675f9', 'beat:6:sqwak-read': 'fb9de501', 'beat:20:sqwak': '12bc8206', 'beat:20:sqwak-read': '879743aa',
-    'beat:41:sqwak': 'cdf4db38', 'beat:41:sqwak-read': '90b91f06', 'beat:44:sqwak': '4fb0c28d', 'beat:44:sqwak-read': 'b4daa27d'
+    'beat:6:sqwak-read': 'fb9de501', 'beat:20:sqwak-read': '879743aa', 'beat:41:sqwak-read': '90b91f06', 'beat:44:sqwak-read': 'b4daa27d'
   };
   const closeNow = await page.evaluate(() => {
     const R = BTB.Rhythm, out = {};
@@ -975,7 +974,7 @@ async function run() {
     for (const k in reps) for (const d of [false, true]) out[`close:${k}:${d}`] = hashOf((g) => R.closeFrame(g, reps[k], d));
     const bs = { L: { flag: 'LIVE', when: 'NOW', head: 'Line forms outside the exchange before dawn', text: 'Doors are shut and guards stand in the lobby while traders queue to file their claims with the clerk.', stats: ['1.4K', '4.8K', '112K'], reply: ['@MacroMaven', 'Relief is not repair, and it never was.'] }, N: { head: 'Short' } };
     for (const day of [6, 20, 40]) for (const k in bs) for (const f of [false, true]) out[`sqwak:${day}:${k}:${f}`] = hashOf((g) => R.sqwakFrame(g, R.storyboard(day), bs[k], f));
-    for (const day of [6, 20, 41, 44]) BTB.Scenes.close({ report: { day, pnl: 1200, quotaMet: true, quota: 900, date: 'D' } }).forEach((b) => { if (/sqwak/.test(b.id)) out[`beat:${day}:${b.id.split(':').pop()}`] = hashOf((g) => b.draw(g, { w: 640, h: 360 }, 1, {})); });
+    for (const day of [6, 20, 41, 44]) BTB.Scenes.close({ report: { day, pnl: 1200, quotaMet: true, quota: 900, date: 'D' } }).forEach((b) => { if (/sqwak-read$/.test(b.id)) out[`beat:${day}:${b.id.split(':').pop()}`] = hashOf((g) => b.draw(g, { w: 640, h: 360 }, 1, {})); });
     return out;
   });
   for (const k of Object.keys(CLOSE_REF)) assert(closeNow[k] === CLOSE_REF[k], `close ${k}: the picture changed (${closeNow[k]}, was ${CLOSE_REF[k]})`);
@@ -1103,14 +1102,29 @@ async function run() {
     // the wash and scanlines stay pinned: depth 0 (above), the grain layer's picture is the same at every time
     assert(await lp('close', o, ins, 'grain', 0.1, false) === await lp('close', o, ins, 'grain', 0.9, false), `close insert (${name}): the grain moves`);
   }
-  // the flag light: BREAKING 0.8 s, LIVE 0.5 s, 60% on, on at the end
+  // the flag light: the kit's standby rate (1.0 s, half on) for every flag, on at the end
   {
     const flagBox = (ins) => (ins ? [223, 112, 10, 10] : [223, 86, 10, 10]);
     const ins6 = await indexOf(sq.six, ':sqwak$'), ins20 = await indexOf(sq.live, ':sqwak$'), rd6 = await indexOf(sq.six, ':sqwak-read$');
     const f = (o, i, t, ins) => lp('close', o, i, 'phone', t, false, ins ? flagBox(true) : flagBox(false));
-    assert(await f(sq.six, ins6, 0.4, true) !== await f(sq.six, ins6, 0.7, true) && await f(sq.six, ins6, 0.7, true) === await f(sq.six, ins6, 1.0, true), 'close insert (BREAKING): the flag does not blink at 0.8 s and end lit');
-    assert(await f(sq.live, ins20, 0.6, true) !== await f(sq.live, ins20, 0.8, true) && await f(sq.live, ins20, 0.8, true) === await f(sq.live, ins20, 1.0, true), 'close insert (LIVE): the flag does not blink at 0.5 s and end lit');
+    assert(await f(sq.six, ins6, 0.4, true) !== await f(sq.six, ins6, 0.7, true) && await f(sq.six, ins6, 0.7, true) === await f(sq.six, ins6, 1.0, true), 'close insert (BREAKING): the flag does not blink at 1.0 s and end lit');
+    assert(await f(sq.live, ins20, 0.4, true) !== await f(sq.live, ins20, 0.8, true) && await f(sq.live, ins20, 0.8, true) === await f(sq.live, ins20, 1.0, true) && await f(sq.live, ins20, 0.6, true) === await f(sq.live, ins20, 0.8, true), 'close insert (LIVE): the flag does not blink at 1.0 s like the others and end lit');
     assert(await f(sq.six, rd6, 2.0, false) !== await f(sq.six, rd6, 2.2, false) || await f(sq.six, rd6, 1.9, false) !== await f(sq.six, rd6, 2.2, false), 'close read: the flag does not blink');
+  }
+  // the insert shows the read's starting counts, static: its last frame's count text is the read's first frame's, and its final picture is the flat insert except there
+  for (const [name, o] of [['six', sq.six], ['live', sq.live], ['four', sq.four], ['last', sq.last]]) {
+    const ins = await indexOf(o, ':sqwak$'), rd = await indexOf(o, ':sqwak-read$');
+    const a = await lp('close', o, ins, 'phone', 1.0, true, [223, 280, 200, 12]), b = await lp('close', o, rd, 'phone', 0, true, [223, 254, 200, 12]);
+    assert(a === b && a !== await lp('close', o, rd, 'phone', 2.6, true, [223, 254, 200, 12]), `close insert (${name}): its count text is not the read's starting count text`);
+    assert(await lp('close', o, ins, 'phone', 0.2, true, [223, 280, 200, 12]) === a, `close insert (${name}): the counts move`);
+    const d = await page.evaluate(([o, i]) => { const R = BTB.Rhythm, r = o.report, sq = BTB.Scenes.close(o)[i].post; return window.finalDiff('close', o, i, (g) => R.sqwakFrame(g, R.storyboard(r.day), sq, false), [[223, 278, 200, 12]]); }, [o, ins]);
+    assert(d.bad === 0 && d.inside > 0, `close insert (${name}): the final picture is not today's insert but for the count text: ${JSON.stringify(d)}`);
+  }
+  // the P&L count is anchored to the final value's layout: the right edge never moves while it counts, to within the last glyph's blank column (seven-digit figures; the plain centred count shifts 3 px a digit)
+  for (const o of [cl.big, cl.bigLoss]) {
+    const i = await indexOf(o, ':report$'), edges = [];
+    for (const t of [0.34, 0.5, 0.7, 0.85, 1.5]) edges.push((await drawn(o, i, t)).px1);
+    assert(Math.max(...edges) - Math.min(...edges) <= 1 && edges[0] > 300, `close report (${o.report.pnl}): the count's right edge moves: ${JSON.stringify(edges)}`);
   }
   // the counts: nothing counts before 0.60 s (the 80% values show), each steps 8 a second to the authored string at 2.20 s
   for (const [name, o] of [['six', sq.six], ['live', sq.live], ['four', sq.four], ['last', sq.last]]) {

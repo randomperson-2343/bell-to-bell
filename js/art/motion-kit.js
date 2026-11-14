@@ -106,14 +106,22 @@
   }
 
   // ---- 5. tally --------------------------------------------------------------
-  // A number counting to its true value, in 15 steps a second. Returns the value.
+  // A number counting to its true value, in 15 steps a second. Returns the value. o.anchor 'final' keeps the right edge of the final string fixed.
   function tally(ctx, x, y, t, o) {
     const T = timeOf(t, o), fps = o.fps || 15, fmt = o.fmt || String, ease = o.ease || B.Motion.ease.linear;
     const ts = Math.floor(T * fps) / fps, q = span(ts, o.at, o.at + o.dur);
     // At and after at + dur the value is `to` itself, even when the 15 fps step lags the end by a tick.
     const value = q >= 1 || T >= o.at + o.dur ? o.to : Math.round(o.from + (o.to - o.from) * ease(q));
     if (T < o.at && o.before !== 'from') return o.from;
-    scaled(ctx, x, y, o.scale, (px, py) => X.textShadow(ctx, fmt(T < o.at ? o.from : value), px, py, o.col || P.bone, o.shadow || P.ink, { align: o.align || 'left' }));
+    scaled(ctx, x, y, o.scale, (px, py) => {
+      let ax = px, align = o.align || 'left';
+      // anchor 'final': lay out for the final string (as typeOn does) and right-align the growing number to its right edge, so nothing drawn moves
+      if (o.anchor === 'final') {
+        const fw = X.textWidth(fmt(o.to)), left = align === 'center' ? (px - (fw - 1) / 2) | 0 : align === 'right' ? (px - (fw - 1)) | 0 : px;
+        ax = left + fw - 1; align = 'right';
+      }
+      X.textShadow(ctx, fmt(T < o.at ? o.from : value), ax, py, o.col || P.bone, o.shadow || P.ink, { align });
+    });
     return T < o.at ? o.from : value;
   }
 
