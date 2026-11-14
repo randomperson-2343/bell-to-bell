@@ -880,8 +880,11 @@
   // at all at the end.
   const close = B.Scenes.close;
   function bellSwing(day, p) { return day === 42 ? p * 0.45 : p; }
-  // 7 half-swings of the bell at 0.26 s each: the bell passes centre on each of the five closeBell strikes.
-  const BELL_DUR = 1.82;
+  // The sound is B.SFX.marketClose(), which the game fires in the same tick the close scene starts (the bell beat's own `sfx` plays
+  // nothing: the game's B.SFX has no closeBell). Its strikes are 0.55 s apart (0, 0.55, 1.10, 1.65, 2.20, then a low one at 2.75).
+  // The swing is 7 half-swings, so at 1.9 s the bell crosses centre every 0.2714 s: within about 20 ms of the strikes at 0.55,
+  // 1.10 and 1.65 s (and at 0 s), and once between strikes.
+  const BELL_DUR = 1.9;
   // Layers back to front: wall (static room, the bell animated on it), desks (walkers and fine dashes animated on them), frame (corner brackets).
   // draw(ctx, view, 1, opts) is the old flat picture: wall, bell, desks, walkers, dashes, brackets.
   function bellLayers(day, empty) {

@@ -513,13 +513,17 @@ async function run() {
     return { d, id: b.id, dur: b.dur, layers: (b.layers || []).map((l) => l.id).join(), sfx: b.sfx, transition: b.transition, line: b.line, cache: b.cache, camera: !!b.camera };
   }), [3, 30, 42, 43, 44, 50]);
   for (const b of bellInfo) {
-    assert(/^close:.*:bell$/.test(b.id) && b.dur === 1.82 && b.transition === 'fade', `bell beat id/duration/transition: ${JSON.stringify(b)}`);
+    assert(/^close:.*:bell$/.test(b.id) && b.dur === 1.9 && b.transition === 'fade', `bell beat id/duration/transition: ${JSON.stringify(b)}`);
     if (b.d >= 44) {
       assert(b.layers === '' && b.sfx === 'room' && b.cache === true && b.camera && b.line === '4:00 PM. NOBODY RINGS IT.', `silent bell beat: ${JSON.stringify(b)}`);
     } else {
       assert(b.layers === 'wall,desks,frame' && b.sfx === 'closeBell' && b.line === '4:00 PM.', `ringing bell beat: ${JSON.stringify(b)}`);
     }
   }
+  // the swing follows the game's bell, B.SFX.marketClose: strikes 0.55 s apart. The swing offset is sin(7 pi p) (bellScene), so the
+  // bell is near centre at each strike's time (and crosses centre every 0.2714 s: 7 half-swings in 1.9 s)
+  const strikes = await page.evaluate(() => [0.55, 1.10, 1.65].map((t) => Math.sin(BTB.Storyboard.bellSwing(3, t / BTB.Scenes.close({ report: { day: 3, pnl: 1, quotaMet: true, quota: 1 } })[0].dur) * Math.PI * 7)));
+  assert(strikes.every((v) => Math.abs(v) < 0.25), `bell: not near centre at the 0.55 s strikes: ${JSON.stringify(strikes)}`);
   // p = 1 is the old flat picture, pixel for pixel. The reference is built from the flat functions the old beat called.
   // Returns how many bytes differ between beat.draw(p) and the flat reference at the same swing (null: size mismatch).
   const bellDiff = (day, p) => page.evaluate(([day, p]) => {
@@ -554,7 +558,7 @@ async function run() {
   assert(await shot('close', bell30, 0, 1.0) !== await shot('close', bell3, 0, 1.0), 'bell: empty floor looks like a normal day');
   // silent: nothing moves between any two times once the fade is over, and the camera is still
   const silentShots = [];
-  for (const t of [0.3, 0.7, 1.2, 1.7, 1.82]) silentShots.push(await shot('close', bell44, 0, t));
+  for (const t of [0.3, 0.7, 1.2, 1.7, 1.9]) silentShots.push(await shot('close', bell44, 0, t));
   assert(new Set(silentShots).size === 1, `bell silent day: something moves: ${JSON.stringify(silentShots)}`);
   assert(await band('close', bell44, 0, 0.5) === await band('close', bell44, 0, 1.7), 'bell silent day: letterbox moved');
   await page.evaluate(() => BTB.Settings.set('effects', 'reduced'));
