@@ -809,5 +809,5 @@
 
   B.Scenes = Scenes;
   // The hand-drawn 320x180 set pieces, for the storyboard layer to reuse at 2x.
-  B.Shots = { V, setSeason, apartment, tvSet, elevator, tradingFloor, deskCloseup, bellScene, endingShot, briefingTableau, endingDetail };
+  B.Shots = { V, WALKER, WALKER_B, setSeason, apartment, tvSet, elevator, tradingFloor, deskCloseup, bellScene, endingShot, briefingTableau, endingDetail };
 })(window.BTB);

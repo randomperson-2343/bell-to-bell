@@ -116,21 +116,24 @@
     { head: 'short', H: '1', h: '3', S: 'D', s: 'd', K: '4', k: '5', x: '2', W: '9', T: 'b', L: '1', l: '2' }
   ];
   const FIG_SP = {};
-  function figureSprite(who, late) {
-    const key = who + (late ? 'L' : '');
+  function figureSprite(who, late, pose) {
+    const key = who + (late ? 'L' : '') + (pose ? 'P' : '');
     if (FIG_SP[key]) return FIG_SP[key];
     const m = Object.assign({}, CAST[who]);
     if (late && who === 0) Object.assign(m, { K: '3', k: '4', x: '2' });
-    const rows = HEADS[m.head].concat(BODY).map((r) => r.replace(/[HhSsKkxWTLl]/g, (ch) => m[ch]));
+    let rows = HEADS[m.head].concat(BODY).map((r) => r.replace(/[HhSsKkxWTLl]/g, (ch) => m[ch]));
+    // pose 1 (a step): the two leg columns (cols 5-7 and 9-11) swap in the last five rows of the body
+    if (pose) rows = rows.map((r, i) => (i < rows.length - 5 ? r : r.slice(0, 5) + r.slice(9, 12) + r.slice(8, 9) + r.slice(5, 8) + r.slice(12)));
     return (FIG_SP[key] = X.sprite(rows));
   }
   // who: 0 is you; 1-3 are the strangers on your commute.
-  function person(ctx, x, y, scale, act, face, who) {
+  // pose: 0 or undefined is the standing figure; 1 is the other half of a step.
+  function person(ctx, x, y, scale, act, face, who, pose) {
     const s = scale || 1;
     ctx.save();
     ctx.translate(x, y - 20 * s);
     ctx.scale((face < 0 ? -2 : 2) * s, 2 * s);
-    X.drawSprite(ctx, figureSprite(who || 0, act > 2), -8, 0);
+    X.drawSprite(ctx, figureSprite(who || 0, act > 2, pose), -8, 0);
     ctx.restore();
   }
   function monitor(ctx, x, y, w, h, headline, act) {
