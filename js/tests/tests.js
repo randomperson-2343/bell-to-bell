@@ -2074,6 +2074,7 @@
     assert(at(1.0, { dim: 0.3 }).rects.length === 4 && at(0.5, { dim: 0.3 }).rects.length === 0, 'dim only with off frames');
     assert(at(1, { bg: P.ink2 }).rects[0].fillStyle === P.ink2, 'bg option');
     assert(at(0.5, { t0: 0.5 }).rects.length === 3, 't0 shifts time');
+    [0.5, 1.0, 1.03, 1.07, 1.2, 4].forEach((t) => [undefined, 0.3].forEach((dim) => assert(recInside(at(t, { dim }), { x: 20, y: 30, w: 60, h: 40 }), 'crt off stays in its rect at ' + t)));
   });
 
   test('MotionKit.crt: on covers until at, then line, then a faint flare, then nothing', () => {
@@ -2087,6 +2088,7 @@
     assert(b.length === 1 && b[0].fillStyle === P.bone && b[0].globalAlpha === 0.12 && b[0].x === 20 && b[0].y === 30 && b[0].w === 60 && b[0].h === 40, 'flare only');
     assert(at(1.1).rects.length === 0 && at(9).rects.length === 0, 'nothing from at + 0.10');
     assert(at(0.5, { t0: 0.5 }).rects.length === 2, 't0 shifts time');
+    [0.5, 1.0, 1.03, 1.07, 1.2, 4].forEach((t) => assert(recInside(at(t), { x: 20, y: 30, w: 60, h: 40 }), 'crt on stays in its rect at ' + t));
   });
 
   test('MotionKit.flicker: hard dark steps from spans, or from the seeded lamp', () => {
@@ -2106,6 +2108,9 @@
       if (t >= 1 && t < 5) (r ? dark++ : light++);
     }
     assert(dark > 0 && light > 0, 'both states occur');
+    let dd = 0, n = 0;
+    for (let t = 1; t < 41; t += 1 / 12) { const r = at(t, { from: 1, to: 41 }).rects.length; assert(r === (B.Motion.flicker('seed-a', t, 12) < 0.07 ? 1 : 0), 'default chance is 0.07 at ' + t); dd += r; n++; }
+    assert(dd > 0 && dd < n * 0.2, 'default chance darkens a few steps only: ' + dd + ' of ' + n);
     assert(at(2, { from: 1, to: 5, chance: 0.5, col: P.crimsonD, a: 0.5 }).rects.every((q) => q.globalAlpha === 0.5 && q.fillStyle === P.crimsonD) , 'col and a');
   });
 
@@ -2260,6 +2265,8 @@
       assert(KIT_PX(run(d, 1.3)) === KIT_PX(run(d, 1.3)), 'deterministic');
       assert(KIT_PX(run(d, 0.3, { t0: 1 })) === KIT_PX(run(d, 1.3)), 't0 shifts time');
     });
+    assert(run(aut, 1.0, { count: 2 }).rects.length === 2 && run(gry, 1.0, { count: 7 }).rects.length === 7 && run(win, 1.0, { count: 5 }).rects.length === 5, 'count replaces the formula');
+    assert(run(win, 1.0, { count: 5, max: 3 }).rects.length === 3 && run(aut, 1.0, { count: 1, min: 9 }).rects.length === 1, 'max still caps a count');
     assert(run(aut, 1.0, { min: 9 }).rects.length === 9 && run(aut, 1.0, { min: 9, max: 5 }).rects.length === 5, 'min and max');
     assert(KIT_PX(run(aut, 1.0)) === KIT_PX(run(aut, 1.0 + 0.04)) && KIT_PX(run(aut, 1.0)) !== KIT_PX(run(aut, 1.5)), 'paper and snow move at 12 poses a second');
     assert(KIT_PX(run(gry, 1.0)) !== KIT_PX(run(gry, 1.01)), 'rain at full rate');
@@ -2369,6 +2376,13 @@
     assert(at(1.7).rects.length === 2, 'gaps are half open');
     assert(at(0.2, { t0: 0.8 }).rects.length === 3, 't0 shifts time');
   });
+  test('MotionKit.ping: a flare with no dur, col or a defaults to 0.08 s, bone, 0.15', () => {
+    const K = B.MotionKit, P = B.Pal;
+    const at = (t) => recOf((c) => K.ping(c, t, { at: 1, off: [], on: [], flare: { x: 0, y: 0, w: 40, h: 30 } })).rects;
+    const a = at(1.02), b = at(1.1);
+    assert(a.length === 1 && a[0].fillStyle === P.bone && a[0].globalAlpha === 0.15, 'flare drawn at at + 0.02 in bone at 0.15');
+    assert(b.length === 0, 'no flare at at + 0.1');
+  });
 
   test('MotionKit: every element is deterministic, whole-pixel, within its cost and balanced', () => {
     const K = B.MotionKit, P = B.Pal;
@@ -2410,6 +2424,8 @@
           assert(a.rects.length <= cap, `${name} drew ${a.rects.length} rects at ${t}, cap ${cap}`);
           assert(a.rects.every((q) => [q.x, q.y, q.w, q.h, q.dx, q.dy, q.dw, q.dh].every(Number.isInteger)), name + ' drew a fractional rect at ' + t);
           assert(a.depth() === 0 && a.globalAlpha === 1, name + ' left save/restore unbalanced at ' + t);
+          // trace is time-free: the caller derives from and n from time, so there is no t0 to shift
+          if (name === 'trace') return;
           const d = 0.37, shifted = recOf((c) => call(c, t - d, { t0: d }));
           assert(recKey(shifted) === recKey(a), name + ': t0 does not shift time at ' + t);
         });

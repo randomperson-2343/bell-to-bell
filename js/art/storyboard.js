@@ -936,9 +936,12 @@
   // The phone beats and the office beats of rhythm.js, each rebuilt as layers (stage 3, batch 2).
   const wxSeed = (day, i) => `office:${day}:wx${i}`;
   // Window weather in the six office windows: the pilot weather, counts set per window (the kit's area formula is too big for 40 px).
+  // Each window uses the same day as the static art in it (day + i, as officeFrame), so leaves and particles always match.
   function officeWeather(c, day, t, t0) {
-    const s = R.season(day), n = s.snow ? 3 + Math.round(3 * s.snow) : s.id === 'autumn' ? 3 : 4;
-    for (let i = 0; i < 6; i++) B.MotionKit.weather(c, 18 + 104 * i + 2, 18, 86, 40, day, wxSeed(day, i), t, { t0, min: n, max: n, rainLen: 5 });
+    for (let i = 0; i < 6; i++) {
+      const s = R.season(day + i), n = s.snow ? 3 + Math.round(3 * s.snow) : s.id === 'autumn' ? 3 : 4;
+      B.MotionKit.weather(c, 18 + 104 * i + 2, 18, 86, 40, day + i, wxSeed(day, i), t, { t0, count: n, rainLen: 5 });
+    }
   }
   // The backlog on days with five or more items: the handoff shows items 2 to 5, the read brings the lead in on top.
   const phoneBacklog = (feed) => (feed.length >= 5 ? feed.slice(1, 5) : feed.slice(0, 4));

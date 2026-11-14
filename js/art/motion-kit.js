@@ -202,13 +202,13 @@
     const cap = (n) => (o.max != null ? Math.min(n, o.max) : n);
     let kind, n, tp = T, draw;
     if (s.snow) {
-      kind = 'snow'; n = cap(clamp(R(w * h / 1000 * (0.4 + 0.6 * s.snow)), min, 40)); tp = Math.floor(T * 12) / 12;
+      kind = 'snow'; n = cap(o.count != null ? o.count : clamp(R(w * h / 1000 * (0.4 + 0.6 * s.snow)), min, 40)); tp = Math.floor(T * 12) / 12;
       draw = (q) => { const big = q.s === 2 ? 3 : 2; fill(ctx, q.x, q.y, big, big, P.white); };
     } else if (s.id === 'autumn') {
-      kind = 'paper'; n = cap(clamp(R(w / 30), min, 14)); tp = Math.floor(T * 12) / 12;
+      kind = 'paper'; n = cap(o.count != null ? o.count : clamp(R(w / 30), min, 14)); tp = Math.floor(T * 12) / 12;
       draw = (q, i) => fill(ctx, q.x, q.y, 3, 2, i % 2 ? P.amber : P.crimsonD);
     } else {
-      kind = 'rain'; n = cap(clamp(R(w * h / 1500), min, 40));
+      kind = 'rain'; n = cap(o.count != null ? o.count : clamp(R(w * h / 1500), min, 40));
       draw = (q) => fill(ctx, q.x, q.y, 1, o.rainLen || 6, P.grey2);
     }
     ctx.save(); ctx.beginPath(); ctx.rect(x, y, w, h); ctx.clip();
@@ -301,7 +301,7 @@
     if (T < o.at || gap) { drawAll(o.off); return; }
     drawAll(o.on);
     const f = o.flare;
-    if (f && T < o.at + f.dur) fillAlpha(ctx, f.x, f.y, f.w, f.h, f.col || P.bone, f.a == null ? 0.15 : f.a);
+    if (f && T < o.at + (f.dur == null ? 0.08 : f.dur)) fillAlpha(ctx, f.x, f.y, f.w, f.h, f.col || P.bone, f.a == null ? 0.15 : f.a);
   }
 
   B.MotionKit = { span, camSpan, rise, blink, crt, flicker, trace, tally, typeOn, stamp, marker, lamps, weather, motes, figure, passing, ping };

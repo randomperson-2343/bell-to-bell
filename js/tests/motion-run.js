@@ -665,6 +665,11 @@ async function run() {
   assert(await shot('weekend', wkCat, 0, 0.5) === await shot('weekend', wkCat, 0, 2.2), 'sat (pet): reduced effects still moves');
   await page.evaluate(() => BTB.Settings.set('effects', 'full'));
 
+  // the kit is a pure function of its arguments: no clock and no Math.random anywhere in its source
+  const kitSrc = await page.evaluate(() => fetch('js/art/motion-kit.js').then((r) => r.text()));
+  const kitCode = kitSrc.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
+  assert(kitSrc.length > 1000 && !/Date\.now|performance\.now|Math\.random|new Date/.test(kitCode), 'motion-kit.js reads the clock or Math.random');
+
   // ---- stage 3 batch 2: the morning (phone handoff and read, office wide, desk and hold) ----
   // Flat reference hashes of phoneFrame, officeFrame and chart, recorded from the code before the batch (no options passed).
   const FLAT_REF = {
