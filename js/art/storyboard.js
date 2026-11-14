@@ -906,6 +906,72 @@
       { id: 'frame', depth: 0, draw() {}, animate(c) { finePass(c, day, rr, 'establish', 'frame'); } }
     ];
   }
+  // ---- The close: report card, hold, and the Sqwak insert and read (stage 3, batch 3) ----
+  // Report and hold share two layers: `office` (the floor under the 0.32 ink overlay) and `card` (the box, the verdict label, the quota
+  // and the date). The P&L, the nine dashes and the stamp are left out of the cached card and drawn on it each frame. With `rest` (the
+  // hold) the card is final and the live screens go dark one by one, right to left.
+  function closeLayers(r, rest) {
+    const K = B.MotionKit, M = B.Motion, G = R.closeGeom(r), O = R.officeGeom(r.day || 0), S = G.stamp;
+    const verdictCol = G.met ? P.jade : P.crimson, dim = 0.32;
+    return [
+      {
+        id: 'office', depth: 0.5, draw(c) { R.closeFrame(c, r, true, { part: 'office' }); },
+        animate(c, v, t) {
+          if (!rest) return;
+          const dc = O.deskChart;
+          K.crt(c, dc.x + 1, dc.y + 1, dc.w - 2, dc.h - 2, t, { mode: 'off', at: 0.15, bg: P.screenD, dim });
+          O.monitors.forEach((m) => {
+            if (m.off) return;
+            const at = 0.25 + 0.10 * (O.live - 1 - m.i), sc = m.screen, bar = m.bar;
+            K.crt(c, sc.x, sc.y, sc.w, sc.h, t, { mode: 'off', at, bg: P.screenD, dim });
+            if (t >= at + 0.10) { X.rect(c, bar.x, bar.y, bar.w, bar.h, P.plasticD); c.save(); c.globalAlpha = dim; X.rect(c, bar.x, bar.y, bar.w, bar.h, P.ink); c.restore(); }
+          });
+        }
+      },
+      {
+        id: 'card', depth: 1, draw(c) { R.closeFrame(c, r, true, { part: 'card', noPnl: true, noDashes: true }); },
+        animate(c, v, t) {
+          const at = rest ? -1 : 0.30, atStamp = rest ? -1 : 1.26;
+          K.tally(c, G.pnlAt.x, G.pnlAt.y, t, { from: 0, to: G.pnl, at, dur: rest ? 0.01 : 0.60, ease: M.ease.out, fps: 15, fmt: (x) => B.fmt.money(x, true), col: G.good ? P.jade : P.crimson, align: 'center' });
+          K.lamps(c, G.dashes, t, { at, step: 0.0667, on: G.met ? P.jadeD : P.crimsonD });
+          if (!G.verdict) return;
+          // the label is hidden on the box's flat ink until the stamp's second frame
+          const phase = K.stamp(c, S.x, S.y, S.w, S.h, t, { at: atStamp, col: verdictCol, frame: 0.04, grow: [16, 6], style: 'double' });
+          if (phase < 2) X.rect(c, G.cover.x, G.cover.y, G.cover.w, G.cover.h, P.ink);
+        }
+      }
+    ];
+  }
+  // One engagement count as a tally spec: its value, the format that prints the source string exactly (null when none does), and the source.
+  function statCount(src) {
+    const s = String(src), v = parseFloat(s) * (/K$/.test(s) ? 1000 : 1);
+    const fmt = /K$/.test(s) ? (/\./.test(s) ? (x) => (x / 1000).toFixed(1) + 'K' : (x) => Math.round(x / 1000) + 'K') : (x) => String(Math.round(x));
+    return isFinite(v) && fmt(v) === s ? { v, fmt } : null;
+  }
+  // Insert and read: city (skyline), phone (hand and post; the flag blinks, in the read the counts climb) and grain (scanlines, in the
+  // insert the act wash), all drawn by sqwakFrame parts. The camera lifts only the phone layer.
+  function sqwakLayers(sb, b, full) {
+    const K = B.MotionKit, M = B.Motion, G = R.sqwakGeom(full), F = G.flag, dur = full ? 2.6 : 1.0, period = b.flag === 'LIVE' ? 0.5 : 0.8;
+    const stats = R.sqwakStats(b).map(String);
+    return [
+      { id: 'city', depth: full ? 0 : 0.25, draw(c) { R.sqwakFrame(c, sb, b, full, { part: 'city' }); } },
+      {
+        id: 'phone', depth: 1, draw(c) { R.sqwakFrame(c, sb, b, full, { part: 'phone', noFlag: true, noStats: full }); },
+        animate(c, v, t) {
+          K.blink(c, F.x, F.y, F.w, F.h, t, { on: P.crimson, period, duty: 0.6, end: dur });
+          if (!full) return;
+          let x = G.stats.x;
+          stats.forEach((src, k) => {
+            const n = statCount(src);
+            if (n) K.tally(c, x, G.stats.y, t, { from: Math.round(0.8 * n.v), to: n.v, at: 0.6, dur: 1.6, ease: M.ease.linear, fps: 8, before: 'from', col: P.grey2, fmt: n.fmt });
+            else R.text(c, src, x, G.stats.y, P.grey2);
+            x += 6 * (src.length + 3);
+          });
+        }
+      },
+      { id: 'grain', depth: 0, draw(c) { R.sqwakFrame(c, sb, b, full, { part: 'grain' }); } }
+    ];
+  }
   B.Scenes.close = function (o) {
     const beats = close(o);
     const r = o.report || {}, day = r.day || 0, silent = day >= 44;
@@ -928,6 +994,14 @@
         camera: { from: { x: 0, y: -8, zoom: 1 }, to: { x: 0, y: 0, zoom: 1 }, ease: B.Motion.ease.out },
         layers: bellLayers(day, day >= 25)
       }));
+    }
+    const K = B.MotionKit, M = B.Motion;
+    for (let i = 0; i < beats.length; i++) {
+      const b = beats[i];
+      if (/:sqwak$/.test(b.id)) beats[i] = M.layered(Object.assign({}, b, { camera: K.rise(40, b.dur, 0.20, 0.70), layers: sqwakLayers(R.storyboard(day), b.post, false) }));
+      else if (/:sqwak-read$/.test(b.id)) beats[i] = M.layered(Object.assign({}, b, { camera: K.rise(26, b.dur, 0, 0.6), layers: sqwakLayers(R.storyboard(day), b.post, true) }));
+      else if (/:report$/.test(b.id)) beats[i] = M.layered(Object.assign({}, b, { camera: { from: { x: 0, y: -6, zoom: 1 }, to: { x: 0, y: 0, zoom: 1 }, ease: M.ease.out }, layers: closeLayers(r, false) }));
+      else if (/:hold$/.test(b.id)) beats[i] = M.layered(Object.assign({}, b, { camera: null, layers: closeLayers(r, true) }));
     }
     // The report says the one number the desk cares about.
     const rep = beats.find((b) => /:report$/.test(b.id));

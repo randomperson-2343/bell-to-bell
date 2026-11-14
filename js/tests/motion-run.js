@@ -949,6 +949,195 @@ async function run() {
   await page.evaluate(() => BTB.Settings.set('effects', 'full'));
   warnings.length = 0;
 
+  // ---- stage 3 batch 3: the close (report, hold, Sqwak insert and read) ----
+  // Flat references recorded from the code before the batch: closeFrame and sqwakFrame with no options, and the final pictures of the
+  // two Sqwak beats (a day with the failed-vote alternate included: 41 and 44 have none of the passed story state here).
+  const CLOSE_REF = {
+    'close:A:false': '1df1fd81', 'close:A:true': '84b1c03f', 'close:B:false': '8f1b9c83', 'close:B:true': '9091fa72',
+    'close:C:false': '50b30c38', 'close:C:true': 'af4d7592', 'close:D:false': '7becda6d', 'close:D:true': 'e008ebec',
+    'close:E:false': '7c635fd1', 'close:E:true': 'd19fe792', 'close:F:false': '4fdc5fc1', 'close:F:true': '80a98c88',
+    'sqwak:6:L:false': 'e75db5dc', 'sqwak:6:L:true': '121603b8', 'sqwak:6:N:false': 'dd0e28d2', 'sqwak:6:N:true': 'f6faad7a',
+    'sqwak:20:L:false': 'f5e7a355', 'sqwak:20:L:true': 'a1976a89', 'sqwak:20:N:false': '6c13736f', 'sqwak:20:N:true': '9eb47c33',
+    'sqwak:40:L:false': '718afa0a', 'sqwak:40:L:true': 'ba61ab98', 'sqwak:40:N:false': '295cfe0e', 'sqwak:40:N:true': '1cb614f6',
+    'beat:6:sqwak': 'fb5675f9', 'beat:6:sqwak-read': 'fb9de501', 'beat:20:sqwak': '12bc8206', 'beat:20:sqwak-read': '879743aa',
+    'beat:41:sqwak': 'cdf4db38', 'beat:41:sqwak-read': '90b91f06', 'beat:44:sqwak': '4fb0c28d', 'beat:44:sqwak-read': 'b4daa27d'
+  };
+  const closeNow = await page.evaluate(() => {
+    const R = BTB.Rhythm, out = {};
+    const hashOf = (fn) => {
+      const cv = document.createElement('canvas'); cv.width = 640; cv.height = 360;
+      const g = cv.getContext('2d'); fn(g);
+      const d = g.getImageData(0, 0, 640, 360).data; let x = 2166136261;
+      for (let i = 0; i < d.length; i++) { x ^= d[i]; x = Math.imul(x, 16777619); }
+      return (x >>> 0).toString(16);
+    };
+    const reps = { A: { day: 3, pnl: 1200, quotaMet: true, quota: 900, date: 'MON OCT 6', indexPct: 1.2 }, B: { day: 30, pnl: -5400, quota: 2000, date: 'FRI NOV 14' }, C: { day: 44, pnl: 0, quota: 0, date: 'X' }, D: { day: 20, pnl: 1234567, quotaMet: true, quota: 900, date: 'WED' }, E: { day: 40, pnl: -1234567, quota: 5000, indexPct: -3, date: 'THU' }, F: {} };
+    for (const k in reps) for (const d of [false, true]) out[`close:${k}:${d}`] = hashOf((g) => R.closeFrame(g, reps[k], d));
+    const bs = { L: { flag: 'LIVE', when: 'NOW', head: 'Line forms outside the exchange before dawn', text: 'Doors are shut and guards stand in the lobby while traders queue to file their claims with the clerk.', stats: ['1.4K', '4.8K', '112K'], reply: ['@MacroMaven', 'Relief is not repair, and it never was.'] }, N: { head: 'Short' } };
+    for (const day of [6, 20, 40]) for (const k in bs) for (const f of [false, true]) out[`sqwak:${day}:${k}:${f}`] = hashOf((g) => R.sqwakFrame(g, R.storyboard(day), bs[k], f));
+    for (const day of [6, 20, 41, 44]) BTB.Scenes.close({ report: { day, pnl: 1200, quotaMet: true, quota: 900, date: 'D' } }).forEach((b) => { if (/sqwak/.test(b.id)) out[`beat:${day}:${b.id.split(':').pop()}`] = hashOf((g) => b.draw(g, { w: 640, h: 360 }, 1, {})); });
+    return out;
+  });
+  for (const k of Object.keys(CLOSE_REF)) assert(closeNow[k] === CLOSE_REF[k], `close ${k}: the picture changed (${closeNow[k]}, was ${CLOSE_REF[k]})`);
+
+  const mkRep = (day, pnl, quota, met, extra) => ({ report: Object.assign({ day, pnl, quota, quotaMet: met, date: 'FRI NOV 14', indexPct: pnl }, extra) });
+  const tagOf = (o) => { const r = o.report; return `${r.day}:${r.pnl >= 0 ? 'u' : 'd'}${r.quotaMet ? 'm' : ''}${Math.round(r.pnl)}`; };
+  // profit with quota met (act 1), loss with quota missed (act 3), no quota (act 4, a seven-digit loss of nothing), big profit and big loss
+  const cl = { profit: mkRep(3, 1200, 900, true), loss: mkRep(30, -5400, 2000, false), none: mkRep(44, 0, 0, true), big: mkRep(20, 1234567, 900, true), bigLoss: mkRep(40, -1234567, 5000, false), zero: mkRep(10, 0, 900, false) };
+  const indexOf = async (o, re) => page.evaluate(([o, re]) => BTB.Scenes.close(o).findIndex((b) => new RegExp(re).test(b.id)), [o, re]);
+  // the report: two layers, a camera that sets the card down, a caption that the stamp lands with
+  for (const [name, o] of Object.entries(cl)) {
+    const i = await indexOf(o, ':report$'), h = await indexOf(o, ':hold$'), tag = tagOf(o);
+    const rp = await info('close', o, i), hd = await info('close', o, h);
+    assert(rp.id === `close:${tag}:report` && rp.dur === 2.0 && rp.layers === 'office,card' && rp.depths === '0.5,1' && rp.cam === '-6>0' && rp.sfx === 'office' && rp.inf && rp.cues === '', `close report (${name}) beat: ${JSON.stringify(rp)}`);
+    assert(hd.id === `close:${tag}:hold` && hd.dur === 0.85 && hd.layers === 'office,card' && hd.depths === '0.5,1' && hd.cam === 'none' && hd.sfx === '' && hd.cues === '', `close hold (${name}) beat: ${JSON.stringify(hd)}`);
+    assert(await shot('close', o, i, 0.1) !== await shot('close', o, i, 1.9), `close report (${name}): start and end frames are identical`);
+    assert(await shot('close', o, i, 1.0) === await shot('close', o, i, 1.0), `close report (${name}): same time gave different pictures`);
+    assert(await shot('close', o, h, 0.05) !== await shot('close', o, h, 0.8), `close hold (${name}): start and end frames are identical`);
+    assert(await shot('close', o, h, 0.5) === await shot('close', o, h, 0.5), `close hold (${name}): same time gave different pictures`);
+  }
+  assert((await info('close', cl.profit, await indexOf(cl.profit, ':report$'))).line.endsWith('QUOTA $900: MET.') && (await info('close', cl.loss, await indexOf(cl.loss, ':report$'))).line.endsWith('QUOTA $2,000: MISSED.') && (await info('close', cl.none, await indexOf(cl.none, ':report$'))).line === 'YOU MADE MONEY. NOBODY SAYS WELL DONE.', 'close report: the caption lost its quota text');
+  // the final pictures: today's, except the stamp's outline on the report, and the dark screens on the hold
+  const STAMP_ZONE = [264, 78, 112, 36], DARK = [[541, 219, 84, 48]].concat([0, 1, 2, 3, 4].map((i) => [34 + 124 * i, 92, 84, 78]), [0, 1, 2, 3, 4].map((i) => [44 + 124 * i, 176, 64, 3]));
+  const closeFinal = (o, i, rects) => page.evaluate(([o, i, rects]) => { const R = BTB.Rhythm; return window.finalDiff('close', o, i, (g) => R.closeFrame(g, o.report, true), rects); }, [o, i, rects]);
+  for (const [name, o] of Object.entries(cl)) {
+    const i = await indexOf(o, ':report$'), h = await indexOf(o, ':hold$'), verdict = o.report.quota > 0;
+    const a = await closeFinal(o, i, [STAMP_ZONE]), b = await closeFinal(o, h, [STAMP_ZONE].concat(DARK));
+    assert(a.bad === 0 && (verdict ? a.inside > 0 : a.inside === 0), `close report (${name}): the final picture is not today's plus the stamp: ${JSON.stringify(a)}`);
+    assert(b.bad === 0 && b.inside > 0, `close hold (${name}): the final picture is not today's plus the stamp and the dark screens: ${JSON.stringify(b)}`);
+  }
+  // the camera sets the card down 6 px (the floor 3): whole pixels, no zoom
+  const cardTop = (o, t, id) => page.evaluate(([o, t, id]) => window.layerTop('close', o, BTB.Scenes.close(o).findIndex((b) => /:report$/.test(b.id)), id, t), [o, t, id]);
+  assert(await cardTop(cl.profit, 0, 'card') === 77 && await cardTop(cl.profit, 2.0, 'card') === 71 && await cardTop(cl.profit, 0, 'office') === 3 && await cardTop(cl.profit, 2.0, 'office') === 0, 'close report: the camera does not settle the card 6 px and the floor 3 px');
+  assert(await cardTop(cl.profit, 0.4, 'card') < 77 && await cardTop(cl.profit, 0.4, 'card') > 71, 'close report: the settle is not under way at 0.4 s');
+  // the count: nothing before 0.30 s, then steps up to the day's figure, 15 a second, and it is final at 0.90 s; a loss counts down from 0
+  const pnlBox = [170, 116, 300, 18], dashBox = [170, 178, 300, 4], labelBox = [286, 91, 68, 11], stampBox = STAMP_ZONE;
+  for (const [name, o] of [['profit', cl.profit], ['loss', cl.loss], ['big', cl.big], ['bigLoss', cl.bigLoss]]) {
+    const i = await indexOf(o, ':report$'), at = (t, r) => lp('close', o, i, 'card', t, false, r);
+    const blank = await at(0.1, pnlBox);
+    assert(blank === await at(0.28, pnlBox), `close report (${name}): the P&L shows before 0.30 s`);
+    const pics = []; for (const t of [0.34, 0.48, 0.62, 0.76]) pics.push(await at(t, pnlBox));
+    assert(new Set(pics.concat([blank])).size === 5, `close report (${name}): the count does not step between 0.34 and 0.76 s`);
+    assert(await at(0.9, pnlBox) === await at(1.9, pnlBox) && await at(0.9, pnlBox) !== await at(0.8, pnlBox), `close report (${name}): the count does not end at 0.90 s`);
+    // nine dashes, one a step from 0.30 s, the last at 0.83 s
+    assert(await at(0.1, dashBox) !== await at(0.5, dashBox) && await at(0.5, dashBox) !== await at(0.8, dashBox) && await at(0.86, dashBox) === await at(1.9, dashBox) && await at(0.8, dashBox) !== await at(0.86, dashBox), `close report (${name}): the dashes do not light one by one up to 0.83 s`);
+  }
+  // the stamp: the label hidden on the flat box until 1.30 s; three hard frames at 1.26, 1.30, 1.34 (verdict days only)
+  for (const [name, o] of [['profit', cl.profit], ['loss', cl.loss], ['big', cl.big], ['zero', cl.zero]]) {
+    const i = await indexOf(o, ':report$'), at = (t, r) => lp('close', o, i, 'card', t, false, r);
+    const ph = []; for (const t of [1.2, 1.27, 1.31, 1.35]) ph.push(await at(t, stampBox));
+    assert(new Set(ph).size === 4 && ph[3] === await at(1.9, stampBox), `close report (${name}): the stamp is not four distinct states ending at 1.34 s: ${JSON.stringify(ph)}`);
+    const lab = await page.evaluate(([o, i]) => { const b = BTB.Scenes.close(o)[i], g = document.createElement('canvas'); g.width = 640; g.height = 360; const c = g.getContext('2d'); b.layers[1].draw(c, { w: 640, h: 360 }, {}); const d = c.getImageData(280, 91, 80, 11).data; let n = 0; for (let k = 0; k < d.length; k += 4) if (d[k] + d[k + 1] + d[k + 2] > 200) n++; return n; }, [o, i]);
+    assert(lab > 20, `close report (${name}): the cached card has no verdict label to uncover (${lab})`);
+    const hidden = await at(1.2, labelBox), shown = await at(1.31, labelBox);
+    assert(hidden !== shown && shown === await at(1.9, labelBox) && hidden === await at(1.27, labelBox), `close report (${name}): the label is not hidden until 1.30 s`);
+  }
+  // no quota: no cover and no stamp, the label shows from the start and the count is the movement
+  {
+    const o = cl.none, i = await indexOf(o, ':report$'), at = (t, r) => lp('close', o, i, 'card', t, false, r);
+    assert(await at(0.1, stampBox) === await at(1.9, stampBox) && await at(0.1, labelBox) === await at(1.9, labelBox), 'close report (no quota): something covers or stamps the verdict');
+    assert(await at(0.4, pnlBox) !== await at(0.5, pnlBox) || await at(0.4, dashBox) !== await at(0.5, dashBox), 'close report (no quota): nothing counts');
+  }
+  // a figure of exactly 0 does not count: the tally shows $0 from 0.30 s, the stamp carries the shot
+  {
+    const o = cl.zero, i = await indexOf(o, ':report$'), at = (t, r) => lp('close', o, i, 'card', t, false, r);
+    assert(await at(0.4, pnlBox) === await at(1.9, pnlBox) && await at(0.1, pnlBox) !== await at(0.4, pnlBox), 'close report (P&L 0): the figure counts, or never appears');
+  }
+  // the count never overflows its box and the text rows never move; the stamp's largest frame stays in the box
+  const drawn = (o, i, t) => page.evaluate(([o, i, t]) => {
+    const b = BTB.Scenes.close(o)[i], L = b.layers[1], g = document.createElement('canvas'); g.width = 640; g.height = 360; const c = g.getContext('2d');
+    L.animate(c, { w: 640, h: 360 }, t, t / b.dur, {});
+    const d = c.getImageData(0, 0, 640, 360).data; let x0 = 1e9, x1 = -1, y0 = 1e9, y1 = -1, px0 = 1e9, px1 = -1, py0 = 1e9, py1 = -1;
+    for (let k = 0; k < d.length; k += 4) if (d[k + 3]) { const x = (k / 4) % 640, y = Math.floor(k / 4 / 640); x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); if (y >= 110 && y < 140) { px0 = Math.min(px0, x); px1 = Math.max(px1, x); py0 = Math.min(py0, y); py1 = Math.max(py1, y); } }
+    return { x0, x1, y0, y1, py0, py1, px0, px1 };
+  }, [o, i, t]);
+  for (const [name, o] of Object.entries(cl)) {
+    const i = await indexOf(o, ':report$');
+    for (let t = 0; t <= 2.0; t += 1 / 30) {
+      const b = await drawn(o, i, t);
+      if (b.x1 < 0) continue;
+      assert(b.x0 >= 169 && b.x1 <= 483 && b.y0 >= 76 && b.y1 <= 181, `close report (${name}): drawn outside the box interior at ${t.toFixed(2)} s: ${JSON.stringify(b)}`);
+      if (b.px0 < 1e9) assert(b.py0 >= 116 && b.py1 <= 134, `close report (${name}): the figure leaves its rows at ${t.toFixed(2)} s: ${JSON.stringify(b)}`);
+    }
+  }
+  // the hold: your desk chart goes dark first, then the live monitors right to left, 0.10 s apart; each is a three-frame collapse
+  for (const [name, o] of [['profit', cl.profit], ['bigLoss', cl.bigLoss], ['loss', cl.loss], ['big', cl.big]]) {
+    const live = await page.evaluate((d) => BTB.Rhythm.officeGeom(d).live, o.report.day);
+    assert(live >= 2 && live <= 5, `close hold (${name}): ${live} live monitors`);
+    const h = await indexOf(o, ':hold$'), lyr = (t, r) => lp('close', o, h, 'office', t, false, r);
+    const chart = [541, 219, 84, 48], mon = (i) => [34 + 124 * i, 92, 84, 78], bar = (i) => [44 + 124 * i, 176, 64, 3];
+    const c = []; for (const t of [0.1, 0.17, 0.22, 0.3, 0.8]) c.push(await lyr(t, chart));
+    assert(c[0] !== c[1] && c[1] !== c[2] && c[2] !== c[3] && c[3] === c[4], `close hold (${name}): the desk chart does not collapse at 0.15 s and stay dark`);
+    for (let i = 0; i < 5; i++) {
+      if (i >= live) { assert(await lyr(0.1, mon(i)) === await lyr(0.8, mon(i)), `close hold (${name}): dead monitor ${i} changes`); continue; }
+      const at = 0.25 + 0.10 * (live - 1 - i);
+      const m = []; for (const t of [at - 0.02, at + 0.02, at + 0.07, at + 0.12]) m.push(await lyr(t, mon(i)));
+      assert(new Set(m).size === 4 && m[3] === await lyr(0.84, mon(i)), `close hold (${name}): monitor ${i} does not collapse at ${at.toFixed(2)} s: ${JSON.stringify(m)}`);
+      assert(await lyr(at + 0.05, bar(i)) === await lyr(at - 0.02, bar(i)) && await lyr(at + 0.12, bar(i)) !== await lyr(at + 0.05, bar(i)), `close hold (${name}): monitor ${i} bar does not show at ${(at + 0.1).toFixed(2)} s`);
+    }
+    // right to left: the monitor to its left is still lit when the next one goes dark
+    if (live >= 2) assert(await lyr(0.3, mon(live - 2)) === await lyr(0.1, mon(live - 2)), `close hold (${name}): the second monitor from the right goes dark with the first`);
+  }
+  // the hold's card is final from the first frame: no count, no stamp frames, no cover
+  for (const o of [cl.profit, cl.loss]) {
+    const h = await indexOf(o, ':hold$'), i = await indexOf(o, ':report$');
+    const a = await lp('close', o, h, 'card', 0, false, [165, 70, 310, 116]), b = await lp('close', o, h, 'card', 0.8, false, [165, 70, 310, 116]), r = await lp('close', o, i, 'card', 2.0, false, [165, 70, 310, 116]);
+    assert(a === b && b === r, 'close hold: the card is not the report\'s final card at rest');
+  }
+  // the Sqwak insert and read: sessions with breaking news (index 6 BREAKING, 20 LIVE, 40 act 4, 44 SYSTEM-style alternates)
+  const sq = { six: { report: { day: 6, pnl: 1200, quota: 900, quotaMet: true, date: 'D' } }, live: { report: { day: 20, pnl: -300, quota: 900, quotaMet: false, date: 'D' } }, four: { report: { day: 40, pnl: -5400, quota: 2000, quotaMet: false, date: 'D' } }, alt: { report: { day: 41, pnl: 800, quota: 900, quotaMet: false, date: 'D' } }, last: { report: { day: 44, pnl: 0, quota: 0, quotaMet: true, date: 'D' } } };
+  for (const [name, o] of Object.entries(sq)) {
+    const ins = await indexOf(o, ':sqwak$'), rd = await indexOf(o, ':sqwak-read$'), day = o.report.day;
+    assert(ins === 1 && rd === 2, `close ${name}: the insert and read are not beats 1 and 2`);
+    const a = await info('close', o, ins), b = await info('close', o, rd);
+    assert(a.id === `close:${day}:sqwak` && a.dur === 1.0 && a.layers === 'city,phone,grain' && a.depths === '0.25,1,0' && a.cam === '-40>0' && a.sfx === 'news' && a.cues === '', `close insert (${name}) beat: ${JSON.stringify(a)}`);
+    assert(b.id === `close:${day}:sqwak-read` && b.dur === 2.6 && b.layers === 'city,phone,grain' && b.depths === '0,1,0' && b.cam === '-26>0' && b.sfx === 'broadcast' && b.cues === '' && b.line.length > 3, `close read (${name}) beat: ${JSON.stringify(b)}`);
+    assert(await shot('close', o, ins, 0.1) !== await shot('close', o, ins, 0.9) && await shot('close', o, rd, 0.1) !== await shot('close', o, rd, 2.5), `close ${name}: the insert or the read does not move`);
+    assert(await shot('close', o, ins, 0.5) === await shot('close', o, ins, 0.5) && await shot('close', o, rd, 1.3) === await shot('close', o, rd, 1.3), `close ${name}: same time gave different pictures`);
+    // the phone's top: 40 px low until 0.10 s, at rest from 0.60 s; the read starts where the insert ended (the top at 40) and rises to 14
+    const top = (i, t, id) => page.evaluate(([o, i, t, id]) => window.layerTop('close', o, i, id, t), [o, i, t, id]);
+    const t0 = await top(ins, 0.05, 'phone'), tm = await top(ins, 0.35, 'phone'), t1 = await top(ins, 0.9, 'phone');
+    assert(t0 === 80 && t1 === 40 && tm > 40 && tm < 80 && await top(ins, 0.2, 'phone') > tm, `close insert (${name}): the phone's top is ${[t0, tm, t1]}, not 80, between, 40`);
+    assert(await top(ins, 0.05, 'city') === 10 && await top(ins, 0.9, 'city') === 0 && await top(rd, 0, 'city') === 0 && await top(rd, 2.5, 'city') === 0, `close ${name}: the city does not drift 10 px with the insert and stay for the read`);
+    assert(await top(rd, 0, 'phone') === 40 && await top(rd, 0.3, 'phone') < 40 && await top(rd, 0.3, 'phone') > 14 && await top(rd, 0.7, 'phone') === 14 && await top(rd, 2.5, 'phone') === 14, `close read (${name}): the phone does not rise from 40 to 14 in 0.6 s`);
+    // the wash and scanlines stay pinned: depth 0 (above), the grain layer's picture is the same at every time
+    assert(await lp('close', o, ins, 'grain', 0.1, false) === await lp('close', o, ins, 'grain', 0.9, false), `close insert (${name}): the grain moves`);
+  }
+  // the flag light: BREAKING 0.8 s, LIVE 0.5 s, 60% on, on at the end
+  {
+    const flagBox = (ins) => (ins ? [223, 112, 10, 10] : [223, 86, 10, 10]);
+    const ins6 = await indexOf(sq.six, ':sqwak$'), ins20 = await indexOf(sq.live, ':sqwak$'), rd6 = await indexOf(sq.six, ':sqwak-read$');
+    const f = (o, i, t, ins) => lp('close', o, i, 'phone', t, false, ins ? flagBox(true) : flagBox(false));
+    assert(await f(sq.six, ins6, 0.4, true) !== await f(sq.six, ins6, 0.7, true) && await f(sq.six, ins6, 0.7, true) === await f(sq.six, ins6, 1.0, true), 'close insert (BREAKING): the flag does not blink at 0.8 s and end lit');
+    assert(await f(sq.live, ins20, 0.6, true) !== await f(sq.live, ins20, 0.8, true) && await f(sq.live, ins20, 0.8, true) === await f(sq.live, ins20, 1.0, true), 'close insert (LIVE): the flag does not blink at 0.5 s and end lit');
+    assert(await f(sq.six, rd6, 2.0, false) !== await f(sq.six, rd6, 2.2, false) || await f(sq.six, rd6, 1.9, false) !== await f(sq.six, rd6, 2.2, false), 'close read: the flag does not blink');
+  }
+  // the counts: nothing counts before 0.60 s (the 80% values show), each steps 8 a second to the authored string at 2.20 s
+  for (const [name, o] of [['six', sq.six], ['live', sq.live], ['four', sq.four], ['last', sq.last]]) {
+    const rd = await indexOf(o, ':sqwak-read$'), box = [223, 250, 200, 12], at = (t) => lp('close', o, rd, 'phone', t, false, box);
+    const pics = []; for (const t of [0.5, 0.8, 1.1, 1.5, 1.9]) pics.push(await at(t));
+    assert(new Set(pics).size === 5, `close read (${name}): the counts do not climb between 0.6 and 2.2 s`);
+    assert(await at(2.2) === await at(2.59) && await at(2.1) !== await at(2.2) && await at(0.1) === await at(0.5), `close read (${name}): the counts do not end at 2.20 s or start before 0.60 s`);
+  }
+  // endless mode and no game: no insert; every beat draws; a report with nothing in it still draws
+  for (const o of [{ report: { day: 6, pnl: 5, quota: 0, quotaMet: true }, game: { mode: { kind: 'endless' } } }, { report: {} }, { report: { day: 12, pnl: 1234567, quota: 0 } }]) {
+    const n = await page.evaluate((o) => BTB.Scenes.close(o).map((b) => { const c = document.createElement('canvas'); c.width = 640; c.height = 360; b.draw(c.getContext('2d'), { w: 640, h: 360 }, 1, {}); const d = c.getContext('2d').getImageData(0, 0, 640, 360).data; let a = 0; for (let i = 3; i < d.length; i += 4) a += d[i] === 255 ? 1 : 0; return [b.id, a]; }), o);
+    assert(n.every(([id, a]) => a > 640 * 360 * 0.9), `close ${JSON.stringify(o)}: draw(p=1) left holes ${JSON.stringify(n)}`);
+    if (o.game) assert(n.length === 3, 'close (endless): the Sqwak insert is in the chain');
+  }
+  // the chain is no longer than before: 1.9 (bell) + 2.0 + 0.85, plus 3.6 s on a day with breaking news
+  assert(await page.evaluate(() => [[3, 4.75], [6, 8.35], [40, 8.35]].every(([d, tot]) => Math.abs(BTB.Scenes.close({ report: { day: d, pnl: 1, quota: 1, quotaMet: true } }).reduce((a, b) => a + b.dur, 0) - tot) < 1e-9)), 'close chain length changed');
+  // effects reduced: one still per beat
+  await page.evaluate(() => BTB.Settings.set('effects', 'reduced'));
+  for (const o of [cl.profit, cl.loss, cl.none, sq.six, sq.live]) {
+    const n = await page.evaluate((o) => BTB.Scenes.close(o).length, o);
+    for (let i = 1; i < n; i++) {
+      const dur = await page.evaluate(([o, i]) => BTB.Scenes.close(o)[i].dur, [o, i]);
+      assert(await shot('close', o, i, 0.4) === await shot('close', o, i, dur - 0.05), `close ${o.report.day} beat ${i}: reduced effects still moves`);
+    }
+  }
+  await page.evaluate(() => BTB.Settings.set('effects', 'full'));
+
   // effects reduced: a plain fade from ink, no dissolve of the old shot
   await page.evaluate(() => BTB.Settings.set('effects', 'reduced'));
   const r1 = await shot('news', day7, 1, 0.1), r29 = await shot('news', day7, 1, 0.29), rEnd = await shot('news', day7, 1, 1.0);
@@ -973,6 +1162,10 @@ async function run() {
     { scene: 'news', opts: { day: 7, brief: { title: 'FOUR FUNDS, ONE MODEL', feed: [] } } },
     { scene: 'close', opts: { report: { day: 3, pnl: 1200, quotaMet: true, quota: 900 } } },
     { scene: 'close', opts: { report: { day: 30, pnl: 1200, quotaMet: true, quota: 900 } } },
+    // the close: a loss with the quota missed on the empty floor, and the two days with a Sqwak breaking insert (no game needed): a profit in autumn, and a seven-digit loss in winter
+    { scene: 'close', opts: { report: { day: 30, pnl: -54321, quotaMet: false, quota: 2000, date: 'FRI NOV 14', indexPct: -2 } } },
+    { scene: 'close', opts: { report: { day: 6, pnl: 1200, quotaMet: true, quota: 900, date: 'FRI OCT 10' } } },
+    { scene: 'close', opts: { report: { day: 40, pnl: -1234567, quotaMet: false, quota: 5000, date: 'THU DEC 18', indexPct: -9 } } },
     { scene: 'weekend', opts: { day: 4 } },
     // heaviest variants: winter snow plus the breath on a cat in a penthouse, and autumn leaves with no pet
     { scene: 'weekend', opts: { day: 44, game: { mode: { S: { wallet: { tier: 5, pet: { kind: 'cat', sex: 'boy' } } } } } } },
@@ -1056,8 +1249,8 @@ async function run() {
     for (const { scene, opts } of PERF_SCENES) {
       const r = await perf(scene, opts);
       results.push(r);
-      r.day = opts.day; const wal = opts.game && opts.game.mode.S.wallet; r.tier = wal ? wal.tier : undefined; r.pet = !!(wal && wal.pet);
-      console.log(`perf ${scene}${opts.day != null ? ' day ' + opts.day : ''}${r.tier != null ? ' tier ' + r.tier : ''}${r.pet ? ' pet' : ''}: ${r.status} attempts=${r.attempts.length} framesMeasured=${r.framesMeasured}/${r.framesTotal} avg=${r.avgMs} p95=${r.p95Ms} max=${r.maxMs} firstMax=${Math.max(0, ...r.firstFrameMs.map((f) => f.ms))}`);
+      r.day = opts.day != null ? opts.day : opts.report && opts.report.day; const wal = opts.game && opts.game.mode.S.wallet; r.tier = wal ? wal.tier : undefined; r.pet = !!(wal && wal.pet);
+      console.log(`perf ${scene}${r.day != null ? ' day ' + r.day : ''}${r.tier != null ? ' tier ' + r.tier : ''}${r.pet ? ' pet' : ''}: ${r.status} attempts=${r.attempts.length} framesMeasured=${r.framesMeasured}/${r.framesTotal} avg=${r.avgMs} p95=${r.p95Ms} max=${r.maxMs} firstMax=${Math.max(0, ...r.firstFrameMs.map((f) => f.ms))}`);
     }
     const outDir = path.join(root, 'qa', 'evidence', 'motion');
     fs.mkdirSync(outDir, { recursive: true });

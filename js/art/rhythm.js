@@ -377,16 +377,36 @@
       }
     }
   }
-  function closeFrame(ctx, report, detail) {
-    const good=(report.pnl||0)>=0, met=!!report.quotaMet;
-    officeFrame(ctx, report.day||0, true, (report.indexPct != null ? report.indexPct : (report.pnl||0)) < 0); ctx.save(); ctx.globalAlpha=.32;X.rect(ctx,0,0,V.w,V.h,P.ink);ctx.restore();
-    X.box(ctx,165,72,310,112);
+  // The report card and its verdict (a real quota decided it) as numbers: the box, the lines, the nine tally dashes and the stamp's final rect.
+  function closeGeom(report) {
+    const pnl = report.pnl || 0, met = !!report.quotaMet, verdict = report.quota > 0;
+    const label = met ? 'QUOTA MET' : verdict ? 'QUOTA MISSED' : 'CLOSING BELL';
+    const sw = 2 * Math.ceil((X.textWidth(label) - 1 + 24) / 2), dashes = [];
+    for (let i = 0; i < 9; i++) dashes.push({ x: 172 + i * 37, y: 180, w: 15, h: 1 });
+    return {
+      pnl, good: pnl >= 0, met, verdict, label, dashes,
+      box: { x: 165, y: 72, w: 310, h: 112 },
+      labelAt: { x: 320, y: 93 }, pnlAt: { x: 320, y: 124 }, quotaAt: { x: 320, y: 146 }, dateAt: { x: 320, y: 162 },
+      cover: { x: 280, y: 91, w: 80, h: 11 }, // flat ink inside the box, over the verdict label
+      stamp: { x: 320 - sw / 2, y: 86, w: sw, h: 20 }
+    };
+  }
+  // o (all optional; absent draws the whole flat frame): part 'office' (the floor and its 0.32 ink overlay) or 'card' (the box, the
+  // verdict label, with detail the quota and the date); with part 'card', noPnl leaves the P&L out and noDashes the nine dashes.
+  function closeFrame(ctx, report, detail, o) {
+    o = o || {};
+    const part = o.part, G = closeGeom(report), b = G.box;
+    if (!part || part === 'office') {
+      officeFrame(ctx, report.day||0, true, (report.indexPct != null ? report.indexPct : (report.pnl||0)) < 0); ctx.save(); ctx.globalAlpha=.32;X.rect(ctx,0,0,V.w,V.h,P.ink);ctx.restore();
+    }
+    if (part === 'office') return;
+    X.box(ctx,b.x,b.y,b.w,b.h);
     X.rect(ctx,166,71,308,1,P.grey2);
     X.rect(ctx,166,185,308,1,P.slate2);
-    for(let i=0;i<9;i++) X.rect(ctx,172+i*37,180,15,1,met?P.jadeD:P.crimsonD);
-    text(ctx, met?'QUOTA MET':report.quota>0?'QUOTA MISSED':'CLOSING BELL',320,93,met?P.jade:P.crimson,'center');
-    text(ctx,B.fmt.money(report.pnl||0,true),320,124,good?P.jade:P.crimson,'center');
-    if(detail){text(ctx,`QUOTA ${B.fmt.money(report.quota||0)}`,320,146,P.grey2,'center');text(ctx,clean(report.date||''),320,162,P.putty,'center');}
+    if (!o.noDashes) G.dashes.forEach((d) => X.rect(ctx,d.x,d.y,d.w,d.h,G.met?P.jadeD:P.crimsonD));
+    text(ctx,G.label,G.labelAt.x,G.labelAt.y,G.met?P.jade:P.crimson,'center');
+    if (!o.noPnl) text(ctx,B.fmt.money(G.pnl,true),G.pnlAt.x,G.pnlAt.y,G.good?P.jade:P.crimson,'center');
+    if(detail){text(ctx,`QUOTA ${B.fmt.money(report.quota||0)}`,G.quotaAt.x,G.quotaAt.y,P.grey2,'center');text(ctx,clean(report.date||''),G.dateAt.x,G.dateAt.y,P.putty,'center');}
   }
   function weekendFrame(ctx, sb, night) {
     const c=colors(sb.act);X.rect(ctx,0,0,V.w,V.h,P.ink);X.gradient(ctx,0,0,V.w,250,night?P.ink2:P.sky,P.ink,12);skyline(ctx,sb.act,sb.week*9,250);
@@ -416,50 +436,65 @@
     X.textShadow(ctx, clean(value).slice(0, 40), Math.round(x / scale), Math.round(y / scale), color, P.ink, { align: align || 'left' });
     ctx.restore();
   }
-  function sqwakFrame(ctx, sb, b, full) {
-    const c = colors(sb.act);
-    skyline(ctx, sb.act, sb.day * 7 + 3, 300, sb.day);
-    X.rect(ctx, 0, 300, V.w, 60, P.ink);
-    const pw = 236, ph = 330, px = (V.w - pw) / 2, py = full ? 14 : 40;
-    // hand behind the phone
-    X.rect(ctx, px - 22, py + 150, 30, 120, P.desk);
-    X.rect(ctx, px - 24, py + 150, 6, 110, P.deskD);
-    X.rect(ctx, px + pw - 30, py + 112, 44, 150, P.desk);
-    X.rect(ctx, px + pw + 10, py + 122, 4, 116, P.deskD);
-    X.rect(ctx, px + pw - 6, py + 118, 34, 26, P.desk2);
-    X.rect(ctx, px + pw - 6, py + 150, 38, 26, P.desk2);
-    X.rect(ctx, px + pw - 6, py + 182, 34, 26, P.desk2);
-    X.rect(ctx, px + pw - 6, py + 214, 28, 24, P.desk);
-    X.plate(ctx, px, py, pw, ph, P.ink2, P.slate2, P.ink);
-    const sx = px + 9, sy = py + 12, sw = pw - 18;
-    X.rect(ctx, sx, sy, sw, ph - 24, P.screenD);
-    X.rect(ctx, px + pw / 2 - 20, py + 4, 40, 5, P.ink);
-    // app header
-    big(ctx, 'sqwak', px + pw / 2, sy + 12, P.bone, 2, 'center');
-    text(ctx, 'MARKETS TALK. EVERYONE LISTENS.', px + pw / 2, sy + 32, P.grey, 'center');
-    X.rect(ctx, sx, sy + 44, sw, 1, P.slate);
-    // the post
-    const cy = sy + 52;
-    X.rect(ctx, sx + 6, cy, sw - 12, 190, P.screen);
-    X.rect(ctx, sx + 12, cy + 8, 10, 10, P.crimson);
-    text(ctx, b.flag || 'BREAKING', sx + 28, cy + 10, P.crimson);
-    text(ctx, b.when || 'NOW', sx + sw - 14, cy + 10, P.grey2, 'right');
-    X.wrap(clean(b.head).toUpperCase(), (sw - 30) / 2).slice(0, 3).forEach((line, i) => big(ctx, line, sx + 12, cy + 26 + i * 18, P.bone, 2));
-    const bodyY = cy + 88;
-    X.wrap(clean(b.text), sw - 30).slice(0, 5).forEach((line, i) => text(ctx, line, sx + 12, bodyY + i * 10, P.putty2));
-    // glitch thumbnail strip
-    for (let i = 0; i < 6; i++) X.rect(ctx, sx + 12 + ((i * 29 + sb.day) % (sw - 60)), cy + 150 + i * 4, 30 + (i * 11) % 24, 2, i % 2 ? P.crimsonD : P.crimson);
-    text(ctx, `${b.stats ? b.stats[0] : '1.2K'}   ${b.stats ? b.stats[1] : '4.8K'}   ${b.stats ? b.stats[2] : '12K'}`, sx + 12, cy + 176, P.grey2);
-    // reply
-    if (b.reply) {
-      const ry = cy + 198;
-      X.rect(ctx, sx + 12, ry, 14, 14, P.slate);
-      text(ctx, clean(b.reply[0]).slice(0, 26), sx + 32, ry + 1, P.sky);
-      X.wrap(clean(b.reply[1]), sw - 44).slice(0, 3).forEach((line, i) => text(ctx, line, sx + 32, ry + 12 + i * 10, P.bone));
-    }
-    X.scanlines(ctx, 0, 0, V.w, V.h, P.ink, full ? .06 : .1);
-    if (!full) { ctx.save(); ctx.globalAlpha = .25; X.rect(ctx, 0, 0, V.w, V.h, c.wash); ctx.restore(); }
+  // The insert's phone and post as numbers: the phone, its screen, the post card (cy), the flag square and the stats line.
+  // The insert holds the phone at py 40, the read (full) at py 14.
+  function sqwakGeom(full) {
+    const pw = 236, ph = 330, px = (V.w - pw) / 2, py = full ? 14 : 40, sx = px + 9, sy = py + 12, sw = pw - 18, cy = sy + 52;
+    return { pw, ph, px, py, sx, sy, sw, cy, flag: { x: sx + 12, y: cy + 8, w: 10, h: 10 }, stats: { x: sx + 12, y: cy + 176 } };
   }
+  // o (all optional; absent draws the whole flat frame): part 'city' (skyline and ground), 'phone' (hand, phone, post and reply) or
+  // 'grain' (scanlines and, when not full, the act wash). With part 'phone', noFlag leaves the crimson flag square out, noStats the stats line.
+  function sqwakFrame(ctx, sb, b, full, o) {
+    o = o || {};
+    const c = colors(sb.act), part = o.part;
+    if (!part || part === 'city') {
+      skyline(ctx, sb.act, sb.day * 7 + 3, 300, sb.day);
+      X.rect(ctx, 0, 300, V.w, 60, P.ink);
+    }
+    if (!part || part === 'phone') {
+      const { pw, ph, px, py, sx, sy, sw, cy, flag, stats } = sqwakGeom(full);
+      // hand behind the phone
+      X.rect(ctx, px - 22, py + 150, 30, 120, P.desk);
+      X.rect(ctx, px - 24, py + 150, 6, 110, P.deskD);
+      X.rect(ctx, px + pw - 30, py + 112, 44, 150, P.desk);
+      X.rect(ctx, px + pw + 10, py + 122, 4, 116, P.deskD);
+      X.rect(ctx, px + pw - 6, py + 118, 34, 26, P.desk2);
+      X.rect(ctx, px + pw - 6, py + 150, 38, 26, P.desk2);
+      X.rect(ctx, px + pw - 6, py + 182, 34, 26, P.desk2);
+      X.rect(ctx, px + pw - 6, py + 214, 28, 24, P.desk);
+      X.plate(ctx, px, py, pw, ph, P.ink2, P.slate2, P.ink);
+      X.rect(ctx, sx, sy, sw, ph - 24, P.screenD);
+      X.rect(ctx, px + pw / 2 - 20, py + 4, 40, 5, P.ink);
+      // app header
+      big(ctx, 'sqwak', px + pw / 2, sy + 12, P.bone, 2, 'center');
+      text(ctx, 'MARKETS TALK. EVERYONE LISTENS.', px + pw / 2, sy + 32, P.grey, 'center');
+      X.rect(ctx, sx, sy + 44, sw, 1, P.slate);
+      // the post
+      X.rect(ctx, sx + 6, cy, sw - 12, 190, P.screen);
+      if (!o.noFlag) X.rect(ctx, flag.x, flag.y, flag.w, flag.h, P.crimson);
+      text(ctx, b.flag || 'BREAKING', sx + 28, cy + 10, P.crimson);
+      text(ctx, b.when || 'NOW', sx + sw - 14, cy + 10, P.grey2, 'right');
+      X.wrap(clean(b.head).toUpperCase(), (sw - 30) / 2).slice(0, 3).forEach((line, i) => big(ctx, line, sx + 12, cy + 26 + i * 18, P.bone, 2));
+      const bodyY = cy + 88;
+      X.wrap(clean(b.text), sw - 30).slice(0, 5).forEach((line, i) => text(ctx, line, sx + 12, bodyY + i * 10, P.putty2));
+      // glitch thumbnail strip
+      for (let i = 0; i < 6; i++) X.rect(ctx, sx + 12 + ((i * 29 + sb.day) % (sw - 60)), cy + 150 + i * 4, 30 + (i * 11) % 24, 2, i % 2 ? P.crimsonD : P.crimson);
+      if (!o.noStats) text(ctx, sqwakStats(b).join('   '), stats.x, stats.y, P.grey2);
+      // reply
+      if (b.reply) {
+        const ry = cy + 198;
+        X.rect(ctx, sx + 12, ry, 14, 14, P.slate);
+        text(ctx, clean(b.reply[0]).slice(0, 26), sx + 32, ry + 1, P.sky);
+        X.wrap(clean(b.reply[1]), sw - 44).slice(0, 3).forEach((line, i) => text(ctx, line, sx + 32, ry + 12 + i * 10, P.bone));
+      }
+    }
+    if (!part || part === 'grain') {
+      X.scanlines(ctx, 0, 0, V.w, V.h, P.ink, full ? .06 : .1);
+      if (!full) { ctx.save(); ctx.globalAlpha = .25; X.rect(ctx, 0, 0, V.w, V.h, c.wash); ctx.restore(); }
+    }
+  }
+  // The three engagement counts of a post, as authored or the defaults.
+  function sqwakStats(b) { return [b.stats ? b.stats[0] : '1.2K', b.stats ? b.stats[1] : '4.8K', b.stats ? b.stats[2] : '12K']; }
 
   function beat(scene, id, dur, draw, line, extra) {
     return Object.assign({ id:`${scene}:${id}`, view:V, dur, draw, line:line||'', cache:true }, extra||{});
@@ -467,7 +502,7 @@
   B.Rhythm = {
     view:V, endingIds:ENDING_IDS,
     // Drawing helpers for js/art/storyboard.js.
-    placeFrame, phoneFrame, phoneGeom, officeFrame, officeGeom, closeFrame, weekendFrame, skyline, season, sky, weather, text, colors, clean, chart, chartSeries, person, marketDown, beat,
+    placeFrame, phoneFrame, phoneGeom, officeFrame, officeGeom, closeFrame, closeGeom, sqwakFrame, sqwakGeom, sqwakStats, weekendFrame, skyline, season, sky, weather, text, colors, clean, chart, chartSeries, person, marketDown, beat,
     phoneRowCount(feed){return Math.min(4,(feed||[]).length);},
     storyboard:board,
     frameMap(day){const sb=this.storyboard(day);return [
@@ -498,8 +533,8 @@
     const tag=`${r.day||0}:${(r.pnl||0)>=0?'u':'d'}${r.quotaMet?'m':''}${Math.round(r.pnl||0)}`;
     const bell=beat('close',`${tag}:bell`,1.25,(c)=>closeFrame(c,r,false),'4:00 PM.',{sfx:'closeBell',transition:'fade'});
     const post=sq?[
-      beat('close',`${r.day||0}:sqwak`,1.0,(c)=>sqwakFrame(c,sb,sq,false),'',{sfx:'news'}),
-      beat('close',`${r.day||0}:sqwak-read`,2.6,(c)=>sqwakFrame(c,sb,sq,true),clean(sq.head).toUpperCase(),{sfx:'broadcast'})
+      beat('close',`${r.day||0}:sqwak`,1.0,(c)=>sqwakFrame(c,sb,sq,false),'',{sfx:'news',post:sq}),
+      beat('close',`${r.day||0}:sqwak-read`,2.6,(c)=>sqwakFrame(c,sb,sq,true),clean(sq.head).toUpperCase(),{sfx:'broadcast',post:sq})
     ]:[];
     return [bell].concat(post,[
       beat('close',`${tag}:report`,2.0,(c)=>closeFrame(c,r,true),(r.pnl||0)>=0?'YOU MADE MONEY. NOBODY SAYS WELL DONE.':'YOU LOST MONEY. EVERYBODY NOTICED.',{sfx:'office',informative:true}),
