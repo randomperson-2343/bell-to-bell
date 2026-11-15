@@ -884,6 +884,8 @@
   // nothing: the game's B.SFX has no closeBell). Its strikes are 0.55 s apart (0, 0.55, 1.10, 1.65, 2.20, then a low one at 2.75).
   // The swing is 7 half-swings, so at 1.9 s the bell crosses centre every 0.2714 s: within about 20 ms of the strikes at 0.55,
   // 1.10 and 1.65 s (and at 0 s), and once between strikes.
+  // That sync holds for every ringing day except session index 42: there the bell is one long slow swing (p * 0.45, under half a
+  // swing in the whole beat) and is deliberately not synced to the strikes.
   const BELL_DUR = 1.9;
   // Layers back to front: wall (static room, the bell animated on it), desks (walkers and fine dashes animated on them), frame (corner brackets).
   // draw(ctx, view, 1, opts) is the old flat picture: wall, bell, desks, walkers, dashes, brackets.
@@ -912,7 +914,7 @@
   // hold) the card is final and the live screens go dark one by one, right to left.
   function closeLayers(r, rest) {
     const K = B.MotionKit, M = B.Motion, G = R.closeGeom(r), O = R.officeGeom(r.day || 0), S = G.stamp;
-    const verdictCol = G.met ? P.jade : P.crimson, dim = 0.32;
+    const verdictCol = G.met ? P.jade : P.crimson, dim = R.CLOSE_DIM;
     return [
       {
         id: 'office', depth: 0.5, draw(c) { R.closeFrame(c, r, true, { part: 'office' }); },
@@ -950,8 +952,8 @@
   }
   // Insert and read: city (skyline), phone (hand and post; the flag blinks, in the read the counts climb) and grain (scanlines, in the
   // insert the act wash), all drawn by sqwakFrame parts. The camera lifts only the phone layer.
-  function sqwakLayers(sb, b, full) {
-    const K = B.MotionKit, M = B.Motion, G = R.sqwakGeom(full), F = G.flag, dur = full ? 2.6 : 1.0, period = 1.0; // the kit's standby rate (bible C5)
+  function sqwakLayers(sb, beat, full) {
+    const K = B.MotionKit, M = B.Motion, G = R.sqwakGeom(full), F = G.flag, b = beat.post, dur = beat.dur, period = 1.0; // the kit's standby rate (bible C5)
     const stats = R.sqwakStats(b).map(String);
     return [
       { id: 'city', depth: full ? 0 : 0.25, draw(c) { R.sqwakFrame(c, sb, b, full, { part: 'city' }); } },
@@ -999,8 +1001,8 @@
     const K = B.MotionKit, M = B.Motion;
     for (let i = 0; i < beats.length; i++) {
       const b = beats[i];
-      if (/:sqwak$/.test(b.id)) beats[i] = M.layered(Object.assign({}, b, { camera: K.rise(40, b.dur, 0.20, 0.70), layers: sqwakLayers(R.storyboard(day), b.post, false) }));
-      else if (/:sqwak-read$/.test(b.id)) beats[i] = M.layered(Object.assign({}, b, { camera: K.rise(26, b.dur, 0, 0.6), layers: sqwakLayers(R.storyboard(day), b.post, true) }));
+      if (/:sqwak$/.test(b.id)) beats[i] = M.layered(Object.assign({}, b, { camera: K.rise(40, b.dur, 0.20, 0.70), layers: sqwakLayers(R.storyboard(day), b, false) }));
+      else if (/:sqwak-read$/.test(b.id)) beats[i] = M.layered(Object.assign({}, b, { camera: K.rise(26, b.dur, 0, 0.6), layers: sqwakLayers(R.storyboard(day), b, true) }));
       else if (/:report$/.test(b.id)) beats[i] = M.layered(Object.assign({}, b, { camera: { from: { x: 0, y: -6, zoom: 1 }, to: { x: 0, y: 0, zoom: 1 }, ease: M.ease.out }, layers: closeLayers(r, false) }));
       else if (/:hold$/.test(b.id)) beats[i] = M.layered(Object.assign({}, b, { camera: null, layers: closeLayers(r, true) }));
     }
@@ -1029,7 +1031,7 @@
     // The device is always the read's big one (close = true), so the dissolve into the read does not change its size.
     const K = B.MotionKit, L = phoneBacklog(feed), o = { rows: L, labelX: 92 };
     const { sx, sy, sw, sh } = R.phoneGeom(L.length, true);
-    const mm = String(31 + (sb.day % 24)).padStart(2, '0');
+    const mm = R.lockMinute(sb.day);
     return [
       { id: 'room', depth: 0, draw(c) { R.phoneFrame(c, sb, feed, true, Object.assign({ part: 'room' }, o)); } },
       {

@@ -10,30 +10,30 @@
     {
       "scene": "news",
       "status": "pass",
-      "framesMeasured": 176,
-      "framesTotal": 179,
-      "avgMs": 1.22,
-      "p95Ms": 4,
-      "maxMs": 9.4,
+      "framesMeasured": 163,
+      "framesTotal": 166,
+      "avgMs": 1.18,
+      "p95Ms": 2.2,
+      "maxMs": 12.4,
       "firstFrameMs": [
         {
           "beat": 0,
-          "ms": 72.8
+          "ms": 94.3
         },
         {
           "beat": 1,
-          "ms": 42
+          "ms": 55.2
         },
         {
           "beat": 2,
-          "ms": 31.7
+          "ms": 66.3
         }
       ],
       "attempts": [
         {
-          "avgMs": 1.22,
-          "p95Ms": 4,
-          "maxMs": 9.4
+          "avgMs": 1.18,
+          "p95Ms": 2.2,
+          "maxMs": 12.4
         }
       ],
       "day": 0,
@@ -42,30 +42,30 @@
     {
       "scene": "news",
       "status": "pass",
-      "framesMeasured": 125,
-      "framesTotal": 128,
-      "avgMs": 1.65,
-      "p95Ms": 3.6,
-      "maxMs": 13.9,
+      "framesMeasured": 176,
+      "framesTotal": 179,
+      "avgMs": 1.06,
+      "p95Ms": 1.8,
+      "maxMs": 11.6,
       "firstFrameMs": [
         {
           "beat": 0,
-          "ms": 154
+          "ms": 170.4
         },
         {
           "beat": 1,
-          "ms": 125.7
+          "ms": 137.1
         },
         {
           "beat": 2,
-          "ms": 138.4
+          "ms": 159.2
         }
       ],
       "attempts": [
         {
-          "avgMs": 1.65,
-          "p95Ms": 3.6,
-          "maxMs": 13.9
+          "avgMs": 1.06,
+          "p95Ms": 1.8,
+          "maxMs": 11.6
         }
       ],
       "day": 7,
@@ -74,30 +74,30 @@
     {
       "scene": "close",
       "status": "pass",
-      "framesMeasured": 81,
-      "framesTotal": 84,
-      "avgMs": 2.56,
-      "p95Ms": 6.2,
-      "maxMs": 16.1,
+      "framesMeasured": 116,
+      "framesTotal": 119,
+      "avgMs": 1.87,
+      "p95Ms": 2.6,
+      "maxMs": 14.4,
       "firstFrameMs": [
         {
           "beat": 0,
-          "ms": 69.7
+          "ms": 86.8
         },
         {
           "beat": 1,
-          "ms": 120.7
+          "ms": 161
         },
         {
           "beat": 2,
-          "ms": 106.3
+          "ms": 109.3
         }
       ],
       "attempts": [
         {
-          "avgMs": 2.56,
-          "p95Ms": 6.2,
-          "maxMs": 16.1
+          "avgMs": 1.87,
+          "p95Ms": 2.6,
+          "maxMs": 14.4
         }
       ],
       "day": 3,
@@ -106,62 +106,30 @@
     {
       "scene": "close",
       "status": "pass",
-      "framesMeasured": 85,
-      "framesTotal": 88,
-      "avgMs": 2.44,
-      "p95Ms": 7.4,
-      "maxMs": 9.9,
-      "firstFrameMs": [
-        {
-          "beat": 0,
-          "ms": 70.7
-        },
-        {
-          "beat": 1,
-          "ms": 104.3
-        },
-        {
-          "beat": 2,
-          "ms": 85.8
-        }
-      ],
-      "attempts": [
-        {
-          "avgMs": 2.44,
-          "p95Ms": 7.4,
-          "maxMs": 9.9
-        }
-      ],
-      "day": 30,
-      "pet": false
-    },
-    {
-      "scene": "close",
-      "status": "pass",
-      "framesMeasured": 85,
-      "framesTotal": 88,
-      "avgMs": 2.39,
+      "framesMeasured": 96,
+      "framesTotal": 99,
+      "avgMs": 2.16,
       "p95Ms": 3.9,
-      "maxMs": 15.3,
+      "maxMs": 14.9,
       "firstFrameMs": [
         {
           "beat": 0,
-          "ms": 80
+          "ms": 78.6
         },
         {
           "beat": 1,
-          "ms": 114.5
+          "ms": 126.1
         },
         {
           "beat": 2,
-          "ms": 99.2
+          "ms": 135.8
         }
       ],
       "attempts": [
         {
-          "avgMs": 2.39,
+          "avgMs": 2.16,
           "p95Ms": 3.9,
-          "maxMs": 15.3
+          "maxMs": 14.9
         }
       ],
       "day": 30,
@@ -170,38 +138,70 @@
     {
       "scene": "close",
       "status": "pass",
-      "framesMeasured": 166,
-      "framesTotal": 171,
-      "avgMs": 2.26,
-      "p95Ms": 7,
-      "maxMs": 19.5,
+      "framesMeasured": 101,
+      "framesTotal": 104,
+      "avgMs": 2.12,
+      "p95Ms": 4.5,
+      "maxMs": 16.1,
       "firstFrameMs": [
         {
           "beat": 0,
-          "ms": 68.6
+          "ms": 78.8
         },
         {
           "beat": 1,
-          "ms": 152.1
+          "ms": 133.7
         },
         {
           "beat": 2,
-          "ms": 199.7
+          "ms": 105
+        }
+      ],
+      "attempts": [
+        {
+          "avgMs": 2.12,
+          "p95Ms": 4.5,
+          "maxMs": 16.1
+        }
+      ],
+      "day": 30,
+      "pet": false
+    },
+    {
+      "scene": "close",
+      "status": "pass",
+      "framesMeasured": 180,
+      "framesTotal": 185,
+      "avgMs": 2.2,
+      "p95Ms": 7.6,
+      "maxMs": 14,
+      "firstFrameMs": [
+        {
+          "beat": 0,
+          "ms": 81.8
+        },
+        {
+          "beat": 1,
+          "ms": 159
+        },
+        {
+          "beat": 2,
+          "ms": 143.6
         },
         {
           "beat": 3,
-          "ms": 90.3
+          "ms": 117.2
         },
         {
           "beat": 4,
-          "ms": 86.3
+          "ms": 107.7
         }
       ],
       "attempts": [
         {
-          "avgMs": 2.26,
-          "p95Ms": 7,
-          "maxMs": 19.5
+          "avgMs": 2.2,
+          "p95Ms": 7.6,
+          "maxMs": 14
         }
       ],
       "day": 6,
@@ -212,36 +212,36 @@
       "status": "pass",
       "framesMeasured": 183,
       "framesTotal": 188,
-      "avgMs": 2.17,
-      "p95Ms": 6.4,
-      "maxMs": 12.3,
+      "avgMs": 2.14,
+      "p95Ms": 6.2,
+      "maxMs": 14.7,
       "firstFrameMs": [
         {
           "beat": 0,
-          "ms": 104.5
+          "ms": 84.3
         },
         {
           "beat": 1,
-          "ms": 124.6
+          "ms": 152.7
         },
         {
           "beat": 2,
-          "ms": 106.9
+          "ms": 135.8
         },
         {
           "beat": 3,
-          "ms": 95.2
+          "ms": 118.4
         },
         {
           "beat": 4,
-          "ms": 89.6
+          "ms": 102
         }
       ],
       "attempts": [
         {
-          "avgMs": 2.17,
-          "p95Ms": 6.4,
-          "maxMs": 12.3
+          "avgMs": 2.14,
+          "p95Ms": 6.2,
+          "maxMs": 14.7
         }
       ],
       "day": 40,
@@ -250,30 +250,30 @@
     {
       "scene": "weekend",
       "status": "pass",
-      "framesMeasured": 121,
-      "framesTotal": 124,
-      "avgMs": 1.45,
-      "p95Ms": 3.9,
-      "maxMs": 8.3,
+      "framesMeasured": 132,
+      "framesTotal": 135,
+      "avgMs": 1.29,
+      "p95Ms": 3.6,
+      "maxMs": 11.4,
       "firstFrameMs": [
         {
           "beat": 0,
-          "ms": 192.6
+          "ms": 173.2
         },
         {
           "beat": 1,
-          "ms": 79.1
+          "ms": 120.4
         },
         {
           "beat": 2,
-          "ms": 100.9
+          "ms": 111.3
         }
       ],
       "attempts": [
         {
-          "avgMs": 1.45,
-          "p95Ms": 3.9,
-          "maxMs": 8.3
+          "avgMs": 1.29,
+          "p95Ms": 3.6,
+          "maxMs": 11.4
         }
       ],
       "day": 4,
@@ -282,34 +282,34 @@
     {
       "scene": "weekend",
       "status": "pass",
-      "framesMeasured": 136,
-      "framesTotal": 140,
-      "avgMs": 2.1,
-      "p95Ms": 7.1,
-      "maxMs": 16.6,
+      "framesMeasured": 178,
+      "framesTotal": 182,
+      "avgMs": 1.64,
+      "p95Ms": 5.3,
+      "maxMs": 13,
       "firstFrameMs": [
         {
           "beat": 0,
-          "ms": 241.9
+          "ms": 276.1
         },
         {
           "beat": 1,
-          "ms": 153.8
+          "ms": 197.4
         },
         {
           "beat": 2,
-          "ms": 124.8
+          "ms": 182.9
         },
         {
           "beat": 3,
-          "ms": 62.3
+          "ms": 74.5
         }
       ],
       "attempts": [
         {
-          "avgMs": 2.1,
-          "p95Ms": 7.1,
-          "maxMs": 16.6
+          "avgMs": 1.64,
+          "p95Ms": 5.3,
+          "maxMs": 13
         }
       ],
       "day": 44,
@@ -319,30 +319,30 @@
     {
       "scene": "weekend",
       "status": "pass",
-      "framesMeasured": 117,
-      "framesTotal": 120,
-      "avgMs": 1.56,
-      "p95Ms": 2.9,
-      "maxMs": 12.6,
+      "framesMeasured": 122,
+      "framesTotal": 125,
+      "avgMs": 1.51,
+      "p95Ms": 2.7,
+      "maxMs": 12.9,
       "firstFrameMs": [
         {
           "beat": 0,
-          "ms": 160.7
+          "ms": 197.6
         },
         {
           "beat": 1,
-          "ms": 117.5
+          "ms": 136
         },
         {
           "beat": 2,
-          "ms": 92.6
+          "ms": 106.9
         }
       ],
       "attempts": [
         {
-          "avgMs": 1.56,
-          "p95Ms": 2.9,
-          "maxMs": 12.6
+          "avgMs": 1.51,
+          "p95Ms": 2.7,
+          "maxMs": 12.9
         }
       ],
       "day": 9,
@@ -352,26 +352,26 @@
     {
       "scene": "phone",
       "status": "pass",
-      "framesMeasured": 76,
-      "framesTotal": 78,
-      "avgMs": 1.71,
-      "p95Ms": 7.2,
-      "maxMs": 13.2,
+      "framesMeasured": 75,
+      "framesTotal": 77,
+      "avgMs": 1.78,
+      "p95Ms": 7.9,
+      "maxMs": 13.3,
       "firstFrameMs": [
         {
           "beat": 0,
-          "ms": 140.4
+          "ms": 152.7
         },
         {
           "beat": 1,
-          "ms": 111
+          "ms": 137.3
         }
       ],
       "attempts": [
         {
-          "avgMs": 1.71,
-          "p95Ms": 7.2,
-          "maxMs": 13.2
+          "avgMs": 1.78,
+          "p95Ms": 7.9,
+          "maxMs": 13.3
         }
       ],
       "day": 3,
@@ -380,26 +380,26 @@
     {
       "scene": "phone",
       "status": "pass",
-      "framesMeasured": 73,
-      "framesTotal": 75,
-      "avgMs": 1.77,
-      "p95Ms": 8.6,
-      "maxMs": 15.5,
+      "framesMeasured": 64,
+      "framesTotal": 66,
+      "avgMs": 2.04,
+      "p95Ms": 5.7,
+      "maxMs": 28.4,
       "firstFrameMs": [
         {
           "beat": 0,
-          "ms": 139
+          "ms": 189.7
         },
         {
           "beat": 1,
-          "ms": 127.1
+          "ms": 212.6
         }
       ],
       "attempts": [
         {
-          "avgMs": 1.77,
-          "p95Ms": 8.6,
-          "maxMs": 15.5
+          "avgMs": 2.04,
+          "p95Ms": 5.7,
+          "maxMs": 28.4
         }
       ],
       "day": 40,
@@ -408,30 +408,30 @@
     {
       "scene": "office",
       "status": "pass",
-      "framesMeasured": 60,
-      "framesTotal": 63,
-      "avgMs": 3.18,
-      "p95Ms": 9.6,
-      "maxMs": 16.8,
+      "framesMeasured": 75,
+      "framesTotal": 78,
+      "avgMs": 2.36,
+      "p95Ms": 9.3,
+      "maxMs": 14.5,
       "firstFrameMs": [
         {
           "beat": 0,
-          "ms": 157.6
+          "ms": 189.1
         },
         {
           "beat": 1,
-          "ms": 127.4
+          "ms": 122
         },
         {
           "beat": 2,
-          "ms": 100.1
+          "ms": 109.3
         }
       ],
       "attempts": [
         {
-          "avgMs": 3.18,
-          "p95Ms": 9.6,
-          "maxMs": 16.8
+          "avgMs": 2.36,
+          "p95Ms": 9.3,
+          "maxMs": 14.5
         }
       ],
       "day": 3,
@@ -440,30 +440,30 @@
     {
       "scene": "office",
       "status": "pass",
-      "framesMeasured": 80,
-      "framesTotal": 83,
-      "avgMs": 2.56,
-      "p95Ms": 7.5,
-      "maxMs": 13.9,
+      "framesMeasured": 70,
+      "framesTotal": 73,
+      "avgMs": 2.65,
+      "p95Ms": 8.3,
+      "maxMs": 14.6,
       "firstFrameMs": [
         {
           "beat": 0,
-          "ms": 133.9
+          "ms": 173.1
         },
         {
           "beat": 1,
-          "ms": 94.7
+          "ms": 111.8
         },
         {
           "beat": 2,
-          "ms": 84.3
+          "ms": 132
         }
       ],
       "attempts": [
         {
-          "avgMs": 2.56,
-          "p95Ms": 7.5,
-          "maxMs": 13.9
+          "avgMs": 2.65,
+          "p95Ms": 8.3,
+          "maxMs": 14.6
         }
       ],
       "day": 20,
@@ -472,30 +472,30 @@
     {
       "scene": "office",
       "status": "pass",
-      "framesMeasured": 77,
-      "framesTotal": 80,
-      "avgMs": 2.71,
-      "p95Ms": 7.4,
-      "maxMs": 13.8,
+      "framesMeasured": 69,
+      "framesTotal": 72,
+      "avgMs": 2.8,
+      "p95Ms": 8,
+      "maxMs": 20.3,
       "firstFrameMs": [
         {
           "beat": 0,
-          "ms": 131.9
+          "ms": 122.4
         },
         {
           "beat": 1,
-          "ms": 89.3
+          "ms": 124.3
         },
         {
           "beat": 2,
-          "ms": 82.6
+          "ms": 99.8
         }
       ],
       "attempts": [
         {
-          "avgMs": 2.71,
-          "p95Ms": 7.4,
-          "maxMs": 13.8
+          "avgMs": 2.8,
+          "p95Ms": 8,
+          "maxMs": 20.3
         }
       ],
       "day": 40,

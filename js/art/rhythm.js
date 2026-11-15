@@ -237,6 +237,11 @@
   // o (all optional; absent draws exactly the flat phone): rows (default feed.slice(0, 4)), count (the printed number),
   // glow (leading rows with screenGlow, default 1), part (undefined all, 'back' without the row cards, 'rows' only the
   // row cards, unclipped), noDigits (no status count).
+  // Numbers two shots both need, in one place: the lock screen's minute (the handoff's asleep screen prints it too), how far the
+  // CASCADE stack has slipped at a stability (the office beat id carries it) and the ink overlay's alpha under the close report.
+  const lockMinute = (day) => String(31 + ((day || 0) % 24)).padStart(2, '0');
+  const stackSlip = (st) => Math.round((100 - st) / 12);
+  const CLOSE_DIM = 0.32;
   // The phone's screen rect inside its plate (x, y, w, h).
   const phoneScreen = (x, y, w, h) => ({ sx: x + 8, sy: y + 12, sw: w - 16, sh: h - 24 });
   // The device and its screen for a feed of rowCount rows: the big one (226x308) when close or more than two rows, else the small one.
@@ -262,7 +267,7 @@
     X.plate(ctx, x, y, w, h, P.ink2, P.slate2, P.ink);
     X.rect(ctx, sx, sy, sw, sh, P.screen);
     X.rect(ctx, x+w/2-18, y+4, 36, 4, P.ink);
-    const minute = String(31 + ((day || 0) % 24)).padStart(2,'0');
+    const minute = lockMinute(day);
     text(ctx, `6:${minute}`, sx+7, sy+6, P.grey2);
     if (!o.noDigits) text(ctx, `${count}`, sx+sw-8, sy+6, c.wash, 'right');
     if (part === 'back') return rows.length;
@@ -334,7 +339,7 @@
   // sky inside), the five monitors (cel, screen, and the bar a dead screen shows), your desk's chart screen, how many monitors are dead
   // (one more each act) and how far the CASCADE stack slips (stability falls).
   function officeGeom(day, S) {
-    const dead = board(day).act - 1, st = S && S.m ? S.m.stability : 100, slip = Math.round((100 - st) / 12), windows = [], monitors = [];
+    const dead = board(day).act - 1, st = S && S.m ? S.m.stability : 100, slip = stackSlip(st), windows = [], monitors = [];
     for (let i = 0; i < 6; i++) { const x = 18 + i * 104; windows.push({ x, y: 16, w: 90, h: 44, sky: { x: x + 2, y: 18, w: 86, h: 40 } }); }
     for (let i = 0; i < 5; i++) { const x = 24 + i * 124; monitors.push({ i, x, y: 78, w: 104, h: 126, off: i >= 5 - dead, screen: { x: x + 10, y: 92, w: 84, h: 78 }, bar: { x: x + 20, y: 176, w: 64, h: 3 } }); }
     return { dead, live: 5 - dead, st, slip, windows, monitors, deskChart: { x: 540, y: 218, w: 86, h: 50 } };
@@ -382,7 +387,8 @@
     const pnl = report.pnl || 0, met = !!report.quotaMet, verdict = report.quota > 0;
     const label = met ? 'QUOTA MET' : verdict ? 'QUOTA MISSED' : 'CLOSING BELL';
     const sw = 2 * Math.ceil((X.textWidth(label) - 1 + 24) / 2), dashes = [];
-    for (let i = 0; i < 9; i++) dashes.push({ x: 172 + i * 37, y: 180, w: 15, h: 1 });
+    // clipped to the card's inner edge (the box's ink interior ends at x 472), so the ninth is a stump rather than poking out
+    for (let i = 0; i < 9; i++) { const x = 172 + i * 37; dashes.push({ x, y: 180, w: Math.min(15, 473 - x), h: 1 }); }
     return {
       pnl, good: pnl >= 0, met, verdict, label, dashes,
       box: { x: 165, y: 72, w: 310, h: 112 },
@@ -397,7 +403,7 @@
     o = o || {};
     const part = o.part, G = closeGeom(report), b = G.box;
     if (!part || part === 'office') {
-      officeFrame(ctx, report.day||0, true, (report.indexPct != null ? report.indexPct : (report.pnl||0)) < 0); ctx.save(); ctx.globalAlpha=.32;X.rect(ctx,0,0,V.w,V.h,P.ink);ctx.restore();
+      officeFrame(ctx, report.day||0, true, (report.indexPct != null ? report.indexPct : (report.pnl||0)) < 0); ctx.save(); ctx.globalAlpha=CLOSE_DIM;X.rect(ctx,0,0,V.w,V.h,P.ink);ctx.restore();
     }
     if (part === 'office') return;
     X.box(ctx,b.x,b.y,b.w,b.h);
@@ -502,7 +508,7 @@
   B.Rhythm = {
     view:V, endingIds:ENDING_IDS,
     // Drawing helpers for js/art/storyboard.js.
-    placeFrame, phoneFrame, phoneGeom, officeFrame, officeGeom, closeFrame, closeGeom, sqwakFrame, sqwakGeom, sqwakStats, weekendFrame, skyline, season, sky, weather, text, colors, clean, chart, chartSeries, person, marketDown, beat,
+    placeFrame, phoneFrame, phoneGeom, lockMinute, stackSlip, CLOSE_DIM, officeFrame, officeGeom, closeFrame, closeGeom, sqwakFrame, sqwakGeom, sqwakStats, weekendFrame, skyline, season, sky, weather, text, colors, clean, chart, chartSeries, person, marketDown, beat,
     phoneRowCount(feed){return Math.min(4,(feed||[]).length);},
     storyboard:board,
     frameMap(day){const sb=this.storyboard(day);return [
@@ -520,10 +526,10 @@
     beat('news',`${sb.day}:hold`,1.0,(c)=>{placeFrame(c,sb,title,true);c.save();c.globalAlpha=.12;X.rect(c,0,0,V.w,V.h,P.ink);c.restore();},'',{})
   ];};
   B.Scenes.phone = function(o){const sb=board(o.day||0),feed=(o.brief&&o.brief.feed)||[];return [
-    beat('phone',`${sb.day}:handoff`,1.4,(c)=>phoneFrame(c,sb,feed,false),'',{sfx:'apartment',transition:'fade'}),
+    beat('phone',`${sb.day}:handoff`,1.4,(c)=>phoneFrame(c,sb,feed,true),'',{sfx:'apartment',transition:'fade'}),
     beat('phone',`${sb.day}:read`,2.0,(c)=>phoneFrame(c,sb,feed,true),'PRE-OPEN FEED',{sfx:'news',informative:true})
   ];};
-  B.Scenes.office = function(o){const day=o.day||0,g=o.game,S=g&&g.mode&&g.mode.S,k=S&&S.m?`${Math.round((100-S.m.stability)/12)}${S.m.heat>=50?'h':''}`:'';const dead=officeGeom(day,S).dead;return [
+  B.Scenes.office = function(o){const day=o.day||0,g=o.game,S=g&&g.mode&&g.mode.S,k=S&&S.m?`${stackSlip(S.m.stability)}${S.m.heat>=50?'h':''}`:'';const dead=officeGeom(day,S).dead;return [
     beat('office',`${day}:wide`,1.45,(c)=>officeFrame(c,day,false,null,S),'FORTY-FIRST FLOOR.',{sfx:'elevator',transition:'fade'}),
     beat('office',`${day}:desk:${k}`,1.8,(c)=>officeFrame(c,day,true,null,S),dead?`${['','ONE DESK','TWO DESKS','THREE DESKS'][dead]} ON YOUR ROW. NOBODY SITS THERE NOW.`:'THE DESK IS ALREADY AWAKE.',{sfx:'office',informative:true}),
     beat('office',`${day}:hold:${k}`,.85,(c)=>officeFrame(c,day,true,null,S),'SIT DOWN. NINE THIRTY.',{})

@@ -950,12 +950,12 @@ async function run() {
   warnings.length = 0;
 
   // ---- stage 3 batch 3: the close (report, hold, Sqwak insert and read) ----
-  // Flat references recorded from the code before the batch: closeFrame and sqwakFrame with no options, and the final pictures of the
+  // Flat references recorded from the code before the batch (the close:* ones re-recorded when the ninth dash was clipped to the card's inner edge): closeFrame and sqwakFrame with no options, and the final pictures of the
   // Sqwak read (the insert's final picture now shows the read's starting counts, checked below) (a day with the failed-vote alternate included: 41 and 44 have none of the passed story state here).
   const CLOSE_REF = {
-    'close:A:false': '1df1fd81', 'close:A:true': '84b1c03f', 'close:B:false': '8f1b9c83', 'close:B:true': '9091fa72',
-    'close:C:false': '50b30c38', 'close:C:true': 'af4d7592', 'close:D:false': '7becda6d', 'close:D:true': 'e008ebec',
-    'close:E:false': '7c635fd1', 'close:E:true': 'd19fe792', 'close:F:false': '4fdc5fc1', 'close:F:true': '80a98c88',
+    'close:A:false': '9d73ead7', 'close:A:true': 'af695dc5', 'close:B:false': '56bc08b1', 'close:B:true': '6547c3fc',
+    'close:C:false': '480a0d9a', 'close:C:true': '8060211c', 'close:D:false': '83cce2f3', 'close:D:true': '928bdba6',
+    'close:E:false': '1705a017', 'close:E:true': '6ab5af7c', 'close:F:false': '855a3097', 'close:F:true': '5dcf22f2',
     'sqwak:6:L:false': 'e75db5dc', 'sqwak:6:L:true': '121603b8', 'sqwak:6:N:false': 'dd0e28d2', 'sqwak:6:N:true': 'f6faad7a',
     'sqwak:20:L:false': 'f5e7a355', 'sqwak:20:L:true': 'a1976a89', 'sqwak:20:N:false': '6c13736f', 'sqwak:20:N:true': '9eb47c33',
     'sqwak:40:L:false': '718afa0a', 'sqwak:40:L:true': 'ba61ab98', 'sqwak:40:N:false': '295cfe0e', 'sqwak:40:N:true': '1cb614f6',
@@ -1035,7 +1035,9 @@ async function run() {
   {
     const o = cl.none, i = await indexOf(o, ':report$'), at = (t, r) => lp('close', o, i, 'card', t, false, r);
     assert(await at(0.1, stampBox) === await at(1.9, stampBox) && await at(0.1, labelBox) === await at(1.9, labelBox), 'close report (no quota): something covers or stamps the verdict');
-    assert(await at(0.4, pnlBox) !== await at(0.5, pnlBox) || await at(0.4, dashBox) !== await at(0.5, dashBox), 'close report (no quota): nothing counts');
+    // the sheet: the label shows from the start and the count is the key movement; with a figure of 0 the tally shows $0 from 0.30 s (no count), and the dashes light one by one
+    assert(await at(0.1, pnlBox) !== await at(0.34, pnlBox) && await at(0.34, pnlBox) === await at(1.9, pnlBox), 'close report (no quota): the $0 does not appear at 0.30 s and stay');
+    assert(await at(0.4, dashBox) !== await at(0.5, dashBox) && await at(0.8, dashBox) !== await at(0.86, dashBox) && await at(0.86, dashBox) === await at(1.9, dashBox), 'close report (no quota): the dashes do not light one by one up to 0.83 s');
   }
   // a figure of exactly 0 does not count: the tally shows $0 from 0.30 s, the stamp carries the shot
   {
@@ -1055,7 +1057,7 @@ async function run() {
     for (let t = 0; t <= 2.0; t += 1 / 30) {
       const b = await drawn(o, i, t);
       if (b.x1 < 0) continue;
-      assert(b.x0 >= 169 && b.x1 <= 483 && b.y0 >= 76 && b.y1 <= 181, `close report (${name}): drawn outside the box interior at ${t.toFixed(2)} s: ${JSON.stringify(b)}`);
+      assert(b.x0 >= 169 && b.x1 <= 474 && b.y0 >= 76 && b.y1 <= 181, `close report (${name}): drawn outside the box interior at ${t.toFixed(2)} s: ${JSON.stringify(b)}`);
       if (b.px0 < 1e9) assert(b.py0 >= 116 && b.py1 <= 134, `close report (${name}): the figure leaves its rows at ${t.toFixed(2)} s: ${JSON.stringify(b)}`);
     }
   }
@@ -1109,7 +1111,12 @@ async function run() {
     const f = (o, i, t, ins) => lp('close', o, i, 'phone', t, false, ins ? flagBox(true) : flagBox(false));
     assert(await f(sq.six, ins6, 0.4, true) !== await f(sq.six, ins6, 0.7, true) && await f(sq.six, ins6, 0.7, true) === await f(sq.six, ins6, 1.0, true), 'close insert (BREAKING): the flag does not blink at 1.0 s and end lit');
     assert(await f(sq.live, ins20, 0.4, true) !== await f(sq.live, ins20, 0.8, true) && await f(sq.live, ins20, 0.8, true) === await f(sq.live, ins20, 1.0, true) && await f(sq.live, ins20, 0.6, true) === await f(sq.live, ins20, 0.8, true), 'close insert (LIVE): the flag does not blink at 1.0 s like the others and end lit');
-    assert(await f(sq.six, rd6, 2.0, false) !== await f(sq.six, rd6, 2.2, false) || await f(sq.six, rd6, 1.9, false) !== await f(sq.six, rd6, 2.2, false), 'close read: the flag does not blink');
+    // the read (2.6 s, end-anchored at the 1.0 s standby rate, half on): lit 0.1-0.6, 1.1-1.6, 2.1-2.6; dark 0-0.1, 0.6-1.1, 1.6-2.1; lit at the end
+    const onR = await f(sq.six, rd6, 2.2, false), offR = await f(sq.six, rd6, 2.0, false);
+    assert(onR !== offR && await f(sq.six, rd6, 2.6, false) === onR && await f(sq.six, rd6, 2.5, false) === onR && await f(sq.six, rd6, 1.3, false) === onR && await f(sq.six, rd6, 0.3, false) === onR, 'close read: the flag is not lit at 0.3, 1.3, 2.2 and the end');
+    assert(await f(sq.six, rd6, 1.8, false) === offR && await f(sq.six, rd6, 0.8, false) === offR, 'close read: the flag is not dark at 0.8, 1.8 and 2.0');
+    // the flag's blink ends with the beat it is built for, whatever that beat's length
+    assert(await page.evaluate((o) => { const b = BTB.Scenes.close(o).find((x) => /:sqwak-read$/.test(x.id)), end = b.dur, c = document.createElement('canvas'); c.width = 640; c.height = 360; const g = c.getContext('2d'); b.layers[1].animate(g, { w: 640, h: 360 }, end, 1, {}); const px = g.getImageData(225, 90, 1, 1).data; return px[3] > 0; }, sq.six), 'close read: the flag is not lit at the beat\'s own end');
   }
   // the insert shows the read's starting counts, static: its last frame's count text is the read's first frame's, and its final picture is the flat insert except there
   for (const [name, o] of [['six', sq.six], ['live', sq.live], ['four', sq.four], ['last', sq.last]]) {
