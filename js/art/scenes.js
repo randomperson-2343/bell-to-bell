@@ -114,10 +114,12 @@
   // Lobby elevator. `open` 0..1 slides the doors apart.
   // `part` draws one layer of it for the layered opening shot; undefined draws the whole picture, as ever.
   // Parts: 'car' (the lit car), 'lobby' (wall, panels, carpet with the doorway left unpainted, indicator housing, call button),
-  // 'number' (the indicator well and its floor number), 'arrow' (the up glyph), 'doors', 'frame'.
+  // 'number' (the indicator well and its floor number), 'arrow' (the up glyph), 'doors', 'frame'; and, for a single cached layer in the flat
+  // picture's own order (the car's glow reaches past the doorway), 'wall' (the lobby without the housing and button) and 'top' (housing, well,
+  // number and call button: the part of the flat picture drawn after the car).
   function elevator(ctx, open, floor, part) {
     const all = part == null, has = (n) => all || part === n;
-    if (has('lobby')) {
+    if (has('lobby') || part === 'wall') {
       ctx.save();
       if (!all) { ctx.beginPath(); ctx.rect(0, 0, 320, 180); ctx.rect(98, 26, 124, 105); ctx.clip('evenodd'); }
       X.rect(ctx, 0, 0, V.w, V.h, P.ink2);
@@ -136,12 +138,12 @@
       k1(ctx, 100, 72, 120, 4, P.plastic, P.plastic2, P.plasticD);
       X.rect(ctx, 96, 124, 128, 8, P.carpet);
     }
-    if (has('lobby') || has('number')) {
+    if (has('lobby') || has('number') || part === 'top') {
       // Floor indicator and the call button.
-      if (has('lobby')) k1(ctx, 132, 6, 56, 16, P.plastic, P.plastic2, P.plasticD);
+      if (has('lobby') || part === 'top') k1(ctx, 132, 6, 56, 16, P.plastic, P.plastic2, P.plasticD);
       k1(ctx, 136, 9, 48, 10, P.ink, P.screenD, P.ink, P.ink2);
-      if (!part || part === 'number') X.text(ctx, String(floor || 41), 160, 11, P.amber, { align: 'center' });
-      if (has('lobby')) { k1(ctx, 232, 66, 10, 18, P.plastic, P.plastic2, P.plasticD); X.rect(ctx, 235, 70, 4, 4, P.amber); X.rect(ctx, 235, 77, 4, 4, P.slate2); }
+      if (!part || part === 'number' || part === 'top') X.text(ctx, String(floor || 41), 160, 11, P.amber, { align: 'center' });
+      if (has('lobby') || part === 'top') { k1(ctx, 232, 66, 10, 18, P.plastic, P.plastic2, P.plasticD); X.rect(ctx, 235, 70, 4, 4, P.amber); X.rect(ctx, 235, 77, 4, 4, P.slate2); }
     }
     if (part === 'arrow') X.text(ctx, '\u2191', 140, 11, P.amberD);
     if (has('doors')) {

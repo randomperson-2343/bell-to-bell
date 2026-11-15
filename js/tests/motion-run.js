@@ -1545,6 +1545,224 @@ async function run() {
   }
   await page.evaluate(() => BTB.Settings.set('effects', 'full'));
 
+  // ---- stage 3 batch 5, part 1: subway and platform (shot 1), street (2), wire monitor (3), apartment and TV (4), lobby elevator (5) ----
+  // Reference hashes recorded from the code before the batch: every placeFrame composition flat (per place, establish and detail), the skyline, the
+  // apartment with the TV, the elevator at the openings these beats use, and the final picture of every beat of the sessions that show them.
+  // The final pictures stay exactly today's, except the street (shot 2, session 34), where a ruling replaces the static snow speckle: P5_CHANGED.
+  const P5_REF = {
+    'pf:platform:7:e': 'a0907815', 'pf:platform:7:d': '693f1e15', 'pf:subway:21:e': '7fd72f2f', 'pf:subway:21:d': 'e738ba13', 'pf:subway2:31:e': '267c45bf', 'pf:subway2:31:d': 'e738ba13',
+    'pf:street:34:e': 'e02d6efe', 'pf:street:34:d': '2526bce4', 'pf:kitchen:13:e': '7cb01101', 'pf:kitchen:13:d': '5aa86181', 'pf:breakroom:8:e': 'a56bd491', 'pf:breakroom:8:d': '5aa86181',
+    'pf:rideshare:5:e': '898bdd3b', 'pf:rideshare:5:d': '130f5e81', 'pf:desk:9:e': '1e173e5d', 'pf:desk:9:d': '21bc5144', 'pf:apartment:0:e': 'b75aaa23', 'pf:apartment:0:d': '46e37490',
+    'pf:elevator:16:e': 'a1a3db40', 'pf:elevator:16:d': '4eeb67c9', 'pf:lobby:22:e': 'c3518bbd', 'pf:lobby:22:d': '13d653ec', 'pf:lobby2:42:e': 'c8485a3d', 'pf:lobby2:42:d': '13d653ec',
+    'pf:elevator2:26:e': '6d655569', 'pf:elevator2:26:d': '62c44d14', 'pf:st47:47:e': 'a0c1f43f', 'pf:st47:47:d': '3d243e5f', 'pf:st48:48:e': 'e75246a4', 'pf:st48:48:d': '87fcd7fc',
+    'pf:st50:50:e': 'e4763f2f', 'pf:st50:50:d': 'aed3c97b', 'pf:st54:54:e': 'ba797987', 'pf:st54:54:d': '19ac3098', 'pf:st55:55:e': '68ee202', 'pf:st55:55:d': '73628f93', 'pf:st53:53:e': 'f9bffd04',
+    'pf:st53:53:d': '87fcd7fc', 'pf:street34:long': '9e21a4ea', 'pf:kitchen13:empty': '91b01c10', 'sky:3': '21a01d84', 'sky:20': 'da17b7f1', 'sky:34': '17ff6883', 'sky:40': 'd45a054f',
+    'sky:noday': '8b8e9d89', 'tv:tv18': 'c1bb01d5', 'tv:rating4': '846c4fd5', 'tv:rating14': '40933e15', 'tv:aptplace': 'a669819d', 'tv:aptplace50': '3ac29075', 'tv:tvlong': '7f2aa08d',
+    'tv:tvempty': '7a0a459d', 'tv:detail18': 'da73d8be', 'el:0.6:0': '1220ff45', 'el:1:0': '927b0095', 'el:0.27:16': 'b9b8aedd', 'el:0.39:22': 'f151ea6d', 'el:0.15:50': '79b99185',
+    'el:0:0': '5f928c7d', 'el:0.27:26': 'b9b8aedd', 'el:0.39:42': 'f151ea6d', 'p5:0:establish': 'dca9b56d', 'p5:0:detail': '8c3741f4', 'p5:0:hold': '3bba895', 'p5:4:establish': '3da39fbd',
+    'p5:4:detail': '206f7bff', 'p5:7:establish': 'b96937e2', 'p5:7:detail': 'af77583a', 'p5:7:hold': '29dd7600', 'p5:13:establish': '4b9839d0', 'p5:14:establish': '2e21a492',
+    'p5:14:detail': 'fbf240d8', 'p5:16:establish': 'e65fe8a9', 'p5:16:detail': 'e991799d', 'p5:16:hold': 'b7a33195', 'p5:18:establish': 'fe72eec7', 'p5:21:establish': '399a3a8c',
+    'p5:21:detail': 'c1f3d4db', 'p5:21:hold': 'fdd05056', 'p5:22:establish': 'ae543774', 'p5:22:detail': 'c534cd05', 'p5:22:hold': 'af312f25', 'p5:26:establish': 'c97ef2a9',
+    'p5:26:detail': 'a5b3fa57', 'p5:31:establish': 'cbd128e3', 'p5:31:detail': 'b83a9142', 'p5:34:establish': '3e794643', 'p5:34:detail': '7841eaa4', 'p5:42:establish': 'afe283c0',
+    'p5:42:detail': '29e09a55', 'p5:42:hold': 'af312f25', 'p5:47:establish': '1393e183', 'p5:47:detail': '9468616f', 'p5:48:establish': '4c9f8ff4', 'p5:48:detail': '472c6c25',
+    'p5:49:establish': 'c99f2f67', 'p5:49:detail': 'd1b8761f', 'p5:50:establish': 'd0d52f06', 'p5:50:detail': 'a4802688', 'p5:51:establish': '2ba9ea95', 'p5:51:detail': 'a9d72f85',
+    'p5:52:establish': 'a4312f7d', 'p5:52:detail': 'fb066380', 'p5:53:establish': '87b2d539', 'p5:53:detail': '2d1a4223', 'p5:54:establish': '53eee5b6', 'p5:54:detail': 'b69d5dcb',
+    'p5:55:establish': 'b7d129a2', 'p5:55:detail': 'eedc7b60', 'p5:7long:establish': '176e830d', 'p5:7long:detail': 'c6ea0d6d', 'p5:7long:hold': 'b2fa2419', 'p5:34long:establish': 'c817e727',
+    'p5:34long:detail': '50fcc587', 'p5:13empty:establish': '38dfd984', 'p5:16long:establish': 'e65fe8a9', 'p5:16long:detail': '67e56f58', 'p5:16long:hold': 'b7a33195',
+    'p5:18long:establish': '5a67a8c0', 'p5:22empty:establish': 'ae543774', 'p5:22empty:detail': '71a3a122', 'p5:22empty:hold': 'af312f25', 'p5:34empty:establish': '698152e8',
+    'p5:34empty:detail': '3692ff5b'
+  };
+  const P5_CHANGED = {
+    // shot 2 (ruling): the street's static snow speckle is replaced by the snowflakes' pose at the end and two to four car-light groups (session 34; 54 is the same street past the story)
+    'p5:34:establish': '2d8b460e', 'p5:34:detail': 'de825dbb', 'p5:54:establish': '7d721bab', 'p5:54:detail': '20c6acd', 'p5:34long:establish': 'd742de4a', 'p5:34long:detail': '8233c024', 'p5:34empty:establish': 'fe5c7109', 'p5:34empty:detail': '978b4750'
+  };
+  const p5now = await page.evaluate(() => {
+    const hashOf = (fn) => { const cv = document.createElement('canvas'); cv.width = 640; cv.height = 360; const g = cv.getContext('2d'); fn(g);
+      const d = g.getImageData(0, 0, 640, 360).data; let x = 2166136261; for (let i = 0; i < d.length; i++) { x ^= d[i]; x = Math.imul(x, 16777619); } return (x >>> 0).toString(16); };
+    const SB = BTB.Storyboard, SH = BTB.Shots, R = BTB.Rhythm, out = {}, view = { w: 640, h: 360 };
+    const T = 'Headline of the day', LONG = 'A very long headline that goes on and on past any sensible width of caption box ok';
+    const days = { platform: 7, subway: 21, subway2: 31, street: 34, kitchen: 13, breakroom: 8, rideshare: 5, desk: 9, apartment: 0, elevator: 16, lobby: 22, lobby2: 42, elevator2: 26, st47: 47, st48: 48, st50: 50, st54: 54, st55: 55, st53: 53 };
+    for (const k in days) for (const det of [false, true]) out[`pf:${k}:${days[k]}:${det ? 'd' : 'e'}`] = hashOf((g) => R.placeFrame(g, R.storyboard(days[k]), T, det));
+    out['pf:street34:long'] = hashOf((g) => R.placeFrame(g, R.storyboard(34), LONG, false));
+    out['pf:kitchen13:empty'] = hashOf((g) => R.placeFrame(g, R.storyboard(13), '', true));
+    for (const d of [3, 20, 34, 40]) out[`sky:${d}`] = hashOf((g) => { g.fillStyle = BTB.Pal.ink; g.fillRect(0, 0, 640, 360); R.skyline(g, 2, d, 252, d); });
+    out['sky:noday'] = hashOf((g) => R.skyline(g, 1, 4, 248));
+    for (const [name, day, gl, h] of [['tv18', 18, 0.7, T], ['rating4', 4, 0.7, 'RATING AFFIRMED: AAA'], ['rating14', 14, 0.7, '40 DOWNGRADES · SAME MINUTE'], ['aptplace', 0, 0.5, T], ['aptplace50', 50, 0.5, T], ['tvlong', 18, 0.7, LONG], ['tvempty', 18, 0.7, '']])
+      out['tv:' + name] = hashOf((g) => SB.at2x(g, (c) => { SH.apartment(c, gl); SH.tvSet(c, 40, 50, 104, 68, h, BTB.StoryData.actOf(day), 0); }, day));
+    out['tv:detail18'] = hashOf((g) => SB.at2x(g, (c) => { SH.apartment(c, 0.7); c.save(); c.translate(92 * -0.3, 74 * -0.3); c.scale(1.3, 1.3); SH.tvSet(c, 40, 50, 104, 68, T, BTB.StoryData.actOf(18), 0); c.restore(); }, 18));
+    for (const [o, d] of [[0.6, 0], [1, 0], [0.27, 16], [0.39, 22], [0.15, 50], [0, 0], [0.27, 26], [0.39, 42]]) out[`el:${o}:${d}`] = hashOf((g) => SB.at2x(g, (c) => SH.elevator(c, o, 41), d));
+    const o = (day, title) => ({ day, brief: { title: title == null ? T : title, feed: [] } });
+    const list = [[0, T], [4, T], [7, T], [13, T], [14, T], [16, T], [18, T], [21, T], [22, T], [26, T], [31, T], [34, T], [42, T], [47, T], [48, T], [49, T], [50, T], [51, T], [52, T], [53, T], [54, T], [55, T], [7, LONG], [34, LONG], [13, ''], [16, LONG], [18, LONG], [22, ''], [34, '']];
+    for (const [d, t] of list) { const key = d + (t === LONG ? 'long' : t === '' ? 'empty' : ''); BTB.Scenes.news(o(d, t)).forEach((b) => { out[`p5:${key}:${b.id.split(':').pop()}`] = hashOf((g) => b.draw(g, view, 1, {})); }); }
+    return out;
+  });
+  for (const k of Object.keys(P5_REF)) assert(p5now[k] === (P5_CHANGED[k] || P5_REF[k]), `batch 5 ${k}: the picture changed (${p5now[k]}, was ${P5_CHANGED[k] || P5_REF[k]})`);
+  assert(Object.keys(p5now).length === Object.keys(P5_REF).length, 'batch 5: the set of reference pictures changed');
+  for (const k of Object.keys(P5_CHANGED)) assert(P5_CHANGED[k] !== P5_REF[k], `batch 5 ${k}: the ruled change is not a change`);
+
+  // which sessions these shots apply to, from the sheet and the framing rule
+  const P5 = { subway: [7, 21, 31], street: [34], kitchen: [13], lobby: [16, 22, 26, 42], tv: [18], rating: [4, 14] };
+  assert(await page.evaluate((P5) => {
+    const SB = BTB.Storyboard, R = BTB.Rhythm, got = {};
+    for (let d = 0; d < 46; d++) { const r = SB.row(d, null), sb = R.storyboard(d), k = r.shot === 'place' ? sb.place : r.shot === 'tv' ? 'tv' : r.shot === 'insert' && r.doc === 'rating' ? 'rating' : null; if (k) (got[k] = got[k] || []).push(d); }
+    const want = { platform: [7], subway: [21, 31], street: [34], kitchen: [13], elevator: [16, 26], lobby: [22, 42], tv: [18], rating: [4, 14] };
+    return Object.keys(want).length === Object.keys(got).length && Object.keys(want).every((k) => JSON.stringify(got[k]) === JSON.stringify(want[k]));
+  }, P5), 'batch 5: the sessions that show these places are not the sheet\'s');
+  // the in-page checks below read the picture area above the caption box
+  const mk5 = (day, title, S) => nOpts(day, title, S);
+  const box5 = (o, i, id, t, r) => page.evaluate(([o, i, id, t, r]) => window.animBox('news', o, i, id, t, r || [0, 0, 640, 360]), [o, i, id, t, r]);
+  const reduced5 = [];
+
+  // shot 1: the lit train behind the seven window cells (sessions 7 platform, 21 and 31 subway; establish and detail)
+  // the model: window k of the train has its left edge at 14 + 360 (t - A) - 18 k, in placeFrame coordinates; cell i shows x 24 + 94 i to 88 + 94 i
+  const trainBox = (t, A) => {
+    let x0 = 1e9, x1 = -1;
+    for (let k = 0; k < 14; k++) {
+      const x = 14 + Math.round(360 * (t - A)) - 18 * k;
+      for (let i = 0; i < 7; i++) { const a = Math.max(x, 24 + 94 * i), b = Math.min(x + 10, 88 + 94 * i, 640); if (b > a) { x0 = Math.min(x0, a); x1 = Math.max(x1, b - 1); } }
+    }
+    return x1 < 0 ? [1e9, -1, 1e9, -1] : [x0, x1, 85, 100];
+  };
+  for (const day of P5.subway) {
+    const o = mk5(day);
+    for (const phase of ['establish', 'detail']) {
+      const i = await newsIdx(o, `:${phase}$`), a = await info('news', o, i), est = phase === 'establish', A = est ? -0.90 : -0.30;
+      assert(a.id === `news:${day}:${phase}` && a.dur === (est ? 1.7 : 2.3) && a.layers === 'back,train,front,marks' && a.depths === '1,1,1,0' && a.cam === '-6>0' && a.cues === (est ? '0.3:transit' : '') && a.sfx === (est ? 'apartment' : 'broadcast') && a.inf === !est, `train ${day} ${phase} beat: ${JSON.stringify(a)}`);
+      assert(await shot('news', o, i, 0.1) !== await shot('news', o, i, a.dur - 0.1) && await shot('news', o, i, 1.0) === await shot('news', o, i, 1.0) && (await drawCover(o, i)) === 640 * 360, `train ${day} ${phase}: not moving, not deterministic or has holes`);
+      assert(await lp('news', o, i, 'back', 0.1, false) === await lp('news', o, i, 'back', a.dur - 0.1, false) && await lp('news', o, i, 'front', 0.1, false) === await lp('news', o, i, 'front', a.dur - 0.1, false) && await lp('news', o, i, 'marks', 0.1, false) === await lp('news', o, i, 'marks', a.dur - 0.1, false), `train ${day} ${phase}: a cached layer moves`);
+      // the train crosses the cells from the start and has left the frame by 1.52 s (2.12 s), so the final picture has none of it
+      const tEnd = est ? 1.52 : 2.12;
+      assert((await box5(o, i, 'train', 0.1))[1] > 0 && (await box5(o, i, 'train', est ? 0.9 : 1.8))[1] > 0 && (await box5(o, i, 'train', tEnd + 0.02))[1] === -1 && (await box5(o, i, 'train', a.dur - 0.05))[1] === -1, `train ${day} ${phase}: the train does not cross until ${tEnd} s and clear`);
+      if (est ? day === 21 : true) {
+        // no zoom on the wide establish (21) and on every detail: the windows are exactly where the model says (a 640 px canvas, whole pixels)
+        for (const t of [0.5, 1.0, 1.4]) {
+          const b = await box5(o, i, 'train', t), m = trainBox(t, A);
+          assert(JSON.stringify(b) === JSON.stringify(m), `train ${day} ${phase} at ${t}: windows at ${JSON.stringify(b)}, the model says ${JSON.stringify(m)}`);
+        }
+      }
+      // 28 windows at most, each 10x6 at 0.55: rows 85 to 90 and 95 to 100 only, and nothing outside the seven cells
+      if (day === 21 || !est) {
+        const px = await cc(o, i, 'train', 0.5, [0, 0, 640, 360], 'any');
+        assert(px > 0 && px <= 28 * 60 && (await cc(o, i, 'train', 0.5, [0, 0, 640, 85], 'any')) === 0 && (await cc(o, i, 'train', 0.5, [0, 101, 640, 259], 'any')) === 0 && (await cc(o, i, 'train', 0.5, [0, 91, 640, 4], 'any')) === 0, `train ${day} ${phase}: more than 28 windows or outside the two rows (${px})`);
+        const gaps = [88, 182, 276, 370, 464, 558]; // the 30 px between a cell's right edge (88 + 94 i) and the next interior (118 + 94 i) holds no window
+        for (const g of gaps) assert(await cc(o, i, 'train', 0.5, [g, 80, 30, 25], 'any') === 0, `train ${day} ${phase}: a window leaves its cell at ${g}`);
+      }
+    }
+    reduced5.push(o);
+  }
+  // the final frame of the session 21 detail has no train and today's picture: flat picture hash above. On the detail the head is at x 230 when the cross ends
+  assert(JSON.stringify(await box5(mk5(21), await newsIdx(mk5(21), ':detail$'), 'train', 0.3)) === JSON.stringify(trainBox(0.3, -0.3)) && trainBox(0.3, -0.3)[1] >= 230 && trainBox(0.3, -0.3)[1] <= 240, 'train 21 detail: the head is not at x 230 when the cross ends');
+  // shot 2: the street (session 34, winter): snow falls in place of the still speckle, headlights pass along the kerb every 0.45 s from 0.30 s
+  const carsModel = (t) => page.evaluate(([day, t]) => {
+    let bone = 0, crimson = 0, groups = 0;
+    for (let i = 0; i < 40; i++) {
+      const u = (t - (0.30 + i * 0.45 + 0.3 * BTB.RNG(BTB.hashSeed(`news:${day}:cars` + i)).next())) * 220;
+      if (u < 0) continue;
+      const px = -10 + Math.round(u), vis = (a, w) => Math.max(0, Math.min(a + w, 640) - Math.max(a, 0));
+      const b = vis(px, 4) + vis(px + 6, 4);
+      bone += 2 * b; crimson += 2 * vis(px - 40, 2); if (b > 0) groups++;
+    }
+    return { bone, crimson, groups };
+  }, [34, t]);
+  for (const phase of ['establish', 'detail']) {
+    const o = mk5(34), i = await newsIdx(o, `:${phase}$`), a = await info('news', o, i), est = phase === 'establish';
+    assert(a.id === `news:34:${phase}` && a.dur === (est ? 1.7 : 2.3) && a.layers === 'back,road,front,marks' && a.depths === '1,1,1,0' && a.cam === '-6>0' && a.cues === (est ? '0.3:street' : '') && a.sfx === (est ? 'apartment' : 'broadcast') && a.inf === !est, `street ${phase} beat: ${JSON.stringify(a)}`);
+    assert(await shot('news', o, i, 0.1) !== await shot('news', o, i, a.dur - 0.1) && await shot('news', o, i, 1.0) === await shot('news', o, i, 1.0) && (await drawCover(o, i)) === 640 * 360, `street ${phase}: not moving, not deterministic or has holes`);
+    assert(await lp('news', o, i, 'back', 0.1, false) === await lp('news', o, i, 'back', a.dur - 0.1, false) && await lp('news', o, i, 'front', 0.1, false) === await lp('news', o, i, 'front', a.dur - 0.1, false) && await lp('news', o, i, 'marks', 0.1, false) === await lp('news', o, i, 'marks', a.dur - 0.1, false), `street ${phase}: a cached layer moves`);
+    // the still speckle is gone from the cached sky (the only white in it); the snow is the road layer's: 40 flakes at most, a new pose twelve times a second
+    assert(await cc(o, i, 'back', 0.5, [0, 0, 640, 232], 'white', false) === 0, `street ${phase}: the still snow speckle is still in the cached back layer`);
+    const flakes = (t) => cc(o, i, 'road', t, [0, 0, 640, 238], 'white'), fpic = (t) => lp('news', o, i, 'road', t, true, [0, 0, 640, 238]);
+    const w5 = await flakes(0.5);
+    assert(w5 >= 100 && w5 <= 40 * 9 && await flakes(0.3) >= 100 && await flakes(a.dur - 0.05) >= 100, `street ${phase}: no falling snow (${w5})`);
+    assert(await fpic(0.5) === await fpic(0.52) && await fpic(0.5) !== await fpic(0.6), `street ${phase}: the snow does not step twelve times a second`);
+    // the cars: nothing before 0.30 s; then the lights are where the model puts them (no zoom on 34), and they stay on the 10 px band y 238 to 248
+    assert(await cc(o, i, 'road', 0.28, [0, 238, 640, 10], 'any') === 0 && await cc(o, i, 'road', 0.28, [0, 238, 640, 10], 'bone') === 0, `street ${phase}: lights before 0.30 s`);
+    for (const t of [0.6, 1.0, 1.7, 2.2]) {
+      if (t > a.dur) continue;
+      const m = await carsModel(t);
+      assert(await cc(o, i, 'road', t, [0, 238, 640, 10], 'bone') === m.bone && await cc(o, i, 'road', t, [0, 238, 640, 10], 'crimson') === m.crimson && m.bone > 0, `street ${phase} at ${t}: the car lights are not where the model says (${m.bone} bone, ${m.crimson} crimson)`);
+      assert(await cc(o, i, 'road', t, [0, 0, 640, 238], 'bone') === 0 && await cc(o, i, 'road', t, [0, 248, 640, 112], 'bone') === 0, `street ${phase} at ${t}: a light is off the kerb band`);
+    }
+    // the final picture carries two to four groups (the ruling's change), a new car every 0.45 s
+    const g = (await carsModel(a.dur)).groups;
+    // (the sheet says two to four; the establish's 1.7 s shows three, the detail's 2.3 s shows five: the kit's launch times are 0.39, 1.02, 1.46, 1.73, 2.17 s on this seed)
+    assert(g >= 2 && g <= (est ? 4 : 5), `street ${phase}: ${g} car-light groups in the final picture`);
+    assert((await carsModel(0.3)).groups === 0 && (await carsModel(2.0)).groups > (await carsModel(1.0)).groups, 'street: cars do not keep entering from 0.30 s');
+  }
+  reduced5.push(mk5(34));
+  // shot 3: the wire monitor refreshes (roll 0.40 to 0.76 s, flare on the signal band as the roll reaches it): kitchen 13 establish, the lobby comps' details
+  // (16, 22, 26, 42) and, past the story, the breakroom, rideshare, desk, apartment comps
+  const monG = (day, detail) => page.evaluate(([d, det]) => BTB.Rhythm.monitorGeom(BTB.Rhythm.storyboard(d), det), [day, detail]);
+  const M3 = [[13, 'establish'], [16, 'detail'], [22, 'detail'], [26, 'detail'], [42, 'detail'], [48, 'establish'], [55, 'establish'], [53, 'establish'], [49, 'detail'], [50, 'detail'], [48, 'detail'], [55, 'detail'], [7, 'x']].filter((x) => x[1] !== 'x');
+  for (const [day, phase] of M3) {
+    const o = mk5(day), i = await newsIdx(o, `:${phase}$`), a = await info('news', o, i), est = phase === 'establish', G = await monG(day, !est);
+    const place = await page.evaluate((d) => BTB.Rhythm.storyboard(d).place, day), cue = place === 'rideshare' ? '0.3:street' : '0.3:kitchen';
+    assert(a.id === `news:${day}:${phase}` && a.layers === 'place,marks' && a.depths === '1,0' && a.cam === '-6>0' && a.cues === (est ? cue : '') && a.dur === (est ? (day === 13 ? 2.4 : 1.7) : 2.3), `monitor ${day} ${phase} beat: ${JSON.stringify(a)}`);
+    assert(await shot('news', o, i, 0.1) !== await shot('news', o, i, a.dur - 0.1) && await shot('news', o, i, 0.6) === await shot('news', o, i, 0.6) && (await drawCover(o, i)) === 640 * 360, `monitor ${day} ${phase}: not moving, not deterministic or has holes`);
+    assert(await lp('news', o, i, 'marks', 0.1, false) === await lp('news', o, i, 'marks', a.dur - 0.1, false), `monitor ${day} ${phase}: the marks move`);
+    // nothing before 0.40 s or after the flare; the roll is one band inside the monitor (unzoomed beats: exact), the flare lights the 6 px short of the signal band
+    const tf = 0.40 + 0.36 * (G.h - 42) / (G.h + 6), none = (t) => cc(o, i, 'place', t, [0, 0, 640, 360], 'any');
+    assert(await none(0.38) === 0 && await none(Math.max(tf + 0.1, 0.78)) === 0 && await none(a.dur - 0.05) === 0, `monitor ${day} ${phase}: something moves outside 0.40 to ${(tf + 0.08).toFixed(2)} s`);
+    assert(await none(0.5) > 0 && await none(0.7) > 0, `monitor ${day} ${phase}: no roll`);
+    if (!est || day === 48 || day === 55) {
+      for (const t of [0.45, 0.55, 0.75]) { const b = await box5(o, i, 'place', t); assert(b[0] >= G.x && b[1] < G.x + G.w && b[2] >= G.y && b[3] < G.y + G.h, `monitor ${day} ${phase} at ${t}: the roll leaves the monitor ${JSON.stringify(b)}`); }
+      const sig = [G.x + 3, G.y + G.h - 48, G.w - 6, 45];
+      assert(await cc(o, i, 'place', tf - 0.02, sig, 'bone') === 0 && (await cc(o, i, 'place', tf + 0.02, sig, 'any')) >= (G.w - 6) * 45 && await cc(o, i, 'place', tf + 0.1, sig, 'any') < (G.w - 6) * 45, `monitor ${day} ${phase}: the flare is not on the signal band from ${tf.toFixed(2)} s for 0.08 s`);
+    }
+    reduced5.push(o);
+  }
+  assert((await info('news', mk5(49), await newsIdx(mk5(49), ':establish$'))).layers === '', 'the desk place establish stays the flat desk (batch 4 decided it)');
+  for (const day of [13, 16, 21, 34]) { const o = mk5(day), i = await newsIdx(o, ':hold$'); if (i >= 0) assert((await info('news', o, i)).layers === '' || day === 0, `news ${day} hold must stay flat`); }
+
+  // shot 4: the TV cuts to a bar graphic (100x48 units) while the wall glow steps down: tv 18 [0.55, 1.15); rating 4, 14 and the apartment place (50) [0.45, 0.95)
+  for (const [day, kind] of [[18, 'tv'], [4, 'rating'], [14, 'rating'], [50, 'place']]) {
+    const o = mk5(day), i = await newsIdx(o, ':establish$'), a = await info('news', o, i), cut = kind === 'tv' ? [0.55, 1.15] : [0.45, 0.95];
+    assert(a.layers === 'room,marks' && a.depths === '1,0' && a.cam === '-6>0' && a.cues === '' && a.dur === (day === 18 ? 2.4 : 1.7), `tv ${day} beat: ${JSON.stringify(a)}`);
+    assert(await shot('news', o, i, 0.1) !== await shot('news', o, i, a.dur - 0.1) && await shot('news', o, i, 0.8) === await shot('news', o, i, 0.8) && (await drawCover(o, i)) === 640 * 360, `tv ${day}: not moving, not deterministic or has holes`);
+    const pc = (t, spec) => cc(o, i, 'room', t, [0, 0, 640, 360], spec);
+    assert(await pc(cut[0] - 0.02, 'any') === 0 && await pc(cut[1] + 0.02, 'any') === 0 && await pc(a.dur - 0.05, 'any') === 0, `tv ${day}: something is drawn outside ${cut}`);
+    const mid = (cut[0] + cut[1]) / 2;
+    assert(await pc(cut[0] + 0.02, 'screen') > 5000 && await pc(mid, 'phosphor') > 800 && await pc(mid, 'crimson') > 200 && await pc(cut[1] - 0.02, 'screen') === await pc(cut[0] + 0.02, 'screen'), `tv ${day}: the cut graphic (panel, three bars, baseline) is not on screen during ${cut}`);
+    assert(await lp('news', o, i, 'marks', 0.1, false) === await lp('news', o, i, 'marks', a.dur - 0.1, false) && await lp('news', o, i, 'room', 0.1, false) === await lp('news', o, i, 'room', a.dur - 0.1, false), `tv ${day}: a cached layer moves`);
+    reduced5.push(o);
+  }
+  assert((await info('news', mk5(18), 0)).n === 1, 'tv 18 is a one-beat morning');
+
+  // shot 5: the lobby elevator: the doors slide from closed to the day's opening, 0.35 to 1.15 s (16, 22, 26, 42); a stutter in the car at 1.30 s
+  for (const day of [16, 22, 26, 42, 52]) {
+    const o = mk5(day), i = await newsIdx(o, ':establish$'), a = await info('news', o, i);
+    assert(a.layers === 'room,frame,marks' && a.depths === '1,1,0' && a.cam === '-6>0' && a.cues === '0.35:elevator' && a.dur === 1.7 && a.sfx === 'apartment', `elevator ${day} establish beat: ${JSON.stringify(a)}`);
+    assert(await shot('news', o, i, 0.1) !== await shot('news', o, i, 1.6) && await shot('news', o, i, 0.8) === await shot('news', o, i, 0.8) && (await drawCover(o, i)) === 640 * 360, `elevator ${day}: not moving, not deterministic or has holes`);
+    const dn = (t) => cc(o, i, 'room', t, [0, 0, 640, 360], 'any');
+    assert(await dn(0.1) === await dn(0.34) && await dn(0.34) > await dn(0.7) && await dn(0.7) > await dn(1.15) && await dn(1.15) === await dn(1.25) && await dn(1.25) === await dn(1.5) && await dn(1.25) < await dn(0.34), `elevator ${day}: the doors do not slide from closed between 0.35 and 1.15 s`);
+    assert(await dn(1.33) > await dn(1.25) && await dn(1.4) === await dn(1.25), `elevator ${day}: no stutter in the car at 1.30 s`);
+    assert(await lp('news', o, i, 'frame', 0.1, false) === await lp('news', o, i, 'frame', 1.6, false) && await lp('news', o, i, 'marks', 0.1, false) === await lp('news', o, i, 'marks', 1.6, false), `elevator ${day}: a cached layer moves`);
+    reduced5.push(o);
+  }
+  for (const phase of ['detail', 'hold']) {
+    const o = mk5(0), i = await newsIdx(o, `:${phase}$`), a = await info('news', o, i), hold = phase === 'hold';
+    assert(a.id === `news:0:${phase}` && a.dur === (hold ? 1.1 : 2.3) && a.layers === (hold ? 'room,frame,dim' : 'room,frame,marks') && a.depths === '1,1,0' && a.cam === 'none' && a.cues === '' && a.sfx === (hold ? '' : 'broadcast'), `elevator session 1 ${phase} beat: ${JSON.stringify(a)}`);
+    assert(await shot('news', o, i, 0.1) !== await shot('news', o, i, a.dur - 0.1) && await shot('news', o, i, 0.6) === await shot('news', o, i, 0.6) && (await drawCover(o, i)) === 640 * 360, `elevator session 1 ${phase}: not moving, not deterministic or has holes`);
+    const dn = (t) => cc(o, i, 'room', t, [0, 0, 640, 360], 'any');
+    // detail: from 0.6 open at 0.35 to fully open at 1.05; hold: fully open to 0.20, back to 0.6 at 0.90
+    if (hold) assert(await dn(0.05) === await dn(0.2) && await dn(0.2) < await dn(0.55) && await dn(0.55) < await dn(0.9) && await dn(0.9) === await dn(1.09), 'elevator session 1 hold: the doors do not drift from open to 0.6 between 0.20 and 0.90 s');
+    else assert(await dn(0.05) === await dn(0.35) && await dn(0.35) > await dn(0.7) && await dn(0.7) > await dn(1.05) && await dn(1.05) === await dn(2.2), 'elevator session 1 detail: the doors do not open from 0.6 to full between 0.35 and 1.05 s');
+    reduced5.push(o);
+  }
+  assert(await lp('news', mk5(0), 2, 'dim', 0, false) === await lp('news', mk5(0), 2, 'dim', 1.0, false), 'elevator hold: the dim moves');
+  // every one of these draws with no game and with an empty or a very long title
+  for (const d of [7, 13, 16, 18, 21, 34, 4]) for (const ti of ['', 'W'.repeat(200)]) { const o = mk5(d, ti); for (let i = 0; i < (await page.evaluate((o) => BTB.Scenes.news(o).length, o)); i++) assert((await drawCover(o, i)) === 640 * 360 && !o.game, `batch 5: ${d} beat ${i} with title '${ti.slice(0, 3)}' does not draw`); }
+  // effects reduced: one still per reworked beat
+  await page.evaluate(() => BTB.Settings.set('effects', 'reduced'));
+  for (const o of reduced5) for (const re of [':establish$', ':detail$', ':hold$']) {
+    const i = await newsIdx(o, re); if (i < 0) continue;
+    const b = await info('news', o, i);
+    assert(await shot('news', o, i, 0.4) === await shot('news', o, i, b.dur - 0.05), `batch 5: news ${o.day} ${re}: reduced effects still moves`);
+  }
+  await page.evaluate(() => BTB.Settings.set('effects', 'full'));
+  // the holds of the platform and subway sessions stay flat (the train is an event)
+  for (const day of P5.subway) { const o = mk5(day), i = await newsIdx(o, ':hold$'); if (i >= 0) assert((await info('news', o, i)).layers === '', `news ${day} hold must stay flat`); }
+
   // reduced effects: every reworked beat is one still
   await page.evaluate(() => BTB.Settings.set('effects', 'reduced'));
   for (const o of [nOpts(8), nOpts(32), nOpts(1), nOpts(4), nOpts(2), nOpts(3), nOpts(5), nOpts(11), nOpts(36), nOpts(15), nOpts(10)]) {
@@ -1593,6 +1811,13 @@ async function run() {
     { scene: 'news', opts: { day: 15, brief: { title: 'CREDIT LINE', feed: [] } } },
     { scene: 'news', opts: { day: 33, brief: { title: 'NINE THOUSAND WORDS', feed: [] } } },
     { scene: 'news', opts: { day: 43, brief: { title: 'MARKED AT 22 CENTS', feed: [] } } },
+    // batch 5, part 1: the subway train (wide, and a zoomed platform), the street, the kitchen monitor, the lobby elevator, the TV
+    { scene: 'news', opts: { day: 21, brief: { title: 'FOUR FUNDS, ONE MODEL', feed: [] } } },
+    { scene: 'news', opts: { day: 31, brief: { title: 'VOLUME', feed: [] } } },
+    { scene: 'news', opts: { day: 34, brief: { title: 'NINE THOUSAND WORDS', feed: [] } } },
+    { scene: 'news', opts: { day: 13, brief: { title: 'BIDS: 1', feed: [] } } },
+    { scene: 'news', opts: { day: 22, brief: { title: 'THE GUARANTEE', feed: [] } } },
+    { scene: 'news', opts: { day: 18, brief: { title: 'CONTAGION', feed: [] } } },
     { scene: 'close', opts: { report: { day: 3, pnl: 1200, quotaMet: true, quota: 900 } } },
     { scene: 'close', opts: { report: { day: 30, pnl: 1200, quotaMet: true, quota: 900 } } },
     // the close: a loss with the quota missed on the empty floor, and the two days with a Sqwak breaking insert (no game needed): a profit in autumn, and a seven-digit loss in winter

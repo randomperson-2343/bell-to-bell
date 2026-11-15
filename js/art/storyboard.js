@@ -1107,6 +1107,134 @@
     ];
   }
 
+  // ---- The places as layers (stage 3, batch 5) ----
+  // The placeFrame places split at the wall: `back` (skyline, wall, cells, floor), one animate-only layer for what passes behind the monitor and the
+  // commuter (the train, the road), then `front` (the wire monitor, the commuter, the camera's props, the scanlines and the shot's world marks);
+  // the corner brackets and the anomaly tear sit on `marks`, which the tilt never moves. Establishes draw every layer through framed(); the
+  // details are unframed. placeFrame's own coordinates are 640x360 (no at2x).
+  const placeArt = (c, day, r, title, detail, o, fn) => (detail ? fn(c) : framed(c, day, r, title, Object.assign({ draw: fn }, o)));
+  const framesLayer = (day, r, detail) => ({ id: 'marks', depth: 0, draw(c) { finePass(c, day, r, detail ? 'detail' : 'establish', 'frame'); if (!detail) tell(c, day); } });
+  function placeSandwich(day, r, title, detail, mid) {
+    const sb = R.storyboard(day), ph = detail ? 'detail' : 'establish', art = (c, o, fn) => placeArt(c, day, r, title, detail, o, fn);
+    return [
+      { id: 'back', depth: 1, draw(c) { art(c, null, (cc) => R.placeFrame(cc, sb, title, detail, { part: 'back', noSpeckle: mid.noSpeckle })); } },
+      { id: mid.id, depth: 1, draw() {}, animate(c, v, t) { art(c, { noBack: true }, (cc) => mid.paint(cc, t)); } },
+      { id: 'front', depth: 1, draw(c) { art(c, { noBack: true }, (cc) => R.placeFrame(cc, sb, title, detail, { part: 'front' })); finePass(c, day, r, ph, 'world'); } },
+      framesLayer(day, r, detail)
+    ];
+  }
+  // Shot 1: a lit train sweeps past behind the seven window cells without stopping. One train of 14 windows moving at 360 px/s, cut into the
+  // cells by one clipped K.passing per cell and row: cell i is timed 94 i / 360 s after the first, so the seven pieces are one train.
+  function trainPaint(day, detail) {
+    const K = B.MotionKit, A = detail ? -0.30 : -0.90;
+    return (c, t) => {
+      for (let i = 0; i < 7; i++) for (const y of [58, 68]) K.passing(c, 24 + 94 * i, y, 64, 60, `news:${day}:train`, t, { kind: 'train', at: A + (94 * i) / 360, speed: 360 });
+    };
+  }
+  // Shot 2: snow in place of the still speckle, and cars' lights along the kerb line from 0.30 s, one every 0.45 s.
+  function roadPaint(day) {
+    const K = B.MotionKit;
+    return (c, t) => {
+      K.weather(c, 0, 12, 640, 220, day, `news:${day}:snow`, t, { max: 40 });
+      K.passing(c, 0, 238, 640, 10, `news:${day}:cars`, t, { kind: 'car', at: 0.30, every: 0.45, speed: 220, dir: 1 });
+    };
+  }
+  // The layers, camera and cues of a place beat (establish or detail), or null when the place has none (the desk establish is deskWithDoc, batch 4).
+  function placeLayers(day, r, title, detail) {
+    const sb = R.storyboard(day), p = sb.place, cue = (sfx) => (detail ? {} : { cues: [{ at: 0.30, sfx }] });
+    if (p === 'subway' || p === 'platform') return Object.assign({ camera: SETTLE(), layers: placeSandwich(day, r, title, detail, { id: 'train', paint: trainPaint(day, detail) }) }, cue('transit'));
+    if (p === 'street') return Object.assign({ camera: SETTLE(), layers: placeSandwich(day, r, title, detail, { id: 'road', noSpeckle: true, paint: roadPaint(day) }) }, cue('street'));
+    if (detail) return { camera: SETTLE(), layers: monitorLayers(day, r, title, true) };
+    if (p === 'kitchen' || p === 'breakroom' || p === 'rideshare') return { camera: SETTLE(), cues: [{ at: 0.30, sfx: p === 'rideshare' ? 'street' : 'kitchen' }], layers: monitorLayers(day, r, title, false) };
+    if (p === 'lobby' || p === 'elevator') return { camera: SETTLE(), cues: [{ at: 0.35, sfx: 'elevator' }], layers: elevatorPlaceLayers(day, r, title) };
+    if (p === 'apartment') return { camera: SETTLE(), layers: tvRoomLayers(day, r, title, 0.5, [0.45, 0.95]) };
+    return null;
+  }
+
+  // Shot 3: the wire monitor refreshes: a band rolls down the screen (0.40 to 0.76 s) and the signal band flashes as the roll reaches it. No split:
+  // nothing is drawn over the monitor in any comp. One screen event (roll and flare).
+  function monitorLayers(day, r, title, detail) {
+    const K = B.MotionKit, sb = R.storyboard(day), ph = detail ? 'detail' : 'establish', G = R.monitorGeom(sb, detail);
+    const tf = 0.40 + 0.36 * (G.h - 42) / (G.h + 6), band = { x: G.x + 3, y: G.y + G.h - 48, w: G.w - 6, h: 45 };
+    return [
+      {
+        id: 'place', depth: 1,
+        draw(c) { placeArt(c, day, r, title, detail, null, (cc) => R.placeFrame(cc, sb, title, detail)); finePass(c, day, r, ph, 'world'); },
+        animate(c, v, t) {
+          if (t >= tf + 0.08 && t >= 0.76) return;
+          placeArt(c, day, r, title, detail, { noBack: true }, (cc) => {
+            K.crt(cc, G.x, G.y, G.w, G.h, t, { mode: 'roll', at: 0.40, dur: 0.36 });
+            K.ping(cc, t, { at: tf, off: [], on: [], flare: { x: band.x, y: band.y, w: band.w, h: band.h, col: P.bone, a: 0.15, dur: 0.08 } });
+          });
+        }
+      },
+      framesLayer(day, r, detail)
+    ];
+  }
+
+  // Shot 4: the TV in the dark room cuts to a bar graphic for 0.6 s (the span `cut`) while the wall glow steps darker, then back.
+  function tvRoomLayers(day, r, title, glow, cut) {
+    const K = B.MotionKit, H = r.arg || title, HK = [20, 28, 12];
+    return [
+      {
+        id: 'room', depth: 1,
+        draw(c) { framed(c, day, r, title, { draw: (cc) => at2x(cc, (c2) => { SH.apartment(c2, glow); SH.tvSet(c2, 40, 50, 104, 68, H, act(day), 0); }, day) }); finePass(c, day, r, 'establish', 'world'); },
+        animate(c, v, t) {
+          if (t < cut[0] || t >= cut[1]) return;
+          framed(c, day, r, title, {
+            noBack: true,
+            draw: (cc) => at2x(cc, (c2) => {
+              K.flicker(c2, 0, 73, 184, 47, `news:${day}:tv`, t, { spans: [cut], col: P.ink, a: 0.15 });
+              X.rect(c2, 42, 52, 100, 48, P.screen);
+              for (let k = 0; k < 3; k++) X.rect(c2, 56 + 26 * k, 92 - HK[k], 14, HK[k], k === 2 ? P.crimson : P.phosphor);
+              X.rect(c2, 50, 92, 84, 1, P.screenGlow);
+              X.scanlines(c2, 42, 52, 100, 48, P.ink, 0.2);
+            }, day)
+          });
+        }
+      },
+      framesLayer(day, r, false)
+    ];
+  }
+
+  // Shot 5: the lobby elevator. The pilot's parts: car, lobby (doorway unpainted), number in the room layer; the doors animated on it; the frame above.
+  const elevE = (day, part, open, floor) => (c) => at2x(c, (cc) => SH.elevator(cc, open, floor, part), day);
+  // The lobby wall, the lit car over its doorway and the indicator housing, number and call button, in the flat picture's own order, so the
+  // cached room is today's pixels (the car's glow reaches past the doorway onto the wall).
+  const elevBase = (day) => (c) => { elevE(day, 'wall')(c); elevE(day, 'car')(c); elevE(day, 'top', 0, 41)(c); };
+  function elevatorPlaceLayers(day, r, title) {
+    const K = B.MotionKit, M = B.Motion, O = 0.15 + (day % 5) * 0.12;
+    return [
+      {
+        id: 'room', depth: 1, draw(c) { framed(c, day, r, title, { draw: elevBase(day) }); },
+        animate(c, v, t) {
+          const open = O * M.ease.inOut(K.span(t, 0.35, 1.15));
+          framed(c, day, r, title, {
+            noBack: true,
+            draw: (cc) => at2x(cc, (c2) => {
+              K.flicker(c2, 96, 24, 128, 108, `news:${day}:car`, t, { spans: [[1.30, 1.36]], col: P.ink, a: 0.2 });
+              SH.elevator(c2, open, 41, 'doors');
+            }, day)
+          });
+        }
+      },
+      { id: 'frame', depth: 1, draw(c) { framed(c, day, r, title, { noBack: true, draw: elevE(day, 'frame', 0, 41) }); finePass(c, day, r, 'establish', 'world'); } },
+      framesLayer(day, r, false)
+    ];
+  }
+  // Session 1's detail and hold: the doors carry on from the opening (0.6 open): to fully open on the detail, back to 0.6 on the hold.
+  function elevatorDoorsLayers(day, r, hold) {
+    const K = B.MotionKit, M = B.Motion;
+    return [
+      {
+        id: 'room', depth: 1, draw: elevBase(day),
+        animate(c, v, t) { elevE(day, 'doors', hold ? 1.0 - 0.4 * M.ease.inOut(K.span(t, 0.20, 0.90)) : 0.6 + 0.4 * M.ease.inOut(K.span(t, 0.35, 1.05)), 41)(c); }
+      },
+      hold ? { id: 'frame', depth: 1, draw: elevE(day, 'frame', 0, 41) } : { id: 'frame', depth: 1, draw(c) { elevE(day, 'frame', 0, 41)(c); finePass(c, day, r, 'detail', 'world'); } },
+      hold ? { id: 'dim', depth: 0, draw(c) { c.save(); c.globalAlpha = 0.18; X.rect(c, 0, 0, V.w, V.h, P.ink); c.restore(); } } : framesLayer(day, r, true)
+    ];
+  }
+
   B.Scenes.news = function (o) {
     const day = o.day || 0, r = row(day, story(o)), n = WEIGHTS[r.weight] || 2;
     const title = R.clean((o.brief || {}).title);
@@ -1128,9 +1256,15 @@
       if (/:act$/.test(b.id)) beats[i] = B.Motion.layered(Object.assign({}, b, { camera: null, layers: actLayers(day) }));
       else if (docDetail && /:detail$/.test(b.id)) beats[i] = B.Motion.layered(Object.assign({}, b, docLayers(day, r, b.dur)));
       else if (insertEstablish && /:establish$/.test(b.id)) {
-        const doc = r.doc, L = doc === 'memo' || doc === 'footnote' ? deskLayers(day, r, title, false, b.dur) : doc === 'voicemail' ? voicemailRoomLayers(day, r, title) : doc === 'post' ? postRoomLayers(day, r, title) : doc === 'chart' ? chartRoomLayers(day, r, title) : null;
-        if (L) beats[i] = B.Motion.layered(Object.assign({}, b, { camera: doc === 'post' ? B.MotionKit.rise(56, b.dur, 0.30, 0.90) : doc === 'voicemail' || doc === 'chart' ? SETTLE() : null, layers: L }));
+        const doc = r.doc, L = doc === 'memo' || doc === 'footnote' ? deskLayers(day, r, title, false, b.dur) : doc === 'voicemail' ? voicemailRoomLayers(day, r, title) : doc === 'post' ? postRoomLayers(day, r, title) : doc === 'chart' ? chartRoomLayers(day, r, title) : doc === 'rating' ? tvRoomLayers(day, r, title, 0.7, [0.45, 0.95]) : null;
+        if (L) beats[i] = B.Motion.layered(Object.assign({}, b, { camera: doc === 'post' ? B.MotionKit.rise(56, b.dur, 0.30, 0.90) : doc === 'voicemail' || doc === 'chart' || doc === 'rating' ? SETTLE() : null, layers: L }));
       } else if (insertEstablish && /:hold$/.test(b.id) && (r.doc === 'memo' || r.doc === 'footnote')) beats[i] = B.Motion.layered(Object.assign({}, b, { camera: null, layers: deskLayers(day, r, title, true, b.dur) }));
+      else if (r.shot === 'tv' && /:establish$/.test(b.id)) beats[i] = B.Motion.layered(Object.assign({}, b, { camera: SETTLE(), layers: tvRoomLayers(day, r, title, 0.7, [0.55, 1.15]) }));
+      else if (r.shot === 'elevator' && /:(detail|hold)$/.test(b.id)) beats[i] = B.Motion.layered(Object.assign({}, b, { camera: null, layers: elevatorDoorsLayers(day, r, /:hold$/.test(b.id)) }));
+      else if (r.shot === 'place' && /:(establish|detail)$/.test(b.id)) {
+        const L = placeLayers(day, r, title, /:detail$/.test(b.id));
+        if (L) beats[i] = B.Motion.layered(Object.assign({}, b, L));
+      }
     }
     return beats;
   };
