@@ -1073,6 +1073,40 @@
       marksLayer(day, r)
     ];
   }
+  // The post establish is the phone handoff's recipe: the room still, a small dark device rising into it, waking on the one post.
+  function postRoomLayers(day, r, title) {
+    const K = B.MotionKit, sb = R.storyboard(day), feed1 = [{ source: 'SQWAK', title: r.arg || title, kind: 'chirp' }];
+    const { sx, sy, sw, sh } = R.phoneGeom(feed1.length, false), mm = R.lockMinute(day);
+    return [
+      { id: 'room', depth: 0, draw(c) { framed(c, day, r, title, { draw: (cc) => R.phoneFrame(cc, sb, feed1, false, { part: 'room' }) }); } },
+      {
+        id: 'device', depth: 1, draw(c) { framed(c, day, r, title, { noBack: true, draw: (cc) => R.phoneFrame(cc, sb, feed1, false, { part: 'device' }) }); },
+        animate(c, v, t) {
+          framed(c, day, r, title, {
+            noBack: true,
+            draw: (cc) => {
+              // asleep until 1.00 s: the cached post is covered by the dark screen (one unit larger, so a zoom's partial pixels are covered too) and 6:MM shows at 2x; then one bone flare
+              K.ping(cc, t, { at: 1.00, off: [{ x: sx - 1, y: sy - 1, w: sw + 2, h: sh + 2, col: P.screenD }], on: [], flare: { x: sx, y: sy, w: sw, h: sh, col: P.bone, a: 0.15, dur: 0.08 } });
+              if (t < 1.00) { cc.save(); cc.scale(2, 2); X.textShadow(cc, '6:' + mm, 160, 39, P.grey2, P.ink, { align: 'center' }); cc.restore(); }
+            }
+          });
+        }
+      },
+      marksLayer(day, r)
+    ];
+  }
+  // The chart establish is the office wide: a refresh band down each live monitor in turn (the monitors the office wide of the morning rolls).
+  function chartRoomLayers(day, r, title) {
+    const K = B.MotionKit, G = R.officeGeom(day);
+    return [
+      { id: 'office', depth: 1, draw(c) { framed(c, day, r, title, { draw: (cc) => R.officeFrame(cc, day, false) }); },
+        animate(c, v, t) {
+          framed(c, day, r, title, { noBack: true, draw: (cc) => G.monitors.forEach((m) => { if (!m.off) K.crt(cc, m.screen.x, m.screen.y, m.screen.w, m.screen.h, t, { mode: 'roll', at: 0.35 + 0.12 * m.i, dur: 0.36, band: 12 }); }) });
+        } },
+      marksLayer(day, r)
+    ];
+  }
+
   B.Scenes.news = function (o) {
     const day = o.day || 0, r = row(day, story(o)), n = WEIGHTS[r.weight] || 2;
     const title = R.clean((o.brief || {}).title);
@@ -1094,7 +1128,7 @@
       if (/:act$/.test(b.id)) beats[i] = B.Motion.layered(Object.assign({}, b, { camera: null, layers: actLayers(day) }));
       else if (docDetail && /:detail$/.test(b.id)) beats[i] = B.Motion.layered(Object.assign({}, b, docLayers(day, r, b.dur)));
       else if (insertEstablish && /:establish$/.test(b.id)) {
-        const doc = r.doc, L = doc === 'memo' || doc === 'footnote' ? deskLayers(day, r, title, false, b.dur) : doc === 'voicemail' ? voicemailRoomLayers(day, r, title) : null;
+        const doc = r.doc, L = doc === 'memo' || doc === 'footnote' ? deskLayers(day, r, title, false, b.dur) : doc === 'voicemail' ? voicemailRoomLayers(day, r, title) : doc === 'post' ? postRoomLayers(day, r, title) : doc === 'chart' ? chartRoomLayers(day, r, title) : null;
         if (L) beats[i] = B.Motion.layered(Object.assign({}, b, { camera: doc === 'post' ? B.MotionKit.rise(56, b.dur, 0.30, 0.90) : doc === 'voicemail' || doc === 'chart' ? SETTLE() : null, layers: L }));
       } else if (insertEstablish && /:hold$/.test(b.id) && (r.doc === 'memo' || r.doc === 'footnote')) beats[i] = B.Motion.layered(Object.assign({}, b, { camera: null, layers: deskLayers(day, r, title, true, b.dur) }));
     }

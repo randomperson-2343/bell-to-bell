@@ -1489,7 +1489,6 @@ async function run() {
     assert(await shot('news', o, i, 0.8) === await shot('news', o, i, 1.05) && await shot('news', o, i, 0.4) !== await shot('news', o, i, 0.8), `desk hold ${name}: only the LED should move`);
     assert(await lp('news', o, i, 'dim', 0, false) === await lp('news', o, i, 'dim', 1.0, false), `desk hold ${name}: the dim moves`);
   }
-  //@@shot11
   // shot 11: the voicemail apartment: the phone on the couch arm lights at 0.45 s with one bone flare (to 0.53 s); settle tilt
   {
     const o = nOpts(36), i = await newsIdx(o, ':establish$'), a = await info('news', o, i), scr = [405, 254, 21, 35], fl = [385, 232, 60, 76];
@@ -1503,14 +1502,41 @@ async function run() {
     // the flare and the lit screen sit in the room's own picture: the cached room has no lit screen, the final one does
     assert(await lp('news', o, i, 'room', 0.2, false, scr) !== await lp('news', o, i, 'room', 1.6, false, scr), 'voicemail establish: the cached room already has the lit screen');
   }
-  //@@end
+  // shot 12a: the post establish: a small dark phone rises 56 px over a still room and wakes at 1.00 s on the one post
+  for (const [name, o] of [['2', nOpts(2)], ['33', nOpts(33)], ['4leak', nOpts(4, 'T', { choices: { c1: 'leak' }, f: {} })]]) {
+    const i = await newsIdx(o, ':establish$'), a = await info('news', o, i);
+    assert(/^news:\d+(:.+)?:establish$/.test(a.id) && a.dur === 1.7 && a.layers === 'room,device,marks' && a.depths === '0,1,0' && a.cam === '-56>0' && a.sfx === 'apartment' && a.cues === '' && a.tr === 'fade', `post establish ${name} beat: ${JSON.stringify(a)}`);
+    assert(await shot('news', o, i, 0.1) !== await shot('news', o, i, 1.6) && await shot('news', o, i, 0.9) === await shot('news', o, i, 0.9) && (await drawCover(o, i)) === 640 * 360, `post establish ${name}: not moving, not deterministic or has holes`);
+    const top = (t) => page.evaluate(([o, i, t]) => window.layerTop('news', o, i, 'device', t), [o, i, t]);
+    const t0 = await top(0.05), tm = await top(0.6), t1 = await top(1.0);
+    assert(t0 - t1 === 56 && tm < t0 && tm > t1 && await top(0.9) === t1 && await top(0.25) === t0, `post establish ${name}: the phone does not rise 56 px between 0.30 and 0.90 s (${t0}, ${tm}, ${t1})`);
+    assert(await top(0.05) !== await page.evaluate(([o, i]) => window.layerTop('news', o, i, 'room', 0.05), [o, i]), `post establish ${name}: the room rises with the phone`);
+    assert(await lp('news', o, i, 'room', 0.1, false) === await lp('news', o, i, 'room', 1.6, false) && await lp('news', o, i, 'marks', 0.1, false) === await lp('news', o, i, 'marks', 1.6, false), `post establish ${name}: the room or the marks move`);
+    // asleep (a dark cover and a clock) until 1.00 s, then one flare and the lit post
+    assert(await cnt2(o, i, 'device', 0.5, 'screenD') > 8000 && await cnt2(o, i, 'device', 0.95, 'grey2') > 20 && await cnt2(o, i, 'device', 1.02, 'screenD') === 0 && await cnt2(o, i, 'device', 1.02, 'any') > 8000 && await cnt2(o, i, 'device', 1.2, 'any') === 0 && await cnt2(o, i, 'device', 1.02, 'grey2') === 0, `post establish ${name}: the screen is not dark until 1.00 s, then one flare`);
+  }
+  // shot 12b: the chart establish: the office wide, a refresh band down each live monitor in turn from 0.35 s; settle tilt
+  for (const [name, o] of [['3', nOpts(3)], ['30', nOpts(30)], ['43', nOpts(43)]]) {
+    const i = await newsIdx(o, ':establish$'), a = await info('news', o, i), live = await page.evaluate((d) => BTB.Rhythm.officeGeom(d).live, o.day);
+    assert(a.id === `news:${o.day}:establish` && a.dur === 1.7 && a.layers === 'office,marks' && a.depths === '1,0' && a.cam === '-6>0' && a.sfx === 'apartment' && a.cues === '' && a.tr === 'fade', `chart establish ${name} beat: ${JSON.stringify(a)}`);
+    assert(await shot('news', o, i, 0.1) !== await shot('news', o, i, 1.6) && await shot('news', o, i, 0.8) === await shot('news', o, i, 0.8) && (await drawCover(o, i)) === 640 * 360, `chart establish ${name}: not moving, not deterministic or has holes`);
+    assert(await cnt2(o, i, 'office', 0.2, 'any') === 0 && await cnt2(o, i, 'office', 1.4, 'any') === 0 && await lp('news', o, i, 'marks', 0.1, false) === await lp('news', o, i, 'marks', 1.6, false), `chart establish ${name}: bands before 0.35 s or after the last, or the marks move`);
+    for (let m = 0; m < live; m++) assert(await cnt2(o, i, 'office', 0.35 + 0.12 * m + 0.18, 'any') > 0, `chart establish ${name}: no band on live monitor ${m} at its time`);
+    const endAt = 0.35 + 0.12 * (live - 1) + 0.36;
+    assert(await cnt2(o, i, 'office', endAt + 0.04, 'any') === 0 && await cnt2(o, i, 'office', endAt - 0.04, 'any') > 0, `chart establish ${name}: the last of ${live} live monitors does not end at ${endAt.toFixed(2)} s`);
+  }
+  {
+    // d 3 is the wide: no zoom, so monitor 0's band sits inside its screen (x 34 to 117) and the second monitor's has not started
+    const o = nOpts(3), i = await newsIdx(o, ':establish$'), b = await bxx(o, i, 'office', 0.42);
+    assert(b[0] >= 34 && b[1] <= 117 && b[3] - b[2] >= 1, `chart establish 3: the first band is outside monitor 0: ${JSON.stringify(b)}`);
+  }
   // none of these needs the game or a title
-  for (const o of [nOpts(15, ''), nOpts(36, 'W'.repeat(200))]) {
+  for (const o of [nOpts(15, ''), nOpts(36, 'W'.repeat(200)), nOpts(2, ''), nOpts(3, 'W'.repeat(200))]) {
     const i = await newsIdx(o, ':establish$');
     assert((await drawCover(o, i)) === 640 * 360 && !o.game, `batch 4b: ${o.day} with title '${o.brief.title.slice(0, 3)}' does not draw`);
   }
   await page.evaluate(() => BTB.Settings.set('effects', 'reduced'));
-  for (const o of [nOpts(1), nOpts(8), nOpts(15), nOpts(32), nOpts(36)]) {
+  for (const o of [nOpts(1), nOpts(8), nOpts(15), nOpts(32), nOpts(36), nOpts(2), nOpts(33), nOpts(3), nOpts(30), nOpts(43)]) {
     for (const re of [':establish$', ':hold$']) {
       const i = await newsIdx(o, re); if (i < 0) continue;
       const b = await info('news', o, i);
@@ -1565,6 +1591,8 @@ async function run() {
     // batch 4, part 2: the desk (memo, close framing; footnote wide), the post and chart establishes under a zoom, a memo desk with a profile framing
     { scene: 'news', opts: { day: 1, brief: { title: 'RELEASE NOTES', feed: [] } } },
     { scene: 'news', opts: { day: 15, brief: { title: 'CREDIT LINE', feed: [] } } },
+    { scene: 'news', opts: { day: 33, brief: { title: 'NINE THOUSAND WORDS', feed: [] } } },
+    { scene: 'news', opts: { day: 43, brief: { title: 'MARKED AT 22 CENTS', feed: [] } } },
     { scene: 'close', opts: { report: { day: 3, pnl: 1200, quotaMet: true, quota: 900 } } },
     { scene: 'close', opts: { report: { day: 30, pnl: 1200, quotaMet: true, quota: 900 } } },
     // the close: a loss with the quota missed on the empty floor, and the two days with a Sqwak breaking insert (no game needed): a profit in autumn, and a seven-digit loss in winter
