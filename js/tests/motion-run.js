@@ -1209,6 +1209,239 @@ async function run() {
   }
   await page.evaluate(() => BTB.Settings.set('effects', 'full'));
 
+  // ---- stage 3 batch 4: act cards and documents (act card, memo, footnote, rating, post, chart, ticket, vote, voicemail) ----
+  // Reference hashes recorded from the code before the batch: every document drawn flat (insertShot, no options) and the final picture of every
+  // news beat of the sessions that show them (act, establish, detail, hold), including the story variants and a very long and an empty title.
+  // None of these changes in this batch: each reworked beat ends on exactly today's picture.
+  const DOCS_REF = {
+    'flat:memo:15': '83b8c823', 'flat:memo:19': '55499c0b', 'flat:memo:32': 'b65c76cf', 'flat:footnote:1': '1d9c8737', 'flat:footnote:8': 'd1663b07', 'flat:footnote:24': 'fb753f33',
+    'flat:rating:4': '963db331', 'flat:rating:14': '690e32e2', 'flat:post:2': 'bbffaf4d', 'flat:post:33': '246016e1', 'flat:chart:3': '7dbff839', 'flat:chart:30': '287ff4ed',
+    'flat:chart:43': '5f78684d', 'flat:ticket:5': 'fcd27c42', 'flat:ticket:12': 'fcd27c42', 'flat:ticket:23': 'fcd27c42', 'flat:ticket:39': 'fcd27c42', 'flat:vote:11': '489f9175',
+    'flat:vote:38': '489f9175', 'flat:voicemail:36': 'afe31083', 'flatShort:memo': '8d1dbeb', 'flatShort:footnote': '60818e57', 'flatShort:rating': 'ddbbe1f2', 'flatShort:post': 'f92e5a0e',
+    'flatShort:chart': 'c215bb45', 'flatShort:ticket': '5956baf2', 'flatShort:vote': '436b6cb5', 'flatShort:voicemail': 'dafcfb4b', 'beat:1:establish': 'bdea65c3', 'beat:1:detail': 'a945bd0f',
+    'beat:2:establish': '6ff30c70', 'beat:2:detail': '69d2cd65', 'beat:3:establish': '912e7f19', 'beat:3:detail': '4b57b15', 'beat:3:hold': '79bdf03a', 'beat:4:establish': '3da39fbd',
+    'beat:4:detail': '206f7bff', 'beat:5:establish': '5c91dd4', 'beat:5:detail': '2711c25', 'beat:5:hold': 'c425c27d', 'beat:8:act': 'aa8dde35', 'beat:8:establish': '37bcef1a',
+    'beat:8:detail': '4a7f62ef', 'beat:8:hold': '2d5bc42a', 'beat:10:establish': '63a084f', 'beat:10:detail': 'eb92a21e', 'beat:10:hold': 'b374c0fd', 'beat:11:establish': '110cf4d2',
+    'beat:11:detail': '2b9c42fd', 'beat:12:establish': '96b6197', 'beat:12:detail': 'b3d5a8c7', 'beat:12:hold': 'bfa36295', 'beat:14:establish': '2e21a492', 'beat:14:detail': 'fbf240d8',
+    'beat:15:establish': '15257b55', 'beat:15:detail': '213055bb', 'beat:17:act': '3671fe7d', 'beat:17:establish': '341e8251', 'beat:17:detail': 'eac160e0', 'beat:17:hold': '4f7947d5',
+    'beat:19:establish': 'a358b384', 'beat:19:detail': 'ac70cebb', 'beat:23:establish': '22936121', 'beat:23:detail': '3d2e50fd', 'beat:23:hold': '94a6570d', 'beat:24:establish': '9ea3e3ec',
+    'beat:24:detail': 'c32fcdab', 'beat:24:hold': '81cf4381', 'beat:30:establish': '2766162b', 'beat:30:detail': 'b0acb899', 'beat:32:act': '278249a5', 'beat:32:establish': 'f5af82dc',
+    'beat:32:detail': '53ff82e7', 'beat:32:hold': '78835b2f', 'beat:33:establish': 'c95eebad', 'beat:33:detail': 'ffab389d', 'beat:36:establish': '13c61f8b', 'beat:36:detail': 'f7b90cbb',
+    'beat:36:hold': '8b4860b5', 'beat:38:establish': 'c6fb2c3', 'beat:38:detail': 'af5be3db', 'beat:38:hold': 'dfd1f71a', 'beat:39:establish': '89b8ca2f', 'beat:39:detail': 'a4e952fa',
+    'beat:43:establish': '43648e23', 'beat:43:detail': 'e9651e51', 'beat:43:hold': '620463ff', 'beat:22bail:establish': '636a6ce', 'beat:22bail:detail': '7ab3040b', 'beat:22bail:hold': '3288ad05',
+    'beat:22fail:establish': '52c43877', 'beat:22fail:detail': '1e840719', 'beat:22fail:hold': '403c2d55', 'beat:22ban:establish': '47bcf1a6', 'beat:22ban:detail': '8b8ecee7',
+    'beat:22ban:hold': '88ca252d', 'beat:4dump:establish': '9bc8ac8', 'beat:4dump:detail': 'e0685e7d', 'beat:4leak:establish': '7c3a469a', 'beat:4leak:detail': '255e5fd0',
+    'beat:41pass:establish': 'eecf53', 'beat:41pass:detail': '4edd49f9', 'beat:41pass:hold': 'a3c2e72f', 'beat:45plug:establish': '65ddd720', 'beat:45plug:detail': 'c5845d35',
+    'beat:45plug:hold': 'fb86be25', 'beat:32long:act': '278249a5', 'beat:32long:establish': 'f5af82dc', 'beat:32long:detail': '53ff82e7', 'beat:32long:hold': '78835b2f',
+    'beat:4empty:establish': '3da39fbd', 'beat:4empty:detail': '206f7bff'
+  };
+  const docsNow = await page.evaluate(() => {
+    const hashOf = (fn) => { const cv = document.createElement('canvas'); cv.width = 640; cv.height = 360; const g = cv.getContext('2d'); fn(g);
+      const d = g.getImageData(0, 0, 640, 360).data; let x = 2166136261; for (let i = 0; i < d.length; i++) { x ^= d[i]; x = Math.imul(x, 16777619); } return (x >>> 0).toString(16); };
+    const SB = BTB.Storyboard, out = {}, view = { w: 640, h: 360 };
+    const S = (c) => ({ mode: { S: { choices: c, f: {} } } });
+    const o = (day, title, g) => Object.assign({ day, brief: { title: title || 'Headline of the day', feed: [] } }, g ? { game: g } : {});
+    const docs = { memo: [15, 19, 32], footnote: [1, 8, 24], rating: [4, 14], post: [2, 33], chart: [3, 30, 43], ticket: [5, 12, 23, 39], vote: [11, 38], voicemail: [36] };
+    for (const doc in docs) for (const d of docs[doc]) out[`flat:${doc}:${d}`] = hashOf((g) => SB.insertShot(g, d, 'THE VALUE OF THE DAY 42', doc));
+    for (const doc of ['memo', 'footnote', 'rating', 'post', 'chart', 'ticket', 'vote', 'voicemail']) out[`flatShort:${doc}`] = hashOf((g) => SB.insertShot(g, 7, 'X', doc));
+    const variants = { '22bail': o(22, 'T', S({ c5: 'bail' })), '22fail': o(22, 'T', S({ c5: 'fail' })), '22ban': o(22, 'T', S({ c5: 'ban' })), '4dump': o(4, 'T', S({ c1: 'dump' })), '4leak': o(4, 'T', S({ c1: 'leak' })), '41pass': o(41, 'T', { mode: { S: { choices: {}, f: { billPassed: true } } } }), '45plug': o(45, 'T', { mode: { S: { choices: {}, f: { pulledPlug: true } } } }) };
+    const days = [1, 2, 3, 4, 5, 8, 10, 11, 12, 14, 15, 17, 19, 23, 24, 30, 32, 33, 36, 38, 39, 43];
+    const list = days.map((d) => [String(d), o(d, 'Headline of the day')]).concat(Object.entries(variants), [['32long', o(32, 'A very long headline that goes on and on past any sensible width of caption box ok')], ['4empty', o(4, '')]]);
+    for (const [k, op] of list) BTB.Scenes.news(op).forEach((b) => { out[`beat:${k}:${b.id.split(':').pop()}`] = hashOf((g) => b.draw(g, view, 1, {})); });
+    return out;
+  });
+  for (const k of Object.keys(DOCS_REF)) assert(docsNow[k] === DOCS_REF[k], `batch 4 ${k}: the picture changed (${docsNow[k]}, was ${DOCS_REF[k]})`);
+  assert(Object.keys(docsNow).length === Object.keys(DOCS_REF).length, 'batch 4: the set of reference pictures changed');
+
+  await page.evaluate(() => {
+    const view = { w: 640, h: 360 };
+    const canvas = () => { const cv = document.createElement('canvas'); cv.width = 640; cv.height = 360; const g = cv.getContext('2d'); g.imageSmoothingEnabled = false; return g; };
+    const rgbOf = (spec, day) => {
+      const hex = spec[0] === '@' ? BTB.Rhythm.colors(BTB.StoryData.actIndex(day) + 1)[spec.slice(1)] : BTB.Pal[spec];
+      return [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+    };
+    // pixels of one layer (its animate alone, or draw and animate) in a rect that are exactly a palette colour ('@wash' and '@signal': the day's act colours); any: pixels with any alpha
+    window.colCount = (scene, opts, i, id, t, r, spec, animOnly) => {
+      const b = BTB.Scenes[scene](opts)[i], layer = b.layers.find((l) => l.id === id), g = canvas();
+      if (!animOnly) layer.draw(g, view, {});
+      if (layer.animate) layer.animate(g, view, t, t / b.dur, {});
+      const d = g.getImageData(r[0], r[1], r[2], r[3]).data, c = spec === 'any' ? null : rgbOf(spec, opts.day); let n = 0;
+      for (let k = 0; k < d.length; k += 4) { if (c ? d[k + 3] === 255 && d[k] === c[0] && d[k + 1] === c[1] && d[k + 2] === c[2] : d[k + 3] > 0) n++; }
+      return n;
+    };
+    // the box of the opaque pixels of one layer's animate alone in a rect
+    window.animBox = (scene, opts, i, id, t, r) => {
+      const b = BTB.Scenes[scene](opts)[i], layer = b.layers.find((l) => l.id === id), g = canvas();
+      layer.animate(g, view, t, t / b.dur, {});
+      const d = g.getImageData(r[0], r[1], r[2], r[3]).data; let x0 = 1e9, x1 = -1, y0 = 1e9, y1 = -1;
+      for (let k = 0; k < d.length; k += 4) if (d[k + 3]) { const x = (k / 4) % r[2] + r[0], y = Math.floor(k / 4 / r[2]) + r[1]; x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); }
+      return [x0, x1, y0, y1];
+    };
+  });
+  const cc = (o, i, id, t, r, spec, animOnly) => page.evaluate(([a, b, c, d, e, f, g, h]) => window.colCount(a, b, c, d, e, f, g, h), ['news', o, i, id, t, r, spec, animOnly !== false]);
+  const newsIdx = (o, re) => page.evaluate(([o, re]) => BTB.Scenes.news(o).findIndex((b) => new RegExp(re).test(b.id)), [o, re]);
+  const sbRow = (o) => page.evaluate((o) => { const r = BTB.Storyboard.row(o.day, o.game && o.game.mode && o.game.mode.S); return r; }, o);
+  const nOpts = (day, title, S) => Object.assign({ day, brief: { title: title == null ? 'Headline of the day' : title, feed: [] } }, S ? { game: { mode: { S } } } : {});
+
+  // the act card: one layer, no camera, the name typed on in 4x letters, today's card at the end
+  for (const day of [8, 17, 32]) {
+    const o = nOpts(day), i = await newsIdx(o, ':act$'), a = await info('news', o, i);
+    assert(i === 0 && a.id === `news:${day}:act` && a.dur === 1.7 && a.layers === 'card' && a.depths === '1' && a.cam === 'none' && a.sfx === 'broadcast' && a.tr === 'fade' && a.cues === '', `act card ${day} beat: ${JSON.stringify(a)}`);
+    assert(await shot('news', o, i, 0.1) !== await shot('news', o, i, 1.6), `act card ${day}: start and end frames are identical`);
+    assert(await shot('news', o, i, 1.0) === await shot('news', o, i, 1.0), `act card ${day}: same time gave different pictures`);
+    const nm = (await page.evaluate((d) => { const l = BTB.StoryData.actOf(d); return BTB.Rhythm.clean(l.split('·')[1].trim()); }, day)), n = nm.length, done = 0.45 + n / 16;
+    const left = 4 * ((80 - (6 * n - 1) / 2) | 0), box = [0, 140, 640, 60];
+    const bx = (t) => page.evaluate(([o, i, t, box]) => window.animBox('news', o, i, 'card', t, box), [o, i, t, box]);
+    // nothing before 0.45 s; then the cursor, 20x28 px in the act's signal colour, alone before the first letter
+    assert((await cc(o, i, 'card', 0.40, box, 'any')) === 0, `act card ${day}: something is drawn before 0.45 s`);
+    assert((await cc(o, i, 'card', 0.46, box, '@signal')) === 560, `act card ${day}: the cursor is not a 20x28 block in the signal colour`);
+    assert((await cc(o, i, 'card', 0.46, box, 'bone')) === 0, `act card ${day}: bone at 0.46 s (the cursor must be in the act's signal colour)`);
+    // letters never move: the left edge is the same at every time after the first letter, the right edge grows, whole 4 px steps
+    const boxes = []; for (const t of [0.55, 0.7, 0.85]) boxes.push(await bx(t));
+    assert(boxes.every((b) => b[0] === left) && boxes[0][1] < boxes[1][1] && boxes[1][1] <= boxes[2][1], `act card ${day}: the name does not type left to right from ${left}: ${JSON.stringify(boxes)}`);
+    // the name and the cursor: typed to the last letter, one blink, gone by done + 0.5; stable from then on
+    const fin = await bx(done + 0.6);
+    assert(fin[0] === left && fin[1] > boxes[2][1], `act card ${day}: final name box ${JSON.stringify(fin)} (left edge ${left})`);
+    assert((await cc(o, i, 'card', done + 0.1, box, '@signal')) === 560 && (await cc(o, i, 'card', done + 0.3, box, '@signal')) === 0 && (await cc(o, i, 'card', done + 0.55, box, '@signal')) === 0, `act card ${day}: the cursor does not blink once after the last letter and go`);
+    assert(await cc(o, i, 'card', done + 0.55, box, 'any') === await cc(o, i, 'card', 1.69, box, 'any') && await cc(o, i, 'card', 1.2, box, 'bone') > 0, `act card ${day}: the final name is not still from done + 0.5`);
+    const d = await page.evaluate(([o, i]) => window.finalDiff('news', o, i, (g) => BTB.Storyboard.actCard(g, o.day), []), [o, i]);
+    assert(d.bad === 0 && d.inside === 0, `act card ${day}: the final frame is not today's card: ${JSON.stringify(d)}`);
+    // the flat card without the name is the cached layer
+    assert(await lp('news', o, i, 'card', 0.2, false) !== await lp('news', o, i, 'card', 1.2, false), `act card ${day}: the cached card holds the name`);
+  }
+  // an act label with no dot types its whole label; an empty label types nothing and stays a still; any title is fine
+  for (const label of ['PROLOGUE', '', 'IV · ' + 'RECKONING OF EVERYTHING AND MORE '.repeat(3)]) {
+    const r = await page.evaluate((label) => {
+      const D = BTB.StoryData, orig = D.actOf; D.actOf = (d) => (d >= 8 ? label : 'I · OLD');
+      try {
+        const beats = BTB.Scenes.news({ day: 8, brief: { title: '', feed: [] } }), b = beats[0], c = document.createElement('canvas'); c.width = 640; c.height = 360; const g = c.getContext('2d');
+        b.draw(g, { w: 640, h: 360 }, 1, {});
+        const flat = document.createElement('canvas'); flat.width = 640; flat.height = 360; BTB.Storyboard.actCard(flat.getContext('2d'), 8);
+        const a = g.getImageData(0, 0, 640, 360).data, f = flat.getContext('2d').getImageData(0, 0, 640, 360).data; let bad = 0; for (let k = 0; k < a.length; k++) if (a[k] !== f[k]) bad++;
+        const mid = document.createElement('canvas'); mid.width = 640; mid.height = 360; const m = mid.getContext('2d'); b.layers[0].animate(m, { w: 640, h: 360 }, 0.7, 0.7 / b.dur, {});
+        const md = m.getImageData(0, 0, 640, 360).data; let any = 0; for (let k = 3; k < md.length; k += 4) if (md[k]) any++;
+        return { id: b.id, bad, any, layered: !!b.layers };
+      } finally { D.actOf = orig; }
+    }, label);
+    assert(r.id === 'news:8:act' && r.layered && r.bad === 0 && (label === '' ? r.any === 0 : r.any > 0), `act card with label '${label}': ${JSON.stringify(r)}`);
+  }
+
+  // the documents: beat shape, a moving picture, determinism, the key movement, the final frame is today's picture
+  const SBdoc = {
+    memo: [['15', nOpts(15)], ['19', nOpts(19)], ['32', nOpts(32)], ['22bail', nOpts(22, 'T', { choices: { c5: 'bail' }, f: {} })], ['10dark', nOpts(10)], ['22fail', nOpts(22, 'T', { choices: { c5: 'fail' }, f: {} })], ['45plug', nOpts(45, 'T', { choices: {}, f: { pulledPlug: true } })]],
+    footnote: [['1', nOpts(1)], ['8', nOpts(8)], ['24', nOpts(24)]],
+    rating: [['4', nOpts(4)], ['14', nOpts(14)]],
+    post: [['2', nOpts(2)], ['33', nOpts(33)], ['4leak', nOpts(4, 'T', { choices: { c1: 'leak' }, f: {} })]],
+    chart: [['3', nOpts(3)], ['30', nOpts(30)], ['43', nOpts(43)]],
+    ticket: [['5', nOpts(5)], ['12', nOpts(12)], ['23', nOpts(23)], ['39', nOpts(39)], ['4dump', nOpts(4, 'T', { choices: { c1: 'dump' }, f: {} })], ['22ban', nOpts(22, 'T', { choices: { c5: 'ban' }, f: {} })]],
+    vote: [['11', nOpts(11)], ['38', nOpts(38)], ['41pass', nOpts(41, 'T', { choices: {}, f: { billPassed: true } })]],
+    voicemail: [['36', nOpts(36)]]
+  };
+  const SHAPE = { memo: ['paper,band,ink', '1,1,1', 'none', ''], footnote: ['doc,grain', '1,1', 'none', ''], rating: ['doc,grain', '1,1', 'none', '1.3:click'], post: ['city,phone,glass,grain', '0,1,1,0', '-32>0', ''],
+    chart: ['doc,grain', '1,1', 'none', ''], ticket: ['screen,book,glass', '1,1,1', 'none', ''], vote: ['doc,grain', '1,1', 'none', ''], voicemail: ['doc,grain', '1,1', 'none', ''] };
+  const drawCover = (o, i) => page.evaluate(([o, i]) => { const b = BTB.Scenes.news(o)[i], c = document.createElement('canvas'); c.width = 640; c.height = 360; const g = c.getContext('2d'); b.draw(g, { w: 640, h: 360 }, 1, {}); const d = g.getImageData(0, 0, 640, 360).data; let a = 0; for (let k = 3; k < d.length; k += 4) a += d[k] === 255 ? 1 : 0; return a; }, [o, i]);
+  for (const doc in SBdoc) for (const [name, o] of SBdoc[doc]) {
+    const i = await newsIdx(o, ':detail$'), a = await info('news', o, i), sh = SHAPE[doc], row = await sbRow(o);
+    assert(row.doc === doc || (doc === 'memo' && !row.doc), `batch 4 ${doc} ${name}: the session shows ${row.doc}`);
+    assert(/^news:\d+(:.+)?:detail$/.test(a.id) && a.dur === 2.3 && a.layers === sh[0] && a.depths === sh[1] && a.cam === sh[2] && a.cues === sh[3] && a.sfx === 'broadcast' && a.inf && a.line.length > 0, `${doc} ${name} beat: ${JSON.stringify(a)}`);
+    assert(await shot('news', o, i, 0.1) !== await shot('news', o, i, 2.2), `${doc} ${name}: start and end frames are identical`);
+    assert(await shot('news', o, i, 1.0) === await shot('news', o, i, 1.0), `${doc} ${name}: same time gave different pictures`);
+    if (doc !== 'post') assert(await shot('news', o, i, 1.6) === await shot('news', o, i, 2.2), `${doc} ${name}: still moving at 1.6 s`); // the post's TRENDING light blinks to the end
+    assert((await drawCover(o, i)) === 640 * 360, `${doc} ${name}: the final picture has holes`);
+    // any brief title, any missing game: the beat is the same picture
+    if (!o.game) for (const t of ['', 'W'.repeat(200)]) {
+      const o2 = nOpts(o.day, t), j = await newsIdx(o2, ':detail$');
+      assert(await shot('news', o2, j, 1.0) === await shot('news', o, i, 1.0), `${doc} ${name}: the picture depends on the title '${t.slice(0, 5)}'`);
+    }
+  }
+  // the movement of each document, on the first session that shows it (and the others for the cheap ones)
+  const layN = (o, id, t, r, anim) => lp('news', o, o.__i, id, t, anim, r);
+  const mk = async (o) => Object.assign({}, o, { __i: await newsIdx(o, ':detail$') });
+  // memo: the highlighter (416x58, the act's wash) wipes left to right under the value, 0.35 to 0.85 s
+  for (const [name, o0] of SBdoc.memo) {
+    const o = await mk(o0), i = o.__i, BAND = [112, 96, 416, 58], q = (t) => cc(o, i, 'band', t, BAND, '@wash');
+    assert(await q(0.30) === 0 && await q(1.2) === 416 * 58 && await q(2.2) === 416 * 58 && await q(0.80) < 416 * 58 && await q(0.86) === 416 * 58, `memo ${name}: the band does not wipe in 0.35 to 0.85 s`);
+    const s = []; for (const t of [0.40, 0.50, 0.60, 0.70]) s.push(await q(t));
+    assert(s[0] > 0 && s[0] < s[1] && s[1] < s[2] && s[2] < s[3] && s.every((v) => v % 58 === 0), `memo ${name}: the band does not grow left to right in steps: ${JSON.stringify(s)}`);
+    assert(await layN(o, 'paper', 0.2, [0, 0, 640, 360], false) === await layN(o, 'paper', 2.0, [0, 0, 640, 360], false), `memo ${name}: the paper layer moves`);
+  }
+  // footnote: the pen goes round the line (loop 290x14), then runs 60 px out to the note
+  for (const [name, o0] of SBdoc.footnote) {
+    const o = await mk(o0), i = o.__i, ly = 50 + (6 + o.day % 6) * 12, ALL = [70, ly - 8, 380, 18], RUN = [376, ly, 60, 2], q = (t, r) => cc(o, i, 'doc', t, r, 'crimson');
+    assert(await q(0.30, ALL) === 0 && await q(1.2, ALL) === 1328 && await q(2.2, ALL) === 1328, `footnote ${name}: the pen is not 1328 px at the end`);
+    const s = []; for (const t of [0.5, 0.7, 0.9, 1.0]) s.push(await q(t, ALL));
+    assert(s[0] > 0 && s[0] < s[1] && s[1] < s[2] && s[2] < s[3] && s[3] < 1328, `footnote ${name}: the loop does not draw on: ${JSON.stringify(s)}`);
+    assert(await q(1.0, RUN) === 0 && await q(1.12, RUN) > 0 && await q(1.2, RUN) === 120, `footnote ${name}: the run to the note does not follow the loop`);
+  }
+  // rating: the stamp lands on the covered paper in three hard frames, 1.30 s, 1.34 s, 1.38 s
+  for (const [name, o0] of SBdoc.rating) {
+    const o = await mk(o0), i = o.__i, ST = [150, 64, 340, 110], WIDE = [130, 50, 380, 140], q = (t, spec, r, anim) => cc(o, i, 'doc', t, r, spec, anim);
+    assert(await q(0.5, 'bone', ST, false) === 340 * 110 && await q(1.28, 'bone', ST, false) === 340 * 110, `rating ${name}: the stamp's place is not a flat paper cover before 1.30 s`);
+    assert(await q(1.4, 'bone', ST, false) !== 340 * 110 && await q(1.4, 'any', WIDE, true) === 0 && await q(1.4, '@signal', ST, false) > 0, `rating ${name}: the stamp and its value are not there from 1.38 s`);
+    const p1 = await q(1.32, '@signal', WIDE, true), p2 = await q(1.36, '@signal', WIDE, true);
+    assert(p1 === 2 * 356 + 2 * 116 && p2 > p1 && await q(1.2, 'any', WIDE, true) === 340 * 110, `rating ${name}: the outlines are not 1 px at 1.30 s and 2 px at 1.34 s (${p1}, ${p2})`);
+    const pics = []; for (const t of [1.2, 1.32, 1.36, 1.4]) pics.push(await shot('news', o, i, t));
+    assert(new Set(pics).size === 4 && await shot('news', o, i, 1.4) === await shot('news', o, i, 2.2), `rating ${name}: not four distinct frames, still from 1.38 s`);
+    assert((await info('news', o, i)).cues === '1.3:click', `rating ${name}: the click cue is missing`);
+  }
+  // post: the phone rises 32 px (top row 48 down to 16 between 0.30 and 0.80 s) over a skyline that stays; the TRENDING light blinks and is on at the end
+  for (const [name, o0] of SBdoc.post) {
+    const o = await mk(o0), i = o.__i, tp = (id, t) => page.evaluate(([o, i, id, t]) => window.layerTop('news', o, i, id, t), [o, i, id, t]), LED = [216, 70, 10, 10];
+    assert(await tp('phone', 0.1) === 48 && await tp('phone', 0.3) === 48 && await tp('phone', 0.8) === 16 && await tp('phone', 2.2) === 16 && await tp('glass', 0.1) === 60 && await tp('glass', 2.2) === 28, `post ${name}: the phone does not rise 32 px between 0.30 and 0.80 s`);
+    assert(await tp('phone', 0.5) > 16 && await tp('phone', 0.5) < 48 && await tp('phone', 0.4) > await tp('phone', 0.6), `post ${name}: the rise is not under way at 0.5 s`);
+    const lit = await cc(o, i, 'phone', 2.3, LED, 'crimson'), s = [];
+    for (const t of [0.7, 1.2, 1.7, 2.0]) s.push(await cc(o, i, 'phone', t, LED, 'crimson'));
+    assert(lit === 100 && s[0] === 0 && s[1] === 100 && s[2] === 0 && s[3] === 100, `post ${name}: the TRENDING light is not blinking at 1 s, on at the end: ${lit} ${JSON.stringify(s)}`);
+    assert(await cc(o, i, 'city', 0.2, [0, 0, 640, 360], 'any', false) === await cc(o, i, 'city', 2.0, [0, 0, 640, 360], 'any', false), `post ${name}: the city moves`);
+  }
+  // chart: the red circle (64x98) draws round the move, 0.40 to 0.95 s
+  for (const [name, o0] of SBdoc.chart) {
+    const o = await mk(o0), i = o.__i, C = [352, 62, 80, 112], q = (t) => cc(o, i, 'doc', t, C, 'crimson');
+    assert(await q(0.35) === 0 && await q(1.0) === 616 && await q(2.2) === 616 && await q(0.90) < 616, `chart ${name}: the circle does not draw in 0.40 to 0.95 s`);
+    const s = []; for (const t of [0.5, 0.6, 0.7, 0.8]) s.push(await q(t));
+    assert(s[0] > 0 && s[0] < s[1] && s[1] < s[2] && s[2] < s[3], `chart ${name}: the circle does not grow: ${JSON.stringify(s)}`);
+  }
+  // ticket: the book drains: bid bars step shorter, ask bars longer, three 6 px steps each, top bar first (0.40 to 0.88 s); the bars sit under the glass
+  for (const [name, o0] of SBdoc.ticket) {
+    const o = await mk(o0), i = o.__i, q = (t, spec, r) => cc(o, i, 'book', t, r, spec);
+    const bid0 = (t) => q(t, 'jadeD', [90, 80, 140, 8]), ask0 = (t) => q(t, 'crimsonD', [420, 80, 130, 8]), bid4 = (t) => q(t, 'screenGlow', [90, 136, 140, 8]);
+    assert(await bid0(0.3) === 118 * 8 && await bid0(0.45) === 112 * 8 && await bid0(0.55) === 106 * 8 && await bid0(0.7) === 100 * 8 && await bid0(2.2) === 100 * 8, `ticket ${name}: bid bar 0 does not step 118, 112, 106, 100`);
+    assert(await ask0(0.3) === 42 * 8 && await ask0(0.45) === 48 * 8 && await ask0(0.55) === 54 * 8 && await ask0(0.7) === 60 * 8, `ticket ${name}: ask bar 0 does not step 42, 48, 54, 60`);
+    assert(await bid4(0.5) === 46 * 8 && await bid4(0.7) === 40 * 8 && await bid4(0.8) === 34 * 8 && await bid4(0.9) === 28 * 8, `ticket ${name}: bid bar 4 does not step 46, 40, 34, 28 from 0.64 s`);
+    assert(await q(2.2, 'crimsonD', [0, 0, 640, 360]) === 420 * 8 && await q(2.2, 'screenGlow', [0, 0, 640, 360]) === 220 * 8 && await q(0.3, 'crimsonD', [0, 0, 640, 360]) === 5 * 8 * 42 + 8 * 12 * 10, `ticket ${name}: the bars do not total today's at the end`);
+    assert(await cc(o, i, 'book', 0.2, [0, 0, 640, 360], 'any', false) === await cc(o, i, 'book', 0.2, [0, 0, 640, 360], 'any', true), `ticket ${name}: the book layer's own picture is not empty`);
+  }
+  // vote: both lamp banks sweep on row by row, 0.09 s apart from 0.40 s (a yea bank of jade, a nay bank of crimson)
+  for (const [name, o0] of SBdoc.vote) {
+    const o = await mk(o0), i = o.__i, rowCells = (r, m) => { let n = 0; for (let k = 0; k < 18; k++) if ((r * 18 + k) % m) n++; return n; };
+    const q = (t, spec, r) => cc(o, i, 'doc', t, [64, 56 + 13 * r, spec === 'jadeD' ? 230 : 600, 9], spec, true);
+    const yeaAll = (t) => cc(o, i, 'doc', t, [64, 56, 230, 78], 'jadeD', true), nayAll = (t) => cc(o, i, 'doc', t, [340, 56, 230, 78], 'crimsonD', true);
+    assert(await yeaAll(0.39) === 0 && await nayAll(0.39) === 0, `vote ${name}: lamps lit before 0.40 s`);
+    for (let r = 0; r < 6; r++) {
+      let y = 0, n = 0; for (let k = 0; k <= r; k++) { y += rowCells(k, 7) * 81; n += rowCells(k, 5) * 81; }
+      const t = 0.40 + 0.09 * r + 0.03;
+      assert(await yeaAll(t) === y && await nayAll(t) === n, `vote ${name}: after row ${r} lit the banks hold ${await yeaAll(t)} and ${await nayAll(t)} lamp pixels, not ${y} and ${n}`);
+    }
+    assert(await yeaAll(2.2) === await yeaAll(0.9) && await q(2.2, 'jadeD', 0) === rowCells(0, 7) * 81, `vote ${name}: the board is not still from 0.85 s`);
+  }
+  // voicemail: playback lights the waveform bar by bar, 0.06 s apart from 0.40 s, twelve bars
+  {
+    const o = await mk(SBdoc.voicemail[0][1]), i = o.__i, h = (k) => 4 + ((k * 37 + 36) % 36), tot = (n) => { let s = 0; for (let k = 0; k < n; k++) s += 3 * h(k); return s; }, W = [216, 80, 80, 60];
+    const q = (t) => cc(o, i, 'doc', t, W, 'phosphor', true);
+    assert(await q(0.35) === 0 && await q(0.43) === tot(1) && await q(0.49) === tot(2) && await q(0.7) === tot(6) && await q(1.09) === tot(12) && await q(2.2) === tot(12), `voicemail: the bars do not light one by one up to bar 12 at 1.06 s (${await q(0.43)} ${await q(1.09)})`);
+    assert(await cc(o, i, 'doc', 0.2, W, 'phosphor', false) === 0, 'voicemail: a bar is lit before playback starts');
+  }
+  // reduced effects: every reworked beat is one still
+  await page.evaluate(() => BTB.Settings.set('effects', 'reduced'));
+  for (const o of [nOpts(8), nOpts(32), nOpts(1), nOpts(4), nOpts(2), nOpts(3), nOpts(5), nOpts(11), nOpts(36), nOpts(15), nOpts(10)]) {
+    for (const re of [':act$', ':detail$']) {
+      const i = await newsIdx(o, re); if (i < 0) continue;
+      const b = await info('news', o, i);
+      assert(await shot('news', o, i, 0.4) === await shot('news', o, i, b.dur - 0.05), `news ${o.day} ${re}: reduced effects still moves`);
+    }
+  }
+  await page.evaluate(() => BTB.Settings.set('effects', 'full'));
+
   // effects reduced: a plain fade from ink, no dissolve of the old shot
   await page.evaluate(() => BTB.Settings.set('effects', 'reduced'));
   const r1 = await shot('news', day7, 1, 0.1), r29 = await shot('news', day7, 1, 0.29), rEnd = await shot('news', day7, 1, 1.0);
@@ -1231,6 +1464,16 @@ async function run() {
   const PERF_SCENES = [
     { scene: 'news', opts: { day: 0, brief: { title: 'FIRST DAY', feed: [] } } },
     { scene: 'news', opts: { day: 7, brief: { title: 'FOUR FUNDS, ONE MODEL', feed: [] } } },
+    // batch 4: an act card with its document (8: act II and a footnote; 32: act IV and a memo), the third act card (17), and one day of every other document kind
+    { scene: 'news', opts: { day: 8, brief: { title: 'A CIRCLE', feed: [] } } },
+    { scene: 'news', opts: { day: 17, brief: { title: 'CONTAGION', feed: [] } } },
+    { scene: 'news', opts: { day: 32, brief: { title: 'RECKONING', feed: [] } } },
+    { scene: 'news', opts: { day: 4, brief: { title: 'RATING AFFIRMED', feed: [] } } },
+    { scene: 'news', opts: { day: 2, brief: { title: 'DENIAL', feed: [] } } },
+    { scene: 'news', opts: { day: 3, brief: { title: 'DELINQUENCY', feed: [] } } },
+    { scene: 'news', opts: { day: 12, brief: { title: 'BIDS: 1', feed: [] } } },
+    { scene: 'news', opts: { day: 11, brief: { title: 'COMPUTE FREEDOM', feed: [] } } },
+    { scene: 'news', opts: { day: 36, brief: { title: 'VOICEMAIL', feed: [] } } },
     { scene: 'close', opts: { report: { day: 3, pnl: 1200, quotaMet: true, quota: 900 } } },
     { scene: 'close', opts: { report: { day: 30, pnl: 1200, quotaMet: true, quota: 900 } } },
     // the close: a loss with the quota missed on the empty floor, and the two days with a Sqwak breaking insert (no game needed): a profit in autumn, and a seven-digit loss in winter

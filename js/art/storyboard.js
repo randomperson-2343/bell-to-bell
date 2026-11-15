@@ -166,22 +166,34 @@
     R.text(ctx, label, x + 20, y + 26, P.ink);
   }
   function valueLines(value, width) { return X.wrap(R.clean(value), width).slice(0, 2); }
+  // The footnote's circled line (y of the pen's middle).
+  const footnoteLine = (day) => 50 + (6 + day % 6) * 12;
   const DOC_DRAW = {
-    memo(ctx, day, value, c) {
-      deskUnder(ctx); paper(ctx, 96, 34, 448, 232, LABELS.memo);
-      for (let i = 0; i < 5; i++) X.rect(ctx, 116, 180 + i * 12, 200 + ((i * 67 + day * 13) % 200), 2, P.grey2);
-      X.rect(ctx, 112, 96, 416, 58, c.wash);
-      const lines = valueLines(value, 200);
-      lines.forEach((ln, i) => big(ctx, ln, 320, 104 + i * 22 + (lines.length === 1 ? 10 : 0), P.ink, 2, 'center'));
+    // o (all optional; absent draws the whole flat picture) is each document's own options: memo part 'paper' (desk, paper, grey lines)
+    // or 'ink' (the value only), the highlighter band only when no part; footnote noMarker; post part 'city' / 'phone' / 'glass' and noFlag;
+    // chart noMarker; ticket part 'screen' / 'glass' (the bars only when no part); vote unlit; voicemail played (bars lit, default 12).
+    memo(ctx, day, value, c, o) {
+      const part = o && o.part;
+      if (!part || part === 'paper') {
+        deskUnder(ctx); paper(ctx, 96, 34, 448, 232, LABELS.memo);
+        for (let i = 0; i < 5; i++) X.rect(ctx, 116, 180 + i * 12, 200 + ((i * 67 + day * 13) % 200), 2, P.grey2);
+      }
+      if (!part) X.rect(ctx, 112, 96, 416, 58, c.wash);
+      if (!part || part === 'ink') {
+        const lines = valueLines(value, 200);
+        lines.forEach((ln, i) => big(ctx, ln, 320, 104 + i * 22 + (lines.length === 1 ? 10 : 0), P.ink, 2, 'center'));
+      }
     },
-    footnote(ctx, day, value) {
+    footnote(ctx, day, value, c, o) {
       deskUnder(ctx); paper(ctx, 70, 20, 380, 252, LABELS.footnote);
       for (let i = 0; i < 16; i++) X.rect(ctx, 90, 50 + i * 12, 300 - ((i * 41 + day * 7) % 90), 2, P.grey2);
       // One line circled in red marker, and the number written in the margin.
-      const ly = 50 + (6 + day % 6) * 12;
-      X.rect(ctx, 84, ly - 7, 290, 2, P.crimson); X.rect(ctx, 84, ly + 7, 290, 2, P.crimson);
-      X.rect(ctx, 82, ly - 5, 2, 12, P.crimson); X.rect(ctx, 374, ly - 5, 2, 12, P.crimson);
-      X.rect(ctx, 376, ly, 60, 2, P.crimson);
+      if (!(o && o.noMarker)) {
+        const ly = footnoteLine(day);
+        X.rect(ctx, 84, ly - 7, 290, 2, P.crimson); X.rect(ctx, 84, ly + 7, 290, 2, P.crimson);
+        X.rect(ctx, 82, ly - 5, 2, 12, P.crimson); X.rect(ctx, 374, ly - 5, 2, 12, P.crimson);
+        X.rect(ctx, 376, ly, 60, 2, P.crimson);
+      }
       X.cel(ctx, 440, 70, 180, 150, P.amber, P.bone, P.amberD, P.ink2, 3);
       valueLines(value, 80).forEach((ln, i) => big(ctx, ln, 530, 110 + i * 26, P.ink, 2, 'center'));
     },
@@ -193,74 +205,91 @@
       const lines = valueLines(value, 150);
       lines.forEach((ln, i) => big(ctx, ln, 320, 96 + i * 28 + (lines.length === 1 ? 12 : 0), c.signal === P.amber ? P.amberD : c.signal, 3, 'center'));
     },
-    post(ctx, day, value, c) {
-      X.rect(ctx, 0, 0, V.w, V.h, P.ink); R.skyline(ctx, B.StoryData.actIndex(day) + 1, day * 5, 300, day);
-      X.cel(ctx, 190, 16, 260, 300, P.ink2, P.slate2, P.ink, P.ink2, 3);
-      X.rect(ctx, 200, 28, 240, 276, P.screenD);
-      big(ctx, 'sqwak', 320, 36, P.bone, 2, 'center');
-      X.rect(ctx, 208, 60, 224, 150, P.screen);
-      X.rect(ctx, 216, 70, 10, 10, P.crimson); R.text(ctx, 'TRENDING', 232, 72, P.crimson);
-      valueLines(value, 96).forEach((ln, i) => big(ctx, ln, 216, 96 + i * 20, P.bone, 2));
-      for (let i = 0; i < 3; i++) X.rect(ctx, 216 + i * 70, 190, 44, 6, i === 2 ? P.sky : P.slate2);
-      X.scanlines(ctx, 200, 28, 240, 276, P.ink, 0.1);
+    post(ctx, day, value, c, o) {
+      const part = o && o.part;
+      if (!part || part === 'city') { X.rect(ctx, 0, 0, V.w, V.h, P.ink); R.skyline(ctx, B.StoryData.actIndex(day) + 1, day * 5, 300, day); }
+      if (!part || part === 'phone') {
+        X.cel(ctx, 190, 16, 260, 300, P.ink2, P.slate2, P.ink, P.ink2, 3);
+        X.rect(ctx, 200, 28, 240, 276, P.screenD);
+        big(ctx, 'sqwak', 320, 36, P.bone, 2, 'center');
+        X.rect(ctx, 208, 60, 224, 150, P.screen);
+        if (!(o && o.noFlag)) X.rect(ctx, 216, 70, 10, 10, P.crimson);
+        R.text(ctx, 'TRENDING', 232, 72, P.crimson);
+        valueLines(value, 96).forEach((ln, i) => big(ctx, ln, 216, 96 + i * 20, P.bone, 2));
+        for (let i = 0; i < 3; i++) X.rect(ctx, 216 + i * 70, 190, 44, 6, i === 2 ? P.sky : P.slate2);
+      }
+      if (!part || part === 'glass') X.scanlines(ctx, 200, 28, 240, 276, P.ink, 0.1);
     },
-    chart(ctx, day, value) {
+    chart(ctx, day, value, c, o) {
       deskUnder(ctx); paper(ctx, 60, 30, 520, 236, LABELS.chart);
       X.rect(ctx, 90, 60, 460, 120, P.white);
       for (let i = 1; i < 4; i++) X.rect(ctx, 90, 60 + i * 30, 460, 1, P.putty2);
       let y = 120; const down = R.marketDown(day);
       for (let i = 0; i < 90; i++) { y = B.clamp(y + (((i * 19 + day * 7) % 13) - 6) * 0.8 + (down ? 0.5 : -0.3), 66, 172); X.rect(ctx, 92 + i * 5, y, 4, 2, P.ink2); }
       // A red marker circle around the move that matters.
-      const cx = 92 + 60 * 5;
-      X.rect(ctx, cx - 30, 70, 60, 2, P.crimson); X.rect(ctx, cx - 30, 166, 60, 2, P.crimson);
-      X.rect(ctx, cx - 32, 72, 2, 94, P.crimson); X.rect(ctx, cx + 30, 72, 2, 94, P.crimson);
+      if (!(o && o.noMarker)) {
+        const cx = 92 + 60 * 5;
+        X.rect(ctx, cx - 30, 70, 60, 2, P.crimson); X.rect(ctx, cx - 30, 166, 60, 2, P.crimson);
+        X.rect(ctx, cx - 32, 72, 2, 94, P.crimson); X.rect(ctx, cx + 30, 72, 2, 94, P.crimson);
+      }
       valueLines(value, 240).forEach((ln, i) => big(ctx, ln, 320, 196 + i * 22, P.crimsonD, 2, 'center'));
     },
-    ticket(ctx, day, value) {
-      X.rect(ctx, 0, 0, V.w, V.h, P.ink); X.gradient(ctx, 0, 0, V.w, V.h, P.ink2, P.ink, 8);
-      X.cel(ctx, 60, 20, 520, 256, P.plastic, P.plastic2, P.plasticD, P.ink2, 3);
-      X.crt(ctx, 74, 34, 492, 214, true);
-      R.text(ctx, LABELS.ticket, 90, 46, P.phosphorD);
-      R.text(ctx, 'BID', 150, 66, P.jade, 'center'); R.text(ctx, 'ASK', 490, 66, P.crimson, 'center');
-      for (let i = 0; i < 5; i++) {
-        X.rect(ctx, 100, 80 + i * 14, 100 - i * 18, 8, i ? P.screenGlow : P.jadeD);
-        X.rect(ctx, 540 - (60 + i * 12), 80 + i * 14, 60 + i * 12, 8, P.crimsonD);
+    ticket(ctx, day, value, c, o) {
+      const part = o && o.part;
+      if (!part || part === 'screen') {
+        X.rect(ctx, 0, 0, V.w, V.h, P.ink); X.gradient(ctx, 0, 0, V.w, V.h, P.ink2, P.ink, 8);
+        X.cel(ctx, 60, 20, 520, 256, P.plastic, P.plastic2, P.plasticD, P.ink2, 3);
+        X.crt(ctx, 74, 34, 492, 214, true);
+        R.text(ctx, LABELS.ticket, 90, 46, P.phosphorD);
+        R.text(ctx, 'BID', 150, 66, P.jade, 'center'); R.text(ctx, 'ASK', 490, 66, P.crimson, 'center');
       }
-      valueLines(value, 150).forEach((ln, i) => big(ctx, ln, 320, 160 + i * 28, P.phosphor, 3, 'center'));
-      X.scanlines(ctx, 74, 34, 492, 214, P.ink, 0.12);
+      if (!part) {
+        for (let i = 0; i < 5; i++) {
+          X.rect(ctx, 100, 80 + i * 14, 100 - i * 18, 8, i ? P.screenGlow : P.jadeD);
+          X.rect(ctx, 540 - (60 + i * 12), 80 + i * 14, 60 + i * 12, 8, P.crimsonD);
+        }
+      }
+      if (!part || part === 'glass') {
+        valueLines(value, 150).forEach((ln, i) => big(ctx, ln, 320, 160 + i * 28, P.phosphor, 3, 'center'));
+        X.scanlines(ctx, 74, 34, 492, 214, P.ink, 0.12);
+      }
     },
-    vote(ctx, day, value) {
+    vote(ctx, day, value, c, o) {
       X.rect(ctx, 0, 0, V.w, V.h, P.deskD); X.gradient(ctx, 0, 0, V.w, V.h, P.desk, P.deskD, 8);
       X.cel(ctx, 40, 20, 560, 256, P.ink, P.slate2, P.ink2, P.ink2, 3);
       R.text(ctx, LABELS.vote, 320, 32, P.amber, 'center');
       // Two banks of lamps, yea and nay.
       for (let r = 0; r < 6; r++) for (let k = 0; k < 18; k++) {
-        X.rect(ctx, 64 + k * 13, 56 + r * 13, 9, 9, (r * 18 + k) % 7 ? P.jadeD : P.ink2);
-        X.rect(ctx, 340 + k * 13, 56 + r * 13, 9, 9, (r * 18 + k) % 5 ? P.crimsonD : P.ink2);
+        X.rect(ctx, 64 + k * 13, 56 + r * 13, 9, 9, (r * 18 + k) % 7 && !(o && o.unlit) ? P.jadeD : P.ink2);
+        X.rect(ctx, 340 + k * 13, 56 + r * 13, 9, 9, (r * 18 + k) % 5 && !(o && o.unlit) ? P.crimsonD : P.ink2);
       }
       valueLines(value, 180).forEach((ln, i) => big(ctx, ln, 320, 160 + i * 28, P.bone, 3, 'center'));
     },
-    voicemail(ctx, day, value) {
+    voicemail(ctx, day, value, c, o) {
       X.rect(ctx, 0, 0, V.w, V.h, P.ink); ctx.save(); ctx.globalAlpha = 0.14; X.rect(ctx, 170, 0, 300, 300, P.screenGlow); ctx.restore();
       X.cel(ctx, 200, 14, 240, 290, P.ink2, P.slate2, P.ink, P.ink2, 3);
       X.rect(ctx, 212, 28, 216, 262, P.screen);
       R.text(ctx, LABELS.voicemail, 320, 40, P.grey2, 'center');
-      for (let i = 0; i < 34; i++) { const h = 4 + ((i * 37 + day) % 36); X.rect(ctx, 224 + i * 5.8, 110 - h / 2, 3, h, i < 12 ? P.phosphor : P.slate2); }
+      for (let i = 0; i < 34; i++) { const h = 4 + ((i * 37 + day) % 36); X.rect(ctx, 224 + i * 5.8, 110 - h / 2, 3, h, i < (o && o.played != null ? o.played : 12) ? P.phosphor : P.slate2); }
       valueLines(value, 90).forEach((ln, i) => big(ctx, ln, 320, 150 + i * 22, P.bone, 2, 'center'));
     }
   };
-  function insertShot(ctx, day, value, doc) {
+  // o is the document's own options (see DOC_DRAW); o.noGrain leaves out the full-screen 0.05 scanlines, which a layered beat draws in its top layer.
+  function insertShot(ctx, day, value, doc, o) {
     const a = (B.StoryData.actIndex(day) + 1), c = R.colors(a);
-    (DOC_DRAW[doc] || DOC_DRAW.memo)(ctx, day, value, c);
-    X.scanlines(ctx, 0, 0, V.w, V.h, P.ink, 0.05);
+    (DOC_DRAW[doc] || DOC_DRAW.memo)(ctx, day, value, c, o);
+    if (!(o && o.noGrain)) X.scanlines(ctx, 0, 0, V.w, V.h, P.ink, 0.05);
   }
 
-  function actCard(ctx, day) {
+  // The act's name as the card shows it (the part after the dot, 44 letters at most).
+  function actName(day) { const label = act(day); return R.clean(label.split('·')[1] ? label.split('·')[1].trim() : label).slice(0, 44); }
+  // o.noName leaves the name out: the layered card types it on.
+  function actCard(ctx, day, o) {
     const a = (B.StoryData.actIndex(day) + 1), c = R.colors(a);
     X.rect(ctx, 0, 0, V.w, V.h, P.ink);
     X.gradient(ctx, 0, 0, V.w, V.h, c.wash, P.ink, 12);
     const label = act(day);
-    big(ctx, label.split('·')[1] ? label.split('·')[1].trim() : label, 320, 150, P.bone, 4, 'center');
+    if (!(o && o.noName)) big(ctx, label.split('·')[1] ? label.split('·')[1].trim() : label, 320, 150, P.bone, 4, 'center');
     big(ctx, `ACT ${label.split('·')[0].trim()}`, 320, 112, c.signal, 2, 'center');
   }
 
@@ -817,7 +846,7 @@
     return beats;
   };
 
-  B.Storyboard = { PET, petRows, SHEET, DOCS, ANOMALY_DAYS, row, variant, lit, actTurns, HOMES, WEEKENDS, insertShot, shotFrame, at2x, finePass, bellSwing, apartmentShot, windowRect, homeOf, SAT_DUR };
+  B.Storyboard = { PET, petRows, SHEET, DOCS, ANOMALY_DAYS, row, variant, lit, actTurns, HOMES, WEEKENDS, insertShot, actCard, DOC_DRAW, shotFrame, at2x, finePass, bellSwing, apartmentShot, windowRect, homeOf, SAT_DUR };
 
   // Session 1 opens in the lobby: the counter climbs to 41, the car arrives, the doors part.
   // Five parts of SH.elevator, back to front: car, lobby wall (doorway left open), doors and counter animated on it, frame, screen-space marks.
@@ -860,6 +889,137 @@
     });
   }
 
+  // ---- Act cards and document close-ups as layers (stage 3, batch 4) ----
+  // The act card: the wash, ACT II and the cursor's colour are cached; the act's name types on in 4x letters in an animate,
+  // left-aligned at the string's final left edge so no letter moves. At the end it is today's card exactly.
+  function actLayers(day) {
+    const K = B.MotionKit, c = R.colors(B.StoryData.actIndex(day) + 1), name = actName(day), n = name.length;
+    // 16 letters a second for every real act name (7 to 9 letters); a label too long to finish by 1.15 s types faster, so the beat still ends on the full card
+    const left = 4 * ((80 - (X.textWidth(name) - 1) / 2) | 0), top = 4 * Math.round(150 / 4), cps = Math.max(16, n / 0.70), done = 0.45 + n / cps;
+    return [{
+      id: 'card', depth: 1, draw(g) { actCard(g, day, { noName: true }); },
+      animate(g, v, t) {
+        if (!n) return;
+        K.typeOn(g, name, left, top, t, { at: 0.45, cps, col: P.bone, shadow: P.ink, scale: 4, align: 'left', cursor: t < done + 0.5 ? { col: c.signal } : null });
+      }
+    }];
+  }
+  // The ticket's order book at time t: bar i steps three times, 6 px each, from 0.40 + 0.06 i in 0.12 s steps (3 = the start, 0 = the art).
+  const bookStep = (i, t) => 3 - Math.max(0, Math.min(3, Math.floor((t - (0.40 + 0.06 * i)) / 0.12) + 1));
+  // The documents' moving marks, in the screen pixels of the art. Each is the same rectangles the flat document draws, drawn on.
+  function docLayers(day, r, dur) {
+    const K = B.MotionKit, doc = DOC_DRAW[r.doc] ? r.doc : 'memo', value = r.arg, D = DOC_DRAW[doc], cc = R.colors(B.StoryData.actIndex(day) + 1);
+    const grain = (g) => X.scanlines(g, 0, 0, V.w, V.h, P.ink, 0.05);
+    // the top cached layer: the full-screen grain, then the world marks a dark floor or the racks add (nothing for an insert)
+    const top = (id, part) => ({ id, depth: 1, draw(g) { if (part) D(g, day, value, cc, { part }); grain(g); finePass(g, day, r, 'detail'); } });
+    const camera = null;
+    if (doc === 'memo') {
+      return {
+        camera, layers: [
+          { id: 'paper', depth: 1, draw(g) { D(g, day, value, cc, { part: 'paper' }); } },
+          { id: 'band', depth: 1, draw() {}, animate(g, v, t) { K.marker(g, [{ x: 112, y: 96, w: 416, h: 58 }], t, { at: 0.35, dur: 0.50, col: cc.wash, fps: 20 }); } },
+          top('ink', 'ink')
+        ]
+      };
+    }
+    if (doc === 'footnote') {
+      const ly = footnoteLine(day);
+      const segs = [{ x: 84, y: ly - 7, w: 290, h: 2 }, { x: 374, y: ly - 5, w: 2, h: 12 }, { x: 84, y: ly + 7, w: 290, h: 2, dir: -1 }, { x: 82, y: ly - 5, w: 2, h: 12, dir: -1 }, { x: 376, y: ly, w: 60, h: 2 }];
+      return {
+        camera, layers: [
+          { id: 'doc', depth: 1, draw(g) { D(g, day, value, cc, { noMarker: true }); }, animate(g, v, t) { K.marker(g, segs, t, { at: 0.35, dur: 0.80, col: P.crimson, fps: 20 }); } },
+          top('grain')
+        ]
+      };
+    }
+    if (doc === 'rating') {
+      return {
+        camera, cues: [{ at: 1.30, sfx: 'click' }], layers: [
+          {
+            id: 'doc', depth: 1, draw(g) { D(g, day, value, cc); },
+            animate(g, v, t) {
+              // the stamp and the value stay under the paper-coloured cover (a flat fill) until the third frame of the stamp
+              if (t < 1.30 + 2 * 0.04) X.rect(g, 150, 64, 340, 110, P.bone);
+              K.stamp(g, 150, 64, 340, 110, t, { at: 1.30, col: cc.signal, frame: 0.04, grow: [16, 6], style: 'none' });
+            }
+          },
+          top('grain')
+        ]
+      };
+    }
+    if (doc === 'post') {
+      return {
+        camera: K.rise(32, dur, 0.30, 0.80), layers: [
+          { id: 'city', depth: 0, draw(g) { D(g, day, value, cc, { part: 'city' }); } },
+          { id: 'phone', depth: 1, draw(g) { D(g, day, value, cc, { part: 'phone', noFlag: true }); }, animate(g, v, t) { K.blink(g, 216, 70, 10, 10, t, { on: P.crimson, period: 1.0, duty: 0.5, end: dur }); } },
+          // the phone's own scanlines lie over its TRENDING light, as in the flat picture, so they move with the phone in a layer above it
+          { id: 'glass', depth: 1, draw(g) { D(g, day, value, cc, { part: 'glass' }); } },
+          { id: 'grain', depth: 0, draw(g) { grain(g); finePass(g, day, r, 'detail'); } }
+        ]
+      };
+    }
+    if (doc === 'chart') {
+      const segs = [{ x: 362, y: 70, w: 60, h: 2 }, { x: 422, y: 72, w: 2, h: 94 }, { x: 362, y: 166, w: 60, h: 2, dir: -1 }, { x: 360, y: 72, w: 2, h: 94, dir: -1 }];
+      return {
+        camera, layers: [
+          { id: 'doc', depth: 1, draw(g) { D(g, day, value, cc, { noMarker: true }); }, animate(g, v, t) { K.marker(g, segs, t, { at: 0.40, dur: 0.55, col: P.crimson, fps: 20 }); } },
+          top('grain')
+        ]
+      };
+    }
+    if (doc === 'ticket') {
+      return {
+        camera, layers: [
+          { id: 'screen', depth: 1, draw(g) { D(g, day, value, cc, { part: 'screen' }); } },
+          {
+            id: 'book', depth: 1, draw() {},
+            animate(g, v, t) {
+              for (let i = 0; i < 5; i++) {
+                const s = bookStep(i, t), w = 60 + i * 12 - 6 * s;
+                X.rect(g, 100, 80 + i * 14, 100 - i * 18 + 6 * s, 8, i ? P.screenGlow : P.jadeD);
+                X.rect(g, 540 - w, 80 + i * 14, w, 8, P.crimsonD);
+              }
+            }
+          },
+          top('glass', 'glass')
+        ]
+      };
+    }
+    if (doc === 'vote') {
+      const yea = [], nay = [];
+      for (let q = 0; q < 6; q++) {
+        yea.push([]); nay.push([]);
+        for (let k = 0; k < 18; k++) {
+          if ((q * 18 + k) % 7) yea[q].push({ x: 64 + 13 * k, y: 56 + 13 * q, w: 9, h: 9 });
+          if ((q * 18 + k) % 5) nay[q].push({ x: 340 + 13 * k, y: 56 + 13 * q, w: 9, h: 9 });
+        }
+      }
+      return {
+        camera, layers: [
+          {
+            id: 'doc', depth: 1, draw(g) { D(g, day, value, cc, { unlit: true }); },
+            animate(g, v, t) {
+              for (let q = 0; q < 6; q++) {
+                K.lamps(g, yea[q], t, { at: 0.40 + 0.09 * q, step: 0, on: P.jadeD });
+                K.lamps(g, nay[q], t, { at: 0.40 + 0.09 * q, step: 0, on: P.crimsonD });
+              }
+            }
+          },
+          top('grain')
+        ]
+      };
+    }
+    // voicemail: the twelve bars the flat art lights, in X.rect's own truncation
+    const cells = [];
+    for (let i = 0; i < 12; i++) { const h = 4 + ((i * 37 + day) % 36); cells.push({ x: (224 + i * 5.8) | 0, y: (110 - h / 2) | 0, w: 3, h }); }
+    return {
+      camera, layers: [
+        { id: 'doc', depth: 1, draw(g) { D(g, day, value, cc, { played: 0 }); }, animate(g, v, t) { K.lamps(g, cells, t, { at: 0.40, step: 0.06, on: P.phosphor }); } },
+        top('grain')
+      ]
+    };
+  }
+
   B.Scenes.news = function (o) {
     const day = o.day || 0, r = row(day, story(o)), n = WEIGHTS[r.weight] || 2;
     const title = R.clean((o.brief || {}).title);
@@ -872,6 +1032,13 @@
       Object.assign({ sfx: r.shot === 'tv' ? 'room' : r.shot === 'floor' || r.shot === 'dark' ? 'office' : 'apartment', informative: n === 1 }, beats.length ? {} : { transition: 'fade' })));
     if (n >= 2) beats.push(R.beat('news', `${day}${v}:detail`, 2.3, (c) => { detailFrame(c, day, r, title); finePass(c, day, r, 'detail'); }, title, { sfx: 'broadcast', informative: true }));
     if (n >= 3) beats.push(R.beat('news', `${day}${v}:hold`, 1.1, (c) => { shotFrame(c, day, r, title); c.save(); c.globalAlpha = 0.18; X.rect(c, 0, 0, V.w, V.h, P.ink); c.restore(); }, '', {}));
+    // Stage 3, batch 4: the act card and the documents' details as layers. Beat ids, durations, captions and sounds stay as they were.
+    const docDetail = (r.shot === 'insert' || r.shot === 'dark' || r.shot === 'racks') && r.arg;
+    for (let i = 0; i < beats.length; i++) {
+      const b = beats[i];
+      if (/:act$/.test(b.id)) beats[i] = B.Motion.layered(Object.assign({}, b, { camera: null, layers: actLayers(day) }));
+      else if (docDetail && /:detail$/.test(b.id)) beats[i] = B.Motion.layered(Object.assign({}, b, docLayers(day, r, b.dur)));
+    }
     return beats;
   };
 
