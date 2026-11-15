@@ -295,18 +295,30 @@
 
   // A small version of the day's document, lying on your desk. The camera
   // tilts down so the paper sits above the caption box: z pushes in on it.
-  function deskWithDoc(ctx, day, r, zoom) {
+  // o (optional; absent draws everything): part 'desk' is the desk and the room (no paper), 'paper' only the paper, at o.dy art units lower (whole units).
+  // deskSpace runs fn(c) in the same art space as the paper and the desk: 2x, then the zoom's translate and scale; a layered beat draws its moving marks there.
+  function deskXform(c, z, ty, fn) {
+    c.save();
+    c.translate(Math.round(160 - 119 * z), Math.round(ty - 153 * z)); c.scale(z, z);
+    fn(c);
+    c.restore();
+  }
+  function deskSpace(ctx, day, zoom, fn) {
     const z = zoom || 1.15, ty = zoom ? 84 : 104;
+    at2x(ctx, (c) => deskXform(c, z, ty, fn), day);
+  }
+  function deskWithDoc(ctx, day, r, zoom, o) {
+    const z = zoom || 1.15, ty = zoom ? 84 : 104, part = o && o.part, dy = (o && o.dy) || 0;
     at2x(ctx, (c) => {
-      X.rect(c, 0, 0, 320, 180, P.desk);
-      c.save();
-      c.translate(Math.round(160 - 119 * z), Math.round(ty - 153 * z)); c.scale(z, z);
-      SH.deskCloseup(c, 1, { crash: R.marketDown(day - 1), ticker: ['INDX', 'CRVS', 'FRLN', 'MRDN', 'BSTN'][day % 5] });
-      X.cel(c, 90, 138, 58, 30, P.bone, P.white, P.putty, P.ink, 1);
-      X.rect(c, 94, 142, 50, 1, P.grey);
-      X.rect(c, 94, 148, 50, 7, r.doc === 'rating' || r.doc === 'vote' ? P.sky : r.doc === 'chart' ? P.crimsonD : P.amberD);
-      X.text(c, R.clean(r.arg || '').slice(0, 9), 95, 158, P.ink);
-      c.restore();
+      if (part !== 'paper') X.rect(c, 0, 0, 320, 180, P.desk);
+      deskXform(c, z, ty, (g) => {
+        if (part !== 'paper') SH.deskCloseup(g, 1, { crash: R.marketDown(day - 1), ticker: ['INDX', 'CRVS', 'FRLN', 'MRDN', 'BSTN'][day % 5] });
+        if (part === 'desk') return;
+        X.cel(g, 90, 138 + dy, 58, 30, P.bone, P.white, P.putty, P.ink, 1);
+        X.rect(g, 94, 142 + dy, 50, 1, P.grey);
+        X.rect(g, 94, 148 + dy, 50, 7, r.doc === 'rating' || r.doc === 'vote' ? P.sky : r.doc === 'chart' ? P.crimsonD : P.amberD);
+        X.text(g, R.clean(r.arg || '').slice(0, 9), 95, 158 + dy, P.ink);
+      });
     }, day);
   }
   // Where you are when the day's document reaches you.
@@ -420,15 +432,18 @@
     for (let d = 0; d < day; d++) if (kindOf(row(d), d) === k) n++;
     return n + (k.length % 3);
   }
-  function framed(ctx, day, r, title) {
+  // o (optional): draw(c) is drawn in place of the shot, noBack leaves out the ink behind a zoomed shot. A layered establish draws its bottom layer
+  // with { draw } and its animated marks with { draw, noBack: true }, so they sit in exactly the transform the art was drawn in.
+  function framed(ctx, day, r, title, o) {
+    const draw = (o && o.draw) || ((c) => shotFrame(c, day, r, title));
     const flat = r.shot === 'skyline' || r.shot === 'tableau' || r.shot === 'bell' || (r.shot === 'insert' && (r.weight === 'S' || r.doc === 'vote'));
     const cam = flat ? CAMS.wide : CAM_ORDER[kindIndex(day, r) % CAM_ORDER.length];
-    if (cam[0] === 1) return shotFrame(ctx, day, r, title);
-    X.rect(ctx, 0, 0, V.w, V.h, P.ink);
+    if (cam[0] === 1) return draw(ctx);
+    if (!(o && o.noBack)) X.rect(ctx, 0, 0, V.w, V.h, P.ink);
     ctx.save();
     ctx.translate(Math.round(cam[1] * V.w * (1 - cam[0])), Math.round(0.4 * V.h * (1 - cam[0])));
     ctx.scale(cam[0], cam[0]);
-    shotFrame(ctx, day, r, title);
+    draw(ctx);
     ctx.restore();
   }
   function detailFrame(ctx, day, r, title) {
@@ -846,7 +861,7 @@
     return beats;
   };
 
-  B.Storyboard = { PET, petRows, SHEET, DOCS, ANOMALY_DAYS, row, variant, lit, actTurns, HOMES, WEEKENDS, insertShot, actCard, DOC_DRAW, shotFrame, at2x, finePass, bellSwing, apartmentShot, windowRect, homeOf, SAT_DUR };
+  B.Storyboard = { PET, petRows, SHEET, DOCS, ANOMALY_DAYS, row, variant, lit, actTurns, HOMES, WEEKENDS, insertShot, actCard, DOC_DRAW, deskWithDoc, shotFrame, at2x, finePass, bellSwing, apartmentShot, windowRect, homeOf, SAT_DUR };
 
   // Session 1 opens in the lobby: the counter climbs to 41, the car arrives, the doors part.
   // Five parts of SH.elevator, back to front: car, lobby wall (doorway left open), doors and counter animated on it, frame, screen-space marks.
@@ -1021,6 +1036,32 @@
     };
   }
 
+  // ---- The establishes of the documents' places as layers (stage 3, batch 4, part 2) ----
+  // The art is drawn through framed(), so every moving mark is drawn through framed() too, with noBack, in the same transform.
+  const SETTLE = () => ({ from: { x: 0, y: -6, zoom: 1 }, to: { x: 0, y: 0, zoom: 1 }, ease: B.Motion.ease.inOut });
+  const marksLayer = (day, r) => ({ id: 'marks', depth: 0, draw(c) { finePass(c, day, r, 'establish'); tell(c, day); } });
+  // The desk with the day's paper (memo and footnote). The establish slides the paper up 16 art units onto the desk; the hold has it at rest.
+  // Both blink the TRADE monitor's standby LED (a 5x5 flat-bezel cover over the 3x3 light while it is off, nothing while it is on).
+  function deskLayers(day, r, title, hold, dur) {
+    const K = B.MotionKit, M = B.Motion, Z = r.doc === 'footnote' ? 1.5 : 0;
+    const led = (c, t) => deskSpace(c, day, Z, (g) => K.blink(g, 175, 118, 5, 5, t, { on: null, off: P.plastic, period: 1.0, duty: 0.5, end: dur }));
+    if (hold) {
+      return [
+        { id: 'desk', depth: 1, draw(c) { deskWithDoc(c, day, r, Z); }, animate(c, v, t) { led(c, t); } },
+        { id: 'dim', depth: 0, draw(c) { c.save(); c.globalAlpha = 0.18; X.rect(c, 0, 0, V.w, V.h, P.ink); c.restore(); } }
+      ];
+    }
+    return [
+      {
+        id: 'desk', depth: 1, draw(c) { framed(c, day, r, title, { draw: (cc) => deskWithDoc(cc, day, r, Z, { part: 'desk' }) }); },
+        animate(c, v, t) {
+          const dy = Math.round(16 * (1 - M.ease.out(K.span(t, 0.35, 0.75))));
+          framed(c, day, r, title, { noBack: true, draw: (cc) => { led(cc, t); deskWithDoc(cc, day, r, Z, { part: 'paper', dy }); } });
+        }
+      },
+      marksLayer(day, r)
+    ];
+  }
   B.Scenes.news = function (o) {
     const day = o.day || 0, r = row(day, story(o)), n = WEIGHTS[r.weight] || 2;
     const title = R.clean((o.brief || {}).title);
@@ -1034,11 +1075,17 @@
     if (n >= 2) beats.push(R.beat('news', `${day}${v}:detail`, 2.3, (c) => { detailFrame(c, day, r, title); finePass(c, day, r, 'detail'); }, title, { sfx: 'broadcast', informative: true }));
     if (n >= 3) beats.push(R.beat('news', `${day}${v}:hold`, 1.1, (c) => { shotFrame(c, day, r, title); c.save(); c.globalAlpha = 0.18; X.rect(c, 0, 0, V.w, V.h, P.ink); c.restore(); }, '', {}));
     // Stage 3, batch 4: the act card and the documents' details as layers. Beat ids, durations, captions and sounds stay as they were.
+    // the establish of a document's place (the weight S establish draws the document itself, as the detail: no session has one)
+    const insertEstablish = r.shot === 'insert' && r.weight !== 'S';
     const docDetail = (r.shot === 'insert' || r.shot === 'dark' || r.shot === 'racks') && r.arg;
     for (let i = 0; i < beats.length; i++) {
       const b = beats[i];
       if (/:act$/.test(b.id)) beats[i] = B.Motion.layered(Object.assign({}, b, { camera: null, layers: actLayers(day) }));
       else if (docDetail && /:detail$/.test(b.id)) beats[i] = B.Motion.layered(Object.assign({}, b, docLayers(day, r, b.dur)));
+      else if (insertEstablish && /:establish$/.test(b.id)) {
+        const doc = r.doc, L = doc === 'memo' || doc === 'footnote' ? deskLayers(day, r, title, false, b.dur) : null;
+        if (L) beats[i] = B.Motion.layered(Object.assign({}, b, { camera: doc === 'post' ? B.MotionKit.rise(56, b.dur, 0.30, 0.90) : doc === 'voicemail' || doc === 'chart' ? SETTLE() : null, layers: L }));
+      } else if (insertEstablish && /:hold$/.test(b.id) && (r.doc === 'memo' || r.doc === 'footnote')) beats[i] = B.Motion.layered(Object.assign({}, b, { camera: null, layers: deskLayers(day, r, title, true, b.dur) }));
     }
     return beats;
   };

@@ -1431,6 +1431,80 @@ async function run() {
     assert(await q(0.35) === 0 && await q(0.43) === tot(1) && await q(0.49) === tot(2) && await q(0.7) === tot(6) && await q(1.09) === tot(12) && await q(2.2) === tot(12), `voicemail: the bars do not light one by one up to bar 12 at 1.06 s (${await q(0.43)} ${await q(1.09)})`);
     assert(await cc(o, i, 'doc', 0.2, W, 'phosphor', false) === 0, 'voicemail: a bar is lit before playback starts');
   }
+  // ---- stage 3 batch 4, part 2: the desk with the day's paper (shot 10), the voicemail apartment (11), the post and chart establishes (12) ----
+  // Flat pictures the part touches, recorded from the code before the change: the desk at each zoom (memo 0, footnote 1.5, desk place 1.3), the apartment at each glow.
+  const FLAT2_REF = {
+    'desk:0:1': '45988316', 'desk:0:8': 'bfcbee37', 'desk:0:19': '439a3f38', 'desk:0:32': '8d158aac', 'desk:1.5:1': '1682f3f8', 'desk:1.5:8': '5ed999b6', 'desk:1.5:19': 'bf1398c0', 'desk:1.5:32': 'c2104d44',
+    'desk:1.3:1': '7fb57686', 'desk:1.3:8': '902cb85', 'desk:1.3:19': 'ec1c417a', 'desk:1.3:32': '9c5765ea', 'apt:0.15': 'cf4377e5', 'apt:0.5': '4a1e4845', 'apt:0.6': '8f55367d', 'apt:0.7': '34cc030d',
+    'aptWinter:0.15': '84c412cd', 'aptWinter:0.5': '51a7706d', aptNoSeason: '2e863285'
+  };
+  const flat2 = await page.evaluate(() => {
+    const hashOf = (fn) => { const cv = document.createElement('canvas'); cv.width = 640; cv.height = 360; const g = cv.getContext('2d'); fn(g);
+      const d = g.getImageData(0, 0, 640, 360).data; let x = 2166136261; for (let i = 0; i < d.length; i++) { x ^= d[i]; x = Math.imul(x, 16777619); } return (x >>> 0).toString(16); };
+    const SB = BTB.Storyboard, SH = BTB.Shots, out = {};
+    for (const z of [0, 1.5, 1.3]) for (const d of [1, 8, 19, 32]) out[`desk:${z}:${d}`] = hashOf((g) => SB.deskWithDoc(g, d, { doc: z === 1.5 ? 'footnote' : 'memo', arg: 'THE VALUE OF THE DAY' }, z));
+    for (const gl of [0.15, 0.5, 0.6, 0.7]) out[`apt:${gl}`] = hashOf((g) => SB.at2x(g, (c) => SH.apartment(c, gl), 36));
+    for (const gl of [0.15, 0.5]) out[`aptWinter:${gl}`] = hashOf((g) => SB.at2x(g, (c) => SH.apartment(c, gl), 40));
+    out.aptNoSeason = hashOf((g) => { g.save(); g.scale(2, 2); SH.apartment(g, 0.15); g.restore(); });
+    return out;
+  });
+  for (const k of Object.keys(FLAT2_REF)) assert(flat2[k] === FLAT2_REF[k], `batch 4b ${k}: the flat picture changed (${flat2[k]}, was ${FLAT2_REF[k]})`);
+
+  // which sessions these shots apply to: no S-weight document establish and no desk place exists in the sheet, so neither is wired
+  assert(await page.evaluate(() => { const SB = BTB.Storyboard; for (let d = 0; d < 46; d++) { const r = SB.row(d, null), sb = BTB.Rhythm.storyboard(d); if ((r.shot === 'insert' && r.weight === 'S') || (r.shot === 'place' && sb.place === 'desk')) return false; } return true; }), 'batch 4b: a session reaches the S-weight document establish or the desk place, which the sheet says none does');
+
+  const T22 = { choices: { c5: 'bail' }, f: {} };
+  const DESK_EST = [['1', nOpts(1)], ['8', nOpts(8)], ['15', nOpts(15)], ['19', nOpts(19)], ['24', nOpts(24)], ['32', nOpts(32)], ['22bail', nOpts(22, 'T', T22)]];
+  const DESK_HOLD = [['8', nOpts(8)], ['24', nOpts(24)], ['32', nOpts(32)], ['22bail', nOpts(22, 'T', T22)]];
+  const bxx = (o, i, id, t, r) => page.evaluate(([o, i, id, t, r]) => window.animBox('news', o, i, id, t, r || [0, 0, 640, 360]), [o, i, id, t, r]);
+  const cnt2 = (o, i, id, t, spec, r) => cc(o, i, id, t, r || [0, 0, 640, 360], spec);
+  // shot 10, establish: the paper slides up 16 art units between 0.35 and 0.75 s; the TRADE LED blinks to the end; the marks never move
+  for (const [name, o] of DESK_EST) {
+    const i = await newsIdx(o, ':establish$'), a = await info('news', o, i);
+    assert(/^news:\d+(:.+)?:establish$/.test(a.id) && a.dur === 1.7 && a.layers === 'desk,marks' && a.depths === '1,0' && a.cam === 'none' && a.sfx === 'apartment' && a.cues === '' && a.inf === false, `desk establish ${name} beat: ${JSON.stringify(a)}`);
+    assert(await shot('news', o, i, 0.1) !== await shot('news', o, i, 1.6), `desk establish ${name}: start and end frames are identical`);
+    assert(await shot('news', o, i, 0.6) === await shot('news', o, i, 0.6), `desk establish ${name}: same time gave different pictures`);
+    assert((await drawCover(o, i)) === 640 * 360, `desk establish ${name}: the final picture has holes`);
+    // the paper: low until 0.35 s, then up by 37 to 64 px, ease out, still from 0.75 s; nothing of it is drawn by the cached layer
+    const y1 = async (t) => (await bxx(o, i, 'desk', t))[3];
+    const low = await y1(0.1), mid = await y1(0.5), up = await y1(0.8);
+    assert(low === await y1(0.3) && low - up >= 36 && low - up <= 66 && mid < low && mid > up && up === await y1(1.6), `desk establish ${name}: the paper does not slide up 37 to 64 px between 0.35 and 0.75 s (${low}, ${mid}, ${up})`);
+    assert(await lp('news', o, i, 'desk', 0.1, false) !== await lp('news', o, i, 'desk', 1.6, false), `desk establish ${name}: the cached desk shows the paper`);
+    const nBefore = await cnt2(o, i, 'desk', 0.1, 'bone'), nAt = await cnt2(o, i, 'desk', 1.6, 'bone');
+    assert(nBefore > 500 && nAt > 500, `desk establish ${name}: the paper (bone) is not in the animate (${nBefore}, ${nAt})`);
+    // the LED: its cover shows while it is off (0.9 s), is gone while lit (1.5 s) and at the end; the paper at rest is the same in all
+    const led = (t) => cnt2(o, i, 'desk', t, 'any');
+    assert(await led(0.9) > await led(1.5) && await led(1.5) === await led(1.6) && await led(1.6) === await led(1.7) && await led(1.0) > await led(1.5), `desk establish ${name}: the TRADE LED does not blink to the end at the standby rate`);
+    // marks and the corner brackets do not move
+    assert(await lp('news', o, i, 'marks', 0.1, false) === await lp('news', o, i, 'marks', 1.6, false), `desk establish ${name}: the marks move`);
+    for (const ti of ['', 'W'.repeat(200)]) { const o2 = Object.assign({}, o, { brief: { title: ti, feed: [] } }), j = await newsIdx(o2, ':establish$'); assert(await shot('news', o2, j, 1.0) === await shot('news', o, i, 1.0), `desk establish ${name}: the picture depends on the title '${ti.slice(0, 3)}'`); }
+  }
+  // shot 10, hold: the paper at rest from the first frame, the LED blinks under the dim, nothing else moves
+  for (const [name, o] of DESK_HOLD) {
+    const i = await newsIdx(o, ':hold$'), a = await info('news', o, i);
+    assert(/^news:\d+(:.+)?:hold$/.test(a.id) && a.dur === 1.1 && a.layers === 'desk,dim' && a.depths === '1,0' && a.cam === 'none' && a.sfx === '' && a.cues === '', `desk hold ${name} beat: ${JSON.stringify(a)}`);
+    assert((await drawCover(o, i)) === 640 * 360 && await shot('news', o, i, 0.4) === await shot('news', o, i, 0.4), `desk hold ${name}: holes or non-deterministic`);
+    const led = (t) => cnt2(o, i, 'desk', t, 'any');
+    assert(await led(0.4) > await led(0.8) && await led(0.8) === await led(1.1), `desk hold ${name}: the TRADE LED does not blink and end lit`);
+    assert(await shot('news', o, i, 0.8) === await shot('news', o, i, 1.05) && await shot('news', o, i, 0.4) !== await shot('news', o, i, 0.8), `desk hold ${name}: only the LED should move`);
+    assert(await lp('news', o, i, 'dim', 0, false) === await lp('news', o, i, 'dim', 1.0, false), `desk hold ${name}: the dim moves`);
+  }
+  //@@end
+  // none of these needs the game or a title
+  for (const o of [nOpts(15, ''), nOpts(1, 'W'.repeat(200))]) {
+    const i = await newsIdx(o, ':establish$');
+    assert((await drawCover(o, i)) === 640 * 360 && !o.game, `batch 4b: ${o.day} with title '${o.brief.title.slice(0, 3)}' does not draw`);
+  }
+  await page.evaluate(() => BTB.Settings.set('effects', 'reduced'));
+  for (const o of [nOpts(1), nOpts(8), nOpts(15), nOpts(32)]) {
+    for (const re of [':establish$', ':hold$']) {
+      const i = await newsIdx(o, re); if (i < 0) continue;
+      const b = await info('news', o, i);
+      assert(await shot('news', o, i, 0.4) === await shot('news', o, i, b.dur - 0.05), `news ${o.day} ${re}: reduced effects still moves`);
+    }
+  }
+  await page.evaluate(() => BTB.Settings.set('effects', 'full'));
+
   // reduced effects: every reworked beat is one still
   await page.evaluate(() => BTB.Settings.set('effects', 'reduced'));
   for (const o of [nOpts(8), nOpts(32), nOpts(1), nOpts(4), nOpts(2), nOpts(3), nOpts(5), nOpts(11), nOpts(36), nOpts(15), nOpts(10)]) {
@@ -1474,6 +1548,9 @@ async function run() {
     { scene: 'news', opts: { day: 12, brief: { title: 'BIDS: 1', feed: [] } } },
     { scene: 'news', opts: { day: 11, brief: { title: 'COMPUTE FREEDOM', feed: [] } } },
     { scene: 'news', opts: { day: 36, brief: { title: 'VOICEMAIL', feed: [] } } },
+    // batch 4, part 2: the desk (memo, close framing; footnote wide), the post and chart establishes under a zoom, a memo desk with a profile framing
+    { scene: 'news', opts: { day: 1, brief: { title: 'RELEASE NOTES', feed: [] } } },
+    { scene: 'news', opts: { day: 15, brief: { title: 'CREDIT LINE', feed: [] } } },
     { scene: 'close', opts: { report: { day: 3, pnl: 1200, quotaMet: true, quota: 900 } } },
     { scene: 'close', opts: { report: { day: 30, pnl: 1200, quotaMet: true, quota: 900 } } },
     // the close: a loss with the quota missed on the empty floor, and the two days with a Sqwak breaking insert (no game needed): a profit in autumn, and a seven-digit loss in winter
