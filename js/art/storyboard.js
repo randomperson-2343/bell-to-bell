@@ -861,7 +861,7 @@
     return beats;
   };
 
-  B.Storyboard = { PET, petRows, SHEET, DOCS, ANOMALY_DAYS, row, variant, lit, actTurns, HOMES, WEEKENDS, insertShot, actCard, DOC_DRAW, deskWithDoc, shotFrame, at2x, finePass, bellSwing, apartmentShot, windowRect, homeOf, SAT_DUR };
+  B.Storyboard = { PET, petRows, SHEET, DOCS, ANOMALY_DAYS, row, variant, lit, actTurns, HOMES, WEEKENDS, insertShot, actCard, DOC_DRAW, deskWithDoc, shotFrame, skylineShot, racksShot, at2x, finePass, bellSwing, apartmentShot, windowRect, homeOf, SAT_DUR };
 
   // Session 1 opens in the lobby: the counter climbs to 41, the car arrives, the doors part.
   // Five parts of SH.elevator, back to front: car, lobby wall (doorway left open), doors and counter animated on it, frame, screen-space marks.
