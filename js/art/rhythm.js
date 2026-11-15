@@ -235,7 +235,7 @@
   }
 
   // o (all optional; absent draws exactly the flat phone): rows (default feed.slice(0, 4)), count (the printed number),
-  // glow (leading rows with screenGlow, default 1), part (undefined all, 'back' without the row cards, 'rows' only the
+  // glow (leading rows with screenGlow, default 1), compact (the tall 52 px rows; default: two rows or fewer), part (undefined all, 'back' without the row cards, 'rows' only the
   // row cards, unclipped), noDigits (no status count).
   // Numbers two shots both need, in one place: the lock screen's minute (the handoff's asleep screen prints it too), how far the
   // CASCADE stack has slipped at a stability (the office beat id carries it) and the ink overlay's alpha under the close report.
@@ -251,7 +251,7 @@
   }
   function phone(ctx, x, y, w, h, feed, act, day, o) {
     o = o || {};
-    const c = colors(act), rows = o.rows || (feed || []).slice(0, 4), compact = Math.min(rows.length, 4) <= 2, part = o.part;
+    const c = colors(act), rows = o.rows || (feed || []).slice(0, 4), compact = o.compact != null ? o.compact : Math.min(rows.length, 4) <= 2, part = o.part;
     const count = o.count != null ? o.count : rows.length, glow = o.glow == null ? 1 : o.glow;
     const { sx, sy, sw, sh } = phoneScreen(x, y, w, h), rowH = compact ? 52 : 39;
     const cards = () => rows.forEach((item,i) => {

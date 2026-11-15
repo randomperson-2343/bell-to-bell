@@ -912,6 +912,9 @@
   // Report and hold share two layers: `office` (the floor under the 0.32 ink overlay) and `card` (the box, the verdict label, the quota
   // and the date). The P&L, the nine dashes and the stamp are left out of the cached card and drawn on it each frame. With `rest` (the
   // hold) the card is final and the live screens go dark one by one, right to left.
+  // Where the P&L count starts: a value with the final's number of digits (1,234,567 from 1,000,000; 950 from 100; 7 from 1; a loss
+  // mirrors it; 0 stays 0), so the printed string keeps one width and the sign and dollar sign do not walk as digits are added.
+  const countStart = (v) => { const a = Math.round(Math.abs(v)); return a === 0 ? v : (v < 0 ? -1 : 1) * Math.pow(10, String(a).length - 1); };
   function closeLayers(r, rest) {
     const K = B.MotionKit, M = B.Motion, G = R.closeGeom(r), O = R.officeGeom(r.day || 0), S = G.stamp;
     const verdictCol = G.met ? P.jade : P.crimson, dim = R.CLOSE_DIM;
@@ -934,7 +937,7 @@
         id: 'card', depth: 1, draw(c) { R.closeFrame(c, r, true, { part: 'card', noPnl: true, noDashes: true }); },
         animate(c, v, t) {
           const at = rest ? -1 : 0.30, atStamp = rest ? -1 : 1.26;
-          K.tally(c, G.pnlAt.x, G.pnlAt.y, t, { from: 0, to: G.pnl, at, dur: rest ? 0.01 : 0.60, ease: M.ease.out, fps: 15, fmt: (x) => B.fmt.money(x, true), col: G.good ? P.jade : P.crimson, align: 'center', anchor: 'final' });
+          K.tally(c, G.pnlAt.x, G.pnlAt.y, t, { from: countStart(G.pnl), to: G.pnl, at, dur: rest ? 0.01 : 0.60, ease: M.ease.out, fps: 15, fmt: (x) => B.fmt.money(x, true), col: G.good ? P.jade : P.crimson, align: 'center', anchor: 'final' });
           K.lamps(c, G.dashes, t, { at, step: 0.0667, on: G.met ? P.jadeD : P.crimsonD });
           if (!G.verdict) return;
           // the label is hidden on the box's flat ink until the stamp's second frame
@@ -1023,13 +1026,17 @@
       B.MotionKit.weather(c, W.sky.x, W.sky.y, W.sky.w, W.sky.h, day + i, wxSeed(day, i), t, { t0, count: n, rainLen: 5 });
     });
   }
-  // The backlog on days with five or more items: the handoff shows items 2 to 5, the read brings the lead in on top.
-  const phoneBacklog = (feed) => (feed.length >= 5 ? feed.slice(1, 5) : feed.slice(0, 4));
+  // The read brings the lead in on top of the backlog when the feed has three or more items: the handoff shows items 2 to 5 (2 to n
+  // for three and four items). Feeds of zero, one and two items have no arrival.
+  const phoneArrival = (feed) => feed.length >= 3;
+  const phoneBacklog = (feed) => (phoneArrival(feed) ? feed.slice(1, 5) : feed.slice(0, 4));
 
   // Handoff: the room is pinned at depth 0, the dark device rises into it at depth 1 and wakes at 0.80 s.
   function phoneHandoffLayers(sb, feed) {
     // The device is always the read's big one (close = true), so the dissolve into the read does not change its size.
     const K = B.MotionKit, L = phoneBacklog(feed), o = { rows: L, labelX: 92 };
+    // the backlog keeps the read's 39 px rows even at two (three items), so the lead's slide of 44 px lands on the same slots
+    if (phoneArrival(feed)) o.compact = false;
     const { sx, sy, sw, sh } = R.phoneGeom(L.length, true);
     const mm = R.lockMinute(sb.day);
     return [
@@ -1049,10 +1056,11 @@
   // the list window (y < 51, the only place a row can leave the window: it starts 44 px up and never goes sideways or below),
   // so a row outside the window never shows. It is the same pixels as `back` there; drawing only that band avoids a second full room. The two counters are drawn whole on `glass`.
   function phoneReadLayers(sb, feed) {
-    const K = B.MotionKit, n = feed.length, arrival = n >= 5, L = arrival ? feed.slice(0, 5) : feed.slice(0, 4);
-    const o = { rows: L, count: arrival ? 5 : L.length, glow: arrival ? 2 : 1, noDigits: true, labelX: 92 };
+    const K = B.MotionKit, n = feed.length, arrival = phoneArrival(feed), five = n >= 5, L = five ? feed.slice(0, 5) : feed.slice(0, 4);
+    // five or more items end with a fifth row and the top two highlighted; three and four end exactly as the flat read does
+    const o = { rows: L, count: L.length, glow: five ? 2 : 1, noDigits: true, labelX: 92 };
     const frame = (c, extra) => R.phoneFrame(c, sb, feed, true, Object.assign({}, o, extra));
-    const wash = R.colors(sb.act).wash, landing = arrival ? 1.0 : 0.70;
+    const wash = R.colors(sb.act).wash, landing = arrival ? 1.0 : 0.70, top = L.length;
     return [
       { id: 'back', depth: 0, draw(c) { frame(c, { part: 'back' }); } },
       { id: 'rows', depth: 1, draw(c) { frame(c, { part: 'rows' }); } },
@@ -1060,7 +1068,7 @@
         id: 'glass', depth: 0,
         draw(c) { frame(c, { part: 'back', area: { x: 0, y: 0, w: V.w, h: 51 } }); },
         animate(c, v, t) {
-          const k = arrival && t >= 0.85 ? 5 : Math.min(4, n);
+          const k = arrival && t >= 0.85 ? top : arrival ? top - 1 : Math.min(4, n);
           R.text(c, String(k), 417, 36, wash, 'right');
           R.text(c, String(k), 92, 110, P.bone);
           if (n > 0) K.ping(c, t, { at: landing, off: [], on: [], flare: { x: 220, y: 55, w: 200, h: 39, col: P.bone, a: 0.15, dur: 0.08 } });
@@ -1071,7 +1079,7 @@
   const phone = B.Scenes.phone;
   B.Scenes.phone = function (o) {
     const beats = phone(o), sb = R.storyboard(o.day || 0), feed = (o.brief && o.brief.feed) || [], K = B.MotionKit, M = B.Motion;
-    const arrival = feed.length >= 5;
+    const arrival = phoneArrival(feed);
     beats[0] = M.layered(Object.assign({}, beats[0], { camera: K.rise(56, beats[0].dur, 0.15, 0.75), layers: phoneHandoffLayers(sb, feed) }));
     const read = Object.assign({}, beats[1], {
       cues: [{ at: 0.70, sfx: 'news' }],
@@ -1088,13 +1096,13 @@
     const K = B.MotionKit, M = B.Motion, wide = beatKind === 'wide', hold = beatKind === 'hold';
     const G = R.officeGeom(day, S), dc = G.deskChart, slip = G.slip;
     const t0 = wide ? 0 : hold ? 3.25 : 1.45, tc0 = hold ? 1.8 : 0;
-    const Y = R.chartSeries(dc.y, dc.h, day, down, 25).map(Math.floor), col = down ? P.crimson : P.jade;
+    const x0 = dc.x + 6, Y = R.chartSeries(dc.y, dc.h, day, down, 25).map(Math.floor), col = down ? P.crimson : P.jade;
     const layers = [
       { id: 'wall', depth: 0.5, draw(c) { R.officeFrame(c, day, false, down, S, { part: 'wall' }); }, animate(c, v, t) { officeWeather(c, day, t, t0); } },
       { id: 'monitors', depth: 0.75, draw(c) { R.officeFrame(c, day, false, down, S, { part: 'monitors' }); } }
     ];
     if (wide) {
-      layers[1].animate = (c, v, t) => { G.monitors.forEach((m) => { if (!m.off) K.crt(c, m.screen.x, m.screen.y, m.screen.w, m.screen.h, t, { mode: 'roll', at: 0.35 + 0.12 * m.i, dur: 0.36 }); }); };
+      layers[1].animate = (c, v, t) => { G.monitors.forEach((m) => { if (!m.off) K.crt(c, m.screen.x, m.screen.y, m.screen.w, m.screen.h, t, { mode: 'roll', at: 0.35 + 0.12 * m.i, dur: 0.36, band: 12 }); }); };
       layers.push({ id: 'desk', depth: 1, draw(c) { R.officeFrame(c, day, false, down, S, { part: 'desk' }); } });
     } else {
       layers.push({
@@ -1106,7 +1114,12 @@
           // the top two sheets slip into their place between 0.90 and 1.20 s; on the hold they already sit there
           const slipNow = hold ? slip : slip >= 1 ? Math.round(slip * M.ease.out(K.span(t, 0.90, 1.20))) : 0;
           R.officeFrame(c, day, true, down, S, { part: 'top', slipNow });
-          K.trace(c, Y, t, { x0: dc.x + 6, step: 5, from: s, n: 15, w: 3, h: 2, col, head });
+          // the now-mark (sheet 2, section 10): a 1 px phosphorD vertical at the newest point's x, only while that point is lit, behind the dots
+          if (head) {
+            const mx = Math.max(dc.x + 1, Math.min(dc.x + dc.w - 2, x0 + 70)), my0 = Math.max(dc.y + 1, 228), my1 = Math.min(dc.y + dc.h - 2, 250);
+            X.rect(c, mx, my0, 1, my1 - my0 + 1, P.phosphorD);
+          }
+          K.trace(c, Y, t, { x0, step: 5, from: s, n: 15, w: 3, h: 2, col, head });
         }
       });
     }
