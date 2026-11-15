@@ -1489,14 +1489,28 @@ async function run() {
     assert(await shot('news', o, i, 0.8) === await shot('news', o, i, 1.05) && await shot('news', o, i, 0.4) !== await shot('news', o, i, 0.8), `desk hold ${name}: only the LED should move`);
     assert(await lp('news', o, i, 'dim', 0, false) === await lp('news', o, i, 'dim', 1.0, false), `desk hold ${name}: the dim moves`);
   }
+  //@@shot11
+  // shot 11: the voicemail apartment: the phone on the couch arm lights at 0.45 s with one bone flare (to 0.53 s); settle tilt
+  {
+    const o = nOpts(36), i = await newsIdx(o, ':establish$'), a = await info('news', o, i), scr = [405, 254, 21, 35], fl = [385, 232, 60, 76];
+    assert(a.id === 'news:36:establish' && a.dur === 1.7 && a.layers === 'room,marks' && a.depths === '1,0' && a.cam === '-6>0' && a.sfx === 'apartment' && a.cues === '' && a.tr === 'fade', `voicemail establish beat: ${JSON.stringify(a)}`);
+    assert(await shot('news', o, i, 0.1) !== await shot('news', o, i, 1.6) && await shot('news', o, i, 1.0) === await shot('news', o, i, 1.0) && (await drawCover(o, i)) === 640 * 360, 'voicemail establish: not moving, not deterministic or has holes');
+    const lit = (t) => cc(o, i, 'room', t, scr, 'screenGlow', false);
+    assert(await lit(0.2) === 0 && await lit(0.44) === 0 && await lit(0.56) > 300 && await lit(0.6) === await lit(1.6), 'voicemail establish: the phone screen does not light at 0.45 s and stay');
+    const any = (t) => cc(o, i, 'room', t, fl, 'any', true);
+    assert(await any(0.3) === 0 && await any(0.49) > await any(0.6) && await any(0.6) === await any(1.6) && await any(0.6) > 300, 'voicemail establish: one bone flare of 0.08 s does not follow the light');
+    assert(await lp('news', o, i, 'marks', 0.1, false) === await lp('news', o, i, 'marks', 1.6, false), 'voicemail establish: the marks move');
+    // the flare and the lit screen sit in the room's own picture: the cached room has no lit screen, the final one does
+    assert(await lp('news', o, i, 'room', 0.2, false, scr) !== await lp('news', o, i, 'room', 1.6, false, scr), 'voicemail establish: the cached room already has the lit screen');
+  }
   //@@end
   // none of these needs the game or a title
-  for (const o of [nOpts(15, ''), nOpts(1, 'W'.repeat(200))]) {
+  for (const o of [nOpts(15, ''), nOpts(36, 'W'.repeat(200))]) {
     const i = await newsIdx(o, ':establish$');
     assert((await drawCover(o, i)) === 640 * 360 && !o.game, `batch 4b: ${o.day} with title '${o.brief.title.slice(0, 3)}' does not draw`);
   }
   await page.evaluate(() => BTB.Settings.set('effects', 'reduced'));
-  for (const o of [nOpts(1), nOpts(8), nOpts(15), nOpts(32)]) {
+  for (const o of [nOpts(1), nOpts(8), nOpts(15), nOpts(32), nOpts(36)]) {
     for (const re of [':establish$', ':hold$']) {
       const i = await newsIdx(o, re); if (i < 0) continue;
       const b = await info('news', o, i);

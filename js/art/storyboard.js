@@ -1062,6 +1062,17 @@
       marksLayer(day, r)
     ];
   }
+  // The voicemail on the couch arm: the room is cached with the phone's screen dark; it lights at 0.45 s with one bone flare.
+  function voicemailRoomLayers(day, r, title) {
+    const K = B.MotionKit;
+    return [
+      { id: 'room', depth: 1, draw(c) { framed(c, day, r, title, { draw: (cc) => at2x(cc, (c2) => SH.apartment(c2, 0.15, { noScreen: true }), day) }); },
+        animate(c, v, t) {
+          framed(c, day, r, title, { noBack: true, draw: (cc) => at2x(cc, (c2) => K.ping(c2, t, { at: 0.45, off: [], on: [{ x: 192, y: 113, w: 8, h: 13, col: P.screenGlow }, { x: 194, y: 115, w: 2, h: 2, col: P.sky }], flare: { x: 186, y: 106, w: 20, h: 26, col: P.bone, a: 0.15, dur: 0.08 } }), day) });
+        } },
+      marksLayer(day, r)
+    ];
+  }
   B.Scenes.news = function (o) {
     const day = o.day || 0, r = row(day, story(o)), n = WEIGHTS[r.weight] || 2;
     const title = R.clean((o.brief || {}).title);
@@ -1083,7 +1094,7 @@
       if (/:act$/.test(b.id)) beats[i] = B.Motion.layered(Object.assign({}, b, { camera: null, layers: actLayers(day) }));
       else if (docDetail && /:detail$/.test(b.id)) beats[i] = B.Motion.layered(Object.assign({}, b, docLayers(day, r, b.dur)));
       else if (insertEstablish && /:establish$/.test(b.id)) {
-        const doc = r.doc, L = doc === 'memo' || doc === 'footnote' ? deskLayers(day, r, title, false, b.dur) : null;
+        const doc = r.doc, L = doc === 'memo' || doc === 'footnote' ? deskLayers(day, r, title, false, b.dur) : doc === 'voicemail' ? voicemailRoomLayers(day, r, title) : null;
         if (L) beats[i] = B.Motion.layered(Object.assign({}, b, { camera: doc === 'post' ? B.MotionKit.rise(56, b.dur, 0.30, 0.90) : doc === 'voicemail' || doc === 'chart' ? SETTLE() : null, layers: L }));
       } else if (insertEstablish && /:hold$/.test(b.id) && (r.doc === 'memo' || r.doc === 'footnote')) beats[i] = B.Motion.layered(Object.assign({}, b, { camera: null, layers: deskLayers(day, r, title, true, b.dur) }));
     }

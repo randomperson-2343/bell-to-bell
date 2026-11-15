@@ -43,7 +43,8 @@
   }
 
   // Pre-dawn apartment: one window, a TV throwing light on the far wall.
-  function apartment(ctx, glow) {
+  // o.noScreen leaves the phone's lit screen out (the voicemail establish lights it in an animate).
+  function apartment(ctx, glow, o) {
     X.rect(ctx, 0, 0, V.w, V.h, P.ink);
     X.gradient(ctx, 0, 0, V.w, 140, P.ink2, P.ink, 6);
     for (let x = 6; x < V.w; x += 24) X.rect(ctx, x, 0, 1, 138, P.ink);
@@ -77,7 +78,7 @@
     // The alarm and the phone on the couch arm, both awake.
     k1(ctx, 157, 106, 26, 11, P.ink2, P.slate, P.ink);
     X.text(ctx, '5:58', 170, 108, P.crimson, { align: 'center' });
-    k1(ctx, 190, 110, 12, 20, P.ink2, P.slate2, P.ink); X.rect(ctx, 192, 113, 8, 13, P.screenGlow); X.rect(ctx, 194, 115, 2, 2, P.sky);
+    k1(ctx, 190, 110, 12, 20, P.ink2, P.slate2, P.ink); if (!(o && o.noScreen)) { X.rect(ctx, 192, 113, 8, 13, P.screenGlow); X.rect(ctx, 194, 115, 2, 2, P.sky); }
     // The player, anonymous: a shoulder and the back of a head in the foreground.
     ctx.save(); ctx.translate(-4, 96); ctx.scale(4, 4); X.drawSprite(ctx, X.sprite(tint(BACK, { 2: 'c' })), 0, 0); ctx.restore();
   }
