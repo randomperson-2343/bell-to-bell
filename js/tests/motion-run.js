@@ -1614,19 +1614,23 @@ async function run() {
   const reduced5 = [];
 
   // shot 1: the lit train behind the seven window cells (sessions 7 platform, 21 and 31 subway; establish and detail)
-  // the model: window k of the train has its left edge at 14 + 360 (t - A) - 18 k, in placeFrame coordinates; cell i shows x 24 + 94 i to 88 + 94 i
+  // the model: window k of the train has its left edge at 14 + 330 (t - A) - 28 k, in placeFrame coordinates; cell i shows x 24 + 94 i to 88 + 94 i
   const trainBox = (t, A) => {
     let x0 = 1e9, x1 = -1;
     for (let k = 0; k < 14; k++) {
-      const x = 14 + Math.round(360 * (t - A)) - 18 * k;
+      const x = 14 + Math.round(330 * (t - A)) - 28 * k;
       for (let i = 0; i < 7; i++) { const a = Math.max(x, 24 + 94 * i), b = Math.min(x + 10, 88 + 94 * i, 640); if (b > a) { x0 = Math.min(x0, a); x1 = Math.max(x1, b - 1); } }
     }
     return x1 < 0 ? [1e9, -1, 1e9, -1] : [x0, x1, 85, 100];
   };
+  // a frame's step at 30 fps must stay under half the windows' spacing, or a throttled phone reads the train as crawling backwards
+  // (the pictures below pin speed 330 and gap 28 through trainBox)
+  const TRAIN = { speed: 330, gap: 28 };
+  assert(TRAIN.speed / 30 < TRAIN.gap / 2, `the subway train steps ${TRAIN.speed / 30} px a frame at 30 fps against a spacing of ${TRAIN.gap}`);
   for (const day of P5.subway) {
     const o = mk5(day);
     for (const phase of ['establish', 'detail']) {
-      const i = await newsIdx(o, `:${phase}$`), a = await info('news', o, i), est = phase === 'establish', A = est ? -0.90 : -0.30;
+      const i = await newsIdx(o, `:${phase}$`), a = await info('news', o, i), est = phase === 'establish', A = est ? -1.48 : -0.88;
       assert(a.id === `news:${day}:${phase}` && a.dur === (est ? 1.7 : 2.3) && a.layers === 'back,train,front,marks' && a.depths === '1,1,1,0' && a.cam === '-6>0' && a.cues === (est ? '0.3:transit' : '') && a.sfx === (est ? 'apartment' : 'broadcast') && a.inf === !est, `train ${day} ${phase} beat: ${JSON.stringify(a)}`);
       assert(await shot('news', o, i, 0.1) !== await shot('news', o, i, a.dur - 0.1) && await shot('news', o, i, 1.0) === await shot('news', o, i, 1.0) && (await drawCover(o, i)) === 640 * 360, `train ${day} ${phase}: not moving, not deterministic or has holes`);
       assert(await lp('news', o, i, 'back', 0.1, false) === await lp('news', o, i, 'back', a.dur - 0.1, false) && await lp('news', o, i, 'front', 0.1, false) === await lp('news', o, i, 'front', a.dur - 0.1, false) && await lp('news', o, i, 'marks', 0.1, false) === await lp('news', o, i, 'marks', a.dur - 0.1, false), `train ${day} ${phase}: a cached layer moves`);
@@ -1651,7 +1655,7 @@ async function run() {
     reduced5.push(o);
   }
   // the final frame of the session 21 detail has no train and today's picture: flat picture hash above. On the detail the head is at x 230 when the cross ends
-  assert(JSON.stringify(await box5(mk5(21), await newsIdx(mk5(21), ':detail$'), 'train', 0.3)) === JSON.stringify(trainBox(0.3, -0.3)) && trainBox(0.3, -0.3)[1] >= 230 && trainBox(0.3, -0.3)[1] <= 240, 'train 21 detail: the head is not at x 230 when the cross ends');
+  assert(JSON.stringify(await box5(mk5(21), await newsIdx(mk5(21), ':detail$'), 'train', 0.3)) === JSON.stringify(trainBox(0.3, -0.88)) && trainBox(0.3, -0.88)[1] >= 395 && trainBox(0.3, -0.88)[1] <= 415, 'train 21 detail: the head is not mid-platform (x 403) when the cross ends');
   // shot 2: the street (session 34, winter): snow falls in place of the still speckle, headlights pass along the kerb every 0.45 s from 0.30 s
   const carsModel = (t) => page.evaluate(([day, t]) => {
     let bone = 0, crimson = 0, groups = 0;

@@ -1123,12 +1123,14 @@
       framesLayer(day, r, detail)
     ];
   }
-  // Shot 1: a lit train sweeps past behind the seven window cells without stopping. One train of 14 windows moving at 360 px/s, cut into the
-  // cells by one clipped K.passing per cell and row: cell i is timed 94 i / 360 s after the first, so the seven pieces are one train.
+  // Shot 1: a lit train sweeps past behind the seven window cells without stopping. One train of 14 windows, 28 px apart, moving at 330 px/s (a
+  // frame's step is 11 px at 30 fps and 5.5 px at 60 fps, always under half the spacing, so it never reads as crawling backwards), cut into the
+  // cells by one clipped K.passing per cell and row: cell i is timed 94 i / 330 s after the first, so the seven pieces are one train.
+  // The 14 windows take 3.0 s to clear the last cell, so the train starts at -1.48 (clears at 1.52) on the establish, -0.88 (2.12) on the detail.
   function trainPaint(day, detail) {
-    const K = B.MotionKit, A = detail ? -0.30 : -0.90;
+    const K = B.MotionKit, A = detail ? -0.88 : -1.48;
     return (c, t) => {
-      for (let i = 0; i < 7; i++) for (const y of [58, 68]) K.passing(c, 24 + 94 * i, y, 64, 60, `news:${day}:train`, t, { kind: 'train', at: A + (94 * i) / 360, speed: 360 });
+      for (let i = 0; i < 7; i++) for (const y of [58, 68]) K.passing(c, 24 + 94 * i, y, 64, 60, `news:${day}:train`, t, { kind: 'train', at: A + (94 * i) / 330, speed: 330, gap: 28 });
     };
   }
   // Shot 2: snow in place of the still speckle, and cars' lights along the kerb line from 0.30 s, one every 0.45 s.

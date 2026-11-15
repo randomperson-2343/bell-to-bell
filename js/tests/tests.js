@@ -2391,6 +2391,9 @@
     const t2 = tr(1.3).rects;
     assert(t2.length > 2 && t2.every((q, i) => i === 0 || Math.abs(q.x - t2[i - 1].x) === 18), 'windows 18 px apart');
     assert(tr(1.3, { speed: 100 }).rects.length < tr(1.3).rects.length && tr(30).rects.length === 0, 'speed option, train leaves');
+    const t3 = tr(1.3, { gap: 28 }).rects;
+    assert(t3.length > 2 && t3.every((q, i) => i === 0 || Math.abs(q.x - t3[i - 1].x) === 28), 'the gap option spaces the windows');
+    assert(JSON.stringify(tr(1.3, { gap: 18 }).rects) === JSON.stringify(t2) && JSON.stringify(tr(1.3, { gap: 28 }).rects) !== JSON.stringify(t2), 'gap 18 is the default');
   });
 
   test('MotionKit.ping: off covers before at, on after, flare once, gaps go dark', () => {

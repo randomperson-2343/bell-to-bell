@@ -272,7 +272,7 @@
   }
 
   // ---- 13. passing -----------------------------------------------------------
-  // Lights crossing a band, clipped to it: cars (headlight pair and a tail) or one train of windows.
+  // Lights crossing a band, clipped to it: cars (headlight pair and a tail) or one train of windows (o.gap px apart, default 18).
   function passing(ctx, x, y, w, h, seed, t, o) {
     const T = timeOf(t, o), dir = o.dir == null ? 1 : o.dir;
     x = R(x); y = R(y); w = R(w); h = R(h);
@@ -284,8 +284,8 @@
     };
     ctx.save(); ctx.beginPath(); ctx.rect(x, y, w, h); ctx.clip();
     if (o.kind === 'train') {
-      const u = (T - o.at) * (o.speed || 360), ry = y + Math.floor((h - 6) / 2);
-      if (T >= o.at) for (let k = 0; k < 14; k++) put(x - 10 + R(u) - k * 18, ry, 10, 6, P.bone, 0.55);
+      const u = (T - o.at) * (o.speed || 360), gap = o.gap || 18, ry = y + Math.floor((h - 6) / 2);
+      if (T >= o.at) for (let k = 0; k < 14; k++) put(x - 10 + R(u) - k * gap, ry, 10, 6, P.bone, 0.55);
     } else {
       const speed = o.speed || 220, every = o.every || 1.2, last = o.count != null ? o.count - 1 : Infinity;
       const hi = Math.min(Math.floor((T - o.at) / every), last), lo = Math.max(0, Math.floor((T - o.at - (w + 60) / speed - 0.3) / every), hi - 12);
