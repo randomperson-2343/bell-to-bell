@@ -939,7 +939,8 @@
             id: 'doc', depth: 1, draw(g) { D(g, day, value, cc); },
             animate(g, v, t) {
               // the stamp and the value stay under the paper-coloured cover (a flat fill) until the third frame of the stamp
-              if (t < 1.30 + 2 * 0.04) X.rect(g, 150, 64, 340, 110, P.bone);
+              // (the value is 3x text and can run past the stamp's edges, so the cover is the paper's flat interior across, x 124 to 516)
+              if (t < 1.30 + 2 * 0.04) X.rect(g, 124, 64, 392, 110, P.bone);
               K.stamp(g, 150, 64, 340, 110, t, { at: 1.30, col: cc.signal, frame: 0.04, grow: [16, 6], style: 'none' });
             }
           },

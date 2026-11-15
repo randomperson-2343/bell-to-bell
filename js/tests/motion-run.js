@@ -1375,11 +1375,11 @@ async function run() {
   }
   // rating: the stamp lands on the covered paper in three hard frames, 1.30 s, 1.34 s, 1.38 s
   for (const [name, o0] of SBdoc.rating) {
-    const o = await mk(o0), i = o.__i, ST = [150, 64, 340, 110], WIDE = [130, 50, 380, 140], q = (t, spec, r, anim) => cc(o, i, 'doc', t, r, spec, anim);
-    assert(await q(0.5, 'bone', ST, false) === 340 * 110 && await q(1.28, 'bone', ST, false) === 340 * 110, `rating ${name}: the stamp's place is not a flat paper cover before 1.30 s`);
+    const o = await mk(o0), i = o.__i, ST = [150, 64, 340, 110], WIDE = [120, 50, 400, 140], q = (t, spec, r, anim) => cc(o, i, 'doc', t, r, spec, anim);
+    assert(await q(0.5, 'bone', ST, false) === 340 * 110 && await q(1.28, 'bone', ST, false) === 340 * 110 && await q(1.28, 'bone', [124, 64, 392, 110], false) === 392 * 110, `rating ${name}: the stamp's place is not a flat paper cover before 1.30 s`);
     assert(await q(1.4, 'bone', ST, false) !== 340 * 110 && await q(1.4, 'any', WIDE, true) === 0 && await q(1.4, '@signal', ST, false) > 0, `rating ${name}: the stamp and its value are not there from 1.38 s`);
     const p1 = await q(1.32, '@signal', WIDE, true), p2 = await q(1.36, '@signal', WIDE, true);
-    assert(p1 === 2 * 356 + 2 * 116 && p2 > p1 && await q(1.2, 'any', WIDE, true) === 340 * 110, `rating ${name}: the outlines are not 1 px at 1.30 s and 2 px at 1.34 s (${p1}, ${p2})`);
+    assert(p1 === 2 * 356 + 2 * 116 && p2 > p1 && await q(1.2, 'any', WIDE, true) === 392 * 110, `rating ${name}: the outlines are not 1 px at 1.30 s and 2 px at 1.34 s (${p1}, ${p2})`);
     const pics = []; for (const t of [1.2, 1.32, 1.36, 1.4]) pics.push(await shot('news', o, i, t));
     assert(new Set(pics).size === 4 && await shot('news', o, i, 1.4) === await shot('news', o, i, 2.2), `rating ${name}: not four distinct frames, still from 1.38 s`);
     assert((await info('news', o, i)).cues === '1.3:click', `rating ${name}: the click cue is missing`);
