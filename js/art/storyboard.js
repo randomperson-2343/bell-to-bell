@@ -1276,10 +1276,10 @@
     const wave = dark ? [] : S.filter((g) => (Z <= 0.12 || (g.x >= 26 && g.x + g.w <= 286)) && !((day >= 45) && !g.on));
     let key = null;
     if (dark) { let best = 1e9; S.forEach((g) => { const d = Math.abs(g.x + g.w / 2 - 160); if (g.r === 3 && d < best) { best = d; key = g; } }); }
-    const rest = dark ? S.filter((g) => g !== key) : [];
+    // the dark floor's lesser flickers skip the screens under the foreground colleagues too (zoom > 0.12: x 26 to 286 only), as the wave does
+    const rest = dark ? S.filter((g) => g !== key && (Z <= 0.12 || (g.x >= 26 && g.x + g.w <= 286))) : [];
     const art = (c, fn, noBack) => (detail || hold ? at2x(c, fn, day) : framed(c, day, r, title, { noBack, draw: (cc) => at2x(cc, fn, day) }));
     const paint = (c2) => { SH.tradingFloor(c2, Z, !dark, day); if (dark && !detail) { c2.save(); c2.globalAlpha = 0.42; X.rect(c2, 0, 0, 320, 180, P.ink); c2.restore(); } };
-    const T0 = hold ? 0.10 : 0.35, T1 = hold ? 1.00 : dark ? dur - 0.10 : 1.25;
     return [
       {
         id: 'floor', depth: 1,
@@ -1291,7 +1291,14 @@
               if (!hold) K.flicker(c2, key.x, key.y, key.w, key.h, `news:${day}:k`, t, { spans: [[0.40, 0.46], [0.52, 0.70], [0.78, 0.82], [0.95, 1.25]], col: P.ink, a: 0.5 });
               else K.flicker(c2, key.x, key.y, key.w, key.h, `news:${day}:k`, t, { from: 0.10, to: 1.00, rate: 12, chance: 0.15, col: P.ink, a: 0.5 });
               rest.forEach((g) => K.flicker(c2, g.x, g.y, g.w, g.h, `news:${day}:${g.r}:${g.i}`, t, { from: 0.30, to: dur - 0.10, rate: 12, chance: 0.07, col: P.ink, a: 0.3 }));
-            } else wave.forEach((g) => K.crt(c2, g.x, g.y, g.w, g.h, t, { mode: 'roll', at: 0.35 + 0.5 * Math.max(0, Math.min(1, (g.x + g.w / 2) / 320)), dur: 0.36, band: 6 }));
+            } else {
+              // a band 12 art units tall rolls down each screen, which flares bone (0.18, 0.08 s) as its band starts
+              wave.forEach((g) => {
+                const at = 0.35 + 0.5 * Math.max(0, Math.min(1, (g.x + g.w / 2) / 320));
+                K.crt(c2, g.x, g.y, g.w, g.h, t, { mode: 'roll', at, dur: 0.36, band: 12 });
+                K.ping(c2, t, { at, flare: { x: g.x, y: g.y, w: g.w, h: g.h, col: P.bone, a: 0.18, dur: 0.08 } });
+              });
+            }
           }, true);
         }
       },

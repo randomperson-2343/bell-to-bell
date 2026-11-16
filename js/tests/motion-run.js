@@ -1269,6 +1269,20 @@ async function run() {
       for (let k = 0; k < d.length; k += 4) { if (c ? d[k + 3] === 255 && d[k] === c[0] && d[k + 1] === c[1] && d[k + 2] === c[2] : d[k + 3] > 0) n++; }
       return n;
     };
+    // the most fillRect calls the animates of all layers of a beat make in one frame, over the whole beat in 0.05 s steps (and the very end)
+    window.rectMax = (scene, opts, i) => {
+      const b = BTB.Scenes[scene](opts)[i], g = canvas(), P = CanvasRenderingContext2D.prototype, orig = P.fillRect;
+      let n = 0, worst = 0, at = 0;
+      P.fillRect = function (...a) { n++; return orig.apply(this, a); };
+      try {
+        for (let k = 0; k <= Math.round(b.dur / 0.05) + 1; k++) {
+          const t = Math.min(b.dur, k * 0.05); n = 0;
+          b.layers.forEach((l) => { if (l.animate) { g.save(); l.animate(g, view, t, t / b.dur, {}); g.restore(); } });
+          if (n > worst) { worst = n; at = t; }
+        }
+      } finally { P.fillRect = orig; }
+      return { worst, at };
+    };
     // the box of the opaque pixels of one layer's animate alone in a rect
     window.animBox = (scene, opts, i, id, t, r) => {
       const b = BTB.Scenes[scene](opts)[i], layer = b.layers.find((l) => l.id === id), g = canvas();
@@ -1856,6 +1870,21 @@ async function run() {
     // the foreground colleagues' columns (art x < 26 and > 286) are never overlaid
     // (on the unzoomed detail, where art x 26 is screen x 52)
     if (!est) for (const t of [0.5, 0.7, 0.9, 1.1]) assert(await any6(o, i, 'floor', t, [0, 0, 52, 360]) === 0 && await any6(o, i, 'floor', t, [572, 0, 68, 360]) === 0, `${tag} at ${t}: a band over the colleagues`);
+    // the band is 12 art units (24 px) tall and each screen flares bone (alpha 0.18) for 0.08 s as its band starts (the unzoomed detail, where art x is screen x / 2)
+    if (!est) {
+      // the screen whose band starts first (nothing else is drawn until the next one starts)
+      const startOf = (g) => 0.35 + 0.5 * Math.max(0, Math.min(1, (g.x + g.w / 2) / 320));
+      const both = await page.evaluate(([Z, day]) => BTB.Shots.floorGeom(Z, day).filter((g) => g.x >= 26 && g.x + g.w <= 286 && g.on !== false), [Z, day]);
+      both.sort((a, b) => startOf(a) - startOf(b));
+      const geo = both[0], next = both.length > 1 ? startOf(both[1]) : 9, rc = [geo.x * 2, geo.y * 2, geo.w * 2, geo.h * 2], at = startOf(geo);
+      assert((await any6(o, i, 'floor', at - 0.01, rc)) === 0, `${tag}: something over the screen before its band starts`);
+      const bf = await box6(o, i, 'floor', at + 0.02, rc);
+      assert(bf[0] === rc[0] && bf[1] === rc[0] + rc[2] - 1 && bf[2] === rc[1] && bf[3] === rc[1] + rc[3] - 1, `${tag}: no bone flare over the whole screen as its band starts (${JSON.stringify(bf)} for ${JSON.stringify(rc)})`);
+      let tall = 0;
+      for (let t = at + 0.09; t < Math.min(at + 0.30, next); t += 0.01) { const b = await box6(o, i, 'floor', t, rc); if (b[3] >= 0) tall = Math.max(tall, b[3] - b[2] + 1); }
+      assert(tall === 24 && next - at > 0.10, `${tag}: the band is ${tall} px tall (12 art units = 24 px)`);
+      assert((await any6(o, i, 'floor', at + 0.10, [rc[0], rc[1], rc[2], 2])) + (await any6(o, i, 'floor', at + 0.10, [rc[0], rc[1] + rc[3] - 2, rc[2], 2])) < 4 * rc[2], `${tag}: the flare lasts past 0.08 s`);
+    }
     reduced6.push(o);
   }
 
@@ -1875,6 +1904,15 @@ async function run() {
       assert(n >= 1 && await A(0.05) === 0 && await A(1.05) === 0 && await A(a.dur - 0.01) === 0, `${tag}: the stutter does not go on behind the dim (${n})`);
     }
     assert(await lp('news', o, i, hold ? 'dim' : 'marks', 0.1, false) === await lp('news', o, i, hold ? 'dim' : 'marks', a.dur - 0.1, false), `${tag}: a cached layer moves`);
+    // at zoom 0.7 the flicker is skipped under the foreground colleagues' columns (art x < 26 and > 286, screen x < 52 and >= 572), as on the lit floor
+    if (phase === 'detail') {
+      let elsewhere = 0;
+      for (let t = 0.3; t < a.dur - 0.1; t += 1 / 12) {
+        assert(await any6(o, i, 'floor', t, [0, 0, 52, 360]) === 0 && await any6(o, i, 'floor', t, [572, 0, 68, 360]) === 0, `${tag} at ${t.toFixed(2)}: a flicker under the colleagues`);
+        elsewhere += await any6(o, i, 'floor', t, [52, 0, 520, 360]);
+      }
+      assert(elsewhere > 0, `${tag}: no flicker at all`);
+    }
     reduced6.push(o);
   }
 
@@ -1893,6 +1931,20 @@ async function run() {
     const tb = (t) => box6(o, i, 'top', t, [0, 0, 300, 40]);
     assert(JSON.stringify(await tb(0.1)).slice(0, 6) !== '[1e9,-' && (await tb(0.1))[0] === (await tb(0.9))[0] && (await tb(0.9))[0] === (await tb(1.5))[0] && await lp('news', o, i, 'top', 0.1, true) !== await lp('news', o, i, 'top', 0.7, true) && await lp('news', o, i, 'top', 1.3, true) === await lp('news', o, i, 'top', 2.3, true), `${tag}: the count does not climb to a fixed end or its text moves`);
     reduced6.push(o);
+  }
+
+  // cost: the most rectangles one frame of an animate draws (every layer, wrapped fillRect, busiest of the beat's frames)
+  {
+    const rows = [];
+    const COUNT = [['skyline', 27, null, ':establish$'], ['skyline', 28, null, ':establish$'], ['skyline', 29, null, ':establish$'], ['skyline', 35, null, ':establish$'],
+      ['floor wave', 41, null, ':establish$'], ['floor wave', 41, null, ':detail$'], ['floor wave', 23, null, ':establish$'], ['floor wave', 5, null, ':establish$'],
+      ['subway', 21, null, ':establish$'], ['subway', 21, null, ':detail$'], ['subway', 31, null, ':establish$'], ['subway', 7, null, ':establish$']];
+    for (const [name, day, S, re] of COUNT) {
+      const o = mkS(day, S), i = await newsIdx(o, re), r = await page.evaluate(([o, i]) => window.rectMax('news', o, i), [o, i]);
+      rows.push(`${name} ${day}${re.slice(1, -1)}: ${r.worst} at ${r.at.toFixed(2)}`);
+      assert(r.worst < 400 && r.worst > 0, `${name} ${day} ${re}: ${r.worst} rectangles in the busiest frame (limit 400)`);
+    }
+    console.log('rect counts (busiest frame): ' + rows.join('; '));
   }
 
   // shot 9: the rack room (variant 45 pulledPlug): the LED strips go dark row by row, 0.35 to 1.37 s
