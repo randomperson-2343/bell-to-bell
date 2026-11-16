@@ -1574,8 +1574,8 @@ async function run() {
     'p5:34empty:detail': '3692ff5b'
   };
   const P5_CHANGED = {
-    // shot 2 (ruling): the street's static snow speckle is replaced by the snowflakes' pose at the end and two to four car-light groups (session 34; 54 is the same street past the story)
-    'p5:34:establish': '2d8b460e', 'p5:34:detail': 'de825dbb', 'p5:54:establish': '7d721bab', 'p5:54:detail': '20c6acd', 'p5:34long:establish': 'd742de4a', 'p5:34long:detail': '8233c024', 'p5:34empty:establish': 'fe5c7109', 'p5:34empty:detail': '978b4750'
+    // shot 2 (ruling): the street's static snow speckle is replaced by the snowflakes' pose at the end and two to four car-light groups, drawn at twice the size from batch 5c (session 34; 54 is the same street past the story)
+    'p5:34:establish': '39bfb4', 'p5:34:detail': 'cfe825b8', 'p5:54:establish': 'd93d2eae', 'p5:54:detail': 'df757aa4', 'p5:34long:establish': '10eb0650', 'p5:34long:detail': '1e0ac14f', 'p5:34empty:establish': '7b753f77', 'p5:34empty:detail': '4b00b4cb'
   };
   const p5now = await page.evaluate(() => {
     const hashOf = (fn) => { const cv = document.createElement('canvas'); cv.width = 640; cv.height = 360; const g = cv.getContext('2d'); fn(g);
@@ -1720,14 +1720,18 @@ async function run() {
   assert(JSON.stringify(await box5(mk5(21), await newsIdx(mk5(21), ':detail$'), 'train', 0.3)) === JSON.stringify(trainBox(0.3, -0.88)) && trainBox(0.3, -0.88)[1] >= 395 && trainBox(0.3, -0.88)[1] <= 415, 'train 21 detail: the head is not mid-platform (x 403) when the cross ends');
   // shot 2: the street (session 34, winter): snow falls in place of the still speckle, headlights pass along the kerb every 0.45 s from 0.30 s
   const carsModel = (t) => page.evaluate(([day, t]) => {
-    let bone = 0, crimson = 0, groups = 0;
+    // one row of the 640 px band, painted in the kit's order (a later car's headlight can cover an earlier car's tail light); 1 = bone, 2 = crimson
+    const row = new Uint8Array(640), put = (a, w, v) => { for (let x = Math.max(a, 0); x < Math.min(a + w, 640); x++) row[x] = v; };
+    let groups = 0;
     for (let i = 0; i < 40; i++) {
-      const u = (t - (0.30 + i * 0.45 + 0.3 * BTB.RNG(BTB.hashSeed(`news:${day}:cars` + i)).next())) * 220;
+      // drawn at twice the size (ctx.scale(2, 2), band 0,119,320,5, 110 units a second): headlights 8x4 px, tail lights 4x4 px
+      const u = (t - (0.30 + i * 0.45 + 0.3 * BTB.RNG(BTB.hashSeed(`news:${day}:cars` + i)).next())) * 110;
       if (u < 0) continue;
-      const px = -10 + Math.round(u), vis = (a, w) => Math.max(0, Math.min(a + w, 640) - Math.max(a, 0));
-      const b = vis(px, 4) + vis(px + 6, 4);
-      bone += 2 * b; crimson += 2 * vis(px - 40, 2); if (b > 0) groups++;
+      const px = 2 * (-10 + Math.round(u));
+      put(px, 8, 1); put(px + 12, 8, 1); put(px - 80, 4, 2);
+      if (px + 8 > 0 && px < 640 || px + 20 > 0 && px + 12 < 640) groups++;
     }
+    let bone = 0, crimson = 0; row.forEach((v) => { if (v === 1) bone += 4; else if (v === 2) crimson += 4; });
     return { bone, crimson, groups };
   }, [34, t]);
   for (const phase of ['establish', 'detail']) {
@@ -1748,6 +1752,7 @@ async function run() {
       const m = await carsModel(t);
       assert(await cc(o, i, 'road', t, [0, 238, 640, 10], 'bone') === m.bone && await cc(o, i, 'road', t, [0, 238, 640, 10], 'crimson') === m.crimson && m.bone > 0, `street ${phase} at ${t}: the car lights are not where the model says (${m.bone} bone, ${m.crimson} crimson)`);
       assert(await cc(o, i, 'road', t, [0, 0, 640, 238], 'bone') === 0 && await cc(o, i, 'road', t, [0, 248, 640, 112], 'bone') === 0, `street ${phase} at ${t}: a light is off the kerb band`);
+      assert(await cc(o, i, 'road', t, [0, 240, 640, 4], 'bone') === m.bone && await cc(o, i, 'road', t, [0, 240, 640, 4], 'crimson') === m.crimson, `street ${phase} at ${t}: the lights are not the 4 px rows y 240 to 243, just above the kerb line (y 249)`);
     }
     // the final picture carries two to four groups (the ruling's change), a new car every 0.45 s
     const g = (await carsModel(a.dur)).groups;

@@ -1162,7 +1162,10 @@
     const K = B.MotionKit;
     return (c, t) => {
       K.weather(c, 0, 12, 640, 220, day, `news:${day}:snow`, t, { max: 40 });
-      K.passing(c, 0, 238, 640, 10, `news:${day}:cars`, t, { kind: 'car', at: 0.30, every: 0.45, speed: 220, dir: 1 });
+      // twice the size: headlights 8x4 px, tail lights 4x4 px, on the band y 238 to 248 just above the amberD kerb (y 249); 110 units a second is the old 220 px
+      c.save(); c.scale(2, 2);
+      K.passing(c, 0, 119, 320, 5, `news:${day}:cars`, t, { kind: 'car', at: 0.30, every: 0.45, speed: 110, dir: 1 });
+      c.restore();
     };
   }
   // The layers, camera and cues of a place beat (establish or detail), or null when the place has none (the desk establish is deskWithDoc, batch 4).
