@@ -975,18 +975,22 @@ async function run() {
     assert(await at(2, 0.1) !== await at(2, 0.25) && await at(2, 0.25) !== await at(2, 0.5) && await at(2, 0.5) !== await at(2, 0.75), `office hold day ${o.day}: the chart does not tick at 0.20, 0.45 and 0.70`);
     assert(await at(2, 0.85) !== await at(2, 0.75) && await at(2, 0.85) === await at(2, 0.9), `office hold day ${o.day}: the last point is not back to the line colour by the end`);
   }
-  // the now-mark: a 1 px P.phosphorD vertical at x0 + 70 (616), y 228 to 250, drawn exactly while the chart's newest point is bone (desk and hold), inside the chart screen
+  // the now-mark: a 2 px wide P.bone column at alpha 0.5 at x0 + 70 (616 and 617), y 228 to 250, drawn exactly while the chart's newest point is bone (desk and hold), inside the chart screen
   {
-    const mk = (o, i, t) => page.evaluate(([o, i, t]) => window.layerCount('office', o, i, 'desk', t, [616, 228, 1, 22], [0x4b, 0x9a, 0x81]), [o, i, t]);
+    // the mark is P.bone at alpha 0.5 (alpha 127 or 128 over the transparent layer), 2 px wide
+    const mk = (o, i, t) => page.evaluate(([o, i, t]) => { const b = BTB.Scenes.office(o)[i], l = b.layers.find((x) => x.id === 'desk'), g = document.createElement('canvas'); g.width = 640; g.height = 360; const c = g.getContext('2d'); l.animate(c, { w: 640, h: 360 }, t, t / b.dur, {});
+      const d = c.getImageData(616, 228, 2, 22).data, B0 = BTB.Pal.bone, rgb = [parseInt(B0.slice(1, 3), 16), parseInt(B0.slice(3, 5), 16), parseInt(B0.slice(5, 7), 16)]; let n = 0;
+      for (let k = 0; k < d.length; k += 4) if (d[k + 3] >= 126 && d[k + 3] <= 129 && Math.abs(d[k] - rgb[0]) <= 1 && Math.abs(d[k + 1] - rgb[1]) <= 1 && Math.abs(d[k + 2] - rgb[2]) <= 1) n++;
+      return { n }; }, [o, i, t]);
     for (const o of [offDays[0], offDays[2]]) {
-      for (const t of [0.27, 0.52, 0.77, 1.02, 1.27, 1.52, 1.77]) { const m = await mk(o, 1, t); assert(m.n >= 20 && m.n <= 22, `office desk day ${o.day}: no now-mark while the head point is lit at ${t} s (${m.n} px)`); }
+      for (const t of [0.27, 0.52, 0.77, 1.02, 1.27, 1.52, 1.77]) { const m = await mk(o, 1, t); assert(m.n >= 40 && m.n <= 44, `office desk day ${o.day}: no now-mark while the head point is lit at ${t} s (${m.n} px)`); }
       for (const t of [0.1, 0.2, 0.4, 0.45, 0.65, 0.9, 1.2, 1.65]) assert((await mk(o, 1, t)).n === 0, `office desk day ${o.day}: the now-mark shows at ${t} s with no lit head`);
-      for (const t of [0.0, 0.25, 0.5, 0.75]) { const m = await mk(o, 2, t); assert(m.n >= 20 && m.n <= 22, `office hold day ${o.day}: no now-mark while the head point is lit at ${t} s (${m.n} px)`); }
+      for (const t of [0.0, 0.25, 0.5, 0.75]) { const m = await mk(o, 2, t); assert(m.n >= 40 && m.n <= 44, `office hold day ${o.day}: no now-mark while the head point is lit at ${t} s (${m.n} px)`); }
       for (const t of [0.1, 0.4, 0.6, 0.85]) assert((await mk(o, 2, t)).n === 0, `office hold day ${o.day}: the now-mark shows at ${t} s with no lit head`);
       // nothing of it outside the chart screen, at any time in the beat
       for (const [i, end] of [[1, 1.8], [2, 0.85]]) for (let t = 0; t <= end; t += 0.0625) {
-        const wholeBox = await page.evaluate(([o, i, t]) => { const b = BTB.Scenes.office(o)[i], l = b.layers.find((x) => x.id === 'desk'), g = document.createElement('canvas'); g.width = 640; g.height = 360; const c = g.getContext('2d'); l.animate(c, { w: 640, h: 360 }, t, t / b.dur, {}); const d = c.getImageData(0, 0, 640, 360).data; let bad = 0; for (let k = 0; k < d.length; k += 4) if (d[k] === 0x4b && d[k + 1] === 0x9a && d[k + 2] === 0x81 && d[k + 3] === 255) { const x = (k / 4) % 640, y = Math.floor(k / 4 / 640); if (x < 541 || x > 624 || y < 219 || y > 266) bad++; } return bad; }, [o, i, t]);
-        assert(wholeBox === 0, `office beat ${i} day ${o.day}: phosphorD outside the chart screen at ${t} s`);
+        const wholeBox = await page.evaluate(([o, i, t]) => { const b = BTB.Scenes.office(o)[i], l = b.layers.find((x) => x.id === 'desk'), g = document.createElement('canvas'); g.width = 640; g.height = 360; const c = g.getContext('2d'); l.animate(c, { w: 640, h: 360 }, t, t / b.dur, {}); const d = c.getImageData(0, 0, 640, 360).data; let bad = 0; for (let k = 0; k < d.length; k += 4) if (d[k + 3] >= 126 && d[k + 3] <= 129 && d[k] > 0xb0) { const x = (k / 4) % 640, y = Math.floor(k / 4 / 640); if (x < 541 || x > 624 || y < 219 || y > 266) bad++; } return bad; }, [o, i, t]);
+        assert(wholeBox === 0, `office beat ${i} day ${o.day}: the now-mark outside the chart screen at ${t} s`);
       }
     }
   }

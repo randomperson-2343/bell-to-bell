@@ -1633,10 +1633,10 @@
           // the top two sheets slip into their place between 0.90 and 1.20 s; on the hold they already sit there
           const slipNow = hold ? slip : slip >= 1 ? Math.round(slip * M.ease.out(K.span(t, 0.90, 1.20))) : 0;
           R.officeFrame(c, day, true, down, S, { part: 'top', slipNow });
-          // the now-mark (sheet 2, section 10): a 1 px phosphorD vertical at the newest point's x, only while that point is lit, behind the dots
+          // the now-mark (sheet 2, section 10): a 2 px wide bone column at alpha 0.5 at the newest point's x, only while that point is lit, behind the dots
           if (head) {
-            const mx = Math.max(dc.x + 1, Math.min(dc.x + dc.w - 2, x0 + 70)), my0 = Math.max(dc.y + 1, 228), my1 = Math.min(dc.y + dc.h - 2, 250);
-            X.rect(c, mx, my0, 1, my1 - my0 + 1, P.phosphorD);
+            const mx = Math.max(dc.x + 1, Math.min(dc.x + dc.w - 3, x0 + 70)), my0 = Math.max(dc.y + 1, 228), my1 = Math.min(dc.y + dc.h - 2, 250);
+            c.save(); c.globalAlpha = 0.5; X.rect(c, mx, my0, 2, my1 - my0 + 1, P.bone); c.restore();
           }
           K.trace(c, Y, t, { x0, step: 5, from: s, n: 15, w: 3, h: 2, col, head });
         }
