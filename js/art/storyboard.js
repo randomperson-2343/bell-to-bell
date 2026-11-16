@@ -890,7 +890,10 @@
   B.Storyboard = { PET, petRows, SHEET, DOCS, ANOMALY_DAYS, row, variant, lit, actTurns, HOMES, WEEKENDS, insertShot, actCard, DOC_DRAW, deskWithDoc, shotFrame, skylineShot, racksShot, at2x, finePass, bellSwing, apartmentShot, windowRect, homeOf, SAT_DUR };
 
   // Session 1 opens in the lobby: the counter climbs to 41, the car arrives, the doors part.
-  // Five parts of SH.elevator, back to front: car, lobby wall (doorway left open), doors and counter animated on it, frame, screen-space marks.
+  // Built on the same cached parts as news:0:detail and :hold (`elevBase`: wall, car, top in the flat picture's own order), so at the cut the two
+  // pictures are the same room: `room` (those parts, then the counter, the car's flicker, the light spill and the doors animated on it), `frame`, `marks`.
+  // (The pilot drew a separate car layer at depth 0.75 and a lobby layer with the doorway left open; the car's glow, which reaches past the doorway onto
+  // the wall in the flat picture, and the car's bottom row could not be reproduced that way, so the room is one layer and the car has no parallax.)
   function elevatorOpening(day, r, date) {
     const E = (name, open, floor) => (c) => at2x(c, (cc) => SH.elevator(cc, open, floor, name), 0);
     const M = B.Motion, rr = { shot: 'elevator' };
@@ -901,16 +904,12 @@
       camera: { from: { x: 0, y: -8, zoom: 1 }, to: { x: 0, y: 0, zoom: 1 }, ease: M.ease.inOut },
       layers: [
         {
-          id: 'car', depth: 0.75, draw: E('car'),
-          animate(c, v, t) {
-            if ((t >= 1.45 && t < 1.53) || (t >= 1.62 && t < 1.70)) at2x(c, (cc) => { cc.save(); cc.globalAlpha = 0.2; X.rect(cc, 96, 24, 128, 108, P.ink); cc.restore(); }, 0);
-          }
-        },
-        {
-          id: 'lobby', depth: 1, draw: E('lobby'),
+          id: 'room', depth: 1, draw: elevBase(0),
           animate(c, v, t) {
             const floor = 38 + Math.min(3, Math.floor(t / 0.35)), slide = slideAt(t);
             at2x(c, (cc) => {
+              // the car's light stutters twice through the gap (over the car, under the doors)
+              if ((t >= 1.45 && t < 1.53) || (t >= 1.62 && t < 1.70)) { cc.save(); cc.globalAlpha = 0.2; X.rect(cc, 96, 24, 128, 108, P.ink); cc.restore(); }
               SH.elevator(cc, 0, floor, 'number');
               if (floor < 41) SH.elevator(cc, 0, floor, 'arrow');
               if (slide >= 1) {

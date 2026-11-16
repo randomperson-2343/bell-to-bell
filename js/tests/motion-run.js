@@ -489,7 +489,7 @@ async function run() {
   const day0 = { day: 0, brief: { title: 'FIRST DAY', feed: [] } };
   const elev = await page.evaluate((o) => { const b = BTB.Scenes.news(o)[0]; return { id: b.id, dur: b.dur, layers: (b.layers || []).map((l) => l.id), cue: (b.cues || []).map((c) => c.at + ':' + c.sfx).join() }; }, day0);
   assert(elev.id === 'news:0:establish' && elev.dur <= 2.55 && elev.dur > 1.7, `elevator beat id/duration: ${JSON.stringify(elev)}`);
-  assert(elev.layers.join() === 'car,lobby,frame,marks' && elev.cue === '1.05:elevator', `elevator layers/cues: ${JSON.stringify(elev)}`);
+  assert(elev.layers.join() === 'room,frame,marks' && elev.cue === '1.05:elevator', `elevator layers/cues: ${JSON.stringify(elev)}`);
   assert(await shot('news', day0, 0, 0.4) !== await shot('news', day0, 0, 2.3), 'elevator: start and end frames are identical');
   assert(await shot('news', day0, 0, 1.6) === await shot('news', day0, 0, 1.6), 'elevator: same time gave different pictures');
   assert(await shot('news', day0, 0, 0.4) !== await shot('news', day0, 0, 1.0), 'elevator: the counter does not move');
@@ -502,6 +502,24 @@ async function run() {
     return a;
   }, day0);
   assert(elevPlain > 640 * 360 * 0.5, 'elevator: draw(p=1) without a game left the picture mostly empty');
+  // the cut into news:0:detail: the picture area (every layer but the marks) of the establish's last frame against the detail's first frame, drawn with no
+  // transition, differs only where the doors move (their travel window, art x 90 to 230, y 18 to 136) and in the light spill on the carpet below them
+  const cut = await page.evaluate(() => {
+    const o = { day: 0, brief: { title: 'FIRST DAY', feed: [] } }, bs = BTB.Scenes.news(o), view = { w: 640, h: 360 };
+    const pic = (b, p) => { const c = document.createElement('canvas'); c.width = 640; c.height = 360; const g = c.getContext('2d');
+      for (const L of b.layers) { if (L.id === 'marks') continue; g.save(); L.draw(g, view, {}); if (L.animate) L.animate(g, view, p * b.dur, p, {}); g.restore(); }
+      return g.getImageData(0, 0, 640, 360).data; };
+    const a = pic(bs[0], 1), d = pic(bs[1], 0), win = [180, 36, 280, 236], spill = [220, 266, 200, 16];
+    const inside = (x, y, r) => x >= r[0] && x < r[0] + r[2] && y >= r[1] && y < r[1] + r[3];
+    let out = 0, doors = 0, same = 0;
+    for (let k = 0; k < a.length; k += 4) {
+      const x = (k / 4) % 640, y = Math.floor(k / 4 / 640);
+      if (a[k] === d[k] && a[k + 1] === d[k + 1] && a[k + 2] === d[k + 2]) { same++; continue; }
+      if (inside(x, y, win) || inside(x, y, spill)) doors++; else out++;
+    }
+    return { id: [bs[0].id, bs[1].id], out, doors, same };
+  });
+  assert(cut.id.join() === 'news:0:establish,news:0:detail' && cut.out === 0 && cut.same > 640 * 360 * 0.9, `the cut into the elevator detail differs outside the doors: ${JSON.stringify(cut)}`);
   await page.evaluate(() => BTB.Settings.set('effects', 'reduced'));
   assert(await shot('news', day0, 0, 0.5) === await shot('news', day0, 0, 2.2), 'elevator: reduced effects still moves');
   await page.evaluate(() => BTB.Settings.set('effects', 'full'));
@@ -1588,6 +1606,9 @@ async function run() {
     'p5:34empty:detail': '3692ff5b'
   };
   const P5_CHANGED = {
+    // batch 5c, item 5 (session 1's opening): news:0:establish is rebuilt on the elevBase parts (wall, car, top) like the detail and hold, so its last frame is
+    // the flat picture's own pixels (the pilot's car and lobby layers differed from it by about 8,600 px around the car's edges and glow); the spill stays
+    'p5:0:establish': '59210645',
     // shot 2 (ruling): the street's static snow speckle is replaced by the snowflakes' pose at the end and two to four car-light groups, drawn at twice the size from batch 5c (session 34; 54 is the same street past the story)
     'p5:34:establish': '39bfb4', 'p5:34:detail': 'cfe825b8', 'p5:54:establish': 'd93d2eae', 'p5:54:detail': 'df757aa4', 'p5:34long:establish': '10eb0650', 'p5:34long:detail': '1e0ac14f', 'p5:34empty:establish': '7b753f77', 'p5:34empty:detail': '4b00b4cb'
   };
