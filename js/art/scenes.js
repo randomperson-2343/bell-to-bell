@@ -166,12 +166,34 @@
   }
 
   // Wide shot of the trading floor. `zoom` 0..1 pushes toward your desk.
+  // The floor's one piece of arithmetic: the zoom's mapping (sx, sy, sw), the desk rows and, per desk, its slab, monitor and glass. tradingFloor
+  // draws from it and floorGeom reports the glass of the two near rows, so a shot that animates a screen lands on the screen the art drew.
+  const FLOOR_ROWS = [[56, 12], [74, 18], [96, 26], [126, 38]];
+  function floorMath(zoom) {
+    const z = 1 + zoom * 2.4, cx = 160, cy = 104;
+    return { z, sx: (v) => Math.round(cx + (v - cx) * z), sy: (v) => Math.round(cy + (v - cy) * z), sw: (v) => Math.max(1, Math.round(v * z)) };
+  }
+  // Desk i of row r, or null when it is off the canvas.
+  function floorDesk(m, r, i) {
+    const { sx, sy, sw } = m, [baseY, deskH] = FLOOR_ROWS[r];
+    const y = sy(baseY), dh = sw(deskH), per = sw(34 + r * 10), x = sx(-10 + i * (34 + r * 10));
+    if (x + per < -10 || x > V.w + 10) return null;
+    const mh = Math.max(2, dh - sw(6)), mw = per - sw(8);
+    return { x, y, dh, per, mh, mw, gx: x + sw(3) + (mh > 4 ? 2 : 1), gy: y - mh + (mh > 4 ? 2 : 1), gw: Math.max(1, mw - (mh > 4 ? 4 : 2)), gh: Math.max(1, mh - (mh > 4 ? 5 : 2)) };
+  }
+  // Whether the near-row screen of row r, desk i shows the day (the late floor, session 45 on, leaves most dark).
+  const floorOn = (r, i, seed) => ((seed || 0) >= 45 ? ((i * 7 + r * 3 + seed) % 5) < 2 : ((i * 7 + r * 3) % 5) !== 0);
+  // The glass rects (320x180 art units) of the two near rows' desks, row by row, left to right: { r, i, x, y, w, h, on }.
+  function floorGeom(zoom, seed) {
+    const m = floorMath(zoom), out = [];
+    for (let r = 2; r < 4; r++) for (let i = -1; i < 12; i++) {
+      const d = floorDesk(m, r, i);
+      if (d) out.push({ r, i, x: d.gx, y: d.gy, w: d.gw, h: d.gh, on: floorOn(r, i, seed) });
+    }
+    return out;
+  }
   function tradingFloor(ctx, zoom, lit, seed) {
-    const z = 1 + zoom * 2.4;
-    const cx = 160, cy = 104;
-    const sx = (v) => Math.round(cx + (v - cx) * z);
-    const sy = (v) => Math.round(cy + (v - cy) * z);
-    const sw = (v) => Math.max(1, Math.round(v * z));
+    const M = floorMath(zoom), sx = M.sx, sy = M.sy, sw = M.sw;
     // Outline only when the piece is big enough to carry one.
     const kk = (x, y, w, h, base, hi, sh) => (w > 4 && h > 4 ? k1(ctx, x, y, w, h, base, hi, sh, P.ink2) : X.rect(ctx, x, y, w, h, base));
 
@@ -203,22 +225,16 @@
     X.rect(ctx, 0, sy(70) - sw(2), V.w, sw(2), P.plasticD); X.rect(ctx, 0, sy(70), V.w, 1, P.ink2);
 
     // Rows of desks receding, nearest row last.
-    const rows = [[56, 12], [74, 18], [96, 26], [126, 38]];
-    for (let r = 0; r < rows.length; r++) {
-      const [baseY, deskH] = rows[r];
-      const y = sy(baseY), dh = sw(deskH);
-      const per = sw(34 + r * 10);
+    for (let r = 0; r < FLOOR_ROWS.length; r++) {
       for (let i = -1; i < 12; i++) {
-        const x = sx(-10 + i * (34 + r * 10));
-        if (x + per < -10 || x > V.w + 10) continue;
+        const D = floorDesk(M, r, i);
+        if (!D) continue;
+        const { x, y, per, mh, mw, gx, gy, gw, gh } = D;
         // The monitor: outlined bezel, a glass with the day on it, a stand.
-        const mh = Math.max(2, dh - sw(6)), mw = per - sw(8);
         kk(x + sw(3), y - mh, mw, mh, P.plastic, P.plastic2, P.plasticD);
-        const gx = x + sw(3) + (mh > 4 ? 2 : 1), gy = y - mh + (mh > 4 ? 2 : 1), gw = Math.max(1, mw - (mh > 4 ? 4 : 2)), gh = Math.max(1, mh - (mh > 4 ? 5 : 2));
         X.rect(ctx, gx, gy, gw, gh, P.screen);
         if (r >= 2) {
-          const late = (seed || 0) >= 45;
-          const on = late ? ((i * 7 + r * 3 + seed) % 5) < 2 : ((i * 7 + r * 3) % 5) !== 0;
+          const late = (seed || 0) >= 45, on = floorOn(r, i, seed);
           X.dither(ctx, gx, gy, gw, gh, P.screen, on ? P.jadeD : P.crimsonD, 0.4);
           if (late && !on) X.rect(ctx, gx, gy, gw, gh, P.screenD);
         }
@@ -812,5 +828,5 @@
 
   B.Scenes = Scenes;
   // The hand-drawn 320x180 set pieces, for the storyboard layer to reuse at 2x.
-  B.Shots = { V, WALKER, WALKER_B, setSeason, apartment, tvSet, elevator, tradingFloor, deskCloseup, bellScene, endingShot, briefingTableau, endingDetail };
+  B.Shots = { V, WALKER, WALKER_B, setSeason, apartment, tvSet, elevator, tradingFloor, floorGeom, deskCloseup, bellScene, endingShot, briefingTableau, endingDetail };
 })(window.BTB);

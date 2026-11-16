@@ -1828,6 +1828,31 @@ async function run() {
   // the holds of the platform and subway sessions stay flat (the train is an event)
   for (const day of P5.subway) { const o = mk5(day), i = await newsIdx(o, ':hold$'); if (i >= 0) assert((await info('news', o, i)).layers === '', `news ${day} hold must stay flat`); }
 
+  // ---- stage 3 batch 5, part 2: shots 6 to 10 ----
+  const reduced6 = [];
+  const mkS = (day, S) => nOpts(day, undefined, S);
+  const any6 = (o, i, id, t, r) => cc(o, i, id, t, r || [0, 0, 640, 360], 'any');
+  const box6 = (o, i, id, t, r) => page.evaluate(([o, i, id, t, r]) => window.animBox('news', o, i, id, t, r || [0, 0, 640, 360]), [o, i, id, t, r]);
+  // shot 6: the trading floor lit (session 41 establish and detail; tickets 5, 12, 23, 39 and the mornings variant 4 dump and 22 ban): a refresh wave crosses the near screens
+  const FLOOR6 = [[41, null, 'establish', 0.15], [41, null, 'detail', 0.7], [5, null, 'establish', 0.53], [12, null, 'establish', 0.45], [23, null, 'establish', 0.69], [39, null, 'establish', 0.69],
+    [4, { choices: { c1: 'dump' } }, 'establish', 0.45], [22, { choices: { c5: 'ban' } }, 'establish', 0.61]];
+  for (const [day, S, phase, Z] of FLOOR6) {
+    const o = mkS(day, S), i = await newsIdx(o, `:${phase}$`), a = await info('news', o, i), est = phase === 'establish', tk = day !== 41, tag = `floor ${day}${S ? ' variant' : ''} ${phase}`;
+    assert(a.layers === 'floor,marks' && a.depths === '1,0' && a.cam === '-6>0' && a.dur === (est ? 1.7 : 2.3) && a.cues === (est && tk ? '0.3:office' : '') && a.sfx === (est ? (tk ? 'apartment' : 'office') : 'broadcast'), `${tag} beat: ${JSON.stringify(a)}`);
+    assert(await shot('news', o, i, 0.1) !== await shot('news', o, i, a.dur - 0.1) && await shot('news', o, i, 0.8) === await shot('news', o, i, 0.8) && (await drawCover(o, i)) === 640 * 360, `${tag}: not moving, not deterministic or has holes`);
+    assert(await lp('news', o, i, 'marks', 0.1, false) === await lp('news', o, i, 'marks', a.dur - 0.1, false), `${tag}: a cached layer moves`);
+    // nothing before 0.35 s and nothing after 1.25 s; bands in between
+    assert(await any6(o, i, 'floor', 0.2) === 0 && await any6(o, i, 'floor', 1.3) === 0 && await any6(o, i, 'floor', a.dur - 0.05) === 0 && (await any6(o, i, 'floor', 0.6) + await any6(o, i, 'floor', 0.9)) > 300, `${tag}: no wave between 0.35 and 1.25 s`);
+    // the wave travels right: the leftmost lit band moves right and the rightmost does too
+    const lit6 = [];
+    for (let t = 0.36; t < 1.25; t += 0.03) { const b = await box6(o, i, 'floor', t); if (b[1] > 0) lit6.push(b); }
+    assert(lit6.length >= 5 && lit6[0][0] < lit6[lit6.length - 1][0] && lit6[0][1] < lit6[lit6.length - 1][1], `${tag}: the wave does not cross left to right (${JSON.stringify([lit6[0], lit6[lit6.length - 1]])})`);
+    // the foreground colleagues' columns (art x < 26 and > 286) are never overlaid
+    // (on the unzoomed detail, where art x 26 is screen x 52)
+    if (!est) for (const t of [0.5, 0.7, 0.9, 1.1]) assert(await any6(o, i, 'floor', t, [0, 0, 52, 360]) === 0 && await any6(o, i, 'floor', t, [572, 0, 68, 360]) === 0, `${tag} at ${t}: a band over the colleagues`);
+    reduced6.push(o);
+  }
+
   // reduced effects: every reworked beat is one still
   await page.evaluate(() => BTB.Settings.set('effects', 'reduced'));
   for (const o of [nOpts(8), nOpts(32), nOpts(1), nOpts(4), nOpts(2), nOpts(3), nOpts(5), nOpts(11), nOpts(36), nOpts(15), nOpts(10)]) {
@@ -1851,6 +1876,15 @@ async function run() {
   assert(await shot('news', day7, 1, 0.5) === await shot('news', day7, 1, 2.2), 'motion off still moves');
   const cam = await page.evaluate(() => BTB.Motion.enabled());
   assert(cam === false, 'enabled() true with effects reduced');
+
+  // effects reduced: one still per beat of batch 5, part 2
+  await page.evaluate(() => BTB.Settings.set('effects', 'reduced'));
+  for (const o of reduced6) for (const re of [':establish$', ':detail$', ':hold$']) {
+    const i = await newsIdx(o, re); if (i < 0) continue;
+    const b = await info('news', o, i);
+    assert(await shot('news', o, i, 0.4) === await shot('news', o, i, b.dur - 0.05), `batch 5b: news ${o.day} ${re}: reduced effects still moves`);
+  }
+  await page.evaluate(() => BTB.Settings.set('effects', 'full'));
 
   assert(warnings.length === 0, `unexpected console output: ${JSON.stringify(warnings)}`);
   console.log('motion-run: all asserts passed');

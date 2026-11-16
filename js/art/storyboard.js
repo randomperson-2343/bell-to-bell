@@ -1237,6 +1237,41 @@
     ];
   }
 
+  // Shots 6 and 7: the trading floor. One layer `floor` (the art, then its animate on top in the same transform) and `marks` (the corner brackets
+  // and the anomaly tear, never moved by the tilt) or, on a hold, `dim` (the 0.18 ink rect). Lit: a refresh wave crosses the near-row screens, left to
+  // right (K.crt bands, overlays on the dither, never a cover). Dark: the biggest near screen stutters in hard steps and the others flicker
+  // lightly; every flicker ends lit, so the final frame is the art. Coordinates are 320x180 art units, inside framed()'s zoom on the establish.
+  const FLOOR_ZOOM = (day, r, detail) => (r.shot === 'floor' ? (detail ? 0.7 : 0.15) : 0.45 + (day % 4) * 0.08);
+  function floorLayers(day, r, title, o) {
+    const K = B.MotionKit, hold = o.phase === 'hold', detail = o.phase === 'detail', dark = o.dark, Z = o.zoom;
+    const S = SH.floorGeom(Z, day), dur = o.dur;
+    // the screens the wave crosses: not under the foreground colleagues (zoom > 0.12: x 26 to 286 only), not the late floor's dead ones
+    const wave = dark ? [] : S.filter((g) => (Z <= 0.12 || (g.x >= 26 && g.x + g.w <= 286)) && !((day >= 45) && !g.on));
+    let key = null;
+    if (dark) { let best = 1e9; S.forEach((g) => { const d = Math.abs(g.x + g.w / 2 - 160); if (g.r === 3 && d < best) { best = d; key = g; } }); }
+    const rest = dark ? S.filter((g) => g !== key) : [];
+    const art = (c, fn, noBack) => (detail || hold ? at2x(c, fn, day) : framed(c, day, r, title, { noBack, draw: (cc) => at2x(cc, fn, day) }));
+    const paint = (c2) => { SH.tradingFloor(c2, Z, !dark, day); if (dark && !detail) { c2.save(); c2.globalAlpha = 0.42; X.rect(c2, 0, 0, 320, 180, P.ink); c2.restore(); } };
+    const T0 = hold ? 0.10 : 0.35, T1 = hold ? 1.00 : dark ? dur - 0.10 : 1.25;
+    return [
+      {
+        id: 'floor', depth: 1,
+        draw(c) { art(c, paint, false); if (!hold) finePass(c, day, r, detail ? 'detail' : 'establish', 'world'); },
+        animate(c, v, t) {
+          if (t < (dark ? 0.10 : 0.35) || t >= (dark ? dur - 0.10 : 1.25)) return;
+          art(c, (c2) => {
+            if (dark) {
+              if (!hold) K.flicker(c2, key.x, key.y, key.w, key.h, `news:${day}:k`, t, { spans: [[0.40, 0.46], [0.52, 0.70], [0.78, 0.82], [0.95, 1.25]], col: P.ink, a: 0.5 });
+              else K.flicker(c2, key.x, key.y, key.w, key.h, `news:${day}:k`, t, { from: 0.10, to: 1.00, rate: 12, chance: 0.15, col: P.ink, a: 0.5 });
+              rest.forEach((g) => K.flicker(c2, g.x, g.y, g.w, g.h, `news:${day}:${g.r}:${g.i}`, t, { from: 0.30, to: dur - 0.10, rate: 12, chance: 0.07, col: P.ink, a: 0.3 }));
+            } else wave.forEach((g) => K.crt(c2, g.x, g.y, g.w, g.h, t, { mode: 'roll', at: 0.35 + 0.5 * Math.max(0, Math.min(1, (g.x + g.w / 2) / 320)), dur: 0.36, band: 6 }));
+          }, true);
+        }
+      },
+      hold ? { id: 'dim', depth: 0, draw(c) { c.save(); c.globalAlpha = 0.18; X.rect(c, 0, 0, V.w, V.h, P.ink); c.restore(); } } : framesLayer(day, r, detail)
+    ];
+  }
+
   B.Scenes.news = function (o) {
     const day = o.day || 0, r = row(day, story(o)), n = WEIGHTS[r.weight] || 2;
     const title = R.clean((o.brief || {}).title);
@@ -1258,11 +1293,15 @@
       if (/:act$/.test(b.id)) beats[i] = B.Motion.layered(Object.assign({}, b, { camera: null, layers: actLayers(day) }));
       else if (docDetail && /:detail$/.test(b.id)) beats[i] = B.Motion.layered(Object.assign({}, b, docLayers(day, r, b.dur)));
       else if (insertEstablish && /:establish$/.test(b.id)) {
-        const doc = r.doc, L = doc === 'memo' || doc === 'footnote' ? deskLayers(day, r, title, false, b.dur) : doc === 'voicemail' ? voicemailRoomLayers(day, r, title) : doc === 'post' ? postRoomLayers(day, r, title) : doc === 'chart' ? chartRoomLayers(day, r, title) : doc === 'rating' ? tvRoomLayers(day, r, title, 0.7, [0.45, 0.95]) : null;
-        if (L) beats[i] = B.Motion.layered(Object.assign({}, b, { camera: doc === 'post' ? B.MotionKit.rise(56, b.dur, 0.30, 0.90) : doc === 'voicemail' || doc === 'chart' || doc === 'rating' ? SETTLE() : null, layers: L }));
+        const doc = r.doc, L = doc === 'memo' || doc === 'footnote' ? deskLayers(day, r, title, false, b.dur) : doc === 'voicemail' ? voicemailRoomLayers(day, r, title) : doc === 'post' ? postRoomLayers(day, r, title) : doc === 'chart' ? chartRoomLayers(day, r, title) : doc === 'rating' ? tvRoomLayers(day, r, title, 0.7, [0.45, 0.95]) : doc === 'ticket' ? floorLayers(day, r, title, { phase: 'establish', zoom: FLOOR_ZOOM(day, r, false), dur: b.dur }) : null;
+        if (L) beats[i] = B.Motion.layered(Object.assign({}, b, { camera: doc === 'post' ? B.MotionKit.rise(56, b.dur, 0.30, 0.90) : doc === 'voicemail' || doc === 'chart' || doc === 'rating' || doc === 'ticket' ? SETTLE() : null, layers: L }, doc === 'ticket' ? { cues: [{ at: 0.30, sfx: 'office' }] } : {}));
       } else if (insertEstablish && /:hold$/.test(b.id) && (r.doc === 'memo' || r.doc === 'footnote')) beats[i] = B.Motion.layered(Object.assign({}, b, { camera: null, layers: deskLayers(day, r, title, true, b.dur) }));
       else if (r.shot === 'tv' && /:establish$/.test(b.id)) beats[i] = B.Motion.layered(Object.assign({}, b, { camera: SETTLE(), layers: tvRoomLayers(day, r, title, 0.7, [0.55, 1.15]) }));
       else if (r.shot === 'elevator' && /:(detail|hold)$/.test(b.id)) beats[i] = B.Motion.layered(Object.assign({}, b, { camera: null, layers: elevatorDoorsLayers(day, r, /:hold$/.test(b.id)) }));
+      else if (r.shot === 'floor' && /:(establish|detail)$/.test(b.id)) {
+        const det = /:detail$/.test(b.id);
+        beats[i] = B.Motion.layered(Object.assign({}, b, { camera: SETTLE(), layers: floorLayers(day, r, title, { phase: det ? 'detail' : 'establish', zoom: FLOOR_ZOOM(day, r, det), dur: b.dur }) }));
+      }
       else if (r.shot === 'place' && /:(establish|detail)$/.test(b.id)) {
         const L = placeLayers(day, r, title, /:detail$/.test(b.id));
         if (L) beats[i] = B.Motion.layered(Object.assign({}, b, L));
