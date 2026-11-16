@@ -943,7 +943,7 @@
       }
     }];
   }
-  // The ticket's order book at time t: bar i steps three times, 6 px each, from 0.40 + 0.06 i in 0.12 s steps (3 = the start, 0 = the art).
+  // The ticket's order book at time t: bar i steps three times, 12 px each (36 px in all), from 0.40 + 0.06 i in 0.12 s steps (3 = the start, 0 = the art).
   const bookStep = (i, t) => 3 - Math.max(0, Math.min(3, Math.floor((t - (0.40 + 0.06 * i)) / 0.12) + 1));
   // The documents' moving marks, in the screen pixels of the art. Each is the same rectangles the flat document draws, drawn on.
   function docLayers(day, r, dur) {
@@ -1015,8 +1015,8 @@
             id: 'book', depth: 1, draw() {},
             animate(g, v, t) {
               for (let i = 0; i < 5; i++) {
-                const s = bookStep(i, t), w = 60 + i * 12 - 6 * s;
-                X.rect(g, 100, 80 + i * 14, 100 - i * 18 + 6 * s, 8, i ? P.screenGlow : P.jadeD);
+                const s = bookStep(i, t), w = 60 + i * 12 - 12 * s;
+                X.rect(g, 100, 80 + i * 14, 100 - i * 18 + 12 * s, 8, i ? P.screenGlow : P.jadeD);
                 X.rect(g, 540 - w, 80 + i * 14, w, 8, P.crimsonD);
               }
             }

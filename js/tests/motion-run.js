@@ -1401,14 +1401,15 @@ async function run() {
     const s = []; for (const t of [0.5, 0.6, 0.7, 0.8]) s.push(await q(t));
     assert(s[0] > 0 && s[0] < s[1] && s[1] < s[2] && s[2] < s[3], `chart ${name}: the circle does not grow: ${JSON.stringify(s)}`);
   }
-  // ticket: the book drains: bid bars step shorter, ask bars longer, three 6 px steps each, top bar first (0.40 to 0.88 s); the bars sit under the glass
+  // ticket: the book drains: bid bars step shorter, ask bars longer, three 12 px steps each (36 px in all), top bar first (0.40 to 0.88 s); the bars sit under the glass
   for (const [name, o0] of SBdoc.ticket) {
     const o = await mk(o0), i = o.__i, q = (t, spec, r) => cc(o, i, 'book', t, r, spec);
-    const bid0 = (t) => q(t, 'jadeD', [90, 80, 140, 8]), ask0 = (t) => q(t, 'crimsonD', [420, 80, 130, 8]), bid4 = (t) => q(t, 'screenGlow', [90, 136, 140, 8]);
-    assert(await bid0(0.3) === 118 * 8 && await bid0(0.45) === 112 * 8 && await bid0(0.55) === 106 * 8 && await bid0(0.7) === 100 * 8 && await bid0(2.2) === 100 * 8, `ticket ${name}: bid bar 0 does not step 118, 112, 106, 100`);
-    assert(await ask0(0.3) === 42 * 8 && await ask0(0.45) === 48 * 8 && await ask0(0.55) === 54 * 8 && await ask0(0.7) === 60 * 8, `ticket ${name}: ask bar 0 does not step 42, 48, 54, 60`);
-    assert(await bid4(0.5) === 46 * 8 && await bid4(0.7) === 40 * 8 && await bid4(0.8) === 34 * 8 && await bid4(0.9) === 28 * 8, `ticket ${name}: bid bar 4 does not step 46, 40, 34, 28 from 0.64 s`);
-    assert(await q(2.2, 'crimsonD', [0, 0, 640, 360]) === 420 * 8 && await q(2.2, 'screenGlow', [0, 0, 640, 360]) === 220 * 8 && await q(0.3, 'crimsonD', [0, 0, 640, 360]) === 5 * 8 * 42 + 8 * 12 * 10, `ticket ${name}: the bars do not total today's at the end`);
+    const bid0 = (t) => q(t, 'jadeD', [90, 80, 160, 8]), ask0 = (t) => q(t, 'crimsonD', [420, 80, 130, 8]), bid4 = (t) => q(t, 'screenGlow', [90, 136, 160, 8]);
+    assert(await bid0(0.3) === 136 * 8 && await bid0(0.45) === 124 * 8 && await bid0(0.55) === 112 * 8 && await bid0(0.7) === 100 * 8 && await bid0(2.2) === 100 * 8, `ticket ${name}: bid bar 0 does not step 136, 124, 112, 100`);
+    assert(await ask0(0.3) === 24 * 8 && await ask0(0.45) === 36 * 8 && await ask0(0.55) === 48 * 8 && await ask0(0.7) === 60 * 8, `ticket ${name}: ask bar 0 does not step 24, 36, 48, 60`);
+    assert(await bid4(0.5) === 64 * 8 && await bid4(0.7) === 52 * 8 && await bid4(0.8) === 40 * 8 && await bid4(0.9) === 28 * 8, `ticket ${name}: bid bar 4 does not step 64, 52, 40, 28 from 0.64 s`);
+    assert(await q(2.2, 'crimsonD', [0, 0, 640, 360]) === 420 * 8 && await q(2.2, 'screenGlow', [0, 0, 640, 360]) === 220 * 8 && await q(0.3, 'crimsonD', [0, 0, 640, 360]) === 5 * 8 * 24 + 8 * 12 * 10, `ticket ${name}: the bars do not total today's at the end`);
+    assert(await bid0(0.3) - await bid0(0.45) >= 12 * 8 && await ask0(0.55) - await ask0(0.3) >= 24 * 8, `ticket ${name}: a step is under 12 px`);
     assert(await cc(o, i, 'book', 0.2, [0, 0, 640, 360], 'any', false) === await cc(o, i, 'book', 0.2, [0, 0, 640, 360], 'any', true), `ticket ${name}: the book layer's own picture is not empty`);
   }
   // vote: both lamp banks sweep on row by row, 0.09 s apart from 0.40 s (a yea bank of jade, a nay bank of crimson)
