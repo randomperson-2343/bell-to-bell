@@ -1927,9 +1927,18 @@ async function run() {
     assert(n[0] === 0 && n[0] < n[1] && n[1] < n[2] && n[2] < n[3] && n[3] <= n[4] && n[4] === n[5] && n[5] >= 9 * SKY8[day] - 63 && n[5] <= 9 * SKY8[day], `${tag}: the windows do not come on one by one between 0.35 and 1.25 s (${n})`);
     const bx = await box6(o, i, 'city', 1.5);
     assert(bx[1] - bx[0] > 400 && bx[2] > 40 && bx[3] < 260, `${tag}: the new windows are not across the whole skyline (${bx})`);
-    // the count: starts 8 points back, ends on today's figure, and the text never moves
+    // the sweep runs left to right (index order): the lit boxes' right edge grows, and early on the lit windows are all in the left part
+    const xr = []; for (const t of [0.5, 0.7, 0.9, 1.1, 1.3]) xr.push((await box6(o, i, 'city', t))[1]);
+    assert(xr.every((x, k) => k === 0 || x >= xr[k - 1]) && xr[0] < bx[1] - 150 && xr[1] < bx[1] - 60, `${tag}: the windows do not sweep left to right (${xr}, final ${bx[1]})`);
+    // each window pops: 7x7 px of bone at alpha 0.35 for 0.10 s, centred on it, while it switches (the first window alone just after 0.35 s); none left after the last pop
+    const first = await box6(o, i, 'city', 0.355);
+    assert(first[3] - first[2] + 1 === 7 && first[1] - first[0] + 1 >= 3 && first[1] - first[0] + 1 <= 7 && (first[1] - first[0] + 1 === 7 || first[0] === 0), `${tag}: the first window's pop is not 7x7 (or cut by the left edge) (${first})`);
+    assert(await cc(o, i, 'city', 0.8, [0, 0, 640, 360], 'any') - await am(0.8) >= 40 && await cc(o, i, 'city', 1.4, [0, 0, 640, 360], 'any') === await am(1.4) && await cc(o, i, 'city', 0.3, [0, 0, 640, 360], 'any') === 0, `${tag}: the windows do not pop as they switch`);
+    // the label's stem is cached: the cached top layer holds LIGHTS ON: and the animate only the number (about 165 rectangles a frame, not 390)
+    assert(await lp('news', o, i, 'top', 0.1, false) !== await lp('news', o, i, 'top', 0.1, true), `${tag}: the cached top layer holds no label`);
+    // the count: starts 8 points back, ends on today's figure, and the text never moves (its right edge, the %, stays; the digits' own left edges differ by a glyph's blank column)
     const tb = (t) => box6(o, i, 'top', t, [0, 0, 300, 40]);
-    assert(JSON.stringify(await tb(0.1)).slice(0, 6) !== '[1e9,-' && (await tb(0.1))[0] === (await tb(0.9))[0] && (await tb(0.9))[0] === (await tb(1.5))[0] && await lp('news', o, i, 'top', 0.1, true) !== await lp('news', o, i, 'top', 0.7, true) && await lp('news', o, i, 'top', 1.3, true) === await lp('news', o, i, 'top', 2.3, true), `${tag}: the count does not climb to a fixed end or its text moves`);
+    assert(JSON.stringify(await tb(0.1)).slice(0, 6) !== '[1e9,-' && (await tb(0.1))[1] === (await tb(0.9))[1] && (await tb(0.9))[1] === (await tb(1.5))[1] && await lp('news', o, i, 'top', 0.1, true) !== await lp('news', o, i, 'top', 0.7, true) && await lp('news', o, i, 'top', 1.3, true) === await lp('news', o, i, 'top', 2.3, true), `${tag}: the count does not climb to a fixed end or its text moves`);
     reduced6.push(o);
   }
 
@@ -1942,7 +1951,7 @@ async function run() {
     for (const [name, day, S, re] of COUNT) {
       const o = mkS(day, S), i = await newsIdx(o, re), r = await page.evaluate(([o, i]) => window.rectMax('news', o, i), [o, i]);
       rows.push(`${name} ${day}${re.slice(1, -1)}: ${r.worst} at ${r.at.toFixed(2)}`);
-      assert(r.worst < 400 && r.worst > 0, `${name} ${day} ${re}: ${r.worst} rectangles in the busiest frame (limit 400)`);
+      assert(r.worst < 400 && r.worst > 0 && (name !== 'skyline' || r.worst < 250), `${name} ${day} ${re}: ${r.worst} rectangles in the busiest frame (limit 400)`);
     }
     console.log('rect counts (busiest frame): ' + rows.join('; '));
   }

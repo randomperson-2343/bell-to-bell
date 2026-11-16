@@ -108,7 +108,7 @@
     return Math.max(0.04, 0.82 - (day - 35) * 0.07);
   }
   // o (optional): part 'city' draws the ink, gradient and towers with their windows, 'top' the weather, the ground and the text; o.skip = [lo, hi]
-  // leaves out the windows lit by a k in [lo, hi) (the ones a shot switches on itself); o.noLabel leaves out the LIGHTS ON text.
+  // leaves out the windows lit by a k in [lo, hi) (the ones a shot switches on itself); o.noLabel leaves out the LIGHTS ON text, o.labelStem leaves only its 'LIGHTS ON: ' stem.
   function skylineShot(ctx, day, title, o) {
     const part = o && o.part, skip = o && o.skip, a = (B.StoryData.actIndex(day) + 1), s = R.season(day);
     if (part !== 'top') {
@@ -129,7 +129,9 @@
     const f = lit(day);
     R.weather(ctx, 0, 0, V.w, 240, day);
     X.rect(ctx, 0, 260, V.w, 100, P.ink);
-    if (!(o && o.noLabel)) R.text(ctx, `LIGHTS ON: ${Math.round(f * 100)}%`, 24, 24, a >= 3 ? P.sky : P.amber);
+    // o.labelStem draws only 'LIGHTS ON: ' (the shot's tally draws the number after it, at x 24 + 11 x 6)
+    if (o && o.labelStem) R.text(ctx, 'LIGHTS ON:', 24, 24, a >= 3 ? P.sky : P.amber);
+    else if (!(o && o.noLabel)) R.text(ctx, `LIGHTS ON: ${Math.round(f * 100)}%`, 24, 24, a >= 3 ? P.sky : P.amber);
     if (title) R.text(ctx, title, 24, 38, P.bone);
   }
   // The windows the day lights: those with k in [lo, f) (lo = f - 0.08), as the 3x3 rects skylineShot draws, left out when a later (nearer) tower
@@ -1314,12 +1316,21 @@
       {
         id: 'city', depth: 1,
         draw(c) { skylineShot(c, day, '', { part: 'city', skip: [lo, f] }); },
-        animate(c, v, t) { K.lamps(c, cells, t, { at: 0.35, step: 0.90 / cells.length, order: 'seed', seed: `news:${day}:sky`, on: day > 35 ? P.sky : P.amber }); }
+        animate(c, v, t) {
+          // a left to right sweep (index order); each window pops, a 7x7 bone flash for 0.10 s centred on it, as it switches
+          const step = 0.90 / cells.length;
+          K.lamps(c, cells, t, { at: 0.35, step, order: 'index', on: day > 35 ? P.sky : P.amber });
+          const k1 = Math.min(cells.length - 1, Math.floor((t - 0.35) / step));
+          for (let k = Math.max(0, Math.ceil((t - 0.35 - 0.10) / step)); k <= k1; k++) {
+            const w = cells[k];
+            K.ping(c, t, { at: 0.35 + k * step, flare: { x: w.x - 2, y: w.y - 2, w: 7, h: 7, col: P.bone, a: 0.35, dur: 0.10 } });
+          }
+        }
       },
       {
         id: 'top', depth: 1,
-        draw(c) { skylineShot(c, day, '', { part: 'top', noLabel: true }); finePass(c, day, r, 'establish'); tell(c, day); },
-        animate(c, v, t) { K.tally(c, 24, 24, t, { from: to - 8, to, at: 0.35, dur: 0.90, fps: 15, fmt: (n) => 'LIGHTS ON: ' + n + '%', col: a >= 3 ? P.sky : P.amber, align: 'left', before: 'from' }); }
+        draw(c) { skylineShot(c, day, '', { part: 'top', labelStem: true }); finePass(c, day, r, 'establish'); tell(c, day); },
+        animate(c, v, t) { K.tally(c, 24 + 11 * 6, 24, t, { from: to - 8, to, at: 0.35, dur: 0.90, fps: 15, fmt: (n) => n + '%', col: a >= 3 ? P.sky : P.amber, align: 'left', before: 'from' }); }
       }
     ];
   }
