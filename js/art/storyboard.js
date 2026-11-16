@@ -1314,6 +1314,22 @@
     ];
   }
 
+  // Shot 9: the rack room, the stack pulled. The LED strips go dark row by row, top to bottom, left to right along each row (0.35 to 1.37 s): each strip
+  // shows lit (phosphorD) until its switch and then the art's own dark screenD. The fine marks are `marks`, above the lamps.
+  function racksLayers(day, r, title) {
+    const K = B.MotionKit, cells = [];
+    for (let j = 0; j < 17; j++) for (let i = 0; i < 8; i++) cells.push({ x: 36 + 76 * i, y: 40 + 8 + 12 * j, w: 48, h: 6 });
+    return [
+      {
+        id: 'racks', depth: 1,
+        draw(c) { framed(c, day, r, title, { draw: (cc) => racksShot(cc, day) }); },
+        // once the last strip has switched the art shows as it is (drawing screenD over screenD again would blend the edges the 1.18 zoom leaves half covered)
+        animate(c, v, t) { if (t >= 0.35 + 135 * 0.0075) return; framed(c, day, r, title, { noBack: true, draw: (cc) => K.lamps(cc, cells, t, { at: 0.35, step: 0.0075, on: P.screenD, off: P.phosphorD }) }); }
+      },
+      marksLayer(day, r)
+    ];
+  }
+
   B.Scenes.news = function (o) {
     const day = o.day || 0, r = row(day, story(o)), n = WEIGHTS[r.weight] || 2;
     const title = R.clean((o.brief || {}).title);
@@ -1349,6 +1365,7 @@
         beats[i] = B.Motion.layered(Object.assign({}, b, { camera: null, layers: floorLayers(day, r, title, { phase: ph, dark: true, zoom: ph === 'detail' ? 0.7 : 0.15, dur: b.dur }) }));
       }
       else if (r.shot === 'skyline' && /:establish$/.test(b.id)) beats[i] = B.Motion.layered(Object.assign({}, b, { camera: null, layers: skylineLayers(day, r) }));
+      else if (r.shot === 'racks' && /:establish$/.test(b.id)) beats[i] = B.Motion.layered(Object.assign({}, b, { camera: null, layers: racksLayers(day, r, title) }));
       else if (r.shot === 'place' && /:(establish|detail)$/.test(b.id)) {
         const L = placeLayers(day, r, title, /:detail$/.test(b.id));
         if (L) beats[i] = B.Motion.layered(Object.assign({}, b, L));

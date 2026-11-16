@@ -1889,6 +1889,45 @@ async function run() {
     reduced6.push(o);
   }
 
+  // shot 9: the rack room (variant 45 pulledPlug): the LED strips go dark row by row, 0.35 to 1.37 s
+  {
+    const o = mkS(45, { f: { pulledPlug: true } }), i = await newsIdx(o, ':establish$'), a = await info('news', o, i);
+    assert(a.id === 'news:45:THE STACK IS OFF:establish' && a.dur === 1.7 && a.layers === 'racks,marks' && a.depths === '1,0' && a.cam === 'none' && a.cues === '' && a.sfx === 'apartment', `racks beat: ${JSON.stringify(a)}`);
+    assert(await shot('news', o, i, 0.1) !== await shot('news', o, i, 1.6) && await shot('news', o, i, 0.9) === await shot('news', o, i, 0.9) && (await drawCover(o, i)) === 640 * 360, 'racks: not moving, not deterministic or has holes');
+    // lit strips (phosphorD) before their switch: all 136 at 0.3 s, none from 1.38 s, and the count falls steadily; the strips on the top row go first
+    const ph = (t, r) => cc(o, i, 'racks', t, r || [0, 0, 640, 360], 'phosphorD');
+    const n = [await ph(0.3), await ph(0.6), await ph(0.9), await ph(1.2), await ph(1.37), await ph(1.6)];
+    assert(n[0] > 0 && n[0] > n[1] && n[1] > n[2] && n[2] > n[3] && n[3] > 0 && n[4] === 0 && n[5] === 0, `racks: the strips do not go dark one after another (${n})`);
+    const bx = await box6(o, i, 'racks', 0.3);
+    // the two top strips of a rack are switched by 0.35 + 8 x 0.0075 s: by 0.45 the top row is dark while the bottom row is not
+    assert(await ph(0.45, [0, 0, 640, 110]) < await ph(0.3, [0, 0, 640, 110]) && await ph(0.45, [0, 200, 640, 100]) === await ph(0.3, [0, 200, 640, 100]) && bx[1] > bx[0], 'racks: not top to bottom');
+    assert(await lp('news', o, i, 'marks', 0.1, false) === await lp('news', o, i, 'marks', 1.6, false), 'racks: a cached layer moves');
+    reduced6.push(o);
+  }
+
+  // shot 10: every news hold. The final frame of each is pinned above (P6_REF hold:*). Holds with life are layered with the dim last and no camera;
+  // the rest stay flat (a layered beat whose picture never changes adds cost and fails the "picture changes" assert)
+  {
+    const LIVE = new Set(['0', '8', '24', '32', '10', '44', '22bail', '22fail']);
+    const VARS = { '4dump': [4, { choices: { c1: 'dump' } }], '4leak': [4, { choices: { c1: 'leak' } }], '22fail': [22, { choices: { c5: 'fail' } }], '22ban': [22, { choices: { c5: 'ban' } }], '22bail': [22, { choices: { c5: 'bail' } }], '41bill': [41, { f: { billPassed: true } }], '45plug': [45, { f: { pulledPlug: true } }] };
+    const all = [];
+    for (let d = 0; d < 46; d++) all.push([String(d), mkS(d)]);
+    for (const k in VARS) all.push([k, mkS(VARS[k][0], VARS[k][1])]);
+    const tableauHolds = new Set(['6', '9', '17', '20', '37', '40', '45']); // batch 6 (the tableau is not 45 plug's racks)
+    for (const [key, o] of all) {
+      const i = await newsIdx(o, ':hold$'); if (i < 0) continue;
+      const a = await info('news', o, i), live = LIVE.has(key), dim = a.layers.split(',').pop() === 'dim';
+      assert(a.dur === 1.1 && a.sfx === '' && a.tr === '' && a.cam === 'none', `hold ${key}: ${JSON.stringify(a)}`);
+      if (live) assert(dim && a.depths.split(',').pop() === '0' && a.layers.split(',').length >= 2, `hold ${key} should be layered with the dim last: ${a.layers}`);
+      else if (!tableauHolds.has(key) && key !== '38' && key !== '41bill') assert(a.layers === '', `hold ${key} must stay flat (${a.layers})`);
+      if (live && a.layers.split(',')[0] === 'floor') {
+        const n = [];
+        for (let t = 0.1; t < 1.0; t += 0.05) n.push(await shot('news', o, i, t));
+        assert(new Set(n).size > 1, `hold ${key}: no life behind the dim`);
+      }
+    }
+  }
+
   // reduced effects: every reworked beat is one still
   await page.evaluate(() => BTB.Settings.set('effects', 'reduced'));
   for (const o of [nOpts(8), nOpts(32), nOpts(1), nOpts(4), nOpts(2), nOpts(3), nOpts(5), nOpts(11), nOpts(36), nOpts(15), nOpts(10)]) {
@@ -1953,6 +1992,14 @@ async function run() {
     { scene: 'news', opts: { day: 13, brief: { title: 'BIDS: 1', feed: [] } } },
     { scene: 'news', opts: { day: 22, brief: { title: 'THE GUARANTEE', feed: [] } } },
     { scene: 'news', opts: { day: 18, brief: { title: 'CONTAGION', feed: [] } } },
+    // batch 5, part 2: the lit floor (an establish and detail, a ticket), the dark floor (stutter on three beats), the skyline (summer-grey and winter), the racks
+    { scene: 'news', opts: { day: 41, brief: { title: 'THE BILL PASSES', feed: [] } } },
+    { scene: 'news', opts: { day: 23, brief: { title: 'MARKED AT 22 CENTS', feed: [] } } },
+    { scene: 'news', opts: { day: 44, brief: { title: 'NO BIDS', feed: [] } } },
+    { scene: 'news', opts: { day: 10, brief: { title: 'RACKS NEVER ENERGIZE', feed: [] } } },
+    { scene: 'news', opts: { day: 27, brief: { title: 'THE FALSE DAWN', feed: [] } } },
+    { scene: 'news', opts: { day: 35, brief: { title: 'THE FALSE DAWN', feed: [] } } },
+    { scene: 'news', opts: { day: 45, brief: { title: 'THE STACK IS OFF', feed: [] }, game: { mode: { S: { f: { pulledPlug: true } } } } } },
     { scene: 'close', opts: { report: { day: 3, pnl: 1200, quotaMet: true, quota: 900 } } },
     { scene: 'close', opts: { report: { day: 30, pnl: 1200, quotaMet: true, quota: 900 } } },
     // the close: a loss with the quota missed on the empty floor, and the two days with a Sqwak breaking insert (no game needed): a profit in autumn, and a seven-digit loss in winter
