@@ -1872,6 +1872,23 @@ async function run() {
     reduced6.push(o);
   }
 
+  // shot 8: the skyline (sessions 27, 28, 29, 35): the day's newest windows switch on one by one while the LIGHTS ON count climbs 8 points
+  const SKY8 = { 27: 62, 28: 55, 29: 55, 35: 60 }; // the windows lit today that are not hidden behind a nearer tower (64, 58, 59, 63 counting those); a window on the right edge may be cut by it
+  for (const day of [27, 28, 29, 35]) {
+    const o = mkS(day), i = await newsIdx(o, ':establish$'), a = await info('news', o, i), tag = `skyline ${day}`;
+    assert(a.id === `news:${day}:establish` && a.dur === 2.4 && a.layers === 'city,top' && a.depths === '1,1' && a.cam === 'none' && a.cues === '' && a.sfx === 'apartment' && a.inf === true && a.n === 1, `${tag} beat: ${JSON.stringify(a)}`);
+    assert(await shot('news', o, i, 0.1) !== await shot('news', o, i, 2.3) && await shot('news', o, i, 0.9) === await shot('news', o, i, 0.9) && (await drawCover(o, i)) === 640 * 360, `${tag}: not moving, not deterministic or has holes`);
+    const am = (t) => cc(o, i, 'city', t, [0, 0, 640, 360], 'amber');
+    const n = [await am(0.3), await am(0.6), await am(0.9), await am(1.2), await am(1.4), await am(2.3)];
+    assert(n[0] === 0 && n[0] < n[1] && n[1] < n[2] && n[2] < n[3] && n[3] <= n[4] && n[4] === n[5] && n[5] >= 9 * SKY8[day] - 63 && n[5] <= 9 * SKY8[day], `${tag}: the windows do not come on one by one between 0.35 and 1.25 s (${n})`);
+    const bx = await box6(o, i, 'city', 1.5);
+    assert(bx[1] - bx[0] > 400 && bx[2] > 40 && bx[3] < 260, `${tag}: the new windows are not across the whole skyline (${bx})`);
+    // the count: starts 8 points back, ends on today's figure, and the text never moves
+    const tb = (t) => box6(o, i, 'top', t, [0, 0, 300, 40]);
+    assert(JSON.stringify(await tb(0.1)).slice(0, 6) !== '[1e9,-' && (await tb(0.1))[0] === (await tb(0.9))[0] && (await tb(0.9))[0] === (await tb(1.5))[0] && await lp('news', o, i, 'top', 0.1, true) !== await lp('news', o, i, 'top', 0.7, true) && await lp('news', o, i, 'top', 1.3, true) === await lp('news', o, i, 'top', 2.3, true), `${tag}: the count does not climb to a fixed end or its text moves`);
+    reduced6.push(o);
+  }
+
   // reduced effects: every reworked beat is one still
   await page.evaluate(() => BTB.Settings.set('effects', 'reduced'));
   for (const o of [nOpts(8), nOpts(32), nOpts(1), nOpts(4), nOpts(2), nOpts(3), nOpts(5), nOpts(11), nOpts(36), nOpts(15), nOpts(10)]) {

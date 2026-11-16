@@ -107,24 +107,48 @@
     if (day <= 35) return 0.18 + (day - 27) * 0.08;
     return Math.max(0.04, 0.82 - (day - 35) * 0.07);
   }
-  function skylineShot(ctx, day, title) {
-    const a = (B.StoryData.actIndex(day) + 1), s = R.season(day);
-    X.rect(ctx, 0, 0, V.w, V.h, P.ink);
-    X.gradient(ctx, 0, 0, V.w, 260, day >= 28 && day <= 35 ? P.amberD : P.ink2, P.ink, 12);
-    const f = lit(day);
-    for (let i = 0; i < 26; i++) {
-      const w = 18 + ((i * 17) % 20), h = 60 + ((i * 41) % 150), x = i * 26 - 6;
-      X.rect(ctx, x, 260 - h, w, h, i % 3 ? P.ink2 : P.slate);
-      if (s.snow) X.rect(ctx, x, 260 - h, w, 2, P.bone);
-      for (let yy = 8; yy < h - 6; yy += 12) for (let xx = 4; xx < w - 4; xx += 8) {
-        const k = ((i * 131 + xx * 7 + yy * 3) % 100) / 100;
-        if (k < f) X.rect(ctx, x + xx, 260 - h + yy, 3, 3, day > 35 ? P.sky : P.amber);
+  // o (optional): part 'city' draws the ink, gradient and towers with their windows, 'top' the weather, the ground and the text; o.skip = [lo, hi]
+  // leaves out the windows lit by a k in [lo, hi) (the ones a shot switches on itself); o.noLabel leaves out the LIGHTS ON text.
+  function skylineShot(ctx, day, title, o) {
+    const part = o && o.part, skip = o && o.skip, a = (B.StoryData.actIndex(day) + 1), s = R.season(day);
+    if (part !== 'top') {
+      X.rect(ctx, 0, 0, V.w, V.h, P.ink);
+      X.gradient(ctx, 0, 0, V.w, 260, day >= 28 && day <= 35 ? P.amberD : P.ink2, P.ink, 12);
+      const f = lit(day);
+      for (let i = 0; i < 26; i++) {
+        const w = 18 + ((i * 17) % 20), h = 60 + ((i * 41) % 150), x = i * 26 - 6;
+        X.rect(ctx, x, 260 - h, w, h, i % 3 ? P.ink2 : P.slate);
+        if (s.snow) X.rect(ctx, x, 260 - h, w, 2, P.bone);
+        for (let yy = 8; yy < h - 6; yy += 12) for (let xx = 4; xx < w - 4; xx += 8) {
+          const k = ((i * 131 + xx * 7 + yy * 3) % 100) / 100;
+          if (k < f && !(skip && skip[0] <= k && k < skip[1])) X.rect(ctx, x + xx, 260 - h + yy, 3, 3, day > 35 ? P.sky : P.amber);
+        }
       }
     }
+    if (part === 'city') return;
+    const f = lit(day);
     R.weather(ctx, 0, 0, V.w, 240, day);
     X.rect(ctx, 0, 260, V.w, 100, P.ink);
-    R.text(ctx, `LIGHTS ON: ${Math.round(f * 100)}%`, 24, 24, a >= 3 ? P.sky : P.amber);
+    if (!(o && o.noLabel)) R.text(ctx, `LIGHTS ON: ${Math.round(f * 100)}%`, 24, 24, a >= 3 ? P.sky : P.amber);
     if (title) R.text(ctx, title, 24, 38, P.bone);
+  }
+  // The windows the day lights: those with k in [lo, f) (lo = f - 0.08), as the 3x3 rects skylineShot draws, left out when a later (nearer) tower
+  // covers them, since a lamp drawn over the city would show through it. The same arithmetic as skylineShot's loop.
+  function skyCells(day) {
+    const f = lit(day), lo = f - 0.08, towers = [], cells = [];
+    for (let i = 0; i < 26; i++) towers.push({ w: 18 + ((i * 17) % 20), h: 60 + ((i * 41) % 150), x: i * 26 - 6 });
+    for (let i = 0; i < 26; i++) {
+      const { w, h, x } = towers[i];
+      for (let yy = 8; yy < h - 6; yy += 12) for (let xx = 4; xx < w - 4; xx += 8) {
+        const k = ((i * 131 + xx * 7 + yy * 3) % 100) / 100;
+        if (!(lo <= k && k < f)) continue;
+        const cx = x + xx, cy = 260 - h + yy;
+        if (cx >= 640) continue;
+        if (towers.some((q, j) => j > i && cx < q.x + q.w && cx + 3 > q.x && cy + 3 > 260 - q.h)) continue;
+        cells.push({ x: cx, y: cy, w: 3, h: 3 });
+      }
+    }
+    return { cells, lo, f };
   }
 
   // ---- Close-ups: the day's one number, on the document it came from ----
@@ -1272,6 +1296,24 @@
     ];
   }
 
+  // Shot 8: the false dawn. `city` (the towers with every window lit before today's, and the day's newest ones switching on one by one, 0.35 to
+  // 1.25 s) and `top` (weather, ground, the fine marks), where the LIGHTS ON count climbs 8 points over the same time.
+  function skylineLayers(day, r) {
+    const K = B.MotionKit, a = B.StoryData.actIndex(day) + 1, { cells, lo, f } = skyCells(day), to = Math.round(f * 100);
+    return [
+      {
+        id: 'city', depth: 1,
+        draw(c) { skylineShot(c, day, '', { part: 'city', skip: [lo, f] }); },
+        animate(c, v, t) { K.lamps(c, cells, t, { at: 0.35, step: 0.90 / cells.length, order: 'seed', seed: `news:${day}:sky`, on: day > 35 ? P.sky : P.amber }); }
+      },
+      {
+        id: 'top', depth: 1,
+        draw(c) { skylineShot(c, day, '', { part: 'top', noLabel: true }); finePass(c, day, r, 'establish'); tell(c, day); },
+        animate(c, v, t) { K.tally(c, 24, 24, t, { from: to - 8, to, at: 0.35, dur: 0.90, fps: 15, fmt: (n) => 'LIGHTS ON: ' + n + '%', col: a >= 3 ? P.sky : P.amber, align: 'left', before: 'from' }); }
+      }
+    ];
+  }
+
   B.Scenes.news = function (o) {
     const day = o.day || 0, r = row(day, story(o)), n = WEIGHTS[r.weight] || 2;
     const title = R.clean((o.brief || {}).title);
@@ -1306,6 +1348,7 @@
         const ph = /:hold$/.test(b.id) ? 'hold' : /:detail$/.test(b.id) ? 'detail' : 'establish';
         beats[i] = B.Motion.layered(Object.assign({}, b, { camera: null, layers: floorLayers(day, r, title, { phase: ph, dark: true, zoom: ph === 'detail' ? 0.7 : 0.15, dur: b.dur }) }));
       }
+      else if (r.shot === 'skyline' && /:establish$/.test(b.id)) beats[i] = B.Motion.layered(Object.assign({}, b, { camera: null, layers: skylineLayers(day, r) }));
       else if (r.shot === 'place' && /:(establish|detail)$/.test(b.id)) {
         const L = placeLayers(day, r, title, /:detail$/.test(b.id));
         if (L) beats[i] = B.Motion.layered(Object.assign({}, b, L));
