@@ -1302,6 +1302,10 @@
         const det = /:detail$/.test(b.id);
         beats[i] = B.Motion.layered(Object.assign({}, b, { camera: SETTLE(), layers: floorLayers(day, r, title, { phase: det ? 'detail' : 'establish', zoom: FLOOR_ZOOM(day, r, det), dur: b.dur }) }));
       }
+      else if (r.shot === 'dark' && (/:(establish|hold)$/.test(b.id) || (/:detail$/.test(b.id) && !r.arg))) {
+        const ph = /:hold$/.test(b.id) ? 'hold' : /:detail$/.test(b.id) ? 'detail' : 'establish';
+        beats[i] = B.Motion.layered(Object.assign({}, b, { camera: null, layers: floorLayers(day, r, title, { phase: ph, dark: true, zoom: ph === 'detail' ? 0.7 : 0.15, dur: b.dur }) }));
+      }
       else if (r.shot === 'place' && /:(establish|detail)$/.test(b.id)) {
         const L = placeLayers(day, r, title, /:detail$/.test(b.id));
         if (L) beats[i] = B.Motion.layered(Object.assign({}, b, L));

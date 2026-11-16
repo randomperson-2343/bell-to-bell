@@ -1853,6 +1853,25 @@ async function run() {
     reduced6.push(o);
   }
 
+  // shot 7: the trading floor dark (establish and hold of 10, 44 and 22 fail; the detail of 44): the biggest near screen stutters, the others flicker, all end lit
+  const DARK7 = [[10, null, 'establish'], [10, null, 'hold'], [44, null, 'establish'], [44, null, 'detail'], [44, null, 'hold'], [22, { choices: { c5: 'fail' } }, 'establish'], [22, { choices: { c5: 'fail' } }, 'hold']];
+  for (const [day, S, phase] of DARK7) {
+    const o = mkS(day, S), i = await newsIdx(o, `:${phase}$`), a = await info('news', o, i), hold = phase === 'hold', tag = `dark ${day}${S ? ' fail' : ''} ${phase}`;
+    assert(a.layers === (hold ? 'floor,dim' : 'floor,marks') && a.depths === '1,0' && a.cam === 'none' && a.dur === (hold ? 1.1 : phase === 'detail' ? 2.3 : 1.7) && a.cues === '' && a.sfx === (hold ? '' : phase === 'detail' ? 'broadcast' : 'office'), `${tag} beat: ${JSON.stringify(a)}`);
+    assert((await drawCover(o, i)) === 640 * 360 && await shot('news', o, i, 0.7) === await shot('news', o, i, 0.7), `${tag}: has holes or is not deterministic`);
+    // the stutter: the key screen is dark ink in the sheet's spans (establish and detail), the picture differs from the art then and is the art again at the end
+    const A = (t) => any6(o, i, 'floor', t);
+    if (!hold) {
+      assert(await A(0.1) === 0 && await A(0.43) > 3000 && await A(0.49) < await A(0.43) && await A(0.6) > 3000 && await A(0.74) < await A(0.6) && await A(0.80) > 3000 && await A(1.0) > 3000 && await A(a.dur - 0.05) === 0, `${tag}: the key screen does not stutter in four bursts (${JSON.stringify(await Promise.all([0.1, 0.43, 0.49, 0.6, 0.74, 0.8, 1.0, 1.3, a.dur - 0.05].map(A)))})`);
+      assert(await shot('news', o, i, 0.43) !== await shot('news', o, i, 0.49) && await shot('news', o, i, 0.6) !== await shot('news', o, i, 0.74), `${tag}: the stutter is not seen`);
+    } else {
+      let n = 0; for (let t = 0.12; t < 1.0; t += 1 / 12) if (await A(t) > 0) n++;
+      assert(n >= 1 && await A(0.05) === 0 && await A(1.05) === 0 && await A(a.dur - 0.01) === 0, `${tag}: the stutter does not go on behind the dim (${n})`);
+    }
+    assert(await lp('news', o, i, hold ? 'dim' : 'marks', 0.1, false) === await lp('news', o, i, hold ? 'dim' : 'marks', a.dur - 0.1, false), `${tag}: a cached layer moves`);
+    reduced6.push(o);
+  }
+
   // reduced effects: every reworked beat is one still
   await page.evaluate(() => BTB.Settings.set('effects', 'reduced'));
   for (const o of [nOpts(8), nOpts(32), nOpts(1), nOpts(4), nOpts(2), nOpts(3), nOpts(5), nOpts(11), nOpts(36), nOpts(15), nOpts(10)]) {
