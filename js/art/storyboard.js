@@ -76,15 +76,23 @@
   }
   // The tableaux were drawn with a header strip at y=0, which the letterbox
   // hides. Drop them 7px so the strip reads, and extend it up to the top.
-  function tableau(c, n, zoom) {
-    X.rect(c, 0, 0, 320, 180, P.ink);
+  // tableauSpace is the transform: the 1.3 zoom about (160, 76) when asked, then the 7 px drop. fn draws in it.
+  function tableauSpace(c, zoom, fn) {
     c.save();
     if (zoom) { c.translate(160 * (1 - zoom), 76 * (1 - zoom)); c.scale(zoom, zoom); }
     c.translate(0, 7);
-    const ok = SH.briefingTableau(c, n, 0.6);
+    fn(c);
     c.restore();
+  }
+  // o (optional, layer builders): part 'art' is the ink and the picture without its scanlines (and without the mover when o.noMover), no header strip;
+  // part 'scan' is the scanlines (and the header strip when not zoomed) alone; o.over: tableau 9's lower band and caption move from 'art' to 'scan' (see briefingTableau); o.p replaces the constant 0.6.
+  function tableau(c, n, zoom, o) {
+    const part = o && o.part, p = o && o.p != null ? o.p : 0.6;
+    if (part !== 'scan') X.rect(c, 0, 0, 320, 180, P.ink);
+    let ok = true;
+    tableauSpace(c, zoom, (g) => { ok = SH.briefingTableau(g, n, p, o ? { part, noMover: o.noMover, over: o.over } : undefined); });
     if (!ok) return false;
-    if (!zoom) X.rect(c, 0, 0, 320, 7, P.slate);
+    if (!zoom && part !== 'art') X.rect(c, 0, 0, 320, 7, P.slate);
     return true;
   }
   function big(ctx, value, x, y, color, scale, align) {
@@ -887,7 +895,7 @@
     return beats;
   };
 
-  B.Storyboard = { PET, petRows, SHEET, DOCS, ANOMALY_DAYS, row, variant, lit, actTurns, HOMES, WEEKENDS, insertShot, actCard, DOC_DRAW, deskWithDoc, shotFrame, skylineShot, racksShot, at2x, tableau, finePass, bellSwing, apartmentShot, windowRect, homeOf, SAT_DUR };
+  B.Storyboard = { PET, petRows, SHEET, DOCS, ANOMALY_DAYS, row, variant, lit, actTurns, HOMES, WEEKENDS, insertShot, actCard, DOC_DRAW, deskWithDoc, shotFrame, skylineShot, racksShot, at2x, tableau, tableauSpace, finePass, bellSwing, apartmentShot, windowRect, homeOf, SAT_DUR };
 
   // Session 1 opens in the lobby: the counter climbs to 41, the car arrives, the doors part.
   // Built on the same cached parts as news:0:detail and :hold (`elevBase`: wall, car, top in the flat picture's own order), so at the cut the two

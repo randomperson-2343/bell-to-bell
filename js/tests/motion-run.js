@@ -1749,6 +1749,23 @@ async function run() {
     take('45plug', o(45, T, { f: { pulledPlug: true } }));
     return out;
   });
+  // the split is exact: the art without its mover and scanlines, the mover, then the scanlines (and the strip) draw the flat picture, zoomed and not
+  const p7split = await page.evaluate(() => {
+    const hashOf = (fn) => { const cv = document.createElement('canvas'); cv.width = 640; cv.height = 360; const g = cv.getContext('2d'); fn(g);
+      const d = g.getImageData(0, 0, 640, 360).data; let x = 2166136261; for (let i = 0; i < d.length; i++) { x ^= d[i]; x = Math.imul(x, 16777619); } return (x >>> 0).toString(16); };
+    const SB = BTB.Storyboard, SH = BTB.Shots, out = {};
+    for (const [n, d] of [[3, 6], [5, 9], [8, 17], [9, 20], [11, 25], [12, 37], [13, 40], [14, 45]]) for (const z of [0, 1.3]) {
+      const flat = hashOf((g) => SB.at2x(g, (c) => { SB.tableau(c, n, z); }, d));
+      const split = hashOf((g) => SB.at2x(g, (c) => {
+        SB.tableau(c, n, z, { part: 'art', noMover: true, over: true });
+        SB.tableauSpace(c, z, (s) => SH.tableauMover(s, n, 0.6));
+        SB.tableau(c, n, z, { part: 'scan', over: true });
+      }, d));
+      out[`${n}:${z}`] = flat === split;
+    }
+    return out;
+  });
+  for (const k in p7split) assert(p7split[k], `batch 6: tableau ${k}: art, mover and scanlines drawn apart differ from the flat picture`);
   if (process.env.DUMP_P7) { console.log(JSON.stringify(p7now)); return; }
   for (const k of Object.keys(P7_REF)) assert(p7now[k] === (P7_CHANGED[k] || P7_REF[k]), `batch 6 ${k}: the picture changed (${p7now[k]}, was ${P7_CHANGED[k] || P7_REF[k]})`);
   assert(Object.keys(p7now).length === Object.keys(P7_REF).length, 'batch 6: the set of reference pictures changed');

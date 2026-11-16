@@ -401,8 +401,53 @@
   // A single establishing shot behind the ending card.
   // Story-specific broadcast tableaux. These use contemporary systems imagery
   // without naming a calendar year: fibre maps, server racks, hearings, queues.
-  function briefingTableau(ctx, day, p) {
+  // The static rects the layer builders cover or light, in art units (320x180, before the 7 px drop of tableau()). briefingTableau draws from these.
+  function tableauGeom(n) {
+    const g = {};
+    if (n === 5) g.bars = [0, 1, 2, 3, 4].map((i) => ({ x: 182 + (i % 3) * 34 + 4, y: 77 + Math.floor(i / 3) * 21 + 4, w: 20, h: 5, red: i > 2 }));
+    else if (n === 8) {
+      g.slots = [0, 1, 2, 3, 4].map((i) => ({ x: 28 + 55 * i + 5, y: 40, w: 28, h: 56 }));
+      g.links = [0, 1, 2, 3].map((i) => [{ x: 28 + 55 * i + 38, y: 70, w: 16, h: 2 }, { x: 28 + 55 * i + 49, y: 67, w: 5, h: 8 }]);
+      g.col = (i) => (i > 1 ? P.crimson : P.sky);
+    } else if (n === 11) g.marks = [0, 1, 2, 3, 4, 5].map((i) => ({ x: 16 + 50 * i + 6, y: 85, w: 30, h: 16 }));
+    else if (n === 12 || n === 13) { g.witness = { x: 154, y: 85, w: 12, h: 12 }; g.badge = { x: 265, y: 3, w: 46, h: 7 }; }
+    else if (n === 14) g.nodes = [0, 1, 2, 3, 4, 5, 6].map((i) => ({ x: 24 + 45 * i, y: 35 + (i % 3) * 18, w: 5, h: 5, lit: i < 3 }));
+    return g;
+  }
+  // The tableau's mover: the three ships (3), the nine queue figures (9), the witness at the table (12, 13). The flat picture draws it in its place in the
+  // order of the art. A layer builder passes o.shift(i) -> [dx, dy] (whole art units added to item i) and o.maxY (rects are cut at that art y).
+  function tableauMover(ctx, n, p, o) {
+    const sh = (i) => (o && o.shift ? o.shift(i) : [0, 0]), maxY = o && o.maxY != null ? o.maxY : null;
+    const rc = (x, y, w, h, c) => { if (maxY != null && y + h > maxY) h = maxY - y; if (h > 0) X.rect(ctx, x, y, w, h, c); };
+    if (n === 3) {
+      for (let i = 0; i < 3; i++) {
+        const d = sh(i), x = 123 + i * 35 + Math.round(p * 9) + d[0];
+        rc(x, 66 + i * 12 + d[1], 19, 4, i === 1 ? P.crimson : P.bone);
+        rc(x + 5, 62 + i * 12 + d[1], 8, 4, P.slate2);
+      }
+    } else if (n === 9) {
+      for (let i = 0; i < 9; i++) {
+        const d = sh(i), x = 52 + i * 27 + Math.round((i % 2) * p * 3) + d[0];
+        rc(x, 91 + d[1], 9, 24, i % 3 ? P.ink2 : P.crimsonD);
+        rc(x + 2, 84 + d[1], 5, 7, i % 2 ? P.desk2 : P.deskD);
+      }
+    } else if (n === 12 || n === 13) {
+      const d = sh(0);
+      rc(154 + d[0], 85 + d[1], 12, 12, P.desk2);
+    }
+  }
+  // The bank queue's lower band and its caption: drawn after the figures stand in the flat picture.
+  function tableau9Strip(ctx) {
+    X.rect(ctx, 0, 113, V.w, 25, P.ink2);
+    X.text(ctx, 'WITHDRAWAL QUEUE · THIRD STREET', 160, 120, P.white, { align: 'center' });
+  }
+  // o (optional): part 'art' draws everything but the scanlines, 'scan' only the scanlines; noMover leaves out the tableau's mover (tableauMover).
+  // over (tableau 9): the band under the queue and its caption are left out of 'art' and drawn first in 'scan', so they sit over the figures (which a layer
+  // builder draws between the two, whole: under the 1.3 zoom a figure cut at the band's edge would differ from the flat picture in the edge row).
+  function briefingTableau(ctx, day, p, o) {
     if ([3, 5, 8, 9, 11, 12, 13, 14].indexOf(day) < 0) return false;
+    const part = o && o.part, mover = !(o && o.noMover);
+    if (part === 'scan') { if (day === 9 && o.over) tableau9Strip(ctx); X.scanlines(ctx, 0, 13, V.w, 125, P.ink, 0.1); return true; }
     X.rect(ctx, 0, 0, V.w, V.h, P.ink);
     X.gradient(ctx, 0, 0, V.w, 138, P.ink2, P.screenD, 7);
     X.rect(ctx, 0, 0, V.w, 13, P.slate);
@@ -417,15 +462,12 @@
       X.dither(ctx, 250, 13, 70, 125, P.slate, P.carpet, 0.5);
       ctx.strokeStyle = P.sky; ctx.setLineDash([3, 3]);
       ctx.beginPath(); ctx.moveTo(48, 109); ctx.bezierCurveTo(112, 64, 195, 102, 279, 41); ctx.stroke(); ctx.setLineDash([]);
-      for (let i = 0; i < 3; i++) {
-        const x = 123 + i * 35 + Math.round(p * 9);
-        X.rect(ctx, x, 66 + i * 12, 19, 4, i === 1 ? P.crimson : P.bone);
-        X.rect(ctx, x + 5, 62 + i * 12, 8, 4, P.slate2);
-      }
+      if (mover) tableauMover(ctx, 3, p);
       X.box(ctx, 87, 21, 146, 21);
       X.text(ctx, 'KAVRO STRAIT', 160, 28, P.amber, { align: 'center', spacing: 2 });
     } else if (day === 5) {
       // Grid capacity and datacenter demand on the same schematic.
+      const G = tableauGeom(5);
       X.rect(ctx, 0, 104, V.w, 34, P.carpetD);
       for (let i = 0; i < 4; i++) {
         const x = 24 + i * 73;
@@ -435,25 +477,23 @@
         ctx.beginPath(); ctx.moveTo(x - 12, 57); ctx.lineTo(x + 61, 57); ctx.stroke(); ctx.setLineDash([]);
       }
       for (let i = 0; i < 5; i++) {
-        const x = 182 + (i % 3) * 34, y = 77 + Math.floor(i / 3) * 21;
+        const x = 182 + (i % 3) * 34, y = 77 + Math.floor(i / 3) * 21, b = G.bars[i];
         X.plate(ctx, x, y, 28, 17, P.plastic, P.plastic2, P.plasticD);
-        X.rect(ctx, x + 4, y + 4, 20, 5, i > 2 ? P.crimsonD : P.screenGlow);
+        X.rect(ctx, b.x, b.y, b.w, b.h, b.red ? P.crimsonD : P.screenGlow);
       }
       X.text(ctx, 'GRID REQUESTS: DELAYED', 12, 23, P.crimson);
       X.text(ctx, 'COMPUTE LOAD: +38%', 12, 34, P.amber);
     } else if (day === 8) {
       // The automated feedback loop, shown as racks feeding one another.
+      const G = tableauGeom(8);
       for (let i = 0; i < 5; i++) {
         const x = 28 + i * 55;
         X.plate(ctx, x, 34, 38, 76, P.slate, P.slate2, P.ink);
         for (let r = 0; r < 6; r++) {
-          X.rect(ctx, x + 5, 40 + r * 10, 28, 6, P.screen);
+          X.rect(ctx, G.slots[i].x, 40 + r * 10, G.slots[i].w, 6, P.screen);
           X.rect(ctx, x + 7 + ((r + i) % 4) * 5, 42 + r * 10, 2, 2, r > 3 ? P.crimson : P.phosphor);
         }
-        if (i < 4) {
-          X.rect(ctx, x + 38, 70, 16, 2, i > 1 ? P.crimson : P.sky);
-          X.rect(ctx, x + 49, 67, 5, 8, i > 1 ? P.crimson : P.sky);
-        }
+        if (i < 4) G.links[i].forEach((l) => X.rect(ctx, l.x, l.y, l.w, l.h, G.col(i)));
       }
       X.text(ctx, 'CORRELATED MODEL FLOW', 160, 19, P.violet, { align: 'center', spacing: 2 });
     } else if (day === 9) {
@@ -464,19 +504,15 @@
       X.rect(ctx, 199, 48, 72, 38, P.screenD);
       X.rect(ctx, 126, 48, 68, 38, P.sky);
       X.text(ctx, 'RIDGEWAY TRUST', 160, 34, P.ink, { align: 'center' });
-      for (let i = 0; i < 9; i++) {
-        const x = 52 + i * 27 + Math.round((i % 2) * p * 3);
-        X.rect(ctx, x, 91, 9, 24, i % 3 ? P.ink2 : P.crimsonD);
-        X.rect(ctx, x + 2, 84, 5, 7, i % 2 ? P.desk2 : P.deskD);
-      }
-      X.rect(ctx, 0, 113, V.w, 25, P.ink2);
-      X.text(ctx, 'WITHDRAWAL QUEUE · THIRD STREET', 160, 120, P.white, { align: 'center' });
+      if (mover) tableauMover(ctx, 9, p);
+      if (!(o && o.over)) tableau9Strip(ctx);
     } else if (day === 11) {
       // Regulatory preservation sweep: cartons, badges and locked terminals.
+      const G = tableauGeom(11);
       for (let i = 0; i < 6; i++) {
-        const x = 16 + i * 50;
+        const x = 16 + i * 50, m = G.marks[i];
         X.plate(ctx, x, 76, 42, 31, P.desk2, P.putty2, P.deskD);
-        X.rect(ctx, x + 6, 85, 30, 4, P.crimsonD);
+        X.rect(ctx, m.x, m.y, m.w, 4, P.crimsonD);
         X.text(ctx, 'HOLD', x + 21, 94, P.ink, { align: 'center' });
       }
       for (let i = 0; i < 3; i++) {
@@ -497,7 +533,7 @@
         X.rect(ctx, x + 3, 49, 6, 7, i === 3 ? P.desk2 : P.grey2);
       }
       X.rect(ctx, 86, 96, 148, 11, P.plasticD);
-      X.rect(ctx, 154, 85, 12, 12, P.desk2);
+      if (mover) tableauMover(ctx, day, p);
       X.text(ctx, day === 12 ? 'MARKETS COMMITTEE · LIVE' : 'STABILIZATION VOTE · LIVE', 160, 20, day === 12 ? P.sky : P.amber, { align: 'center' });
       if (day === 13) {
         X.box(ctx, 111, 112, 98, 20);
@@ -505,10 +541,11 @@
       }
     } else {
       // Final day: the city and network remain, but half the nodes have gone dark.
+      const G = tableauGeom(14);
       endingShot(ctx, 'dark');
       for (let i = 0; i < 7; i++) {
-        const x = 24 + i * 45, y = 35 + (i % 3) * 18;
-        X.rect(ctx, x, y, 5, 5, i < 3 ? P.sky : P.crimsonD);
+        const nd = G.nodes[i], x = nd.x, y = nd.y;
+        X.rect(ctx, x, y, nd.w, nd.h, nd.lit ? P.sky : P.crimsonD);
         if (i < 6) {
           ctx.strokeStyle = i < 3 ? P.sky : P.slate2;
           ctx.beginPath(); ctx.moveTo(x + 5, y + 2); ctx.lineTo(x + 45, 37 + ((i + 1) % 3) * 18); ctx.stroke();
@@ -516,7 +553,7 @@
       }
       X.text(ctx, 'SYSTEM STATUS: UNRESOLVED', 160, 18, P.bone, { align: 'center' });
     }
-    X.scanlines(ctx, 0, 13, V.w, 125, P.ink, 0.1);
+    if (part !== 'art') X.scanlines(ctx, 0, 13, V.w, 125, P.ink, 0.1);
     return true;
   }
 
@@ -828,5 +865,5 @@
 
   B.Scenes = Scenes;
   // The hand-drawn 320x180 set pieces, for the storyboard layer to reuse at 2x.
-  B.Shots = { V, WALKER, WALKER_B, setSeason, apartment, tvSet, elevator, tradingFloor, floorGeom, deskCloseup, bellScene, endingShot, briefingTableau, endingDetail };
+  B.Shots = { V, WALKER, WALKER_B, setSeason, apartment, tvSet, elevator, tradingFloor, floorGeom, deskCloseup, bellScene, endingShot, briefingTableau, tableauMover, tableauGeom, endingDetail };
 })(window.BTB);
