@@ -1701,6 +1701,59 @@ async function run() {
   assert(Object.keys(p6now).length === Object.keys(P6_REF).length, 'batch 5b: the set of reference pictures changed');
   for (const k of Object.keys(P6_CHANGED)) assert(P6_CHANGED[k] !== P6_REF[k], `batch 5b ${k}: the ruled change is not a change`);
 
+  // ---- stage 3 batch 6: the story tableaux ----
+  // Reference hashes recorded from the code before the batch: briefingTableau flat at the p values the beats use (and 0 and 1), `tableau()` with and without the 1.3 zoom,
+  // and the final picture of every beat of the eight sessions (also with a long and an empty title, and 45 with the plug pulled). P7_CHANGED holds the ruled changes.
+  const P7_REF = {
+    'bt:3:0': 'dc36ca', 'bt:3:0.6': '5d08980f', 'bt:3:1': '7168f1b3', 'tb:3:0': 'd73e420f', 'tb:3:1.3': 'b3269bf1', 'bt:5:0': '2108678d',
+    'bt:5:0.6': '2108678d', 'bt:5:1': '2108678d', 'tb:5:0': '3b11ad8d', 'tb:5:1.3': '15c28d43', 'bt:8:0': '4a0e06fd', 'bt:8:0.6': '4a0e06fd',
+    'bt:8:1': '4a0e06fd', 'tb:8:0': 'b4184cfd', 'tb:8:1.3': '729ab3cf', 'bt:9:0': 'f5ec295', 'bt:9:0.6': '33f41135', 'bt:9:1': '6190b395',
+    'tb:9:0': '8adad735', 'tb:9:1.3': '6663a6e4', 'bt:11:0': '813721ed', 'bt:11:0.6': '813721ed', 'bt:11:1': '813721ed', 'tb:11:0': 'ca0667ed',
+    'tb:11:1.3': 'd561d863', 'bt:12:0': '3af5b515', 'bt:12:0.6': '3af5b515', 'bt:12:1': '3af5b515', 'tb:12:0': 'a5227b15', 'tb:12:1.3': '9a58bf1',
+    'bt:13:0': '1bd88235', 'bt:13:0.6': '1bd88235', 'bt:13:1': '1bd88235', 'tb:13:0': 'a80f4835', 'tb:13:1.3': 'b45338ae', 'bt:14:0': '126d8bce',
+    'bt:14:0.6': '126d8bce', 'bt:14:1': '126d8bce', 'tb:14:0': '97fa31ce', 'tb:14:1.3': '752abe1', 'p7:6:establish': '615f36bb',
+    'p7:6:detail': '7c533970', 'p7:6:hold': '522ca846', 'p7:6long:establish': '615f36bb', 'p7:6long:detail': '7c533970', 'p7:6long:hold': '522ca846',
+    'p7:6empty:establish': '615f36bb', 'p7:6empty:detail': '7c533970', 'p7:6empty:hold': '522ca846', 'p7:9:establish': '99a5a531',
+    'p7:9:detail': 'e3bbd444', 'p7:9:hold': 'b791b655', 'p7:9long:establish': '99a5a531', 'p7:9long:detail': 'e3bbd444', 'p7:9long:hold': 'b791b655',
+    'p7:9empty:establish': '99a5a531', 'p7:9empty:detail': 'e3bbd444', 'p7:9empty:hold': 'b791b655', 'p7:17:act': '3671fe7d',
+    'p7:17:establish': '341e8251', 'p7:17:detail': 'eac160e0', 'p7:17:hold': '4f7947d5', 'p7:17long:act': '3671fe7d',
+    'p7:17long:establish': '341e8251', 'p7:17long:detail': 'eac160e0', 'p7:17long:hold': '4f7947d5', 'p7:17empty:act': '3671fe7d',
+    'p7:17empty:establish': '341e8251', 'p7:17empty:detail': 'eac160e0', 'p7:17empty:hold': '4f7947d5', 'p7:20:establish': '330b1f2d',
+    'p7:20:detail': '43a91039', 'p7:20:hold': 'dd6a1c5', 'p7:20long:establish': '330b1f2d', 'p7:20long:detail': '43a91039',
+    'p7:20long:hold': 'dd6a1c5', 'p7:20empty:establish': '330b1f2d', 'p7:20empty:detail': '43a91039', 'p7:20empty:hold': 'dd6a1c5',
+    'p7:25:establish': '29734ed5', 'p7:25:detail': '7ed41d97', 'p7:25long:establish': '29734ed5', 'p7:25long:detail': '7ed41d97',
+    'p7:25empty:establish': '29734ed5', 'p7:25empty:detail': '7ed41d97', 'p7:37:establish': 'c1d38379', 'p7:37:detail': '5c6e4bdb',
+    'p7:37:hold': 'dafb8ead', 'p7:37long:establish': 'c1d38379', 'p7:37long:detail': '5c6e4bdb', 'p7:37long:hold': 'dafb8ead',
+    'p7:37empty:establish': 'c1d38379', 'p7:37empty:detail': '5c6e4bdb', 'p7:37empty:hold': 'dafb8ead', 'p7:40:establish': '6f556c79',
+    'p7:40:detail': '2cd267ac', 'p7:40:hold': 'f3126f5d', 'p7:40long:establish': '6f556c79', 'p7:40long:detail': '2cd267ac',
+    'p7:40long:hold': 'f3126f5d', 'p7:40empty:establish': '6f556c79', 'p7:40empty:detail': '2cd267ac', 'p7:40empty:hold': 'f3126f5d',
+    'p7:45:establish': 'bcffe302', 'p7:45:detail': '465ca4d7', 'p7:45:hold': 'cc7fad03', 'p7:45long:establish': 'bcffe302',
+    'p7:45long:detail': '465ca4d7', 'p7:45long:hold': 'cc7fad03', 'p7:45empty:establish': 'bcffe302', 'p7:45empty:detail': '465ca4d7',
+    'p7:45empty:hold': 'cc7fad03', 'p7:45plug:establish': '65ddd720', 'p7:45plug:detail': 'c5845d35', 'p7:45plug:hold': 'fb86be25'
+  };
+  const P7_CHANGED = {};
+  const p7now = await page.evaluate(() => {
+    const hashOf = (fn) => { const cv = document.createElement('canvas'); cv.width = 640; cv.height = 360; const g = cv.getContext('2d'); fn(g);
+      const d = g.getImageData(0, 0, 640, 360).data; let x = 2166136261; for (let i = 0; i < d.length; i++) { x ^= d[i]; x = Math.imul(x, 16777619); } return (x >>> 0).toString(16); };
+    const SB = BTB.Storyboard, SH = BTB.Shots, out = {}, view = { w: 640, h: 360 };
+    const T = 'Headline of the day', LONG = 'A very long headline that goes on and on past any sensible width of caption box ok';
+    const TAB = [[3, 6], [5, 9], [8, 17], [9, 20], [11, 25], [12, 37], [13, 40], [14, 45]];
+    for (const [n, d] of TAB) {
+      for (const p of [0, 0.6, 1]) out[`bt:${n}:${p}`] = hashOf((g) => SB.at2x(g, (c) => { SH.briefingTableau(c, n, p); }, d));
+      out[`tb:${n}:0`] = hashOf((g) => SB.at2x(g, (c) => { SB.tableau(c, n, 0); }, d));
+      out[`tb:${n}:1.3`] = hashOf((g) => SB.at2x(g, (c) => { SB.tableau(c, n, 1.3); }, d));
+    }
+    const o = (day, title, S) => Object.assign({ day, brief: { title: title == null ? T : title, feed: [] } }, S ? { game: { mode: { S } } } : {});
+    const take = (key, oo) => BTB.Scenes.news(oo).forEach((b) => { out[`p7:${key}:${b.id.split(':').pop()}`] = hashOf((g) => b.draw(g, view, 1, {})); });
+    for (const [, d] of TAB) { take(d, o(d)); take(d + 'long', o(d, LONG)); take(d + 'empty', o(d, '')); }
+    take('45plug', o(45, T, { f: { pulledPlug: true } }));
+    return out;
+  });
+  if (process.env.DUMP_P7) { console.log(JSON.stringify(p7now)); return; }
+  for (const k of Object.keys(P7_REF)) assert(p7now[k] === (P7_CHANGED[k] || P7_REF[k]), `batch 6 ${k}: the picture changed (${p7now[k]}, was ${P7_CHANGED[k] || P7_REF[k]})`);
+  assert(Object.keys(p7now).length === Object.keys(P7_REF).length, 'batch 6: the set of reference pictures changed');
+  for (const k of Object.keys(P7_CHANGED)) assert(P7_CHANGED[k] !== P7_REF[k], `batch 6 ${k}: the ruled change is not a change`);
+
   // which sessions these shots apply to, from the sheet and the framing rule
   const P5 = { subway: [7, 21, 31], street: [34], kitchen: [13], lobby: [16, 22, 26, 42], tv: [18], rating: [4, 14] };
   assert(await page.evaluate((P5) => {

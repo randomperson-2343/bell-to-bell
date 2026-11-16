@@ -887,7 +887,7 @@
     return beats;
   };
 
-  B.Storyboard = { PET, petRows, SHEET, DOCS, ANOMALY_DAYS, row, variant, lit, actTurns, HOMES, WEEKENDS, insertShot, actCard, DOC_DRAW, deskWithDoc, shotFrame, skylineShot, racksShot, at2x, finePass, bellSwing, apartmentShot, windowRect, homeOf, SAT_DUR };
+  B.Storyboard = { PET, petRows, SHEET, DOCS, ANOMALY_DAYS, row, variant, lit, actTurns, HOMES, WEEKENDS, insertShot, actCard, DOC_DRAW, deskWithDoc, shotFrame, skylineShot, racksShot, at2x, tableau, finePass, bellSwing, apartmentShot, windowRect, homeOf, SAT_DUR };
 
   // Session 1 opens in the lobby: the counter climbs to 41, the car arrives, the doors part.
   // Built on the same cached parts as news:0:detail and :hold (`elevBase`: wall, car, top in the flat picture's own order), so at the cut the two
