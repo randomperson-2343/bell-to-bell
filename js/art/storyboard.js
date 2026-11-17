@@ -1403,6 +1403,14 @@
         });
       };
     }
+    else if (n === 12) {
+      // the witness (drawn here, not in the art) leans in to the microphone; the LIVE badge pulses at the badge rate (covered by the header's flat slate while off)
+      const W = G.badge, dy = est ? (t) => -3 + Math.min(3, Math.max(0, Math.floor((t - 0.45) / 0.10 + 1e-9) + 1)) : det ? (t) => (t >= 0.60 && t < 1.30 ? 3 : 0) : () => 0;
+      paint = (g, t) => {
+        SH.tableauMover(g, 12, 0.6, { shift: () => [0, dy(t)] });
+        if (!det && t >= (est ? 0.30 : 0.10)) K.blink(g, W.x, W.y, W.w, W.h, t, { on: null, off: P.slate, period: 0.5, duty: 0.6, end: dur });
+      };
+    }
     if (!paint) return null;
     return [
       {

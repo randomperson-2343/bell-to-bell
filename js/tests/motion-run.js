@@ -2221,6 +2221,29 @@ async function run() {
     assert(f[3] >= 162 && f[2] <= 226 + 12, `records: stamp box ${f} is not the cartons' row (y 162-226)`);
   }
 
+  // 6. Hearing (session 37): the witness leans in to the microphone; the LIVE badge pulses (establish and hold)
+  {
+    const E = await beat7(37, 'establish', { layers: 'art,glass,marks', depths: '1,1,0', cam: '-6>0', sfx: 'apartment', dur: 1.7 });
+    const D = await beat7(37, 'detail', { layers: 'art,glass', depths: '1,1', cam: 'none', sfx: 'broadcast', dur: 2.3 });
+    const H = await beat7(37, 'hold', { layers: 'art,glass,dim', depths: '1,1,0', cam: 'none', sfx: '', dur: 1.1 });
+    const top = async (B_, t) => (await box7(B_.o, B_.i, t, [300, 150, 60, 130]))[2];
+    // establish: three 2 px steps (one art unit each) at 0.45, 0.55, 0.65 s, from 178 to 184 (the block is 24 px tall)
+    const e = [await top(E, 0.1), await top(E, 0.47), await top(E, 0.57), await top(E, 0.67), await top(E, 1.69)];
+    assert(e.join() === '178,180,182,184,184', `hearing establish: the witness does not lean in three steps (${e})`);
+    const bx = await box7(E.o, E.i, 0.1, [300, 150, 60, 130]);
+    assert(bx[3] - bx[2] === 23 && bx[1] - bx[0] === 23, `hearing establish: the witness block is not 24x24 px (${bx})`);
+    // detail: 3 units (7.8 px) closer from 0.60 to 1.30 s
+    const d = [await top(D, 0.1), await top(D, 0.58), await top(D, 0.62), await top(D, 1.28), await top(D, 1.32), await top(D, 2.29)];
+    assert(d[0] === d[1] && d[2] - d[1] >= 7 && d[2] - d[1] <= 9 && d[3] === d[2] && d[4] === d[0] && d[5] === d[0], `hearing detail: the witness does not lean in 3 units from 0.60 to 1.30 s (${d})`);
+    // hold: the witness rests
+    assert(await top(H, 0.1) === e[4] && await top(H, 0.9) === e[4], 'hearing hold: the witness moves');
+    // the LIVE badge: slate cover over the badge at the badge rate from 0.30 (hold 0.10), on (nothing) at the end; not on the detail (the header is off frame)
+    const badge = [530, 20, 92, 14], sl = (B_, t) => cc(B_.o, B_.i, 'art', t, badge, 'slate');
+    assert(await sl(E, 0.2) === 0 && await sl(E, 1.35) === 92 * 14 && await sl(E, 1.45) === 0 && await sl(E, 1.69) === 0 && await sl(E, 0.35) === 92 * 14, `hearing establish: the badge does not pulse at 0.5 s / 0.6 from 0.30 (${await sl(E, 1.35)} ${await sl(E, 1.45)})`);
+    assert(await sl(H, 0.05) === 0 && await sl(H, 0.25) === 92 * 14 && await sl(H, 0.4) === 0 && await sl(H, 1.09) === 0, 'hearing hold: the badge does not pulse from 0.10 s and end on');
+    assert(await cc(D.o, D.i, 'art', 0.7, [0, 0, 640, 360], 'slate') === 0, 'hearing detail: something blinks');
+  }
+
   // reduced effects: every reworked beat is one still
   await page.evaluate(() => BTB.Settings.set('effects', 'reduced'));
   for (const o of [nOpts(8), nOpts(32), nOpts(1), nOpts(4), nOpts(2), nOpts(3), nOpts(5), nOpts(11), nOpts(36), nOpts(15), nOpts(10)]) {
@@ -2296,6 +2319,7 @@ async function run() {
     // batch 6: the story tableaux
     { scene: 'news', opts: { day: 6, brief: { title: 'KAVRO STRAIT', feed: [] } } },
     { scene: 'news', opts: { day: 9, brief: { title: 'THE GRID', feed: [] } } },
+    { scene: 'news', opts: { day: 37, brief: { title: 'MARKETS COMMITTEE HEARING', feed: [] } } },
     { scene: 'news', opts: { day: 25, brief: { title: 'PRESERVE ALL RECORDS', feed: [] } } },
     { scene: 'news', opts: { day: 20, brief: { title: 'RUN ON RIDGEWAY TRUST', feed: [] } } },
     { scene: 'news', opts: { day: 17, brief: { title: 'FOUR FUNDS', feed: [] } } },
