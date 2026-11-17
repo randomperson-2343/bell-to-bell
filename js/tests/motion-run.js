@@ -392,6 +392,50 @@ async function run() {
     assert(bx[2] >= 39 && bx[3] <= 243 && bx[0] >= 183 && bx[1] <= 183 + 41 + 69 * 6 && await D8('cnt', 'decision', o, 0, 'room', 1.2, [0, 0, 640, 360], 'any') === 0, `${tag}: the pulse is outside the racks ${bx} or runs past 1.06 s`);
     RECT8[tag] = await rect8(o, 0, 40, tag); // two racks pulse at once (0.12 s pulses 0.09 s apart)
   }
+
+  // shot 8: the lobby (rentHike day 11): the management screen's two eyes close to lines in [0.55, 0.67) and [0.80, 0.92)
+  {
+    const o = dopts('rentHike'), tag = 'lobby';
+    await beat8(o, 0, { id: 'decision:rentHike:2:room', dur: 1.5, layers: 'room,mid,front,grain', depths: '1,1,1,1', cam: '-6>0', cues: '' }, tag);
+    const E = [147, 93, 21, 21], E2 = [216, 93, 21, 21], P = (t, r) => D8('pic', 'decision', o, 0, 'mid', t, true, r);
+    const closed = [0.60, 0.85], open = [0.1, 0.5, 0.70, 0.95, 1.4];
+    assert(new Set(await Promise.all(open.map((t) => P(t, E)))).size === 1 && new Set(await Promise.all(closed.map((t) => P(t, E)))).size === 1 && await P(0.1, E) !== await P(0.6, E) && await P(0.1, E2) !== await P(0.85, E2), `${tag}: the eyes are not open, closed twice, open`);
+    assert(await D8('cnt', 'decision', o, 0, 'mid', 0.6, [147, 93, 21, 21], 'phosphor') === 21 * 3 && JSON.stringify(await D8('box', 'decision', o, 0, 'mid', 0.6)) === '[147,236,105,107]', `${tag}: a closed eye is not a 21x3 line`);
+    const ob = await D8('box', 'decision', o, 0, 'mid', 0.1);
+    assert(ob[0] === 147 && ob[1] === 236 && ob[2] === 93 && ob[3] === 113, `${tag}: the open eyes are outside 93-114 (${ob})`);
+    assert(await D8('pic', 'decision', o, 0, 'room', 0.1, false, [0, 0, 640, 360]) === await D8('pic', 'decision', o, 0, 'room', 1.4, false, [0, 0, 640, 360]), `${tag}: the back layer moves`);
+    RECT8[tag] = await rect8(o, 0, 20, tag);
+  }
+  // shot 9: the dinner (advance day 31): the envelope slides 36 px in 0.40-0.85 s, in steps of 3 px
+  {
+    const o = dopts('advance'), tag = 'dinner';
+    await beat8(o, 0, { id: 'decision:advance:6:room', dur: 1.5, layers: 'room,grain', depths: '1,1', cam: '-6>0', cues: '' }, tag);
+    const bx = (t) => D8('box', 'decision', o, 0, 'room', t, [0, 0, 640, 360]);
+    const x0 = (await bx(0.2))[0], x1 = (await bx(1.4))[0];
+    assert(x0 === 282 && x1 === 246 && (await bx(0.39))[0] === 282 && (await bx(0.9))[0] === 246, `${tag}: the envelope does not run 282 to 246 between 0.40 and 0.85 s (${x0} ${x1})`);
+    let last = 282; for (let t = 0.40; t <= 0.9; t += 0.025) { const x = (await bx(t))[0]; assert(x <= last && (282 - x) % 3 === 0 && x >= 246, `${tag}: a step that is not a multiple of 3 px, or backwards, at ${t} s (${x})`); last = x; }
+    const bb = await bx(0.5);
+    assert(bb[0] >= 246 && bb[1] <= 396 && bb[2] === 219 && bb[3] <= 246, `${tag}: the envelope leaves the cloth ${bb}`);
+    assert(await D8('cnt', 'decision', o, 0, 'room', 0.1, [0, 272, 640, 88], 'any') === 0, `${tag}: moves below y 272`);
+    RECT8[tag] = await rect8(o, 0, 210, tag);
+  }
+  // shots 10 and 11: the kitchen: the phone (dadBill day 18, pension day 41) flashes at 0.40 and 0.90 s; the postcard (vetCheck day 14, with a pet's name) blinks its cross
+  for (const id of ['dadBill', 'pension']) {
+    const o = dopts(id), tag = 'kitchen phone ' + id;
+    await beat8(o, 0, { id: `decision:${id}:${Math.floor(DEC8[id][0] / 5)}:room`, dur: 1.5, layers: 'room,grain', depths: '1,1', cam: '-6>0', cues: '0.4:ring' }, tag);
+    const A = (t) => D8('cnt', 'decision', o, 0, 'room', t, [477, 165, 78, 45], 'any'), bx = (t) => D8('box', 'decision', o, 0, 'room', t, [0, 0, 640, 360]);
+    assert(await A(0.3) === 0 && await A(0.5) === 78 * 45 && await A(0.7) === 0 && await A(1.0) === 78 * 45 && await A(1.2) === 0 && await A(1.4) === 0, `${tag}: the handset does not flash at 0.40 and 0.90 s`);
+    assert(JSON.stringify(await bx(0.5)) === '[477,554,165,209]', `${tag}: the flash leaves the handset`);
+    RECT8[tag] = await rect8(o, 0, 5, tag);
+  }
+  {
+    const S = { f: {}, wallet: { pet: { kind: 'cat', sex: 'boy', name: 'Rosco' } } }, o = dopts('vetCheck', S), tag = 'kitchen postcard';
+    await beat8(o, 0, { id: 'decision:vetCheck:2:Rosco:room', dur: 1.5, layers: 'room,grain', depths: '1,1', cam: '-6>0', cues: '' }, tag);
+    const A = (t) => D8('cnt', 'decision', o, 0, 'room', t, [327, 177, 18, 18], 'sky');
+    assert(await A(0.2) === 0 && await A(0.6) === 18 * 18 && await A(1.1) === 18 * 18 && await A(0.8) === 0 && await A(1.35) === 0 && await A(1.5) === 0, `${tag}: the cross does not blink from 0.30 s and end lit`);
+    assert(await D8('cnt', 'decision', o, 0, 'room', 0.6, [0, 0, 640, 360], 'any') === 18 * 18, `${tag}: more than the cross is covered`);
+    RECT8[tag] = await rect8(o, 0, 3, tag);
+  }
   if (process.env.P8_ONLY) { console.log('motion-run: batch 7 pins pass'); return; }
 
   assert(await shot('news', day7, 1, 0.5) !== await shot('news', day7, 1, 2.2), 'default camera does not move the shot');

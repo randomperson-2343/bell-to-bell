@@ -533,6 +533,27 @@
     }
   } }, grain] });
 
+  // ---- shot 8: the lobby (the management screen's smiley blinks twice) ----
+  LAYER.lobby = (e, flat, grain) => ({
+    layers: [
+      { id: 'room', depth: 1, draw: flat({ part: 'back' }) },
+      { id: 'mid', depth: 1, draw() {}, animate(g, v, t) { lobbyEyes(g, (t >= 0.55 && t < 0.67) || (t >= 0.80 && t < 0.92)); } },
+      { id: 'front', depth: 1, draw: flat({ part: 'front' }) },
+      grain
+    ]
+  });
+  // ---- shot 9: the dinner (the $8,000 envelope slides 36 px across the cloth to you) ----
+  LAYER.dinner = (e, flat, grain) => ({
+    layers: [{ id: 'room', depth: 1, draw: flat({ skip: 'envelope' }), animate(g, v, t) { envelope(g, ENV.x + 3 * Math.round(12 * (1 - e.M.ease.out(e.K.span(t, 0.40, 0.85))))); } }, grain]
+  });
+  // ---- shots 10 and 11: the kitchen (the phone rings twice; the postcard's cross blinks) ----
+  LAYER.kitchen = (e, flat, grain) => {
+    const K = e.K;
+    if (e.opt.phone) return { cues: [{ at: 0.40, sfx: 'ring' }], layers: [{ id: 'room', depth: 1, draw: flat(), animate(g, v, t) { K.flicker(g, 477, 165, 78, 45, 'decision:phone', t, { spans: [[0.40, 0.60], [0.90, 1.10]], col: P.phosphor, a: 0.30 }); } }, grain] };
+    if (e.opt.postcard) return { layers: [{ id: 'room', depth: 1, draw: flat(), animate(g, v, t) { if (t >= 0.30) K.blink(g, 327, 177, 18, 18, t, { on: null, off: P.sky, period: 0.5, duty: 0.6, end: e.dur }); } }, grain] };
+    return null;
+  };
+
   function roomLayers(id, day, after, S, phase) {
     const M = B.Motion, K = B.MotionKit;
     if (!M || !M.layered || !K) return null;
