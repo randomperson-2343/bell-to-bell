@@ -115,6 +115,28 @@ async function run() {
     out['flat:night:nogame'] = hashOf((g) => SB.apartmentShot(g, 9, SB.homeOf(undefined), true, undefined));
     return out;
   });
+  // ---- stage 3 batch 9: reference pictures of the endings, recorded before the code changed ----
+  // endingDetail at the progress values the old beats used (0.3 world, 1 card) and endingShot for every id (dark and light), both as the shots draw them (the 8-unit drop); the final frame
+  // of the three beats of every id, dark and light, with an ordinary, an empty and a very long title; the pulled-plug after. P10_CHANGED holds the ruled changes (wiped and perp world finals).
+  const collectP10 = () => page.evaluate(() => {
+    const hashOf = (fn, w, h) => { w = w || 640; h = h || 360; const cv = document.createElement('canvas'); cv.width = w; cv.height = h; const g = cv.getContext('2d', { willReadFrequently: true }); g.imageSmoothingEnabled = false; fn(g);
+      const d = g.getImageData(0, 0, w, h).data; let x = 2166136261; for (let i = 0; i < d.length; i += 1) { x ^= d[i]; x = Math.imul(x, 16777619); } return (x >>> 0).toString(16); };
+    const SH = BTB.Shots, out = {}, view = { w: 640, h: 360 };
+    for (const id of BTB.Rhythm.endingIds) {
+      for (const kind of ['dark', 'light']) out[`es:${id}:${kind}`] = hashOf((g) => SH.endingShot(g, kind, id), 320, 180);
+      for (const p of [0.3, 1]) out[`ed:${id}:${p}`] = hashOf((g) => { g.save(); g.translate(0, 8); SH.endingDetail(g, id, p); g.restore(); }, 320, 180);
+      for (const dark of [false, true]) for (const [tk, title] of [['n', 'The Title of It'], ['e', ''], ['l', 'W'.repeat(80)]]) {
+        BTB.Scenes.ending({ id, title, deck: 'A line of deck text.', dark }).forEach((b, k) => {
+          if (k === 2 && (id !== 'wiped' || tk !== 'n')) return;
+          if (k === 0 && tk !== 'n') return;
+          out[`eb:${id}:${dark ? 'd' : 'l'}:${tk}:${k}`] = hashOf((g) => b.draw(g, view, 1, {}));
+        });
+      }
+    }
+    for (const dark of [false, true]) BTB.Scenes.ending({ id: 'fund', title: 'T', deck: 'D', dark, pulled: true }).forEach((b, k) => { if (k === 2) out[`eb:pulled:${dark ? 'd' : 'l'}:${k}`] = hashOf((g) => b.draw(g, view, 1, {})); });
+    return out;
+  });
+  if (process.env.DUMP_P10) { console.log(JSON.stringify(await collectP10())); return; }
   if (process.env.DUMP_P9) { console.log(JSON.stringify(await collectP9())); return; }
   if (process.env.DUMP_P8) { console.log(JSON.stringify(await collectP8())); return; }
   const P8_REF = {
@@ -378,6 +400,66 @@ async function run() {
   for (const k of Object.keys(P9_REF)) assert(p9now[k] === (P9_CHANGED[k] || P9_REF[k]), `batch 8 ${k}: the picture changed (${p9now[k]}, was ${P9_CHANGED[k] || P9_REF[k]})`);
   assert(Object.keys(p9now).length === Object.keys(P9_REF).length, 'batch 8: the set of reference pictures changed');
   for (const k of Object.keys(P9_CHANGED)) assert(P9_CHANGED[k] !== P9_REF[k], `batch 8 ${k}: the ruled change is not a change`);
+
+  const P10_REF = {
+    'es:wiped:dark': '6c1b7bb0', 'es:wiped:light': 'f1573e9a', 'ed:wiped:0.3': 'd627ac60', 'ed:wiped:1': '2405a84b', 'eb:wiped:l:n:0': '3c21d529', 'eb:wiped:l:n:1': '2a298fc7',
+    'eb:wiped:l:n:2': '90d5e1c5', 'eb:wiped:l:e:1': '8fa884c7', 'eb:wiped:l:l:1': '1cf5db07', 'eb:wiped:d:n:0': '4df9a815', 'eb:wiped:d:n:1': 'bd13aa9d',
+    'eb:wiped:d:n:2': '90d5e1c5', 'eb:wiped:d:e:1': 'cef9b6d5', 'eb:wiped:d:l:1': 'dad1feb5', 'es:fired:dark': '6c1b7bb0', 'es:fired:light': 'f1573e9a', 'ed:fired:0.3': 'd4ae35e7',
+    'ed:fired:1': 'd4ae35e7', 'eb:fired:l:n:0': '7d134b80', 'eb:fired:l:n:1': '47ffbfd6', 'eb:fired:l:e:1': 'e8d97136', 'eb:fired:l:l:1': 'e92ae5c6', 'eb:fired:d:n:0': 'c8c31b29',
+    'eb:fired:d:n:1': '8829400e', 'eb:fired:d:e:1': 'be2cae16', 'eb:fired:d:l:1': 'c82e8946', 'es:exit:dark': '646c0a7e', 'es:exit:light': 'df02c8de', 'ed:exit:0.3': '3d9b6644',
+    'ed:exit:1': '3d9b6644', 'eb:exit:l:n:0': 'e745aeaa', 'eb:exit:l:n:1': '665edf8', 'eb:exit:l:e:1': '7e67abd8', 'eb:exit:l:l:1': '27857a30', 'eb:exit:d:n:0': 'd259d5be',
+    'eb:exit:d:n:1': '96f84384', 'eb:exit:d:e:1': '2ce48d5c', 'eb:exit:d:l:1': '91528d2c', 'es:nobody:dark': '6c1b7bb0', 'es:nobody:light': 'f1573e9a', 'ed:nobody:0.3': '2844ba11',
+    'ed:nobody:1': '2844ba11', 'eb:nobody:l:n:0': '3c550175', 'eb:nobody:l:n:1': '3ac07ed', 'eb:nobody:l:e:1': '4621090d', 'eb:nobody:l:l:1': 'a34d6e1d',
+    'eb:nobody:d:n:0': '68320d61', 'eb:nobody:d:n:1': '492d6f37', 'eb:nobody:d:e:1': '6160b94f', 'eb:nobody:d:l:1': 'c0e8f9df', 'es:master:dark': '646c0a7e',
+    'es:master:light': 'df02c8de', 'ed:master:0.3': 'be991225', 'ed:master:1': 'be991225', 'eb:master:l:n:0': 'a0e5af85', 'eb:master:l:n:1': 'ca9a3103',
+    'eb:master:l:e:1': '309f6363', 'eb:master:l:l:1': '90f008bb', 'eb:master:d:n:0': 'e1efc592', 'eb:master:d:n:1': '7d9dc046', 'eb:master:d:e:1': '33615fee',
+    'eb:master:d:l:1': '83d68dfe', 'es:whistle:dark': 'ba6d8493', 'es:whistle:light': '1be234ac', 'ed:whistle:0.3': '4d43c60', 'ed:whistle:1': '4d43c60',
+    'eb:whistle:l:n:0': 'ba25f19', 'eb:whistle:l:n:1': '7081168', 'eb:whistle:l:e:1': 'c3db1ea8', 'eb:whistle:l:l:1': '946b1380', 'eb:whistle:d:n:0': '112abdb0',
+    'eb:whistle:d:n:1': 'b41c7a26', 'eb:whistle:d:e:1': '2ad4709e', 'eb:whistle:d:l:1': '41096a8e', 'es:revolving:dark': 'ba6d8493', 'es:revolving:light': '1be234ac',
+    'ed:revolving:0.3': 'bfff3a0d', 'ed:revolving:1': 'bfff3a0d', 'eb:revolving:l:n:0': '8a781c89', 'eb:revolving:l:n:1': '92d9ab40', 'eb:revolving:l:e:1': 'c5f10800',
+    'eb:revolving:l:l:1': '9cef1388', 'eb:revolving:d:n:0': 'f06795d5', 'eb:revolving:d:n:1': '46830f3', 'eb:revolving:d:e:1': '55d5133b', 'eb:revolving:d:l:1': 'f380c24b',
+    'es:perp:dark': '6c1b7bb0', 'es:perp:light': 'f1573e9a', 'ed:perp:0.3': '600b72b1', 'ed:perp:1': 'e16850c9', 'eb:perp:l:n:0': '41b6be90', 'eb:perp:l:n:1': '9b08d36',
+    'eb:perp:l:e:1': '63e3296', 'eb:perp:l:l:1': '7cba16a6', 'eb:perp:d:n:0': '28354319', 'eb:perp:d:n:1': 'aab5cdb6', 'eb:perp:d:e:1': 'b56677de', 'eb:perp:d:l:1': 'a5abbd8e',
+    'es:fall-guy:dark': '6c1b7bb0', 'es:fall-guy:light': 'f1573e9a', 'ed:fall-guy:0.3': 'ca8658b5', 'ed:fall-guy:1': 'ca8658b5', 'eb:fall-guy:l:n:0': 'f98d3c00',
+    'eb:fall-guy:l:n:1': 'e63349f3', 'eb:fall-guy:l:e:1': '96dec893', 'eb:fall-guy:l:l:1': '333027e3', 'eb:fall-guy:d:n:0': 'a098ffba', 'eb:fall-guy:d:n:1': '1dd7b77',
+    'eb:fall-guy:d:e:1': '7530a3ef', 'eb:fall-guy:d:l:1': '93afcddf', 'es:cassandra:dark': 'ba6d8493', 'es:cassandra:light': '1be234ac', 'ed:cassandra:0.3': 'cf976bee',
+    'ed:cassandra:1': 'cf976bee', 'eb:cassandra:l:n:0': 'e1616c7b', 'eb:cassandra:l:n:1': '32a54a2c', 'eb:cassandra:l:e:1': '9e2ce5ac', 'eb:cassandra:l:l:1': 'b9c9a2c4',
+    'eb:cassandra:d:n:0': 'f42e0860', 'eb:cassandra:d:n:1': '49690838', 'eb:cassandra:d:e:1': '39fb6b60', 'eb:cassandra:d:l:1': 'f41d3450', 'es:acquirer:dark': '646c0a7e',
+    'es:acquirer:light': 'df02c8de', 'ed:acquirer:0.3': 'b82f2c1b', 'ed:acquirer:1': 'b82f2c1b', 'eb:acquirer:l:n:0': 'ec5ac43d', 'eb:acquirer:l:n:1': '80edb783',
+    'eb:acquirer:l:e:1': '147fd5e3', 'eb:acquirer:l:l:1': 'c3ec1d3b', 'eb:acquirer:d:n:0': '4a5a9146', 'eb:acquirer:d:n:1': '3b18bf2a', 'eb:acquirer:d:e:1': '314a1e32',
+    'eb:acquirer:d:l:1': 'aad6a062', 'es:ward:dark': '6c1b7bb0', 'es:ward:light': 'f1573e9a', 'ed:ward:0.3': '69c4dc81', 'ed:ward:1': '69c4dc81', 'eb:ward:l:n:0': '514baa8f',
+    'eb:ward:l:n:1': 'd2b6b6d4', 'eb:ward:l:e:1': '5861d2f4', 'eb:ward:l:l:1': '22edee04', 'eb:ward:d:n:0': 'ce47e9d3', 'eb:ward:d:n:1': '6a1dec6a', 'eb:ward:d:e:1': '28f2de82',
+    'eb:ward:d:l:1': '829fa732', 'es:clawback:dark': 'ba6d8493', 'es:clawback:light': '1be234ac', 'ed:clawback:0.3': '7eff89b6', 'ed:clawback:1': '7eff89b6',
+    'eb:clawback:l:n:0': 'd66082a1', 'eb:clawback:l:n:1': '85295598', 'eb:clawback:l:e:1': '703c40d8', 'eb:clawback:l:l:1': 'f0fdb300', 'eb:clawback:d:n:0': '459ac0a9',
+    'eb:clawback:d:n:1': '25605977', 'eb:clawback:d:e:1': 'b5d2eebf', 'eb:clawback:d:l:1': '4743e68f', 'es:right-early:dark': '646c0a7e', 'es:right-early:light': 'df02c8de',
+    'ed:right-early:0.3': '22d8d830', 'ed:right-early:1': '22d8d830', 'eb:right-early:l:n:0': '2aee2d23', 'eb:right-early:l:n:1': 'f3aaf6ee', 'eb:right-early:l:e:1': 'd265a50e',
+    'eb:right-early:l:l:1': '38eb00c6', 'eb:right-early:d:n:0': 'ddcdf08e', 'eb:right-early:d:n:1': 'f36f833d', 'eb:right-early:d:e:1': 'b39461b5',
+    'eb:right-early:d:l:1': 'ae749ba5', 'es:fund:dark': '646c0a7e', 'es:fund:light': 'df02c8de', 'ed:fund:0.3': '868cffc9', 'ed:fund:1': '868cffc9', 'eb:fund:l:n:0': 'a6b9606a',
+    'eb:fund:l:n:1': 'c82c23b0', 'eb:fund:l:e:1': '3e7228d0', 'eb:fund:l:l:1': '5fb99ac8', 'eb:fund:d:n:0': 'bddbccbe', 'eb:fund:d:n:1': '4005ebf4', 'eb:fund:d:e:1': 'c131244c',
+    'eb:fund:d:l:1': 'd3dd499c', 'es:everything-rally:dark': '646c0a7e', 'es:everything-rally:light': 'df02c8de', 'ed:everything-rally:0.3': 'aed5cbae',
+    'ed:everything-rally:1': 'aed5cbae', 'eb:everything-rally:l:n:0': '71c3b524', 'eb:everything-rally:l:n:1': '99436243', 'eb:everything-rally:l:e:1': '26c7e823',
+    'eb:everything-rally:l:l:1': '8e481cfb', 'eb:everything-rally:d:n:0': '24d7188a', 'eb:everything-rally:d:n:1': 'da1924e2', 'eb:everything-rally:d:e:1': '6abc81ea',
+    'eb:everything-rally:d:l:1': 'e5f2e93a', 'es:lost-decade:dark': 'ba6d8493', 'es:lost-decade:light': '1be234ac', 'ed:lost-decade:0.3': '3aad9f29',
+    'ed:lost-decade:1': '3aad9f29', 'eb:lost-decade:l:n:0': '22b1d074', 'eb:lost-decade:l:n:1': '2611d97', 'eb:lost-decade:l:e:1': '5ea35617', 'eb:lost-decade:l:l:1': 'eed6f6ef',
+    'eb:lost-decade:d:n:0': '5ca51d7d', 'eb:lost-decade:d:n:1': '7da1815f', 'eb:lost-decade:d:e:1': '12a374c7', 'eb:lost-decade:d:l:1': 'c3fb4ef7', 'es:soft:dark': '646c0a7e',
+    'es:soft:light': 'df02c8de', 'ed:soft:0.3': 'ea337140', 'ed:soft:1': 'ea337140', 'eb:soft:l:n:0': '4f92a3aa', 'eb:soft:l:n:1': 'fc7940ed', 'eb:soft:l:e:1': '6e59960d',
+    'eb:soft:l:l:1': '9ff81235', 'eb:soft:d:n:0': '56aad930', 'eb:soft:d:n:1': '6f56d345', 'eb:soft:d:e:1': 'abde3e9d', 'eb:soft:d:l:1': 'c547282d', 'es:quiet:dark': '646c0a7e',
+    'es:quiet:light': 'df02c8de', 'ed:quiet:0.3': 'bfd9ca75', 'ed:quiet:1': 'bfd9ca75', 'eb:quiet:l:n:0': '1db26c4a', 'eb:quiet:l:n:1': '314010f7', 'eb:quiet:l:e:1': 'd1a6b357',
+    'eb:quiet:l:l:1': 'de9cebff', 'eb:quiet:d:n:0': '6a16c9c', 'eb:quiet:d:n:1': '3c9c4458', 'eb:quiet:d:e:1': '93351bd0', 'eb:quiet:d:l:1': 'ffb07480',
+    'es:replaced:dark': '6c1b7bb0', 'es:replaced:light': 'f1573e9a', 'ed:replaced:0.3': '56f61225', 'ed:replaced:1': '56f61225', 'eb:replaced:l:n:0': '5a858a68',
+    'eb:replaced:l:n:1': '3077cce', 'eb:replaced:l:e:1': '51f20ee', 'eb:replaced:l:l:1': '30d0cf3e', 'eb:replaced:d:n:0': '919d3e91', 'eb:replaced:d:n:1': '44f302d6',
+    'eb:replaced:d:e:1': 'afb4acfe', 'eb:replaced:d:l:1': '15bec2ae', 'es:depression:dark': '6c1b7bb0', 'es:depression:light': 'f1573e9a', 'ed:depression:0.3': '3fba356d',
+    'ed:depression:1': '3fba356d', 'eb:depression:l:n:0': '1fa21238', 'eb:depression:l:n:1': '2c45be3b', 'eb:depression:l:e:1': '7da349b', 'eb:depression:l:l:1': '41afab2b',
+    'eb:depression:d:n:0': 'a68d443e', 'eb:depression:d:n:1': 'c3b86f73', 'eb:depression:d:e:1': 'c9d2102b', 'eb:depression:d:l:1': 'a52e26db', 'es:grind:dark': '646c0a7e',
+    'es:grind:light': 'df02c8de', 'ed:grind:0.3': '3ddd54c6', 'ed:grind:1': '3ddd54c6', 'eb:grind:l:n:0': '6130e464', 'eb:grind:l:n:1': '6efe0d03', 'eb:grind:l:e:1': 'a469eee3',
+    'eb:grind:l:l:1': 'ac5a3dbb', 'eb:grind:d:n:0': 'a739e72a', 'eb:grind:d:n:1': 'f2386742', 'eb:grind:d:e:1': '9e350f4a', 'eb:grind:d:l:1': 'c304da1a',
+    'eb:pulled:l:2': 'f8a99c80', 'eb:pulled:d:2': 'f8a99c80'
+  };
+  const P10_CHANGED = {};
+  const p10now = await collectP10();
+  for (const k of Object.keys(P10_REF)) assert(p10now[k] === (P10_CHANGED[k] || P10_REF[k]), `batch 9 ${k}: the picture changed (${p10now[k]}, was ${P10_CHANGED[k] || P10_REF[k]})`);
+  assert(Object.keys(p10now).length === Object.keys(P10_REF).length, 'batch 9: the set of reference pictures changed');
+  for (const k of Object.keys(P10_CHANGED)) assert(P10_CHANGED[k] !== P10_REF[k], `batch 9 ${k}: the ruled change is not a change`);
 
   // ---- stage 3 batch 8 asserts go here ----
   // ---- stage 3 batch 8, part A: critique fixes ----
