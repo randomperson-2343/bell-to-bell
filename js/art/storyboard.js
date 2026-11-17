@@ -1378,6 +1378,17 @@
       if (est) paint = (g, t) => { if (t < 1.10) K.lamps(g, G.bars, t, { at: 0.40, step: 0.10, on: P.crimson }); };
       else paint = pulse(det ? 0.35 : 0.10);
     }
+    else if (n === 8 && !hold) {
+      // one pass per beat: rack k flares (0.20 bone, 0.08 s) at A + 0.18 k and the link to the next rack flashes white a moment later
+      const A = est ? 0.36 : 0.40;
+      paint = (g, t) => {
+        for (let k = 0; k < 5; k++) {
+          const a = A + 0.18 * k;
+          K.ping(g, t, { at: a, off: [], on: [], flare: Object.assign({ col: P.bone, a: 0.20, dur: 0.08 }, G.slots[k]) });
+          if (k < 4 && t >= a + 0.04 && t < a + 0.14) G.links[k].forEach((l) => X.rect(g, l.x, l.y, l.w, l.h, P.white));
+        }
+      };
+    }
     if (!paint) return null;
     return [
       {

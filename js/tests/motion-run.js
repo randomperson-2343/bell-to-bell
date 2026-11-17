@@ -2165,6 +2165,24 @@ async function run() {
     // under the 1.3 zoom the pulse's edge pixels blend with the art (the sheet's risk 2.10); the last phase draws nothing, so the final frame is exact (pinned)
   }
 
+  // 3. Model flow (session 17, after the act card): a pulse runs left to right over the five racks, each screen column flares and the link flashes white
+  {
+    const E = await beat7(17, 'establish', { layers: 'art,glass,marks', depths: '1,1,0', cam: '-6>0', sfx: 'apartment', dur: 1.7 });
+    const D = await beat7(17, 'detail', { layers: 'art,glass', depths: '1,1', cam: 'none', sfx: 'broadcast', dur: 2.3 });
+    const H = { o: mkS(17) }; H.i = await newsIdx(H.o, ':hold$');
+    assert((await info('news', H.o, H.i)).layers === '', 'model flow hold must stay flat');
+    assert((await info('news', E.o, E.i)).n === 4 && E.i === 1, 'model flow: the establish follows the act card');
+    for (const [name, B_, A] of [['establish', E, 0.36], ['detail', D, 0.40]]) {
+      assert(await any6(B_.o, B_.i, 'art', A - 0.04) === 0 && await any6(B_.o, B_.i, 'art', A + 0.72 + 0.20) === 0 && await any6(B_.o, B_.i, 'art', B_.a ? 0 : (name === 'establish' ? 1.69 : 2.29)) === 0, `model flow ${name}: draws outside the pass`);
+      const lefts = [];
+      for (let k = 0; k < 5; k++) { const b = await box7(B_.o, B_.i, A + 0.18 * k + 0.02, [0, 0, 640, 360]); assert(b[1] > 0, `model flow ${name}: no flare on rack ${k}`); lefts.push(b[0]); }
+      assert(lefts.every((v, k) => k === 0 || v > lefts[k - 1]), `model flow ${name}: the pulse does not run left to right (${lefts})`);
+      for (let k = 0; k < 4; k++) assert(await cc(B_.o, B_.i, 'art', A + 0.18 * k + 0.06, [0, 0, 640, 360], 'white') > 0 && await cc(B_.o, B_.i, 'art', A + 0.18 * k + 0.16, [0, 0, 640, 360], 'white') === 0 && await cc(B_.o, B_.i, 'art', A + 0.18 * k + 0.02, [0, 0, 640, 360], 'white') === 0, `model flow ${name}: the link ${k} does not flash white for 0.10 s from +0.04`);
+    }
+    const b0 = await box7(E.o, E.i, 0.38, [0, 0, 640, 360]);
+    assert(b0[2] >= 94 && b0[3] <= 206 && b0[3] - b0[2] >= 100, `model flow establish: the rack column ${b0} is not 56x112 px at y 94-206`);
+  }
+
   // reduced effects: every reworked beat is one still
   await page.evaluate(() => BTB.Settings.set('effects', 'reduced'));
   for (const o of [nOpts(8), nOpts(32), nOpts(1), nOpts(4), nOpts(2), nOpts(3), nOpts(5), nOpts(11), nOpts(36), nOpts(15), nOpts(10)]) {
@@ -2240,6 +2258,7 @@ async function run() {
     // batch 6: the story tableaux
     { scene: 'news', opts: { day: 6, brief: { title: 'KAVRO STRAIT', feed: [] } } },
     { scene: 'news', opts: { day: 9, brief: { title: 'THE GRID', feed: [] } } },
+    { scene: 'news', opts: { day: 17, brief: { title: 'FOUR FUNDS', feed: [] } } },
     { scene: 'close', opts: { report: { day: 3, pnl: 1200, quotaMet: true, quota: 900 } } },
     { scene: 'close', opts: { report: { day: 30, pnl: 1200, quotaMet: true, quota: 900 } } },
     // the close: a loss with the quota missed on the empty floor, and the two days with a Sqwak breaking insert (no game needed): a profit in autumn, and a seven-digit loss in winter
