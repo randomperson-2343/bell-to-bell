@@ -441,6 +441,25 @@
   const TILT = () => ({ from: { x: 0, y: -6, zoom: 1 }, to: { x: 0, y: 0, zoom: 1 }, ease: B.Motion.ease.inOut });
   const PHASE_DUR = { room: 1.5, establish: 1.7, whip: 1.6 };
   const LAYER = {};
+  // ---- shot 1 and 2: Kroll's office ----
+  // By day: his screen switches on at 0.45 s (dark, the phosphor line, one flare, then the lit screen of the cached picture).
+  // At night (split around the lamplight): the desk lamp clicks on at 0.45 s and the pool of light spreads at 0.60 s.
+  const LAMP_OFF = LAMP.map((r) => r.replace(/a/g, 'A'));
+  LAYER.office = (e, flat, grain) => {
+    const K = e.K;
+    if (!e.opt.night) return { layers: [{ id: 'room', depth: 1, draw: flat(), animate(g, v, t) { K.crt(g, 564, 165, 51, 33, t, { mode: 'on', at: 0.45, bg: P.screenD }); } }, grain] };
+    return {
+      cues: [{ at: 0.45, sfx: 'click' }],
+      layers: [
+        { id: 'room', depth: 1, draw: flat({ part: 'back' }) },
+        // the three rings are line 94 of the flat room in its own order: the inner ring alone first, then all three
+        { id: 'mid', depth: 1, draw() {}, animate(g, v, t) { if (t >= 0.60) glow(g, 402, 184, [150, 96, 51], P.amber, 0.07); else if (t >= 0.45) glow(g, 402, 184, [51], P.amber, 0.07); } },
+        { id: 'front', depth: 1, draw: flat({ part: 'front' }), animate(g, v, t) { if (t < 0.45) blit(g, LAMP_OFF, 381, 150); } },
+        grain
+      ]
+    };
+  };
+
   function roomLayers(id, day, after, S, phase) {
     const M = B.Motion, K = B.MotionKit;
     if (!M || !M.layered || !K) return null;

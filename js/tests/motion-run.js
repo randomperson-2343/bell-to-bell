@@ -173,6 +173,119 @@ async function run() {
   for (const k of Object.keys(P8_REF)) assert(p8now[k] === (P8_CHANGED[k] || P8_REF[k]), `batch 7 ${k}: the picture changed (${p8now[k]}, was ${P8_CHANGED[k] || P8_REF[k]})`);
   assert(Object.keys(p8now).length === Object.keys(P8_REF).length, 'batch 7: the set of reference pictures changed');
   for (const k of Object.keys(P8_CHANGED)) assert(P8_CHANGED[k] !== P8_REF[k], `batch 7 ${k}: the ruled change is not a change`);
+
+  // ---- stage 3 batch 7: the decision rooms and the speaker close-up as layers ----
+  await page.evaluate(() => {
+    const view = { w: 640, h: 360 };
+    const fnv = (d) => { let x = 2166136261; for (let i = 0; i < d.length; i++) { x ^= d[i]; x = Math.imul(x, 16777619); } return (x >>> 0).toString(16); };
+    const canvas = () => { const cv = document.createElement('canvas'); cv.width = 640; cv.height = 360; const g = cv.getContext('2d'); g.imageSmoothingEnabled = false; return g; };
+    const beat = (scene, opts, i) => BTB.Scenes[scene](opts)[i];
+    const rgbOf = (spec) => { const hex = BTB.Pal[spec]; return [1, 3, 5].map((k) => parseInt(hex.slice(k, k + 2), 16)); };
+    window.d8 = {
+      info(scene, opts, i) {
+        const b = beat(scene, opts, i), c = b.camera;
+        return { id: b.id, dur: b.dur, layers: (b.layers || []).map((l) => l.id).join(), depths: (b.layers || []).map((l) => l.depth == null ? 1 : l.depth).join(),
+          cam: !b.layers ? 'flat' : c ? `${c.from.y}>${c.to.y}` : 'none', cues: (b.cues || []).map((q) => q.at + ':' + q.sfx).join(), sfx: b.sfx || '', tr: b.transition || '', line: b.line, n: BTB.Scenes[scene](opts).length };
+      },
+      // hash of one layer (draw and animate, or animate only) in a rect
+      pic(scene, opts, i, id, t, animOnly, r) {
+        const b = beat(scene, opts, i), layer = b.layers.find((l) => l.id === id), g = canvas();
+        if (!animOnly) layer.draw(g, view, {});
+        if (layer.animate) layer.animate(g, view, t, t / b.dur, {});
+        const rr = r || [0, 0, 640, 360];
+        return fnv(g.getImageData(rr[0], rr[1], rr[2], rr[3]).data);
+      },
+      // pixels of one layer's animate alone: any alpha (spec 'any'), or exactly a palette colour; and the box they sit in
+      cnt(scene, opts, i, id, t, r, spec) {
+        const b = beat(scene, opts, i), layer = b.layers.find((l) => l.id === id), g = canvas();
+        layer.animate(g, view, t, t / b.dur, {});
+        const d = g.getImageData(r[0], r[1], r[2], r[3]).data, c = spec === 'any' ? null : rgbOf(spec); let n = 0;
+        for (let k = 0; k < d.length; k += 4) { if (c ? d[k + 3] === 255 && d[k] === c[0] && d[k + 1] === c[1] && d[k + 2] === c[2] : d[k + 3] > 0) n++; }
+        return n;
+      },
+      box(scene, opts, i, id, t, r) {
+        const b = beat(scene, opts, i), layer = b.layers.find((l) => l.id === id), g = canvas(); r = r || [0, 0, 640, 360];
+        layer.animate(g, view, t, t / b.dur, {});
+        const d = g.getImageData(r[0], r[1], r[2], r[3]).data; let x0 = 1e9, x1 = -1, y0 = 1e9, y1 = -1;
+        for (let k = 0; k < d.length; k += 4) if (d[k + 3]) { const x = (k / 4) % r[2] + r[0], y = Math.floor(k / 4 / r[2]) + r[1]; x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); }
+        return [x0, x1, y0, y1];
+      },
+      // the most fillRect calls the animates of all layers make in one frame, over the beat in 0.05 s steps (and the very end)
+      rects(scene, opts, i) {
+        const b = beat(scene, opts, i), g = canvas(), P = CanvasRenderingContext2D.prototype, orig = P.fillRect; let n = 0, worst = 0, at = 0;
+        P.fillRect = function (...a) { n++; return orig.apply(this, a); };
+        try {
+          for (let k = 0; k <= Math.round(b.dur / 0.05) + 1; k++) {
+            const t = Math.min(b.dur, k * 0.05); n = 0;
+            b.layers.forEach((l) => { if (l.animate) { g.save(); l.animate(g, view, t, t / b.dur, {}); g.restore(); } });
+            if (n > worst) { worst = n; at = t; }
+          }
+        } finally { P.fillRect = orig; }
+        return { worst, at };
+      },
+      // how many pixels of the beat's picture at time t are not opaque (the whole beat composited through its layers, no camera)
+      holes(scene, opts, i, t) {
+        const b = beat(scene, opts, i), g = canvas(); b.draw(g, view, t / b.dur, {});
+        const d = g.getImageData(0, 0, 640, 360).data; let n = 0; for (let k = 3; k < d.length; k += 4) if (d[k] !== 255) n++; return n;
+      },
+      // the flat picture against the beat's final frame, in a rect: how many bytes differ
+      flatDiff(scene, opts, i, fn, r) {
+        const b = beat(scene, opts, i), g1 = canvas(), g2 = canvas(); b.draw(g1, view, 1, {}); (new Function('BTB', 'g', 'return (' + fn + ')(BTB, g);'))(BTB, g2);
+        const a = g1.getImageData(r[0], r[1], r[2], r[3]).data, c = g2.getImageData(r[0], r[1], r[2], r[3]).data; let bad = 0; for (let k = 0; k < a.length; k++) if (a[k] !== c[k]) bad++; return bad;
+      }
+    };
+  });
+  const D8 = (fn, ...args) => page.evaluate(([fn, args]) => window.d8[fn](...args), [fn, args]);
+  const DEC8 = { c1: [3, 'Desmond Kroll'], c3: [10, 'Sen. Marcus Thorne'], c5: [21, 'Adele Venn'], c6: [23, 'Desmond Kroll'], c7: [24, 'Desmond Kroll'], c8: [39, 'Sen. Marcus Thorne'], c9: [42, 'Imani Rhodes'], c10: [44, 'Imani Rhodes'],
+    rentHike: [11, 'Your landlord'], advance: [31, 'Desmond Kroll'], dadBill: [18, 'Mom'], pension: [41, 'Mom'], perry: [36, 'Perry Nakash'], adopt: [4, 'Harbor Street Animal Shelter'], dentist: [8, 'Your dentist'],
+    vetCheck: [14, 'Your vet'], toothache: [25, 'Your dentist'], vetER: [27, 'Your vet'] };
+  const dopts = (id, S, extra) => Object.assign({ id, day: DEC8[id][0], speaker: DEC8[id][1], role: 'Role of the speaker', title: 'The title of the decision', S }, extra || {});
+  const reduced8 = [];
+  // generic checks of one layered beat of the decision scene: info, moving, deterministic, no holes, a long title, no story state
+  const beat8 = async (o, i, want, tag) => {
+    const a = await D8('info', 'decision', o, i);
+    for (const k of Object.keys(want)) assert(String(a[k]) === String(want[k]), `${tag} beat: ${k} is ${a[k]}, want ${want[k]} (${JSON.stringify(a)})`);
+    assert(await shot('decision', o, i, 0.1) !== await shot('decision', o, i, a.dur - 0.1), `${tag}: the start and end frames are identical`);
+    assert(await shot('decision', o, i, 0.8) === await shot('decision', o, i, 0.8), `${tag}: the same time gave two pictures`);
+    assert(await D8('holes', 'decision', o, i, 0.3) === 0 && await D8('holes', 'decision', o, i, a.dur) === 0, `${tag}: the picture has holes`);
+    const long = Object.assign({}, o, { title: 'A very long title that goes on and on past any sensible width of caption box ok ok ok ok ok ok', S: null });
+    assert(await D8('holes', 'decision', long, i, 0.9) === 0, `${tag}: a long title and no story state do not draw`);
+    reduced8.push([o, i]);
+    return a;
+  };
+  const rect8 = async (o, i, max, tag) => { const r = await D8('rects', 'decision', o, i); assert(r.worst <= max, `${tag}: ${r.worst} rectangles a frame at ${r.at} s (budget ${max})`); return r.worst; };
+  const RECT8 = {};
+
+  // shot 1: office by day (c1 day 3 autumn, c6 day 23 grey): Kroll's desk screen switches on at 0.45 s
+  for (const id of ['c1', 'c6']) {
+    const o = dopts(id), tag = `office ${id}`;
+    await beat8(o, 0, { id: `decision:${id}:${Math.floor(DEC8[id][0] / 5)}:room`, dur: 1.5, layers: 'room,grain', depths: '1,1', cam: '-6>0', cues: '', sfx: 'room', tr: 'fade' }, tag);
+    const A = (t) => D8('cnt', 'decision', o, 0, 'room', t, [0, 0, 640, 360], 'any'), bx = (t) => D8('box', 'decision', o, 0, 'room', t, [0, 0, 640, 360]);
+    // dark until 0.45 (the whole 51x33 screen), the phosphor line, the flare, then nothing
+    assert(await A(0.30) === 51 * 33 && await A(0.44) === 51 * 33 && JSON.stringify(await bx(0.30)) === JSON.stringify([564, 614, 165, 197]), `${tag}: the screen is not dark until 0.45 s`);
+    assert(await A(0.47) === 51 * 33 && await A(0.52) === 51 * 33 && await A(0.56) === 0 && await A(1.5) === 0, `${tag}: no line and flare, then the lit cached screen`);
+    assert(await D8('cnt', 'decision', o, 0, 'room', 0.47, [564, 165, 51, 33], 'phosphor') === 51 * 2 && await D8('cnt', 'decision', o, 0, 'room', 0.30, [564, 165, 51, 33], 'screenD') === 51 * 33, `${tag}: the phosphor line is not 2 px`);
+    assert(await D8('pic', 'decision', o, 0, 'room', 0.3, false, [564, 165, 51, 33]) !== await D8('pic', 'decision', o, 0, 'room', 0.9, false, [564, 165, 51, 33]), `${tag}: the screen does not change`);
+    assert((await D8('cnt', 'decision', o, 0, 'room', 0.1, [0, 272, 640, 88], 'any')) === 0, `${tag}: something moves below y 272`);
+    RECT8[tag] = await rect8(o, 0, 20, tag);
+  }
+
+  // shot 2: office at night (c7, day 24): the desk lamp clicks on at 0.45 s, the full pool of light at 0.60 s
+  {
+    const o = dopts('c7'), tag = 'office night', id = 'decision:c7:4:room';
+    await beat8(o, 0, { id, dur: 1.5, layers: 'room,mid,front,grain', depths: '1,1,1,1', cam: '-6>0', cues: '0.45:click', sfx: 'room', tr: 'fade' }, tag);
+    const M = (t, r) => D8('cnt', 'decision', o, 0, 'mid', t, r || [0, 0, 640, 360], 'any'), F = (t) => D8('cnt', 'decision', o, 0, 'front', t, [0, 0, 640, 360], 'any');
+    assert(await M(0.1) === 0 && await M(0.44) === 0 && await M(0.46) > 3000 && await M(0.50) === await M(0.58) && await M(0.62) > await M(0.58) && await M(0.62) === await M(1.4), `${tag}: the rings do not come in two hard steps at 0.45 and 0.60`);
+    const mb = await D8('box', 'decision', o, 0, 'mid', 0.7);
+    // the rings are line 94 of the flat room: glow() stops at y 282, and the desk (the front layer) hides all but the carpet left of it below y 207
+    assert(mb[2] >= 34 && mb[3] <= 282, `${tag}: the rings reach ${mb} (glow() draws y 34-282)`);
+    assert(await F(0.1) > 0 && await F(0.44) === await F(0.1) && await F(0.46) === 0 && await F(1.4) === 0, `${tag}: the lamp is not dark until 0.45 s`);
+    const lamp = await D8('box', 'decision', o, 0, 'front', 0.2);
+    assert(lamp[0] >= 381 && lamp[1] <= 410 && lamp[2] >= 150 && lamp[3] <= 179, `${tag}: the dark lamp is outside its 30x30 box (${lamp})`);
+    assert(await D8('pic', 'decision', o, 0, 'front', 0.3, false, [381, 150, 30, 30]) !== await D8('pic', 'decision', o, 0, 'front', 0.6, false, [381, 150, 30, 30]), `${tag}: the lamp does not light`);
+    assert(await D8('pic', 'decision', o, 0, 'room', 0.1, false, [0, 0, 640, 360]) === await D8('pic', 'decision', o, 0, 'room', 1.4, false, [0, 0, 640, 360]), `${tag}: the back layer moves`);
+    RECT8[tag] = await rect8(o, 0, 230, tag);
+  }
   if (process.env.P8_ONLY) { console.log('motion-run: batch 7 pins pass'); return; }
 
   assert(await shot('news', day7, 1, 0.5) !== await shot('news', day7, 1, 2.2), 'default camera does not move the shot');
