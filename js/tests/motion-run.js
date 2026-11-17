@@ -436,6 +436,51 @@ async function run() {
     assert(await D8('cnt', 'decision', o, 0, 'room', 0.6, [0, 0, 640, 360], 'any') === 18 * 18, `${tag}: more than the cross is covered`);
     RECT8[tag] = await rect8(o, 0, 3, tag);
   }
+
+  // shot 12: the voicemail (perry day 36, dentist day 8): bars 3 to 8 light one by one from 0.40 s, 0.10 s apart; the play button blinks from 0.30 s
+  for (const id of ['perry', 'dentist']) {
+    const o = dopts(id), tag = 'voicemail ' + id;
+    await beat8(o, 0, { id: `decision:${id}:${Math.floor(DEC8[id][0] / 5)}:room`, dur: 1.5, layers: 'room,grain', depths: '1,1', cam: '-6>0', cues: '' }, tag);
+    const bars = await page.evaluate(() => BTB.DecisionArt.waveBars().slice(3, 9));
+    // lit bars: phosphor pixels of the animate in each bar's own rect
+    const lit = async (t) => { const r = []; for (const b of bars) r.push(await D8('cnt', 'decision', o, 0, 'room', t, [b.x, b.y, b.w, b.h], 'phosphor') === b.w * b.h ? 1 : 0); return r.join(''); };
+    assert(await lit(0.35) === '000000' && await lit(0.45) === '100000' && await lit(0.55) === '110000' && await lit(0.85) === '111110' && await lit(0.95) === '111111' && await lit(1.4) === '111111', `${tag}: the bars do not light 3 to 8 in order from 0.40 s`);
+    const bb = await D8('box', 'decision', o, 0, 'room', 0.2, [240, 120, 70, 60]);
+    assert(bb[0] === 267 && bb[1] <= 300 && bb[2] >= 135 && bb[3] <= 165, `${tag}: the bars sit outside x 267-300, y 135-165 (${bb})`);
+    const pl = (t) => D8('cnt', 'decision', o, 0, 'room', t, [315, 210, 9, 18], 'phosphorD');
+    assert(await pl(0.2) === 0 && await pl(0.6) === 9 * 18 && await pl(0.8) === 0 && await pl(1.5) === 0, `${tag}: the play button does not blink from 0.30 s and end lit`);
+    RECT8[tag] = await rect8(o, 0, 12, tag);
+  }
+  // shot 13: the shelter (adopt day 4): the light over the empty kennels 0 and 3 stutters; the cat breathes 0.70-1.50 s, the dog's tail wags 0.80-1.30 s
+  {
+    const o = dopts('adopt'), tag = 'shelter';
+    await beat8(o, 0, { id: 'decision:adopt:0:room', dur: 1.5, layers: 'room,mid,front,grain', depths: '1,1,1,1', cam: '-6>0', cues: '' }, tag);
+    const F = (t, r) => D8('cnt', 'decision', o, 0, 'front', t, r, 'any'), K0 = [231, 108, 84, 132], K3 = [537, 108, 84, 132];
+    for (const [t, a] of [[0.40, 0], [0.48, 1], [0.55, 0], [0.65, 1], [0.80, 0], [0.88, 1], [0.95, 0], [1.4, 0]]) assert((await F(t, K0) > 0) === !!a, `${tag}: kennel 0 light ${a ? 'dark' : 'lit'} wrong at ${t} s`);
+    for (const [t, a] of [[0.50, 0], [0.60, 1], [0.70, 0], [0.80, 1], [0.95, 0], [1.00, 1], [1.05, 0]]) assert((await F(t, K3) > 0) === !!a, `${tag}: kennel 3 light ${a ? 'dark' : 'lit'} wrong at ${t} s (0.12 s after kennel 0)`);
+    assert(await F(0.48, [0, 0, 640, 360]) === 84 * 132 && await F(0.65, [0, 0, 640, 360]) === 84 * 132, `${tag}: only the kennel interior is darkened`);
+    // life: the cat's upper body 3 px up in [0.70, 1.50), the dog's tail on odd poses of 6 a second in [0.80, 1.30)
+    const M = (t, r) => D8('cnt', 'decision', o, 0, 'mid', t, r, 'any'), CAT = [327, 100, 80, 140], DOG = [429, 100, 90, 140];
+    assert(await M(0.6, CAT) === 0 && await M(0.75, CAT) > 0 && await M(1.45, CAT) > 0 && await M(1.5, CAT) === 0 || await M(1.5, CAT) === await M(1.49, CAT), `${tag}: the cat does not breathe in [0.70, 1.50)`);
+    assert(await M(0.75, DOG) === 0 && await M(0.9, DOG) > 0 && await M(1.05, DOG) === 0 && await M(1.2, DOG) > 0 && await M(1.35, DOG) === 0, `${tag}: the dog's tail does not wag on odd poses of 0.80-1.30 s`);
+    const cb = await D8('box', 'decision', o, 0, 'mid', 0.75, CAT), db = await D8('box', 'decision', o, 0, 'mid', 0.9, DOG);
+    assert(cb[2] >= 102 + 12 && cb[3] <= 240, `${tag}: the cat leaves its kennel ${cb}`);
+    assert(db[0] >= 429 + 6 && db[1] <= 429 + 90 && db[3] <= 240, `${tag}: the tail leaves its kennel ${db}`);
+    assert(await D8('cnt', 'decision', o, 0, 'mid', 0.1, [0, 272, 640, 88], 'any') === 0, `${tag}: moves below y 272`);
+    RECT8[tag] = await rect8(o, 0, 180, tag);
+  }
+  // shot 14: the clinic (toothache day 25 dentist, vetER day 27 vet): the exam light is off until 0.45 s, the inner ring then and the full light at 0.60 s
+  for (const [id, lamp] of [['toothache', [444, 72, 48, 27]], ['vetER', [258, 12, 120, 12]]]) {
+    const o = dopts(id), tag = 'clinic ' + id;
+    await beat8(o, 0, { id: `decision:${id}:${Math.floor(DEC8[id][0] / 5)}:room`, dur: 1.5, layers: 'room,mid,front,grain', depths: '1,1,1,1', cam: '-6>0', cues: '0.45:click' }, tag);
+    const R_ = (t) => D8('cnt', 'decision', o, 0, 'room', t, [0, 0, 640, 360], 'any'), M = (t) => D8('cnt', 'decision', o, 0, 'mid', t, [0, 0, 640, 360], 'any');
+    assert(await R_(0.1) === lamp[2] * lamp[3] && await R_(0.44) === lamp[2] * lamp[3] && await R_(0.46) === 0 && await R_(1.4) === 0, `${tag}: the exam light is not off until 0.45 s`);
+    assert(await M(0.44) === 0 && await M(0.5) > 0 && await M(0.5) === await M(0.58) && await M(0.62) > await M(0.58) && await M(0.62) === await M(1.4), `${tag}: the rings do not come in two hard steps`);
+    const mb = await D8('box', 'decision', o, 0, 'mid', 0.7);
+    assert(mb[3] <= 210 + 3, `${tag}: the rings reach ${mb}`); // the vet's ceiling rings are centred on y 18 and run off the top edge
+    assert(await D8('pic', 'decision', o, 0, 'room', 0.2, false, lamp) !== await D8('pic', 'decision', o, 0, 'room', 0.6, false, lamp), `${tag}: the light does not change`);
+    RECT8[tag] = await rect8(o, 0, id === 'vetER' ? 215 : 110, tag);
+  }
   if (process.env.P8_ONLY) { console.log('motion-run: batch 7 pins pass'); return; }
 
   assert(await shot('news', day7, 1, 0.5) !== await shot('news', day7, 1, 2.2), 'default camera does not move the shot');

@@ -554,6 +554,58 @@
     return null;
   };
 
+  // ---- shot 12: the voicemail (playback lights bars 3 to 8; the play button blinks) ----
+  LAYER.voicemail = (e, flat, grain) => {
+    const K = e.K, cells = waveBars().slice(3, 9);
+    return { layers: [{ id: 'room', depth: 1, draw: flat(), animate(g, v, t) {
+      K.lamps(g, cells, t, { at: 0.40, step: 0.10, on: P.phosphor, off: P.slate2 });
+      if (t >= 0.30) K.blink(g, 315, 210, 9, 18, t, { on: null, off: P.phosphorD, period: 0.5, duty: 0.6, end: e.dur });
+    } }, grain] };
+  };
+  // ---- shot 13: the shelter (the light over the two empty kennels stutters; the cat breathes, the dog wags) ----
+  LAYER.shelter = (e, flat, grain) => {
+    const K = e.K, cat = kennel(1), dog = kennel(2), upper = cat.rows ? cat.rows.slice(0, 13) : null;
+    // the dog's tail (sprite columns 16-18, rows 8-11) one cell to the right
+    const tail = dog.rows ? dog.rows.slice(8, 12).map((r) => '.'.repeat(17) + r.slice(16, 19) + '.') : null;
+    const spans = [[0.45, 0.52], [0.60, 0.78], [0.86, 0.90]];
+    return {
+      layers: [
+        { id: 'room', depth: 1, draw: flat({ part: 'back' }) },
+        {
+          id: 'mid', depth: 1, draw() {},
+          animate(g, v, t) {
+            // life: the cat's upper 13 rows 3 px higher for one breath; the dog's tail flicks on odd poses (6 a second)
+            if (upper && t >= 0.70 && t < 1.50) blit(g, upper, cat.px, cat.py - U);
+            if (tail && t >= 0.80 && t < 1.30 && Math.floor(t * 6) % 2 === 1) { X.rect(g, dog.px + 48, dog.py + 24, 9, 12, P.slate); blit(g, tail, dog.px, dog.py + 24); }
+          }
+        },
+        {
+          id: 'front', depth: 1, draw: flat({ part: 'front' }),
+          animate(g, v, t) {
+            K.flicker(g, 231, 108, 84, 132, 'decision:adopt:k0', t, { spans, col: P.ink, a: 0.35 });
+            K.flicker(g, 537, 108, 84, 132, 'decision:adopt:k3', t, { spans: spans.map((p) => [p[0] + 0.12, p[1] + 0.12]), col: P.ink, a: 0.35 });
+          }
+        },
+        grain
+      ]
+    };
+  };
+  // ---- shot 14: the clinic (the exam light switches on in two hard steps) ----
+  LAYER.clinic = (e, flat, grain) => {
+    const vet = e.opt.kind === 'vet';
+    return {
+      cues: [{ at: 0.45, sfx: 'click' }],
+      layers: [
+        { id: 'room', depth: 1, draw: flat({ part: 'back' }), animate(g, v, t) {
+          if (t < 0.45) { if (vet) cel(g, 258, 12, 120, 12, P.grey, P.grey2, P.slate2); else cel(g, 444, 72, 48, 27, P.putty, P.putty2, P.plasticD); }
+        } },
+        { id: 'mid', depth: 1, draw() {}, animate(g, v, t) { if (t >= 0.60) clinicGlow(g, vet, 2); else if (t >= 0.45) clinicGlow(g, vet, 1); } },
+        { id: 'front', depth: 1, draw: flat({ part: 'front' }) },
+        grain
+      ]
+    };
+  };
+
   function roomLayers(id, day, after, S, phase) {
     const M = B.Motion, K = B.MotionKit;
     if (!M || !M.layered || !K) return null;
