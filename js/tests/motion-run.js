@@ -2244,6 +2244,28 @@ async function run() {
     assert(await cc(D.o, D.i, 'art', 0.7, [0, 0, 640, 360], 'slate') === 0, 'hearing detail: something blinks');
   }
 
+  // 7. Floor vote (session 40): VOTE PENDING pulses (establish and hold); the witness leans as in the hearing
+  {
+    const E = await beat7(40, 'establish', { layers: 'art,glass,marks', depths: '1,1,0', cam: '-6>0', sfx: 'apartment', dur: 1.7 });
+    const D = await beat7(40, 'detail', { layers: 'art,glass', depths: '1,1', cam: 'none', sfx: 'broadcast', dur: 2.3 });
+    const H = await beat7(40, 'hold', { layers: 'art,glass,dim', depths: '1,1,0', cam: 'none', sfx: '', dur: 1.1 });
+    const top = async (B_, t) => (await box7(B_.o, B_.i, t, [300, 150, 60, 80]))[2];
+    const e = [await top(E, 0.1), await top(E, 0.47), await top(E, 0.57), await top(E, 0.67), await top(E, 1.69)];
+    assert(e.join() === '178,180,182,184,184', `vote establish: the witness does not lean in three steps (${e})`);
+    const d = [await top(D, 0.1), await top(D, 0.58), await top(D, 0.62), await top(D, 1.28), await top(D, 1.32)];
+    assert(d[0] === d[1] && d[2] - d[1] >= 7 && d[2] - d[1] <= 9 && d[3] === d[2] && d[4] === d[0], `vote detail: the witness does not lean in from 0.60 to 1.30 s (${d})`);
+    assert(await top(H, 0.1) === e[4] && await top(H, 0.9) === e[4], 'vote hold: the witness moves');
+    // the line (screen 250, 250, 142, 14) is covered by the box's flat ink in its off phase from 0.30 (hold 0.10) and shows (nothing drawn) at the end
+    const line = [248, 250, 142, 14], ink = (B_, t) => cc(B_.o, B_.i, 'art', t, line, 'ink');
+    assert(await ink(E, 0.2) === 0 && await ink(E, 1.35) === 142 * 14 && await ink(E, 1.45) === 0 && await ink(E, 1.69) === 0 && await ink(E, 0.35) === 142 * 14, `vote establish: VOTE PENDING does not pulse from 0.30 (${await ink(E, 1.35)} ${await ink(E, 1.45)})`);
+    assert(await ink(H, 0.05) === 0 && await ink(H, 0.25) === 142 * 14 && await ink(H, 0.4) === 0 && await ink(H, 1.09) === 0, 'vote hold: the line does not pulse from 0.10 s and end shown');
+    assert(await cc(D.o, D.i, 'art', 0.7, [0, 0, 640, 360], 'ink') === 0, 'vote detail: the line blinks');
+    // off phase: no crimson of the text is left showing (cover and text both start at art x 124)
+    assert(await cc(E.o, E.i, 'art', 1.35, [240, 240, 170, 30], 'crimson', false) === 0 && await cc(E.o, E.i, 'art', 1.45, [240, 240, 170, 30], 'crimson', false) > 0 && await cc(H.o, H.i, 'art', 0.25, [240, 240, 170, 30], 'crimson', false) === 0, 'vote: the off phase leaves part of the line showing');
+    // the cover is on the box's flat ink: the cached art around the line (without the text) is all ink
+    assert(await cc(E.o, E.i, 'art', 1.35, [248, 250, 142, 14], 'ink', false) === 142 * 14, 'vote: the cover is not on a flat ink interior');
+  }
+
   // reduced effects: every reworked beat is one still
   await page.evaluate(() => BTB.Settings.set('effects', 'reduced'));
   for (const o of [nOpts(8), nOpts(32), nOpts(1), nOpts(4), nOpts(2), nOpts(3), nOpts(5), nOpts(11), nOpts(36), nOpts(15), nOpts(10)]) {
@@ -2319,6 +2341,7 @@ async function run() {
     // batch 6: the story tableaux
     { scene: 'news', opts: { day: 6, brief: { title: 'KAVRO STRAIT', feed: [] } } },
     { scene: 'news', opts: { day: 9, brief: { title: 'THE GRID', feed: [] } } },
+    { scene: 'news', opts: { day: 40, brief: { title: 'STABILIZATION VOTE PENDING', feed: [] } } },
     { scene: 'news', opts: { day: 37, brief: { title: 'MARKETS COMMITTEE HEARING', feed: [] } } },
     { scene: 'news', opts: { day: 25, brief: { title: 'PRESERVE ALL RECORDS', feed: [] } } },
     { scene: 'news', opts: { day: 20, brief: { title: 'RUN ON RIDGEWAY TRUST', feed: [] } } },

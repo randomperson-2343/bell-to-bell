@@ -1403,12 +1403,17 @@
         });
       };
     }
-    else if (n === 12) {
-      // the witness (drawn here, not in the art) leans in to the microphone; the LIVE badge pulses at the badge rate (covered by the header's flat slate while off)
-      const W = G.badge, dy = est ? (t) => -3 + Math.min(3, Math.max(0, Math.floor((t - 0.45) / 0.10 + 1e-9) + 1)) : det ? (t) => (t >= 0.60 && t < 1.30 ? 3 : 0) : () => 0;
+    else if (n === 12 || n === 13) {
+      // the witness (drawn here, not in the art) leans in to the microphone; on 12 the LIVE badge pulses at the badge rate (covered by the header's flat slate while off),
+      // on 13 the VOTE PENDING line does (covered by the box's flat ink)
+      // (the line's cover starts at the text's own left edge: X.text centres with one truncation, so 124, not the sheet's 125)
+      const W = G.badge, tw = X.textWidth('VOTE PENDING') - 1, Pd = { x: (160 - tw / 2) | 0, y: 118, w: tw, h: 7 }, dy = est ? (t) => -3 + Math.min(3, Math.max(0, Math.floor((t - 0.45) / 0.10 + 1e-9) + 1)) : det ? (t) => (t >= 0.60 && t < 1.30 ? 3 : 0) : () => 0;
       paint = (g, t) => {
-        SH.tableauMover(g, 12, 0.6, { shift: () => [0, dy(t)] });
-        if (!det && t >= (est ? 0.30 : 0.10)) K.blink(g, W.x, W.y, W.w, W.h, t, { on: null, off: P.slate, period: 0.5, duty: 0.6, end: dur });
+        SH.tableauMover(g, n, 0.6, { shift: () => [0, dy(t)] });
+        if (!det && t >= (est ? 0.30 : 0.10)) {
+          if (n === 12) K.blink(g, W.x, W.y, W.w, W.h, t, { on: null, off: P.slate, period: 0.5, duty: 0.6, end: dur });
+          else K.blink(g, Pd.x, Pd.y, Pd.w, Pd.h, t, { on: null, off: P.ink, period: 0.5, duty: 0.6, end: dur });
+        }
       };
     }
     if (!paint) return null;
