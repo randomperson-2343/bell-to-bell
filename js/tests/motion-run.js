@@ -336,6 +336,65 @@ async function run() {
   for (const k of Object.keys(P9_CHANGED)) assert(P9_CHANGED[k] !== P9_REF[k], `batch 8 ${k}: the ruled change is not a change`);
 
   // ---- stage 3 batch 8 asserts go here ----
+  // ---- stage 3 batch 8, part A: critique fixes ----
+  // A1: every blink that passes `end` is on at the end of its beat. Scans the beats of the news (days 0 to 60, also with the bill passed and the plug pulled), every decision,
+  // the weekends and the endings: each K.blink with `end` must have end === the beat's duration and be on at dur - 0.02 and at p = 1 (the last frames a player draws are just
+  // before dur); and for the hearing (37) and floor vote (40) establishes the blink's own screen region at dur - 0.02 is the region of the final still.
+  const blinkScan = await page.evaluate(() => {
+    const K = BTB.MotionKit, orig = K.blink, view = { w: 640, h: 360 }, bad = [], regions = [], seen = { n: 0, beats: 0 };
+    let cur = null;
+    K.blink = function (ctx, x, y, w, h, t, o) {
+      if (cur && o && o.end != null) {
+        const T = t + (o.t0 || 0), per = o.period || 1, duty = o.duty == null ? 0.5 : o.duty, on = (((o.end - T) % per) + per) % per < duty * per;
+        const m = ctx.getTransform(), rx = m.a * x + m.e, ry = m.d * y + m.f;
+        cur.calls.push({ on, endOk: Math.abs(o.end - cur.dur) < 1e-9, rect: [Math.round(rx), Math.round(ry), Math.max(1, Math.round(m.a * w)), Math.max(1, Math.round(m.d * h))] });
+      }
+      return orig.apply(this, arguments);
+    };
+    const g = document.createElement('canvas'); g.width = 640; g.height = 360; const ctx = g.getContext('2d', { willReadFrequently: true });
+    const scan = (label, beats) => beats.forEach((b) => {
+      if (!b.layers) return;
+      seen.beats++;
+      for (const p of [(b.dur - 0.02) / b.dur, 1]) {
+        cur = { dur: b.dur, calls: [] };
+        try { b.draw(ctx, b.view || view, p, {}); } catch (e) { bad.push(`${label} ${b.id}: draw threw ${e.message}`); }
+        seen.n += cur.calls.length;
+        cur.calls.forEach((c) => { if (!c.on || !c.endOk) bad.push(`${label} ${b.id} p=${p.toFixed(3)}: blink ${c.on ? '' : 'off'} ${c.endOk ? '' : 'end differs from dur'}`); });
+        if (p !== 1) cur.first = cur.calls.map((c) => c.rect);
+        else regions.push({ id: b.id, label });
+      }
+    });
+    const nopt = (day, S) => Object.assign({ day, brief: { title: 'Headline of the day', feed: [] } }, S ? { game: { mode: { S } } } : {});
+    for (let d = 0; d <= 60; d++) { scan('news', BTB.Scenes.news(nopt(d))); if (d % 5 === 1 || d >= 36) scan('news+', BTB.Scenes.news(nopt(d, { f: { billPassed: true, pulledPlug: true } }))); }
+    const items = BTB.Life.LIFE.map((b) => ({ id: b.id, day: b.day, speaker: b.speaker, role: b.role, title: b.title }))
+      .concat(Object.keys(BTB.StoryData.CHOICES).filter((k) => !BTB.StoryData.CHOICES[k].mid).map((k) => { const c = BTB.StoryData.CHOICES[k]; return { id: k, day: c.day, speaker: c.speaker, role: c.role, title: c.title }; }));
+    for (const it of items) scan('decision', BTB.Scenes.decision(Object.assign({ S: BTB.StoryMode.freshState(250000) }, it)));
+    for (const d of [4, 9, 14, 24, 34, 39, 44]) for (const plug of [false, true]) scan('weekend', BTB.Scenes.weekend({ day: d, game: { mode: { S: Object.assign({ wallet: { tier: 2, lateWeeks: d % 3, pet: d % 2 ? { kind: 'cat', sex: 'boy' } : undefined } }, plug ? { f: { pulledPlug: true } } : {}) } } }));
+    for (const id of BTB.Rhythm.endingIds) scan('ending', BTB.Scenes.ending({ id, title: id, deck: 'Deck', dark: false }));
+    K.blink = orig;
+    return { bad: bad.slice(0, 8), nBad: bad.length, n: seen.n, beats: seen.beats };
+  });
+  assert(blinkScan.nBad === 0 && blinkScan.n > 40, `A1: a blink with end is off (or ends off the beat) near the end of its beat: ${JSON.stringify(blinkScan)}`);
+  // the two tableaux the critique looked at: the badge / VOTE PENDING region just before the end is the region of the final still
+  const badgeEnd = await page.evaluate(() => {
+    const K = BTB.MotionKit, orig = K.blink, view = { w: 640, h: 360 }, out = [], mkOpt = (day) => ({ day, brief: { title: 'Headline of the day', feed: [] }, game: { mode: { S: { f: {} } } } });
+    for (const day of [37, 40]) {
+      const b = BTB.Scenes.news(mkOpt(day))[0]; let rect = null;
+      K.blink = function (ctx, x, y, w, h) { const m = ctx.getTransform(); rect = [Math.floor(m.a * x + m.e), Math.floor(m.d * y + m.f), Math.ceil(m.a * w), Math.ceil(m.d * h)]; return orig.apply(this, arguments); };
+      const mk = () => { const c = document.createElement('canvas'); c.width = 640; c.height = 360; const g = c.getContext('2d', { willReadFrequently: true }); g.imageSmoothingEnabled = false; return g; };
+      const a = mk(), z = mk(), still = mk();
+      b.draw(a, view, (b.dur - 0.02) / b.dur, {}); b.draw(z, view, 1, {}); b.draw(still, view, 1, {});
+      K.blink = orig;
+      const get = (g) => g.getImageData(rect[0], rect[1], rect[2], rect[3]).data, A = get(a), Z = get(z), S = get(still);
+      let d1 = 0, d2 = 0; for (let i = 0; i < A.length; i++) { if (A[i] !== Z[i]) d1++; if (S[i] !== Z[i]) d2++; }
+      // and that the region is not blank: the art shows something lit (more than one colour) in it
+      const cols = new Set(); for (let i = 0; i < Z.length; i += 4) cols.add(Z[i] + ',' + Z[i + 1] + ',' + Z[i + 2]);
+      out.push({ day, id: b.id, rect, d1, d2, colours: cols.size });
+    }
+    return out;
+  });
+  for (const r of badgeEnd) assert(r.d1 === 0 && r.d2 === 0 && r.colours > 1 && r.rect[2] > 20, `A1: blink region at dur - 0.02 differs from the final still: ${JSON.stringify(r)}`);
+
   if (process.env.B8_ONLY) { console.log('motion-run: batch 8 pins and asserts pass'); return; }
 
   // ---- stage 3 batch 7: the decision rooms and the speaker close-up as layers ----
