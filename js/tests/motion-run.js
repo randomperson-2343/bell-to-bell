@@ -2297,8 +2297,8 @@ async function run() {
     // batch 5c, item 5 (session 1's opening): news:0:establish is rebuilt on the elevBase parts (wall, car, top) like the detail and hold, so its last frame is
     // the flat picture's own pixels (the pilot's car and lobby layers differed from it by about 8,600 px around the car's edges and glow); the spill stays
     'p5:0:establish': '59210645',
-    // shot 2 (ruling): the street's static snow speckle is replaced by the snowflakes' pose at the end and two to four car-light groups, drawn at twice the size from batch 5c (session 34; 54 is the same street past the story)
-    'p5:34:establish': '39bfb4', 'p5:34:detail': 'cfe825b8', 'p5:54:establish': 'd93d2eae', 'p5:54:detail': 'df757aa4', 'p5:34long:establish': '10eb0650', 'p5:34long:detail': '1e0ac14f', 'p5:34empty:establish': '7b753f77', 'p5:34empty:detail': '4b00b4cb'
+    // shot 2 (ruling): the street's static snow speckle is replaced by the snowflakes' pose at the end and two to four car-light groups, drawn at twice the size from batch 5c (session 34; 54 is the same street past the story); batch 8 A2 moved the cars onto the road (y 256 to 259) and the final frames changed again (ruling: the cars are background life)
+    'p5:34:establish': '433eafd4', 'p5:34:detail': '1851890b', 'p5:54:establish': '6a0cbcdc', 'p5:54:detail': '453578b0', 'p5:34long:establish': '7e6d4470', 'p5:34long:detail': '12f15abc', 'p5:34empty:establish': 'a3f85297', 'p5:34empty:detail': '134c4d08'
   };
   const p5now = await page.evaluate(() => {
     const hashOf = (fn) => { const cv = document.createElement('canvas'); cv.width = 640; cv.height = 360; const g = cv.getContext('2d'); fn(g);
@@ -2320,6 +2320,7 @@ async function run() {
     for (const [d, t] of list) { const key = d + (t === LONG ? 'long' : t === '' ? 'empty' : ''); BTB.Scenes.news(o(d, t)).forEach((b) => { out[`p5:${key}:${b.id.split(':').pop()}`] = hashOf((g) => b.draw(g, view, 1, {})); }); }
     return out;
   });
+  if (process.env.DUMP_P5) { console.log(JSON.stringify(p5now)); return; }
   for (const k of Object.keys(P5_REF)) assert(p5now[k] === (P5_CHANGED[k] || P5_REF[k]), `batch 5 ${k}: the picture changed (${p5now[k]}, was ${P5_CHANGED[k] || P5_REF[k]})`);
   assert(Object.keys(p5now).length === Object.keys(P5_REF).length, 'batch 5: the set of reference pictures changed');
   for (const k of Object.keys(P5_CHANGED)) assert(P5_CHANGED[k] !== P5_REF[k], `batch 5 ${k}: the ruled change is not a change`);
@@ -2513,7 +2514,8 @@ async function run() {
   }
   // the final frame of the session 21 detail has no train and today's picture: flat picture hash above. On the detail the head is at x 230 when the cross ends
   assert(JSON.stringify(await box5(mk5(21), await newsIdx(mk5(21), ':detail$'), 'train', 0.3)) === JSON.stringify(trainBox(0.3, -0.88)) && trainBox(0.3, -0.88)[1] >= 395 && trainBox(0.3, -0.88)[1] <= 415, 'train 21 detail: the head is not mid-platform (x 403) when the cross ends');
-  // shot 2: the street (session 34, winter): snow falls in place of the still speckle, headlights pass along the kerb every 0.45 s from 0.30 s
+  const monG = (day, detail) => page.evaluate(([d, det]) => BTB.Rhythm.monitorGeom(BTB.Rhythm.storyboard(d), det), [day, detail]);
+  // shot 2: the street (session 34, winter): snow falls in place of the still speckle, headlights pass along the road every 0.45 s from 0.30 s (background life); the wire monitor refreshes (key movement)
   const carsModel = (t) => page.evaluate(([day, t]) => {
     // one row of the 640 px band, painted in the kit's order (a later car's headlight can cover an earlier car's tail light); 1 = bone, 2 = crimson
     const row = new Uint8Array(640), put = (a, w, v) => { for (let x = Math.max(a, 0); x < Math.min(a + w, 640); x++) row[x] = v; };
@@ -2540,15 +2542,26 @@ async function run() {
     const w5 = await flakes(0.5);
     assert(w5 >= 100 && w5 <= 40 * 9 && await flakes(0.3) >= 100 && await flakes(a.dur - 0.05) >= 100, `street ${phase}: no falling snow (${w5})`);
     assert(await fpic(0.5) === await fpic(0.52) && await fpic(0.5) !== await fpic(0.6), `street ${phase}: the snow does not step twelve times a second`);
-    // the cars: nothing before 0.30 s; then the lights are where the model puts them (no zoom on 34), and they stay on the 10 px band y 238 to 248
-    assert(await cc(o, i, 'road', 0.28, [0, 238, 640, 10], 'any') === 0 && await cc(o, i, 'road', 0.28, [0, 238, 640, 10], 'bone') === 0, `street ${phase}: lights before 0.30 s`);
+    // the cars (background life on the road, A2): nothing before 0.30 s; then the lights are where the model puts them (no zoom on 34), 4 px rows y 256 to 259 on the road below the kerb (y 249)
+    assert(await cc(o, i, 'road', 0.28, [0, 252, 640, 12], 'any') === 0 && await cc(o, i, 'road', 0.28, [0, 252, 640, 12], 'bone') === 0, `street ${phase}: lights before 0.30 s`);
     for (const t of [0.6, 1.0, 1.7, 2.2]) {
       if (t > a.dur) continue;
       const m = await carsModel(t);
-      assert(await cc(o, i, 'road', t, [0, 238, 640, 10], 'bone') === m.bone && await cc(o, i, 'road', t, [0, 238, 640, 10], 'crimson') === m.crimson && m.bone > 0, `street ${phase} at ${t}: the car lights are not where the model says (${m.bone} bone, ${m.crimson} crimson)`);
-      assert(await cc(o, i, 'road', t, [0, 0, 640, 238], 'bone') === 0 && await cc(o, i, 'road', t, [0, 248, 640, 112], 'bone') === 0, `street ${phase} at ${t}: a light is off the kerb band`);
-      assert(await cc(o, i, 'road', t, [0, 240, 640, 4], 'bone') === m.bone && await cc(o, i, 'road', t, [0, 240, 640, 4], 'crimson') === m.crimson, `street ${phase} at ${t}: the lights are not the 4 px rows y 240 to 243, just above the kerb line (y 249)`);
+      assert(await cc(o, i, 'road', t, [0, 252, 640, 12], 'bone') === m.bone && await cc(o, i, 'road', t, [0, 252, 640, 12], 'crimson') === m.crimson && m.bone > 0, `street ${phase} at ${t}: the car lights are not where the model says (${m.bone} bone, ${m.crimson} crimson)`);
+      assert(await cc(o, i, 'road', t, [0, 0, 640, 252], 'bone') === 0 && await cc(o, i, 'road', t, [0, 264, 640, 96], 'bone') === 0, `street ${phase} at ${t}: a light is off the road band`);
+      assert(await cc(o, i, 'road', t, [0, 256, 640, 4], 'bone') === m.bone && await cc(o, i, 'road', t, [0, 256, 640, 4], 'crimson') === m.crimson, `street ${phase} at ${t}: the lights are not the 4 px rows y 256 to 259, on the road below the kerb line (y 249)`);
     }
+    // the key movement (A2): the wire monitor refreshes exactly as the monitor shot does, in the front layer's animate: roll 0.40 to 0.76 s inside the monitor, one bone flare on the signal band
+    const G2 = await monG(34, !est), tf2 = 0.40 + 0.36 * (G2.h - 42) / (G2.h + 6), none2 = (t) => cc(o, i, 'front', t, [0, 0, 640, 360], 'any');
+    assert(await none2(0.38) === 0 && await none2(Math.max(tf2 + 0.1, 0.78)) === 0 && await none2(a.dur - 0.05) === 0, `street ${phase}: the monitor moves outside 0.40 to ${(tf2 + 0.08).toFixed(2)} s`);
+    assert(await none2(0.5) > 0 && await none2(0.7) > 0, `street ${phase}: the monitor does not roll`);
+    if (!est) {
+      for (const t of [0.45, 0.55, 0.75]) { const b = await box5(o, i, 'front', t); assert(b[0] >= G2.x && b[1] < G2.x + G2.w && b[2] >= G2.y && b[3] < G2.y + G2.h, `street ${phase} at ${t}: the roll leaves the monitor ${JSON.stringify(b)}`); }
+      const sig2 = [G2.x + 3, G2.y + G2.h - 48, G2.w - 6, 45];
+      assert(await cc(o, i, 'front', tf2 - 0.02, sig2, 'bone') === 0 && (await cc(o, i, 'front', tf2 + 0.02, sig2, 'any')) >= (G2.w - 6) * 45 && await cc(o, i, 'front', tf2 + 0.1, sig2, 'any') < (G2.w - 6) * 45, `street ${phase}: the flare is not on the signal band from ${tf2.toFixed(2)} s for 0.08 s`);
+    }
+    // the front layer's cached art is still: the animate alone moves
+    assert(await lp('news', o, i, 'front', 0.1, false) === await lp('news', o, i, 'front', a.dur - 0.1, false), `street ${phase}: the front layer's cached art moves`);
     // the final picture carries two to four groups (the ruling's change), a new car every 0.45 s
     const g = (await carsModel(a.dur)).groups;
     // (the sheet says two to four; the establish's 1.7 s shows three, the detail's 2.3 s shows five: the kit's launch times are 0.39, 1.02, 1.46, 1.73, 2.17 s on this seed)
@@ -2558,7 +2571,6 @@ async function run() {
   reduced5.push(mk5(34));
   // shot 3: the wire monitor refreshes (roll 0.40 to 0.76 s, flare on the signal band as the roll reaches it): kitchen 13 establish, the lobby comps' details
   // (16, 22, 26, 42) and, past the story, the breakroom, rideshare, desk, apartment comps
-  const monG = (day, detail) => page.evaluate(([d, det]) => BTB.Rhythm.monitorGeom(BTB.Rhythm.storyboard(d), det), [day, detail]);
   const M3 = [[13, 'establish'], [16, 'detail'], [22, 'detail'], [26, 'detail'], [42, 'detail'], [48, 'establish'], [55, 'establish'], [53, 'establish'], [49, 'detail'], [50, 'detail'], [48, 'detail'], [55, 'detail'], [7, 'x']].filter((x) => x[1] !== 'x');
   for (const [day, phase] of M3) {
     const o = mk5(day), i = await newsIdx(o, `:${phase}$`), a = await info('news', o, i), est = phase === 'establish', G = await monG(day, !est);

@@ -1161,7 +1161,7 @@
     return [
       { id: 'back', depth: 1, draw(c) { art(c, null, (cc) => R.placeFrame(cc, sb, title, detail, { part: 'back', noSpeckle: mid.noSpeckle })); } },
       { id: mid.id, depth: 1, draw() {}, animate(c, v, t) { art(c, { noBack: true }, (cc) => mid.paint(cc, t)); } },
-      { id: 'front', depth: 1, draw(c) { art(c, { noBack: true }, (cc) => R.placeFrame(cc, sb, title, detail, { part: 'front' })); finePass(c, day, r, ph, 'world'); } },
+      { id: 'front', depth: 1, draw(c) { art(c, { noBack: true }, (cc) => R.placeFrame(cc, sb, title, detail, { part: 'front' })); finePass(c, day, r, ph, 'world'); }, animate: mid.refresh ? (c, v, t) => mid.refresh(c, t) : undefined },
       framesLayer(day, r, detail)
     ];
   }
@@ -1175,14 +1175,14 @@
       for (let i = 0; i < 7; i++) for (const y of [58, 68]) K.passing(c, 24 + 94 * i, y, 64, 60, `news:${day}:train`, t, { kind: 'train', at: A + (94 * i) / 330, speed: 330, gap: 28 });
     };
   }
-  // Shot 2: snow in place of the still speckle, and cars' lights along the kerb line from 0.30 s, one every 0.45 s.
+  // Shot 2: snow in place of the still speckle, and cars' lights on the road from 0.30 s, one every 0.45 s (background life; the key movement is the wire monitor refreshing).
   function roadPaint(day) {
     const K = B.MotionKit;
     return (c, t) => {
       K.weather(c, 0, 12, 640, 220, day, `news:${day}:snow`, t, { max: 40 });
-      // twice the size: headlights 8x4 px, tail lights 4x4 px, on the band y 238 to 248 just above the amberD kerb (y 249); 110 units a second is the old 220 px
+      // background life, twice the size: headlights 8x4 px, tail lights 4x4 px, on the road (screen y 256 to 259, below the amberD kerb at y 249); 110 units a second is the old 220 px
       c.save(); c.scale(2, 2);
-      K.passing(c, 0, 119, 320, 5, `news:${day}:cars`, t, { kind: 'car', at: 0.30, every: 0.45, speed: 110, dir: 1 });
+      K.passing(c, 0, 127, 320, 4, `news:${day}:cars`, t, { kind: 'car', at: 0.30, every: 0.45, speed: 110, dir: 1 });
       c.restore();
     };
   }
@@ -1190,7 +1190,7 @@
   function placeLayers(day, r, title, detail) {
     const sb = R.storyboard(day), p = sb.place, cue = (sfx) => (detail ? {} : { cues: [{ at: 0.30, sfx }] });
     if (p === 'subway' || p === 'platform') return Object.assign({ camera: SETTLE(), layers: placeSandwich(day, r, title, detail, { id: 'train', paint: trainPaint(day, detail) }) }, cue('transit'));
-    if (p === 'street') return Object.assign({ camera: SETTLE(), layers: placeSandwich(day, r, title, detail, { id: 'road', noSpeckle: true, paint: roadPaint(day) }) }, cue('street'));
+    if (p === 'street') return Object.assign({ camera: SETTLE(), layers: placeSandwich(day, r, title, detail, { id: 'road', noSpeckle: true, paint: roadPaint(day), refresh: monitorRefresh(day, r, title, detail) }) }, cue('street'));
     if (detail) return { camera: SETTLE(), layers: monitorLayers(day, r, title, true) };
     if (p === 'kitchen' || p === 'breakroom' || p === 'rideshare') return { camera: SETTLE(), cues: [{ at: 0.30, sfx: p === 'rideshare' ? 'street' : 'kitchen' }], layers: monitorLayers(day, r, title, false) };
     if (p === 'lobby' || p === 'elevator') return { camera: SETTLE(), cues: [{ at: 0.35, sfx: 'elevator' }], layers: elevatorPlaceLayers(day, r, title) };
@@ -1200,20 +1200,26 @@
 
   // Shot 3: the wire monitor refreshes: a band rolls down the screen (0.40 to 0.76 s) and the signal band flashes as the roll reaches it. No split:
   // nothing is drawn over the monitor in any comp. One screen event (roll and flare).
-  function monitorLayers(day, r, title, detail) {
-    const K = B.MotionKit, sb = R.storyboard(day), ph = detail ? 'detail' : 'establish', G = R.monitorGeom(sb, detail);
+  // The wire monitor's refresh: a roll down the screen at 0.40 s (0.36 s long) and one flare on the signal band as the roll reaches it. Returns the animate
+  // for the layer that draws the monitor (drawn through placeArt in the same transform as the art, noBack).
+  function monitorRefresh(day, r, title, detail) {
+    const K = B.MotionKit, sb = R.storyboard(day), G = R.monitorGeom(sb, detail);
     const tf = 0.40 + 0.36 * (G.h - 42) / (G.h + 6), band = { x: G.x + 3, y: G.y + G.h - 48, w: G.w - 6, h: 45 };
+    return (c, t) => {
+      if (t >= tf + 0.08 && t >= 0.76) return;
+      placeArt(c, day, r, title, detail, { noBack: true }, (cc) => {
+        K.crt(cc, G.x, G.y, G.w, G.h, t, { mode: 'roll', at: 0.40, dur: 0.36 });
+        K.ping(cc, t, { at: tf, off: [], on: [], flare: { x: band.x, y: band.y, w: band.w, h: band.h, col: P.bone, a: 0.15, dur: 0.08 } });
+      });
+    };
+  }
+  function monitorLayers(day, r, title, detail) {
+    const sb = R.storyboard(day), ph = detail ? 'detail' : 'establish', refresh = monitorRefresh(day, r, title, detail);
     return [
       {
         id: 'place', depth: 1,
         draw(c) { placeArt(c, day, r, title, detail, null, (cc) => R.placeFrame(cc, sb, title, detail)); finePass(c, day, r, ph, 'world'); },
-        animate(c, v, t) {
-          if (t >= tf + 0.08 && t >= 0.76) return;
-          placeArt(c, day, r, title, detail, { noBack: true }, (cc) => {
-            K.crt(cc, G.x, G.y, G.w, G.h, t, { mode: 'roll', at: 0.40, dur: 0.36 });
-            K.ping(cc, t, { at: tf, off: [], on: [], flare: { x: band.x, y: band.y, w: band.w, h: band.h, col: P.bone, a: 0.15, dur: 0.08 } });
-          });
-        }
+        animate(c, v, t) { refresh(c, t); }
       },
       framesLayer(day, r, detail)
     ];
