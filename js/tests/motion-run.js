@@ -2041,6 +2041,30 @@ async function run() {
     return { atDone, total: window.__pre.draws.length };
   });
   assert(nextScene.atDone === 6 && nextScene.total === 12, `pre-draw: scene one's end did not hold at its own six layers: ${JSON.stringify(nextScene)}`);
+  // re-entrancy: play() while a scene runs ends it; if its done starts the next scene of a chain, that nested scene wins,
+  // this call is not played and its done is called once at once. One loop, one key listener, every done once.
+  const reent = await page.evaluate(async () => {
+    const C = BTB.Cinematic, out = { adds: 0, removes: 0, calls: [] };
+    const add = window.addEventListener, rem = window.removeEventListener;
+    window.addEventListener = function (t) { if (t === 'keydown') out.adds++; return add.apply(this, arguments); };
+    window.removeEventListener = function (t) { if (t === 'keydown') out.removes++; return rem.apply(this, arguments); };
+    if (C.running) C.finish(); C.endChain();
+    C.startChain('reent');
+    C.play('__layers', { n: 're-a' }, () => { out.calls.push('A'); C.play('__layers', { n: 're-c' }, () => { out.calls.push('C'); }); });
+    C.pause();
+    C.play('__layers', { n: 're-b' }, () => { out.calls.push('B'); });
+    out.ran = C.running; out.sceneIsC = C.opts && C.opts.n === 're-c'; out.listenersLive = out.adds - out.removes; out.rafLive = C.raf != null;
+    out.afterNested = out.calls.join();
+    C.finish(); // ends the nested scene: its done runs
+    out.running = C.running; out.raf = C.raf; out.key = C.onKey; out.listeners = out.adds - out.removes; out.final = out.calls.join();
+    C.endChain();
+    window.addEventListener = add; window.removeEventListener = rem;
+    return out;
+  });
+  assert(reent.ran && reent.sceneIsC && reent.listenersLive === 1 && reent.rafLive, `re-entrant play: the nested scene is not the one running: ${JSON.stringify(reent)}`);
+  assert(reent.afterNested === 'A,B', `re-entrant play: done order before the nested scene ends: ${JSON.stringify(reent)}`);
+  assert(reent.final === 'A,B,C' && !reent.running && reent.raf === null && reent.key === null && reent.listeners === 0, `re-entrant play leaked a loop or listener, or a done ran twice: ${JSON.stringify(reent)}`);
+
   // failures warn once with the beat id; a throwing layer leaves the rest of the shot
   const before = warnings.length;
   const thr = await page.evaluate(() => {

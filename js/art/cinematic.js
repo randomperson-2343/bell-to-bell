@@ -84,7 +84,13 @@
     },
 
     play(name, opts, done) {
-      if (this.running) this.finish(); // end the scene in progress: loop stopped, listener removed, its done called once
+      if (this.running) {
+        this.finish(); // end the scene in progress: loop stopped, listener removed, its done called once
+        // That done may have started the next scene of a chain (a nested play): it owns the loop and the key listener now, and starting this one
+        // would overwrite both and leak them. This call is the one that yields: it is not played, and its own done is called once, at once.
+        // So exactly one scene is running, and every done (the old one's, the nested one's later, and this one's) is called exactly once.
+        if (this.running) return done && done();
+      }
       const builder = B.Scenes[name];
       const mode = this.mode();
       if (this.skippingChain || !builder || mode === 'off') return done && done();
