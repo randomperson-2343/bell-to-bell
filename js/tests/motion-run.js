@@ -250,7 +250,7 @@ async function run() {
     assert(await D8('holes', 'decision', o, i, 0.3) === 0 && await D8('holes', 'decision', o, i, a.dur) === 0, `${tag}: the picture has holes`);
     const long = Object.assign({}, o, { title: 'A very long title that goes on and on past any sensible width of caption box ok ok ok ok ok ok', S: null });
     assert(await D8('holes', 'decision', long, i, 0.9) === 0, `${tag}: a long title and no story state do not draw`);
-    reduced8.push([o, i]);
+    reduced8.push([o, i, 'decision']);
     return a;
   };
   const rect8 = async (o, i, max, tag) => { const r = await D8('rects', 'decision', o, i); assert(r.worst <= max, `${tag}: ${r.worst} rectangles a frame at ${r.at} s (budget ${max})`); return r.worst; };
@@ -285,6 +285,57 @@ async function run() {
     assert(await D8('pic', 'decision', o, 0, 'front', 0.3, false, [381, 150, 30, 30]) !== await D8('pic', 'decision', o, 0, 'front', 0.6, false, [381, 150, 30, 30]), `${tag}: the lamp does not light`);
     assert(await D8('pic', 'decision', o, 0, 'room', 0.1, false, [0, 0, 640, 360]) === await D8('pic', 'decision', o, 0, 'room', 1.4, false, [0, 0, 640, 360]), `${tag}: the back layer moves`);
     RECT8[tag] = await rect8(o, 0, 230, tag);
+  }
+
+  const idx8 = (scene, o, re) => page.evaluate(([s, o, re]) => BTB.Scenes[s](o).findIndex((b) => new RegExp(re).test(b.id)), [scene, o, re]);
+  // a borrowed use of a room: same checks on a news or weekend beat
+  const beatN = async (scene, o, re, want, tag) => {
+    const i = await idx8(scene, o, re), a = await D8('info', scene, o, i);
+    for (const k of Object.keys(want)) assert(String(a[k]) === String(want[k]), `${tag} beat: ${k} is ${a[k]}, want ${want[k]} (${JSON.stringify(a)})`);
+    assert(await shot(scene, o, i, 0.1) !== await shot(scene, o, i, a.dur - 0.1) && await shot(scene, o, i, 0.8) === await shot(scene, o, i, 0.8), `${tag}: not moving or not deterministic`);
+    assert(await D8('holes', scene, o, i, 0.3) === 0 && await D8('holes', scene, o, i, a.dur) === 0, `${tag}: holes`);
+    return [i, a];
+  };
+  const nOpt8 = (day, S) => Object.assign({ day, brief: { title: 'Headline of the day', feed: [] } }, S ? { game: { mode: { S } } } : {});
+
+  // shot 3: the hearing (c3 day 10; news 11 establish): the chair (senator 3) leans to his microphone 0.50-1.10 s, the LIVE light blinks
+  {
+    const o = dopts('c3'), tag = 'hearing';
+    await beat8(o, 0, { id: 'decision:c3:2:room', dur: 1.5, layers: 'room,grain', depths: '1,1', cam: '-6>0', cues: '', sfx: 'room', tr: 'fade' }, tag);
+    const bx = (t) => D8('box', 'decision', o, 0, 'room', t, [380, 130, 70, 60]), live = (t) => D8('cnt', 'decision', o, 0, 'room', t, [504, 70, 37, 9], 'any');
+    assert(JSON.stringify(await bx(0.3)) === '[399,422,144,164]' && JSON.stringify(await bx(0.8)) === '[402,425,150,170]' && JSON.stringify(await bx(1.2)) === '[399,422,144,164]' && JSON.stringify(await bx(1.5)) === '[399,422,144,164]', `${tag}: the chair does not lean 3 px right and 6 down in 0.50-1.10 s: ${await bx(0.3)} ${await bx(0.8)}`);
+    assert(await live(0.1) === 0 && await live(1.15) === 37 * 9 && await live(1.25) === 0 && await live(1.5) === 0, `${tag}: the LIVE light does not blink from 0.30 and end lit`);
+    RECT8[tag] = await rect8(o, 0, 60, tag);
+    const [i, a] = await beatN('news', nOpt8(11), ':establish$', { id: 'news:11:establish', dur: 1.7, layers: 'room,grain,marks', depths: '1,1,0', cam: '-6>0', cues: '' }, 'news 11 establish (hearing)');
+    assert(await D8('cnt', 'news', nOpt8(11), i, 'room', 1.7, [504, 70, 37, 9], 'any') === 0 && await D8('cnt', 'news', nOpt8(11), i, 'room', 1.35, [504, 70, 37, 9], 'any') === 333, 'news 11: the LIVE light does not end lit at 1.7 s');
+    reduced8.push([nOpt8(11), i, 'news']);
+  }
+  // shot 4: the vote (c8 day 39; news 38 and the bill passed on 41; the whip): the board fills line by line, YEAS counts 180 to 214
+  {
+    const o = dopts('c8'), tag = 'vote';
+    await beat8(o, 0, { id: 'decision:c8:7:room', dur: 1.5, layers: 'room,grain', depths: '1,1', cam: '-6>0', cues: '' }, tag);
+    const ink = (t, r) => D8('cnt', 'decision', o, 0, 'room', t, r, 'ink'), any = (t, r) => D8('cnt', 'decision', o, 0, 'room', t, r, 'any');
+    const L1 = [441, 66, 168, 12], L2 = [441, 82, 168, 12], L3 = [441, 105, 168, 12];
+    assert(await ink(0.2, L1) === 2016 && await ink(0.2, L2) === 2016 && await ink(0.2, L3) === 2016, `${tag}: the three lines are not covered at the start`);
+    assert(await any(0.5, L1) > 0 && await ink(0.5, L1) < 2016 && await ink(0.9, L2) === 2016 && await ink(1.05, L2) === 0 && await ink(1.05, L3) === 2016 && await ink(1.12, L3) === 0, `${tag}: the lines do not lift at 0.40, 1.00 and 1.10 s`);
+    // the number: nothing before 0.40, three digits right-aligned at x 603, steps at 15 a second, 214 from 0.95
+    const nb = (t) => D8('box', 'decision', o, 0, 'room', t, [441, 66, 168, 12]);
+    assert(await D8('cnt', 'decision', o, 0, 'room', 0.35, [560, 60, 60, 24], 'jade') === 0 && (await nb(0.45))[1] === (await nb(1.4))[1], `${tag}: the count moves or shows early`);
+    const pic = (t) => D8('pic', 'decision', o, 0, 'room', t, true, [560, 66, 50, 12]);
+    assert(await pic(0.5) !== await pic(0.7) && await pic(0.7) !== await pic(0.9) && await pic(0.98) === await pic(1.4), `${tag}: YEAS does not count up to 214 by 0.95 s`);
+    assert(await D8('cnt', 'decision', o, 0, 'room', 0.1, [0, 272, 640, 88], 'any') === 0, `${tag}: moves below y 272`);
+    RECT8[tag] = await rect8(o, 0, 110, tag); // the sheet's budget says 80; the shadowed digits measure higher
+    const [i, a] = await beatN('news', nOpt8(38), ':establish$', { id: 'news:38:establish', dur: 1.7, layers: 'room,grain,marks', depths: '1,1,0', cam: '-6>0', cues: '' }, 'news 38 establish (vote)');
+    reduced8.push([nOpt8(38), i, 'news']);
+    const o41 = nOpt8(41, { f: { billPassed: true } }), [j] = await beatN('news', o41, ':establish$', { dur: 1.7, layers: 'room,grain,marks', depths: '1,1,0', cam: '-6>0' }, 'news 41 bill passed establish');
+    reduced8.push([o41, j, 'news']);
+    assert(await D8('pic', 'news', o41, j, 'room', 1.7, false, [426, 30, 198, 105]) !== await D8('pic', 'news', nOpt8(38), i, 'room', 1.7, false, [426, 30, 198, 105]), 'news 41: the passed board is the unpassed one');
+    // holds stay flat
+    for (const d of [38, 41]) assert((await D8('info', 'news', nOpt8(d), await idx8('news', nOpt8(d), ':hold$'))).layers === '', `news ${d} hold is not flat`);
+    // the whip
+    const wo = { day: 39 }, [k, wa] = await beatN('weekend', wo, ':whip$', { dur: 1.6, layers: 'room,grain', depths: '1,1', cam: '-6>0', sfx: 'room' }, 'weekend whip');
+    assert(await ink(0.2, L1) === 2016 && await D8('cnt', 'weekend', wo, k, 'room', 0.2, L1, 'ink') === 2016 && await D8('cnt', 'weekend', wo, k, 'room', 1.12, L3, 'ink') === 0, 'whip: the board does not fill');
+    reduced8.push([wo, k, 'weekend']);
   }
   if (process.env.P8_ONLY) { console.log('motion-run: batch 7 pins pass'); return; }
 

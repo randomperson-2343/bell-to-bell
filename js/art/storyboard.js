@@ -888,7 +888,11 @@
       R.beat('weekend', `${key}:sun`, 1.8, (c) => sundayShot(c, day, home, w), story$ || 'SUNDAY NIGHT. THE ALARM IS SET FOR 5:58.', { sfx: 'apartment', informative: !!story$ })
     ];
     // One weekend gets a second room: the whip's phones the night before the vote.
-    if (day === 39 && B.DecisionArt) beats.push(R.beat('weekend', `${key}:whip`, 1.6, (c) => B.DecisionArt.room(c, 'c8', day), 'THE WHIP HAS 214. HE NEEDS 218.', { sfx: 'room' }));
+    if (day === 39 && B.DecisionArt) {
+      const whip = R.beat('weekend', `${key}:whip`, 1.6, (c) => B.DecisionArt.room(c, 'c8', day), 'THE WHIP HAS 214. HE NEEDS 218.', { sfx: 'room' });
+      const wl = B.DecisionArt.roomLayers && B.DecisionArt.roomLayers('c8', day, false, null, 'whip');
+      beats.push(wl ? B.Motion.layered(Object.assign({}, whip, wl)) : whip);
+    }
     beats.push(R.beat('weekend', `${key}:hold`, 0.8, (c) => { apartmentShot(c, day, home, true, w); c.save(); c.globalAlpha = 0.3; X.rect(c, 0, 0, V.w, V.h, P.ink); c.restore(); }, '', {}));
     if (day === 44) beats.push(R.beat('weekend', `${key}:317`, 1.6, (c) => (pulled && B.DecisionArt ? B.DecisionArt.room(c, 'c10', day, true, S) : at2x(c, (cc) => SH.tradingFloor(cc, 0.4, false, 60), day)),
       pulled ? 'THE FLOOR IS DARK. SO ARE THE RACKS.' : 'THE FLOOR IS DARK. THE RACKS ARE NOT.', {}));
@@ -1105,6 +1109,11 @@
         } },
       marksLayer(day, r)
     ];
+  }
+  // The vote and hearing rooms borrowed by the floor-tally establishes (sessions 11, 38 and the bill passed on 41): the decision room's own layers, then the marks.
+  function voteRoomLayers(day, r) {
+    const D = B.DecisionArt, L = D && D.roomLayers && D.roomLayers(day > 27 ? 'c8' : 'c3', day, true, { f: { billPassed: /PASSES/.test(r.arg || '') } }, 'establish');
+    return L ? L.layers.concat(marksLayer(day, r)) : null;
   }
   // The post establish is the phone handoff's recipe: the room still, a small dark device rising into it, waking on the one post.
   function postRoomLayers(day, r, title) {
@@ -1466,8 +1475,8 @@
       if (/:act$/.test(b.id)) beats[i] = B.Motion.layered(Object.assign({}, b, { camera: null, layers: actLayers(day) }));
       else if (docDetail && /:detail$/.test(b.id)) beats[i] = B.Motion.layered(Object.assign({}, b, docLayers(day, r, b.dur)));
       else if (insertEstablish && /:establish$/.test(b.id)) {
-        const doc = r.doc, L = doc === 'memo' || doc === 'footnote' ? deskLayers(day, r, title, false, b.dur) : doc === 'voicemail' ? voicemailRoomLayers(day, r, title) : doc === 'post' ? postRoomLayers(day, r, title) : doc === 'chart' ? chartRoomLayers(day, r, title) : doc === 'rating' ? tvRoomLayers(day, r, title, 0.7, [0.45, 0.95]) : doc === 'ticket' ? floorLayers(day, r, title, { phase: 'establish', zoom: FLOOR_ZOOM(day, r, false), dur: b.dur }) : null;
-        if (L) beats[i] = B.Motion.layered(Object.assign({}, b, { camera: doc === 'post' ? B.MotionKit.rise(56, b.dur, 0.30, 0.90) : doc === 'voicemail' || doc === 'chart' || doc === 'rating' || doc === 'ticket' ? SETTLE() : null, layers: L }, doc === 'ticket' ? { cues: [{ at: 0.30, sfx: 'office' }] } : {}));
+        const doc = r.doc, L = doc === 'memo' || doc === 'footnote' ? deskLayers(day, r, title, false, b.dur) : doc === 'voicemail' ? voicemailRoomLayers(day, r, title) : doc === 'post' ? postRoomLayers(day, r, title) : doc === 'chart' ? chartRoomLayers(day, r, title) : doc === 'rating' ? tvRoomLayers(day, r, title, 0.7, [0.45, 0.95]) : doc === 'ticket' ? floorLayers(day, r, title, { phase: 'establish', zoom: FLOOR_ZOOM(day, r, false), dur: b.dur }) : doc === 'vote' ? voteRoomLayers(day, r) : null;
+        if (L) beats[i] = B.Motion.layered(Object.assign({}, b, { camera: doc === 'post' ? B.MotionKit.rise(56, b.dur, 0.30, 0.90) : doc === 'voicemail' || doc === 'chart' || doc === 'rating' || doc === 'ticket' || doc === 'vote' ? SETTLE() : null, layers: L }, doc === 'ticket' ? { cues: [{ at: 0.30, sfx: 'office' }] } : {}));
       } else if (insertEstablish && /:hold$/.test(b.id) && (r.doc === 'memo' || r.doc === 'footnote')) beats[i] = B.Motion.layered(Object.assign({}, b, { camera: null, layers: deskLayers(day, r, title, true, b.dur) }));
       else if (r.shot === 'tv' && /:establish$/.test(b.id)) beats[i] = B.Motion.layered(Object.assign({}, b, { camera: SETTLE(), layers: tvRoomLayers(day, r, title, 0.7, [0.55, 1.15]) }));
       else if (r.shot === 'elevator' && /:(detail|hold)$/.test(b.id)) beats[i] = B.Motion.layered(Object.assign({}, b, { camera: null, layers: elevatorDoorsLayers(day, r, /:hold$/.test(b.id)) }));

@@ -460,6 +460,36 @@
     };
   };
 
+  // ---- shot 3: the hearing (the chair leans to his microphone, the LIVE light blinks) ----
+  LAYER.hearing = (e, flat, grain) => {
+    const K = e.K, chair = senatorRows(3);
+    return {
+      layers: [{
+        id: 'room', depth: 1, draw: flat({ skip: 'chair' }),
+        animate(g, v, t) {
+          const lean = t >= 0.50 && t < 1.10;
+          blit(g, chair, 399 + (lean ? 3 : 0), 144 + (lean ? 6 : 0));
+          if (t >= 0.30) K.blink(g, 504, 70, 37, 9, t, { on: null, off: P.ink, period: 0.5, duty: 0.6, end: e.dur });
+        }
+      }, grain]
+    };
+  };
+  // ---- shot 4: the vote (the tally board fills line by line while YEAS counts up to 214) ----
+  LAYER.vote = (e, flat, grain) => {
+    const K = e.K;
+    return {
+      layers: [{
+        id: 'room', depth: 1, draw: flat({ skip: 'count' }),
+        animate(g, v, t) {
+          if (t < 0.40) X.rect(g, 441, 66, 168, 12, P.ink);
+          if (t < 1.00) X.rect(g, 441, 82, 168, 12, P.ink);
+          if (t < 1.10) X.rect(g, 441, 105, 168, 12, P.ink);
+          K.tally(g, 603, 69, t, { from: 180, to: 214, at: 0.40, dur: 0.55, fps: 15, fmt: String, col: P.jade, shadow: P.ink, align: 'right' });
+        }
+      }, grain]
+    };
+  };
+
   function roomLayers(id, day, after, S, phase) {
     const M = B.Motion, K = B.MotionKit;
     if (!M || !M.layered || !K) return null;
