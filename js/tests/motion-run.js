@@ -194,7 +194,11 @@ async function run() {
     'en:grind:0': '6130e464', 'en:grind:1': 'adc43623', 'en:grind:2': '90d5e1c5', 'still:c1': 'cce31cad', 'still:c8': '555127f',
     'still:c8p': '253beda9', 'still:c10p': 'a7b1ee59', 'still:vetER': '5c769bd7', 'still:adopt': 'cfc09921', 'still:pet': 'cc7ee552'
   };
-  const P8_CHANGED = {};
+  // batch 8 (ruled, the sheet's final-frame sections): the weekend's sun and hold beats show the weather's pose at chain time and the lit floor phone (or the dead laptop on day 44 with the plug pulled); only these six
+  const P8_CHANGED = {
+    'bw:wk39:sun': 'ac0b679a', 'bw:wk39:hold': '65ad87fa', 'bw:wk44:sun': '89481e60', 'bw:wk44:hold': '23753157', 'bw:wk44p:sun': 'fa6106a0',
+    'bw:wk44p:hold': '54a7eea9'
+  };
   const p8now = await collectP8();
   for (const k of Object.keys(P8_REF)) assert(p8now[k] === (P8_CHANGED[k] || P8_REF[k]), `batch 7 ${k}: the picture changed (${p8now[k]}, was ${P8_CHANGED[k] || P8_REF[k]})`);
   assert(Object.keys(p8now).length === Object.keys(P8_REF).length, 'batch 7: the set of reference pictures changed');
@@ -329,7 +333,47 @@ async function run() {
     'flat:night:44:t5:l2:cat': 'ac05a65b', 'flat:sun:44:t5:l2:dog': 'ec01ba0e', 'flat:night:44:t5:l2:dog': '2a9dedcc', 'flat:sun:nogame': 'fb989ec6',
     'flat:night:nogame': '42dd8757'
   };
-  const P9_CHANGED = {};
+  // batch 8 (ruled): every sun and hold final frame changes in the window (weather particles at their chain-time pose) and, without a figure, the floor phone is lit
+  // (pulled day 44: the laptop screen is dark); sat, whip, 317 and the flat sundayShot / apartmentShot(night) pictures are unchanged. The asserts below prove the changes are confined to those regions.
+  const P9_CHANGED = {
+    'wk:9:t0:l0:n:sun': 'e82ff5f7', 'wk:9:t0:l0:n:hold': '69dfe4c3', 'wk:9:t0:l0:cat:sun': '192f3aae', 'wk:9:t0:l0:cat:hold': '8755200',
+    'wk:9:t0:l0:dog:sun': 'fc5096ca', 'wk:9:t0:l0:dog:hold': '84bce7cc', 'wk:9:t0:l2:n:sun': '20006339', 'wk:9:t0:l2:n:hold': 'f4575977',
+    'wk:9:t0:l2:cat:sun': '2425229b', 'wk:9:t0:l2:cat:hold': 'b15d4bc1', 'wk:9:t0:l2:dog:sun': '58a89dcb', 'wk:9:t0:l2:dog:hold': '207edc71',
+    'wk:9:t2:l0:n:sun': '13c72db8', 'wk:9:t2:l0:n:hold': 'ca4067fa', 'wk:9:t2:l0:cat:sun': '38508299', 'wk:9:t2:l0:cat:hold': 'db844aa7',
+    'wk:9:t2:l0:dog:sun': 'f3cde8b', 'wk:9:t2:l0:dog:hold': 'dd8a5fbc', 'wk:9:t2:l2:n:sun': 'c6e867f2', 'wk:9:t2:l2:n:hold': '6cc0e102',
+    'wk:9:t2:l2:cat:sun': '9819f7f2', 'wk:9:t2:l2:cat:hold': '90f87747', 'wk:9:t2:l2:dog:sun': 'e7e521e5', 'wk:9:t2:l2:dog:hold': '37a65a7c',
+    'wk:9:t5:l0:n:sun': '8edf8b87', 'wk:9:t5:l0:n:hold': 'e21cc39d', 'wk:9:t5:l0:cat:sun': '40148416', 'wk:9:t5:l0:cat:hold': '46ad461d',
+    'wk:9:t5:l0:dog:sun': '3764a524', 'wk:9:t5:l0:dog:hold': 'c9a7ff5d', 'wk:9:t5:l2:n:sun': '9dac5c9', 'wk:9:t5:l2:n:hold': 'ebb54d4d',
+    'wk:9:t5:l2:cat:sun': 'cfc16289', 'wk:9:t5:l2:cat:hold': '6448c3d3', 'wk:9:t5:l2:dog:sun': '3a413a44', 'wk:9:t5:l2:dog:hold': 'd1d4b799',
+    'wk:19:t2:l0:n:sun': '40e000de', 'wk:19:t2:l0:n:hold': 'b6dfe616', 'wk:19:t0:l2:cat:sun': 'b0e38ae9', 'wk:19:t0:l2:cat:hold': '76ed9021',
+    'wk:19:t4:l0:dog:sun': 'c1a6e841', 'wk:19:t4:l0:dog:hold': 'b2734915', 'wk:19:t1:l2:n:sun': 'e5099c70', 'wk:19:t1:l2:n:hold': 'ec3b2d9b',
+    'wk:49:t2:l0:n:sun': '939b500a', 'wk:49:t2:l0:n:hold': 'd5c24053', 'wk:49:t0:l2:cat:sun': 'eccb4298', 'wk:49:t0:l2:cat:hold': '9145bf9c',
+    'wk:49:t4:l0:dog:sun': 'bcf22146', 'wk:49:t4:l0:dog:hold': '1a6b8cb9', 'wk:49:t1:l2:n:sun': 'e85dc7d4', 'wk:49:t1:l2:n:hold': '9899d55e',
+    'wk:4:t2:l0:n:sun': '50dae219', 'wk:4:t2:l0:n:hold': '87ad46', 'wk:4:t0:l2:cat:sun': '3d0fab38', 'wk:4:t0:l2:cat:hold': '28c2607d',
+    'wk:4:t3:l0:dog:sun': '5716a88c', 'wk:4:t3:l0:dog:hold': '1bce48ad', 'wk:4:t1:l2:n:sun': 'e4989b7', 'wk:4:t1:l2:n:hold': '9c9ad3fc',
+    'wk:14:t2:l0:n:sun': 'c6e3d135', 'wk:14:t2:l0:n:hold': 'a834450e', 'wk:14:t0:l2:cat:sun': '9968b6d0', 'wk:14:t0:l2:cat:hold': '5d4641fb',
+    'wk:14:t3:l0:dog:sun': 'ae2d3311', 'wk:14:t3:l0:dog:hold': '8633b5a3', 'wk:14:t1:l2:n:sun': '349658f7', 'wk:14:t1:l2:n:hold': 'e7b6ab26',
+    'wk:24:t2:l0:n:sun': 'fce4414e', 'wk:24:t2:l0:n:hold': '18f2568d', 'wk:24:t0:l2:cat:sun': '817e486', 'wk:24:t0:l2:cat:hold': 'd030cdb1',
+    'wk:24:t3:l0:dog:sun': '84764d4a', 'wk:24:t3:l0:dog:hold': 'c35166e9', 'wk:24:t1:l2:n:sun': 'd85a3345', 'wk:24:t1:l2:n:hold': '6ae137b7',
+    'wk:34:t2:l0:n:sun': 'a45437fc', 'wk:34:t2:l0:n:hold': '65de93f8', 'wk:34:t0:l2:cat:sun': 'b4114ba4', 'wk:34:t0:l2:cat:hold': '73c741a6',
+    'wk:34:t3:l0:dog:sun': 'd4ac06dd', 'wk:34:t3:l0:dog:hold': 'ddbc1c9e', 'wk:34:t1:l2:n:sun': 'e07e269e', 'wk:34:t1:l2:n:hold': '25d3d84f',
+    'wk:39:t2:l0:n:sun': 'ac0b679a', 'wk:39:t2:l0:n:hold': '65ad87fa', 'wk:39:t0:l2:cat:sun': '714553fb', 'wk:39:t0:l2:cat:hold': '5c3b6262',
+    'wk:39:t3:l0:dog:sun': '75399c36', 'wk:39:t3:l0:dog:hold': '3ac63fbb', 'wk:39:t1:l2:n:sun': '461296fc', 'wk:39:t1:l2:n:hold': '1169e9f4',
+    'wk:44:t0:l0:n:o:sun': 'fec08cb9', 'wk:44:t0:l0:n:o:hold': '55e703ac', 'wk:44:t0:l0:cat:o:sun': '4b224082', 'wk:44:t0:l0:cat:o:hold': '3cc02b3a',
+    'wk:44:t0:l2:n:o:sun': '141de675', 'wk:44:t0:l2:n:o:hold': '103a189b', 'wk:44:t0:l2:cat:o:sun': '9e03aec', 'wk:44:t0:l2:cat:o:hold': 'c032db71',
+    'wk:44:t2:l0:n:o:sun': '89481e60', 'wk:44:t2:l0:n:o:hold': '23753157', 'wk:44:t2:l0:cat:o:sun': '7fefb5ce', 'wk:44:t2:l0:cat:o:hold': '1d3d06f3',
+    'wk:44:t2:l2:n:o:sun': '2aa80011', 'wk:44:t2:l2:n:o:hold': '8d86263d', 'wk:44:t2:l2:cat:o:sun': '6d0ef604', 'wk:44:t2:l2:cat:o:hold': '37f94583',
+    'wk:44:t5:l0:n:o:sun': '1a5ec5e7', 'wk:44:t5:l0:n:o:hold': 'e92aebe5', 'wk:44:t5:l0:cat:o:sun': '1152f1f', 'wk:44:t5:l0:cat:o:hold': 'e5d04250',
+    'wk:44:t5:l2:n:o:sun': 'e2f1c3d5', 'wk:44:t5:l2:n:o:hold': 'a1627c9b', 'wk:44:t5:l2:cat:o:sun': '91d089dc', 'wk:44:t5:l2:cat:o:hold': 'c0e2a8d9',
+    'wk:44:t0:l0:n:p:sun': 'abc866f6', 'wk:44:t0:l0:n:p:hold': '24b91302', 'wk:44:t0:l0:cat:p:sun': '9e048688', 'wk:44:t0:l0:cat:p:hold': 'c41df4e1',
+    'wk:44:t0:l2:n:p:sun': 'bf9550da', 'wk:44:t0:l2:n:p:hold': 'e7d21bc5', 'wk:44:t0:l2:cat:p:sun': 'b68365f8', 'wk:44:t0:l2:cat:p:hold': '7d6dfcb2',
+    'wk:44:t2:l0:n:p:sun': 'fa6106a0', 'wk:44:t2:l0:n:p:hold': '54a7eea9', 'wk:44:t2:l0:cat:p:sun': '6f0afb9b', 'wk:44:t2:l0:cat:p:hold': '45b48a10',
+    'wk:44:t2:l2:n:p:sun': 'e042aac1', 'wk:44:t2:l2:n:p:hold': 'e1e1964c', 'wk:44:t2:l2:cat:p:sun': '4a305fb9', 'wk:44:t2:l2:cat:p:hold': '9eab2d3f',
+    'wk:44:t5:l0:n:p:sun': '13dd524', 'wk:44:t5:l0:n:p:hold': '6039f560', 'wk:44:t5:l0:cat:p:sun': '91d074a9', 'wk:44:t5:l0:cat:p:hold': '112c6725',
+    'wk:44:t5:l2:n:p:sun': '8dd9b067', 'wk:44:t5:l2:n:p:hold': 'cff2d2ac', 'wk:44:t5:l2:cat:p:sun': '3c92f40c', 'wk:44:t5:l2:cat:p:hold': '89db83e',
+    'wk:nogame:9:sun': '13c72db8', 'wk:nogame:9:hold': 'ca4067fa', 'wk:nogame:39:sun': 'ac0b679a', 'wk:nogame:39:hold': '65ad87fa',
+    'wk:nogame:44:sun': '89481e60', 'wk:nogame:44:hold': '23753157'
+  };
   const p9now = await collectP9();
   for (const k of Object.keys(P9_REF)) assert(p9now[k] === (P9_CHANGED[k] || P9_REF[k]), `batch 8 ${k}: the picture changed (${p9now[k]}, was ${P9_CHANGED[k] || P9_REF[k]})`);
   assert(Object.keys(p9now).length === Object.keys(P9_REF).length, 'batch 8: the set of reference pictures changed');
@@ -419,6 +463,248 @@ async function run() {
     return out;
   });
   for (const r of badgeEnd) assert(r.d1 === 0 && r.d2 === 0 && r.colours > 1 && r.rect[2] > 20, `A1: blink region at dur - 0.02 differs from the final still: ${JSON.stringify(r)}`);
+
+  // ---- stage 3 batch 8, part B: the weekend remainder (Sunday, hold, the 3:17 beat in both forms) ----
+  await page.evaluate(() => {
+    const view = { w: 640, h: 360 }, canvas = () => { const c = document.createElement('canvas'); c.width = 640; c.height = 360; const g = c.getContext('2d', { willReadFrequently: true }); g.imageSmoothingEnabled = false; return g; };
+    const PETS = { n: null, cat: { pet: { kind: 'cat', sex: 'boy' } }, dog: { pet: { kind: 'dog', sex: 'girl' }, vet: 'neglected' } };
+    const rgbOf = (spec) => { const hex = BTB.Pal[spec]; return [1, 3, 5].map((k) => parseInt(hex.slice(k, k + 2), 16)); };
+    window.w8 = {
+      opts: (day, tier, late, pet, plug) => ({ day, game: { mode: { S: Object.assign({ wallet: Object.assign({ tier, lateWeeks: late }, PETS[pet] || {}) }, plug ? { f: { pulledPlug: true } } : {}) } } }),
+      beat: (o, re) => BTB.Scenes.weekend(o).findIndex((b) => new RegExp(re).test(b.id)),
+      info: (o, i) => { const b = BTB.Scenes.weekend(o)[i]; return { id: b.id, dur: b.dur, layers: (b.layers || []).map((l) => l.id).join(), depths: (b.layers || []).map((l) => l.depth).join(), cues: (b.cues || []).map((c) => c.at + ':' + c.sfx).join(), sfx: b.sfx || '', cam: b.camera ? b.camera.from.y + '>' + b.camera.to.y : 'none', tr: BTB.Motion.transitionFor(b, 1) }; },
+      // the animate of one layer alone on a transparent canvas: pixels with any alpha (spec 'any') or exactly a palette colour inside r
+      cnt: (o, i, id, t, r, spec) => {
+        const b = BTB.Scenes.weekend(o)[i], layer = b.layers.find((l) => l.id === id), g = canvas();
+        layer.animate(g, view, t, t / b.dur, {});
+        const d = g.getImageData(r[0], r[1], r[2], r[3]).data, c = !spec || spec === 'any' ? null : rgbOf(spec); let n = 0;
+        for (let k = 0; k < d.length; k += 4) { if (c ? d[k + 3] === 255 && d[k] === c[0] && d[k + 1] === c[1] && d[k + 2] === c[2] : d[k + 3] > 0) n++; }
+        return n;
+      },
+      box: (o, i, id, t, r) => {
+        const b = BTB.Scenes.weekend(o)[i], layer = b.layers.find((l) => l.id === id), g = canvas();
+        layer.animate(g, view, t, t / b.dur, {});
+        const d = g.getImageData(0, 0, 640, 360).data; let x0 = 1e9, x1 = -1, y0 = 1e9, y1 = -1;
+        for (let y = r[1]; y < r[1] + r[3]; y++) for (let x = r[0]; x < r[0] + r[2]; x++) if (d[(y * 640 + x) * 4 + 3]) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); }
+        return [x0, x1, y0, y1];
+      },
+      anim: (o, i, id, t) => { const b = BTB.Scenes.weekend(o)[i], layer = b.layers.find((l) => l.id === id), g = canvas(); layer.animate(g, view, t, t / b.dur, {}); const d = g.getImageData(0, 0, 640, 360).data; let x = 2166136261; for (let k = 0; k < d.length; k++) { x ^= d[k]; x = Math.imul(x, 16777619); } return (x >>> 0).toString(16); },
+      // the most fillRect calls the animates of all layers make in one frame, over the beat in 0.05 s steps
+      rects: (o, i) => {
+        const b = BTB.Scenes.weekend(o)[i], g = canvas(), P = CanvasRenderingContext2D.prototype, orig = P.fillRect; let n = 0, worst = 0;
+        P.fillRect = function (...a) { n++; return orig.apply(this, a); };
+        try { for (let k = 0; k <= Math.round(b.dur / 0.05) + 1; k++) { const t = Math.min(b.dur, k * 0.05); n = 0; b.layers.forEach((l) => { if (l.animate) { g.save(); l.animate(g, view, t, t / b.dur, {}); g.restore(); } }); worst = Math.max(worst, n); } } finally { P.fillRect = orig; }
+        return worst;
+      },
+      cover: (o, i) => { const b = BTB.Scenes.weekend(o)[i], g = canvas(); b.draw(g, view, 1, {}); const d = g.getImageData(0, 0, 640, 360).data; let a = 0; for (let k = 3; k < d.length; k += 4) a += d[k] === 255 ? 1 : 0; return a; },
+      // the final picture against the flat one (flatFn): pixels that differ, by region (the changes the sheet allows: window, phone and its light, laptop, face)
+      finalDiff: (o, i, kind) => {
+        const SB = BTB.Storyboard, w = o.game && o.game.mode.S.wallet, day = o.day, home = SB.homeOf(w), rect = SB.windowRect(home), L = SB.laptopRect(home);
+        const b = BTB.Scenes.weekend(o)[i], a = canvas(), f = canvas(); b.draw(a, view, 1, {});
+        let tf = (x, y) => [x, y];
+        if (kind === 'sun') { SB.sundayShot(f, day, home, w); tf = (x, y) => [1.18 * x - 36, 1.18 * y - 50]; }
+        else { SB.apartmentShot(f, day, home, true, w); f.save(); f.globalAlpha = 0.3; f.fillStyle = BTB.Pal.ink; f.fillRect(0, 0, 640, 360); f.restore(); }
+        const A = a.getImageData(0, 0, 640, 360).data, F = f.getImageData(0, 0, 640, 360).data;
+        const reg = (x0, y0, w0, h0) => { const p = tf(x0, y0), q = tf(x0 + w0, y0 + h0); return [Math.floor(p[0]) - 2, Math.floor(p[1]) - 2, Math.ceil(q[0]) + 2, Math.ceil(q[1]) + 2]; };
+        const R = { win: reg(rect.wx, rect.wy, rect.ww, rect.wh), phone: reg(204, 233, 61, 36), lap: reg(L.x, L.y, L.w, L.h) };
+        const cnt = { win: 0, phone: 0, lap: 0, else: 0 };
+        for (let k = 0; k < A.length; k += 4) if (A[k] !== F[k] || A[k + 1] !== F[k + 1] || A[k + 2] !== F[k + 2]) {
+          const x = (k / 4) % 640, y = Math.floor(k / 4 / 640); let hit = 'else';
+          for (const n in R) { const r = R[n]; if (x >= r[0] && x < r[2] && y >= r[1] && y < r[3]) { hit = n; break; } }
+          cnt[hit]++;
+        }
+        return cnt;
+      },
+      particleCalls: (o, i, t) => {
+        const M = BTB.Motion, orig = M.particles, calls = [], b = BTB.Scenes.weekend(o)[i], layer = b.layers.find((l) => l.id === 'outside'), g = canvas();
+        M.particles = function (q) { calls.push({ seed: q.seed, t: q.t, kind: q.kind }); return orig.apply(this, arguments); };
+        try { layer.animate(g, view, t, t / b.dur, {}); } finally { M.particles = orig; }
+        return calls[0];
+      },
+      holes: (o, i) => {
+        const M = BTB.Motion, b = BTB.Scenes.weekend(o)[i], bad = [], cache = {};
+        for (let y = 0; y <= 6; y++) {
+          const g = canvas(); g.fillStyle = '#ff00ff'; g.fillRect(0, 0, 640, 360);
+          M.composite(g, view, b, 1, 0.5, {}, { x: 0, y, zoom: 1 }, (layer) => { if (cache[layer.id]) return cache[layer.id]; const lc = canvas(); layer.draw(lc, view, {}); return (cache[layer.id] = lc.canvas); });
+          const d = g.getImageData(0, 0, 640, 348).data; let n = 0;
+          for (let k = 0; k < d.length; k += 4) if (d[k] === 255 && d[k + 1] === 0 && d[k + 2] === 255) n++;
+          if (n) bad.push({ y, n });
+        }
+        return bad;
+      }
+    };
+  });
+  const W8 = (fn, ...args) => page.evaluate(([fn, args]) => window.w8[fn](...args), [fn, args]);
+  const W8o = (...a) => page.evaluate((a) => window.w8.opts(...a), a);
+  const RECT9 = {};
+  const keyOf = (o) => page.evaluate((o) => BTB.Scenes.weekend(o)[0].id.replace(/^weekend:/, '').replace(/:sat$/, ''), o);
+  // generic checks for a layered weekend beat
+  const wkBeat = async (tag, o, re, want, area) => {
+    const i = await W8('beat', o, re), a = await W8('info', o, i);
+    for (const k of Object.keys(want)) assert(a[k] === want[k], `${tag}: ${k} is '${a[k]}', wanted '${want[k]}' (${JSON.stringify(a)})`);
+    assert(a.layers !== '', `${tag}: the beat has no layers`);
+    const t1 = area ? area[0] : 0.1, t2 = area ? area[1] : a.dur - 0.1;
+    assert(await shot('weekend', o, i, t1) !== await shot('weekend', o, i, t2), `${tag}: the picture is the same at ${t1} and ${t2}`);
+    assert(await shot('weekend', o, i, 0.6) === await shot('weekend', o, i, 0.6), `${tag}: the same time gave different pictures`);
+    assert(await W8('cover', o, i) === 640 * 360, `${tag}: the final picture has holes`);
+    return { i, a };
+  };
+  const SUN = (day, tier, late, pet, plug) => ({ day, tier, late, pet, plug, o: null });
+  // [tag, day, tier, late, pet, plug, expected cue, figure?]
+  const SUNV = [
+    ['sun studio', 9, 2, 0, 'n', 0, '1.15:news', false], ['sun penthouse winter cat', 49, 5, 0, 'cat', 0, '1.15:news', false], ['sun onebed grey', 19, 3, 0, 'n', 0, '1.15:news', false],
+    ['sun couch', 9, 0, 0, 'n', 0, '', true], ['sun share late', 24, 1, 2, 'dog', 0, '', true], ['sun loft late', 19, 4, 1, 'cat', 0, '', true],
+    ['sun whip day', 39, 2, 0, 'n', 0, '1.15:ring', false], ['sun day 44', 44, 2, 0, 'n', 0, '1.15:news', false],
+    ['sun day 44 pulled', 44, 2, 0, 'cat', 1, '1.15:click', false], ['sun day 44 pulled couch', 44, 0, 0, 'n', 1, '1.15:click', true]
+  ];
+  for (const [tag, day, tier, late, pet, plug, cue, fig] of SUNV) {
+    const o = await W8o(day, tier, late, pet, plug), key = await keyOf(o), pulled44 = day === 44 && plug;
+    const { i } = await wkBeat(tag, o, ':sun$', { id: `weekend:${key}:sun`, dur: 1.8, layers: 'outside,room,furniture,front,grain', depths: '0.25,0.5,0.85,1.2,0', cam: '6>0', sfx: 'apartment', tr: 'cross', cues: cue });
+    const home = await page.evaluate((o) => BTB.Storyboard.homeOf(o.game.mode.S.wallet).id, o);
+    // screen rects of the elements (the 1.18 frame: sx = 1.18 ax - 36, sy = 1.18 ay - 50)
+    const phoneR = [198, 218, 78, 56], faceR = [208, home === 'share' ? 208 : 162, 60, 50], petR = [452, 200, 110, 78];
+    const phone = (t, id) => W8('cnt', o, i, id || 'front', t, phoneR, 'any'), face = (t) => W8('cnt', o, i, 'front', t, faceR, 'any');
+    if (!fig && !pulled44) {
+      // the floor phone lights at 1.15 with one flare, throws its light up the bed, the bar follows at 1.23; static after 1.31; all above screen y 272
+      const p0 = await phone(1.10), p1 = await phone(1.17), p2 = await phone(1.25), p3 = await phone(1.35);
+      if (day === 39) {
+        // rings: the screen and bar are on/off with the badge phase (off 1.30 to 1.50), the spill stays and the end is lit
+        assert(p0 === 0 && p1 > 1200 && await phone(1.40) > 0 && await phone(1.40) < await phone(1.60) && await phone(1.60) === await phone(1.79) && await phone(1.79) === await phone(1.8), `${tag}: the phone does not ring from 1.15 (off 1.3-1.5) and end lit (${p0} ${p1} ${await phone(1.40)} ${await phone(1.60)})`);
+      } else {
+        assert(p0 === 0 && p1 >= p3 && p1 > 1200 && p2 === p3 && p3 > 1200 && await phone(1.8) === p3 && await phone(1.5) === p3, `${tag}: the phone does not light at 1.15 and stay (${p0} ${p1} ${p2} ${p3})`);
+        assert(await phone(1.17) > await phone(1.27) && await phone(1.17) === await phone(1.21) && await phone(1.27) === await phone(1.5), `${tag}: the flare is not one bone flash in 1.15 to 1.23 s`);
+        assert(await W8('cnt', o, i, 'front', 1.21, phoneR, 'white') === 0 && await W8('cnt', o, i, 'front', 1.27, phoneR, 'white') > 10, `${tag}: the notification bar does not appear at 1.23 s`);
+      }
+      const bx = await W8('box', o, i, 'front', 1.6, [0, 0, 640, 360]);
+      assert(bx[3] <= 271 && bx[0] >= 195 && bx[1] <= 280 && bx[2] >= 215 && (!pet || pet === 'n' || true), `${tag}: the phone light leaves its band ${bx}`);
+      assert(await face(0.5) === 0 && await face(1.2) === 0, `${tag}: a face glow without a figure`);
+    }
+    if (fig && !pulled44) {
+      // three scroll flashes on the face and chest: [0.45, 0.55), [0.80, 0.90), [1.15, 1.30); nothing else; the floor phone stays dark
+      assert(await face(0.40) === 0 && await face(0.50) > 1000 && await face(0.60) === 0 && await face(0.85) > 1000 && await face(0.95) === 0 && await face(1.2) > 1000 && await face(1.35) === 0 && await face(1.8) === 0, `${tag}: the face does not flash at 0.45, 0.80 and 1.15 (${await face(0.5)} ${await face(0.6)})`);
+      const fb = await W8('box', o, i, 'front', 0.5, faceR);
+      assert(fb[1] - fb[0] >= 40 && fb[3] - fb[2] >= 26 && fb[3] <= 271, `${tag}: the face glow is not about 43x28 px: ${fb}`);
+      assert(await W8('cnt', o, i, 'front', 1.2, phoneR.slice(0, 1).concat([240, 78, 30]), 'any') === 0, `${tag}: the floor phone lights while you hold it`);
+    }
+    if (pulled44) {
+      // the laptop (furniture animate) switches off at 1.15 and stays dark: the sheet's crt 'off' (line and dot for 0.1 s, then fill); no phone, no face pulse
+      const L = await page.evaluate((o) => BTB.Storyboard.laptopRect(BTB.Storyboard.homeOf(o.game.mode.S.wallet)), o), r = [Math.floor(1.18 * L.x - 36) - 3, Math.floor(1.18 * L.y - 50) - 3, Math.ceil(1.18 * L.w) + 7, Math.ceil(1.18 * L.h) + 7];
+      const lap = (t) => W8('cnt', o, i, 'furniture', t, r, 'any');
+      assert(await lap(1.10) === 0 && await lap(1.17) > 600 && await lap(1.22) > 600 && await lap(1.30) === await lap(1.8) && await W8('anim', o, i, 'furniture', 1.17) !== await W8('anim', o, i, 'furniture', 1.30), `${tag}: the laptop does not switch off at 1.15 s (${await lap(1.10)} ${await lap(1.17)} ${await lap(1.30)})`);
+      assert(await phone(1.5) === 0 && await face(0.5) === 0 && await face(1.2) === 0, `${tag}: the phone or the face moves on the pulled night`);
+    }
+    // the colon: covered while off (0 to 0.30 and 0.80 to 1.30), on at the end (a cover drawn over nothing at 1.8)
+    const colonR = [310, 184, 24, 20], colon = (t) => W8('cnt', o, i, 'furniture', t, colonR, 'any');
+    const cx = home === 'couch' ? 1.18 * (309 + 45) - 36 : 1.18 * 300 - 36;
+    const cr = [Math.floor(cx) - 4, 184, 16, 20], cn = (t) => W8('cnt', o, i, 'furniture', t, cr, 'any');
+    assert(await cn(0.1) > 0 && await cn(0.5) === 0 && await cn(0.9) > 0 && await cn(1.2) > 0 && await cn(1.4) === 0 && await cn(1.8) === 0 && await cn(1.79) === 0, `${tag}: the colon does not go out 0 to 0.30 and 0.80 to 1.30 and end on (${await cn(0.1)} ${await cn(0.5)} ${await cn(0.9)} ${await cn(1.4)})`);
+    // the pet breathes once, 0.40 to 1.00 (only with a pet)
+    const br = (t) => W8('cnt', o, i, 'front', t, petR, 'any');
+    if (pet !== 'n') assert(await br(0.35) === 0 && await br(0.5) > 100 && await br(0.95) > 100 && await br(1.05) === 0 && await br(1.5) === 0, `${tag}: the pet's breath is not 0.40 to 1.00 s`);
+    else assert(await br(0.7) === 0, `${tag}: a breath without a pet`);
+    // cheap per frame (C9)
+    const rc = await W8('rects', o, i);
+    assert(rc <= 270, `${tag}: ${rc} rectangles in the busiest frame (sheet worst case 258)`);
+    RECT9[tag] = rc;
+    // nothing below screen y 272 in the animates of what matters while the caption is up (the phone light, the face glow, the laptop)
+    // weather and the pet's breath stay where they are
+  }
+  // the camera: 6 px settle, hole check at every position for six tiers
+  for (const [day, tier] of [[9, 0], [19, 1], [9, 2], [49, 3], [19, 4], [44, 5]]) {
+    const o = await W8o(day, tier, tier % 3, tier === 1 ? 'dog' : tier === 3 ? 'cat' : 'n', 0), i = await W8('beat', o, ':sun$');
+    const h = await W8('holes', o, i);
+    assert(!h.length, `sun tier ${tier} day ${day}: holes above the letterbox ${JSON.stringify(h)}`);
+  }
+  // weather: the same seed as Saturday and chain time (sun at 2.4, hold at 4.2, 5.8 after the whip), poses continuous across the cuts
+  for (const [day, tier] of [[9, 2], [49, 4], [19, 2], [39, 2], [44, 2]]) {
+    const o = await W8o(day, tier, 0, 'n', 0), si = await W8('beat', o, ':sat$'), ni = await W8('beat', o, ':sun$'), hi = await W8('beat', o, ':hold$');
+    const sat = await W8('particleCalls', o, si, 0.7), sun0 = await W8('particleCalls', o, ni, 0), sun1 = await W8('particleCalls', o, ni, 1.8), hold0 = await W8('particleCalls', o, hi, 0), hold1 = await W8('particleCalls', o, hi, 0.8);
+    const q = (t) => (sat.kind === 'rain' ? t : Math.floor(t * 12) / 12);
+    assert(sat.seed === sun0.seed && sun0.seed === hold0.seed && sun0.t === q(2.4) && Math.abs(sun1.t - q(4.2)) < 1e-9 && Math.abs(hold0.t - q(day === 39 ? 5.8 : 4.2)) < 1e-9 && hold1.t >= hold0.t, `weather ${day}: the chain time or seed is not continuous (${JSON.stringify([sat, sun0, sun1, hold0, hold1])})`);
+    if (day !== 39) assert(Math.abs(sun1.t - hold0.t) < 1e-9 || sat.kind === 'rain', `weather ${day}: the hold does not start where Sunday ended`);
+  }
+  // the final pictures of sun and hold are the flat room plus the sheet's changes only: the window, the floor phone and its light, the laptop
+  for (const [day, tier, late, pet, plug] of [[9, 0, 0, 'n', 0], [9, 2, 2, 'cat', 0], [9, 5, 0, 'dog', 0], [19, 3, 1, 'n', 0], [49, 4, 0, 'cat', 0], [39, 2, 0, 'n', 0], [44, 2, 0, 'n', 0], [44, 2, 0, 'n', 1], [44, 0, 0, 'cat', 1], [24, 1, 2, 'dog', 0]]) {
+    const o = await W8o(day, tier, late, pet, plug);
+    for (const kind of ['sun', 'hold']) {
+      const d = await W8('finalDiff', o, await W8('beat', o, `:${kind}$`), kind);
+      assert(d.else === 0 && d.win > 0, `${kind} ${day} t${tier} l${late} ${pet} ${plug}: the final picture differs from the flat room outside the window, phone and laptop: ${JSON.stringify(d)}`);
+      const lit = !(tier === 0 || late > 0) && !(day === 44 && plug);
+      assert((d.phone > 0) === lit && (d.lap > 0) === !!(day === 44 && plug), `${kind} ${day} t${tier} l${late} ${pet} ${plug}: phone/laptop change ${JSON.stringify(d)}`);
+    }
+  }
+  // the hold: the night room under a 0.3 dim; three layers, no camera, a cut in; the colon off 0 to 0.30 and on to the end; Sunday's phone (or dead laptop) carried
+  const HOLDV = [['hold studio', 9, 2, 0, 'n', 0, false], ['hold couch winter cat', 49, 0, 0, 'cat', 0, true], ['hold late', 19, 3, 2, 'dog', 0, true], ['hold whip day', 39, 2, 0, 'n', 0, false], ['hold day 44', 44, 5, 0, 'n', 0, false], ['hold day 44 pulled', 44, 2, 0, 'cat', 1, false]];
+  for (const [tag, day, tier, late, pet, plug, fig] of HOLDV) {
+    const o = await W8o(day, tier, late, pet, plug), key = await keyOf(o), pulled44 = day === 44 && plug;
+    const { i } = await wkBeat(tag, o, ':hold$', { id: `weekend:${key}:hold`, dur: 0.8, layers: 'outside,interior,grain', depths: '1,1,1', cam: 'none', sfx: '', cues: '', tr: 'cut' });
+    const home = await page.evaluate((o) => BTB.Storyboard.homeOf(o.game.mode.S.wallet).id, o);
+    const cx = 1.18 * 0 + (home === 'couch' ? 309 + 45 : 300), cr = [cx - 3, 200, 10, 14], cn = (t) => W8('cnt', o, i, 'interior', t, cr, 'any');
+    assert(await cn(0.1) > 0 && await cn(0.25) > 0 && await cn(0.35) === 0 && await cn(0.6) === 0 && await cn(0.79) === 0, `${tag}: the colon is not off to 0.30 and on to the end`);
+    assert(await W8('anim', o, i, 'outside', 0.1) !== await W8('anim', o, i, 'outside', 0.5), `${tag}: the weather does not fall`);
+    const phoneR = [200, 232, 60, 40], ph = (t) => W8('cnt', o, i, 'interior', t, phoneR, 'any');
+    if (!fig && !pulled44) assert(await ph(0.05) > 600 && await ph(0.05) === await ph(0.7), `${tag}: Sunday's lit phone is not carried, static`);
+    else if (pulled44) { const L = await page.evaluate((o) => BTB.Storyboard.laptopRect(BTB.Storyboard.homeOf(o.game.mode.S.wallet)), o); assert(await W8('cnt', o, i, 'interior', 0.05, [L.x, L.y, L.w, L.h], 'screenD') === L.w * L.h && await W8('cnt', o, i, 'interior', 0.7, [L.x, L.y, L.w, L.h], 'screenD') === L.w * L.h, `${tag}: the dead laptop does not stay dead`); }
+    else assert(await ph(0.05) === 0, `${tag}: a phone lit where a figure holds it`);
+    const rc = await W8('rects', o, i); assert(rc <= 50, `${tag}: ${rc} rectangles (sheet worst case 47)`); RECT9[tag] = rc;
+  }
+  // 3:17 on day 44. Not pulled: the dark floor, a wave crosses the lit screens (art units in at2x: screen px are twice); pulled: the racks' LEDs die one by one from the switch
+  {
+    const o = await W8o(44, 2, 0, 'n', 0), key = await keyOf(o), { i } = await wkBeat('317 floor', o, ':317$', { id: `weekend:${key}:317`, dur: 1.6, layers: 'floor', depths: '1', cam: 'none', sfx: '', cues: '0.3:office', tr: 'cross' }, [0.1, 0.7]);
+    const G = (await page.evaluate(() => BTB.Shots.floorGeom(0.4, 60))).filter((g) => g.on && g.x + g.w > 0 && g.x < 320).map((g) => Object.assign({}, g, { a: 0.35 + 0.5 * Math.min(1, Math.max(0, (g.x + g.w / 2) / 320)), h: Math.min(g.h, 136 - g.y) })).filter((g) => g.h > 0);
+    assert(G.length === 3, `317 floor: ${G.length} lit screens (the dark floor at zoom 0.4, seed 60 leaves three on: art x 46, -40 and 211)`);
+    const all = (t) => W8('cnt', o, i, 'floor', t, [0, 0, 640, 360], 'any'), inRects = async (t) => { let n = 0; for (const g of G) { const x0 = Math.max(0, 2 * g.x); n += await W8('cnt', o, i, 'floor', t, [x0, 2 * g.y, 2 * g.x + 2 * g.w - x0, 2 * g.h], 'any'); } return n; };
+    assert(await all(0.30) === 0 && await all(1.25) === 0 && await all(1.5) === 0, '317 floor: something moves before 0.35 s or after 1.25 s');
+    for (const g of G) {
+      const x0 = Math.max(0, 2 * g.x), r = [x0, 2 * g.y, 2 * g.x + 2 * g.w - x0, 2 * g.h], c = (t) => W8('cnt', o, i, 'floor', t, r, 'any'); // (the left screen is cut by the picture's edge)
+      assert(await c(g.a - 0.02) === 0 && await c(g.a + 0.02) === r[2] * r[3] && await c(g.a + 0.12) > 0 && await c(g.a + 0.12) < r[2] * r[3] && await c(g.a + 0.40) === 0, `317 floor: the screen at art x ${g.x} does not flare at ${g.a.toFixed(2)} and roll for 0.36 s`);
+    }
+    // left to right: the screen with the least x starts first, the one with the most last, and everything drawn is on a lit screen
+    const first = G.reduce((m, g) => (g.a < m.a ? g : m)), last = G.reduce((m, g) => (g.a > m.a ? g : m));
+    assert(first.x < last.x && first.a >= 0.35 && last.a + 0.36 <= 1.25 + 1e-9, '317 floor: the wave does not run left to right inside 0.35 to 1.25 s');
+    for (const t of [0.45, 0.6, 0.9, 1.1]) assert(await all(t) === await inRects(t), `317 floor at ${t}: something is drawn off the lit screens`);
+    const bx = await W8('box', o, i, 'floor', 0.9, [0, 0, 640, 360]); assert(bx[3] <= 271, `317 floor: the wave reaches the caption (${bx})`);
+    const rc = await W8('rects', o, i); assert(rc <= 40, `317 floor: ${rc} rectangles (sheet worst case 33)`); RECT9['317 floor'] = rc;
+    // the final picture is today's still (p = 1 draws no wave): the flat floor
+    assert(await page.evaluate(([o, i]) => { const b = BTB.Scenes.weekend(o)[i], mk = () => { const c = document.createElement('canvas'); c.width = 640; c.height = 360; return c.getContext('2d', { willReadFrequently: true }); }, a = mk(), f = mk(); b.draw(a, { w: 640, h: 360 }, 1, {}); BTB.Storyboard.at2x(f, (cc) => BTB.Shots.tradingFloor(cc, 0.4, false, 60), 44); const A = a.getImageData(0, 0, 640, 360).data, F = f.getImageData(0, 0, 640, 360).data; for (let k = 0; k < A.length; k++) if (A[k] !== F[k]) return false; return true; }, [o, i]), '317 floor: the final picture is not today\'s still');
+  }
+  {
+    const o = await W8o(44, 2, 0, 'cat', 1), key = await keyOf(o), { i } = await wkBeat('317 racks', o, ':317$', { id: `weekend:${key}:317`, dur: 1.6, layers: 'room,grain', depths: '1,1', cam: 'none', sfx: '', cues: '0.4:click', tr: 'cross' }, [0.1, 0.7]);
+    const Ls = await page.evaluate(() => BTB.DecisionArt.rackLeds(44));
+    assert(Ls.length >= 120 && Ls.length <= 150 && Ls.every((L) => L.w === 3 && L.h === 3 && L.x >= 0 && L.x + 3 <= 640 && L.y + 3 <= 252), `317 racks: ${Ls.length} LEDs, or one out of place`);
+    // the front row's LEDs are the ones the lit room draws (the back row's are partly hidden behind the front racks, in the art too)
+    const match = await page.evaluate((Ls) => { const g = document.createElement('canvas'); g.width = 640; g.height = 360; const c = g.getContext('2d', { willReadFrequently: true }); BTB.DecisionArt.room(c, 'c10', 44, false, null); let n = 0; const hex = (s) => [1, 3, 5].map((k) => parseInt(s.slice(k, k + 2), 16)); Ls.forEach((L) => { if (L.r === 0) return; const d = c.getImageData(L.x + 1, L.y + 1, 1, 1).data, h = hex(L.col); if (Math.abs(d[0] - h[0]) < 30 && Math.abs(d[1] - h[1]) < 30 && Math.abs(d[2] - h[2]) < 30) n++; }); return n; }, Ls);
+    assert(match === Ls.filter((L) => L.r === 1).length, `317 racks: only ${match} of the ${Ls.filter((L) => L.r === 1).length} front-row LEDs are where the lit room draws them (the back row's are partly behind the front racks)`);
+    const deathOf = (L) => (L.r ? 0.40 : 0.45) + 0.10 * L.i;
+    assert(await W8('cnt', o, i, 'room', 0.30, [0, 0, 640, 360], 'any') > Ls.length * 6 && await W8('cnt', o, i, 'room', 1.05, [0, 0, 640, 360], 'any') === 0 && await W8('cnt', o, i, 'room', 1.5, [0, 0, 640, 360], 'any') === 0, '317 racks: the LEDs are not all lit before 0.40 s and all gone by 1.05 s');
+    for (let r = 0; r < 2; r++) for (let k = 0; k < (r ? 7 : 6); k++) {
+      const mine = Ls.filter((L) => L.r === r && L.i === k);
+      if (!mine.length) continue; // the art leaves some racks unlit ((i * 7 + r) % 3 === 0 on every slot)
+      const d = deathOf(mine[0]);
+      const bb = [Math.min(...mine.map((L) => L.x)), Math.min(...mine.map((L) => L.y)), Math.max(...mine.map((L) => L.x + 3)) - Math.min(...mine.map((L) => L.x)), Math.max(...mine.map((L) => L.y + 3)) - Math.min(...mine.map((L) => L.y))];
+      const c = (t) => W8('cnt', o, i, 'room', t, bb, 'any');
+      assert(await c(d - 0.02) > 20 && await c(d + 0.02) === 0, `317 racks: row ${r} rack ${k} does not go dark at ${d.toFixed(2)} s`);
+    }
+    // from the red switch (x 99 to 171) outwards: the leftmost lit LED moves right as racks die
+    const left = async (t) => (await W8('box', o, i, 'room', t, [0, 0, 640, 360]))[0];
+    assert(await left(0.3) < await left(0.55) && await left(0.55) < await left(0.8) && await left(0.8) < await left(0.95), '317 racks: the darkness does not spread from the switch to the right');
+    assert((await W8('box', o, i, 'room', 0.3, [0, 0, 640, 360]))[3] <= 252, '317 racks: LEDs below y 252');
+    const rc = await W8('rects', o, i); assert(rc <= 150, `317 racks: ${rc} rectangles (sheet estimate 137; the art lights 149 LEDs)`); RECT9['317 racks'] = rc;
+    // pulled day 44 without the room layers' branch for other phases: the c10 decision's own room beat has no LEDs drawn on the dead room
+    assert(await page.evaluate(() => { const L = BTB.DecisionArt.roomLayers('c10', 44, true, { f: { pulledPlug: true } }, 'room'); return L && L.layers.length === 2 && !L.cues; }), '317 racks: the c10 room beat took the 3:17 branch');
+  }
+  // every weekend beat draws with no game, and with the motion setting off (reduced) the beats are one still
+  for (const day of [9, 39, 44]) await page.evaluate((day) => BTB.Scenes.weekend({ day }).forEach((b) => { const g = document.createElement('canvas').getContext('2d'); b.draw(g, { w: 640, h: 360 }, 1, {}); b.draw(g, { w: 640, h: 360 }, 0, undefined); }), day);
+  await page.evaluate(() => BTB.Settings.set('effects', 'reduced'));
+  for (const [day, tier, late, pet, plug] of [[9, 2, 0, 'n', 0], [49, 5, 0, 'cat', 0], [19, 0, 2, 'dog', 0], [39, 2, 0, 'n', 0], [44, 2, 0, 'n', 0], [44, 2, 0, 'cat', 1]]) {
+    const o = await W8o(day, tier, late, pet, plug), n = await page.evaluate((o) => BTB.Scenes.weekend(o).length, o);
+    for (let i = 1; i < n; i++) {
+      const a = await W8('info', o, i);
+      assert(await shot('weekend', o, i, 0.4) === await shot('weekend', o, i, a.dur - 0.05), `batch 8: ${a.id}: reduced effects still moves`);
+    }
+  }
+  await page.evaluate(() => BTB.Settings.set('effects', 'full'));
+  console.log('batch 8: rectangles a frame (worst case)', JSON.stringify(RECT9));
 
   if (process.env.B8_ONLY) { console.log('motion-run: batch 8 pins and asserts pass'); return; }
 
@@ -3123,6 +3409,10 @@ async function run() {
     // heaviest variants: winter snow plus the breath on a cat in a penthouse, and autumn leaves with no pet
     { scene: 'weekend', opts: { day: 44, game: { mode: { S: { wallet: { tier: 5, pet: { kind: 'cat', sex: 'boy' } } } } } } },
     { scene: 'weekend', opts: { day: 9, game: { mode: { S: { wallet: { tier: 3 } } } } } },
+    // batch 8: Sunday with a pet in winter (weather, breath, face glow), and the 3:17 beat in both forms (the lit-screen wave, the racks' LEDs)
+    { scene: 'weekend', opts: { day: 49, game: { mode: { S: { wallet: { tier: 4, lateWeeks: 1, pet: { kind: 'dog', sex: 'girl' } } } } } } },
+    { scene: 'weekend', opts: { day: 44, game: { mode: { S: { wallet: { tier: 2 } } } } } },
+    { scene: 'weekend', opts: { day: 44, game: { mode: { S: { wallet: { tier: 2 }, f: { pulledPlug: true } } } } } },
     // the morning: an early day, a grey day and a winter day (three dead desks, stability 30, heat 60, snow in the windows)
     { scene: 'phone', opts: { day: 3, brief: { title: 'H', feed: FEED5 } } },
     { scene: 'phone', opts: { day: 40, brief: { title: 'H', feed: FEED5 } } },

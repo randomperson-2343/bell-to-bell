@@ -209,17 +209,31 @@
   }
 
   // The rack room, where the shared stack runs, and the red switch.
+  // The geometry of one rack: row r (0 back, 1 front), index i. The back row has six racks.
+  function rackBox(r, i) {
+    const k = r ? 1 : 0.72, w = Math.round(54 * k / U) * U, h = Math.round(222 * k / U) * U, x = r ? 177 + i * 69 : 228 + i * 51;
+    return { k, w, h, x, y: 252 - h, step: Math.round(12 * k / U) * U || U };
+  }
+  // The LED rects the lit racks draw, in the order racks() draws them (row, rack, slot): { r, i, x, y, w: 3, h: 3, col }. day is accepted for symmetry (the racks do not depend on it).
+  function rackLeds(day) {
+    const out = [];
+    for (let r = 0; r < 2; r++) for (let i = 0; i < 7; i++) {
+      if (r === 0 && i > 5) continue;
+      const b = rackBox(r, i);
+      for (let s = 9; s < b.h - 9; s += b.step) if ((i * 7 + s + r) % 3) out.push({ r, i, x: b.x + 9 + ((i * 3 + s) % (b.w - 21)), y: b.y + s, w: U, h: U, col: (i + s) % 5 ? P.phosphor : P.sky });
+    }
+    return out;
+  }
   function racks(ctx, day, dark) {
     X.gradient(ctx, 0, 0, V.w, 252, P.screenD, P.ink, 8);
     cel(ctx, 150, 6, 490, 15, P.slate, P.slate2, P.ink2); for (let x = 165; x < 640; x += 30) X.rect(ctx, x, 21, U, 12, P.slate);
+    const leds = dark ? [] : rackLeds(day);
     for (let r = 0; r < 2; r++) for (let i = 0; i < 7; i++) {
       if (r === 0 && i > 5) continue;
-      const k = r ? 1 : 0.72, w = Math.round(54 * k / U) * U, h = Math.round(222 * k / U) * U, x = r ? 177 + i * 69 : 228 + i * 51, y = 252 - h;
+      const b = rackBox(r, i), w = b.w, h = b.h, x = b.x, y = b.y;
       cel(ctx, x, y, w, h, P.ink2, P.slate, P.ink);
-      for (let s = 9; s < h - 9; s += Math.round(12 * k / U) * U || U) {
-        X.rect(ctx, x + 6, y + s, w - 12, U * 2, P.screenD);
-        if (!dark && (i * 7 + s + r) % 3) X.rect(ctx, x + 9 + ((i * 3 + s) % (w - 21)), y + s, U, U, (i + s) % 5 ? P.phosphor : P.sky);
-      }
+      for (let s = 9; s < h - 9; s += b.step) X.rect(ctx, x + 6, y + s, w - 12, U * 2, P.screenD);
+      leds.forEach((L) => { if (L.r === r && L.i === i) X.rect(ctx, L.x, L.y, L.w, L.h, L.col); });
     }
     X.rect(ctx, 0, 252, V.w, 108, P.slate); for (let x = 0; x < V.w; x += 42) { X.rect(ctx, x, 252, U, 108, P.slate2); } for (let y = 264; y < 360; y += 30) X.rect(ctx, 0, y, V.w, U, P.slate2);
     if (dark) { ctx.save(); ctx.globalAlpha = 0.45; X.rect(ctx, 0, 0, V.w, V.h, P.ink); ctx.restore(); }
@@ -450,7 +464,7 @@
   // phase: 'room' (the decision's room beat, 1.5 s), 'establish' (the news establish that borrows the room, 1.7 s), 'whip' (the weekend's whip, 1.6 s).
   // Every layer is the flat room() split into cached parts (noGrain, the scanlines in a layer of their own on top) with the moving things drawn above.
   const TILT = () => ({ from: { x: 0, y: -6, zoom: 1 }, to: { x: 0, y: 0, zoom: 1 }, ease: B.Motion.ease.inOut });
-  const PHASE_DUR = { room: 1.5, establish: 1.7, whip: 1.6 };
+  const PHASE_DUR = { room: 1.5, establish: 1.7, whip: 1.6, '317': 1.6 };
   const LAYER = {};
   // ---- shot 1 and 2: Kroll's office ----
   // By day: his screen switches on at 0.45 s (dark, the phosphor line, one flare, then the lit screen of the cached picture).
@@ -528,7 +542,15 @@
     } }, grain] };
   };
   // ---- shot 7: the racks (a pulse runs left to right along the front row) ----
-  LAYER.racks = (e, flat, grain) => ({ layers: [{ id: 'room', depth: 1, draw: flat(), animate(g, v, t) {
+  // The weekend's 3:17 with the plug pulled (phase '317', after): the dark racks have no LEDs, so the animate draws each LED lit, full brightness over the dim, until its rack dies:
+  // the front row (r 1) rack i at 0.40 + 0.10 i, the back row (r 0) rack i at 0.45 + 0.10 i, from the red switch to the right in hard steps; no camera, a click as the first one goes.
+  let LEDS_C = null;
+  const LEDS = { forEach(fn) { (LEDS_C || (LEDS_C = rackLeds())).forEach(fn); } };
+  const RACK_DEATH = (L) => (L.r ? 0.40 : 0.45) + 0.10 * L.i;
+  LAYER.racks = (e, flat, grain) => e.after && e.S && e.S.f && e.S.f.pulledPlug && e.phase === '317' ? ({
+    camera: null, cues: [{ at: 0.40, sfx: 'click' }],
+    layers: [{ id: 'room', depth: 1, draw: flat(), animate(g, v, t) { LEDS.forEach((L) => { if (t < RACK_DEATH(L)) X.rect(g, L.x, L.y, L.w, L.h, L.col); }); } }, grain]
+  }) : ({ layers: [{ id: 'room', depth: 1, draw: flat(), animate(g, v, t) {
     for (let i = 0; i < 7; i++) {
       if (!(t >= 0.40 + 0.09 * i && t < 0.52 + 0.09 * i)) continue;
       g.save(); g.globalAlpha = 0.45;
@@ -660,5 +682,5 @@
     return true;
   }
 
-  B.DecisionArt = { ROOMS, room, still, glow, cityCells, senator: senatorRows, lobbyEyes, waveBars, kennel, roomLayers, faceLayers, postcardPhoto: () => Object.assign({}, PHOTO) };
+  B.DecisionArt = { ROOMS, room, still, glow, cityCells, senator: senatorRows, lobbyEyes, waveBars, kennel, roomLayers, faceLayers, rackLeds, postcardPhoto: () => Object.assign({}, PHOTO) };
 })(window.BTB);

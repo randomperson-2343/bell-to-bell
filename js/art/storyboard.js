@@ -548,6 +548,23 @@
     const L = home.look, ww = Math.round(V.w * L.win / U) * U;
     return { wx: V.w - ww - 36, wy: 42, ww, wh: L.win > 0.8 ? 198 : 150 };
   }
+  // The glow on a sitting figure's face and chest (the rect of the night figure's screen light).
+  function faceGlow(home) { return { x: 213, y: (home.id === 'share' ? 213 : 180) + 6, w: 36, h: 24 }; }
+  // The day-44 laptop's screen on the bed (where the story left it).
+  function laptopRect(home) {
+    const top = home.id === 'couch' ? 210 : home.id === 'share' ? 252 : 204;
+    return { x: (home.id === 'share' ? 132 : 150) + 6, y: top - 21, w: 42, h: 18 };
+  }
+  // The Sunday phone's light (apartment art units): the lit floor phone's screen and notification bar, and the light it throws up
+  // from a face-up screen in three hard steps. late: the crimson family.
+  function phoneSpill(late) {
+    const col = late ? P.crimson : P.sky;
+    return {
+      screen: { x: 219, y: 264, w: 21, h: 6, col: late ? P.crimsonD : P.sky },
+      bar: { x: 222, y: 266, w: 12, h: 2, col: late ? P.crimson : P.white },
+      spill: [{ x: 204, y: 240, w: 51, h: 21, col, a: 0.10 }, { x: 210, y: 249, w: 39, h: 12, col, a: 0.12 }, { x: 216, y: 258, w: 27, h: 6, col, a: 0.14 }]
+    };
+  }
   // `part` picks one layer of the layered Saturday shot: 'outside' (sky, view, still weather in the opening),
   // 'room' (walls, floor, window frame, curtains, wall props), 'furniture', 'front' (floor props and the pet), 'grain'.
   // With no part it draws the whole flat picture, back to front, exactly as before.
@@ -586,6 +603,8 @@
     // What is outside the window changes with the rent too.
     if (on('outside')) {
     ctx.save(); ctx.beginPath(); ctx.rect(wx, wy, ww, wh); ctx.clip();
+    // as a night layer (Sunday's fractional frame) the opening is backed with ink: adjacent gradient bands that each cover part of a pixel row would otherwise leave it part transparent
+    if (part && night) X.rect(ctx, wx, wy, ww, wh, P.ink);
     X.gradient(ctx, wx, wy, ww, wh, night ? P.ink2 : P.sky, night ? P.ink : P.slate2, 8);
     if (!night) X.dither(ctx, wx, wy + wh / 2, ww, wh / 2, P.slate2, s.dawn, s.glow);
     if (L.view === 'shaft' || L.view === 'wall') {
@@ -691,7 +710,8 @@
     } else if (day === 34) {
       box(ctx, bx, by + 3, 60, 24, P.bone, P.white, P.putty2); X.rect(ctx, bx + 6, by + 9, 42, U, P.amberD); X.rect(ctx, bx + 6, by + 15, 30, U, P.grey2);
     } else if (day === 44) {
-      box(ctx, bx, by - 3, 54, 30, P.plasticD, P.plastic2, P.ink2); X.rect(ctx, bx + 6, by + 3, 42, 18, night ? P.screenGlow : P.screen);
+      const lr = laptopRect(home);
+      box(ctx, bx, by - 3, 54, 30, P.plasticD, P.plastic2, P.ink2); X.rect(ctx, lr.x, lr.y, lr.w, lr.h, night ? P.screenGlow : P.screen);
       for (let i = 0; i < 9; i++) X.rect(ctx, bx + 9 + i * 4, by + 15 - (i * 7 % 9), 2, 2, i > 5 ? P.crimson : P.phosphorD);
       box(ctx, bx - 6, by + 24, 66, 9, P.plastic, P.plastic2, P.plasticD);
     } else if (day === 14 || day === 24 || week % 3 === 0) {
@@ -728,9 +748,9 @@
     // Sunday night on the couch, or any night the rent is late: you, sitting
     // up, lit by the phone. Your mother calls on Sundays.
     if (night && (home.id === 'couch' || late > 0)) {
-      const fy = home.id === 'share' ? 213 : 180;
+      const fy = home.id === 'share' ? 213 : 180, fg = faceGlow(home);
       blit(ctx, FIGURE, 207, fy);
-      ctx.save(); ctx.globalAlpha = 0.18; X.rect(ctx, 213, fy + 6, 36, 24, P.screenGlow); ctx.restore();
+      ctx.save(); ctx.globalAlpha = 0.18; X.rect(ctx, fg.x, fg.y, fg.w, fg.h, P.screenGlow); ctx.restore();
     }
     petShot(ctx, w);
     }
@@ -797,18 +817,15 @@
       for (const [a, b] of [[-70, 262], [70, 258], [92, 268], [-20, 254], [120, 262]]) { X.rect(ctx, fx + a, b, 5, 2, tuft); X.rect(ctx, fx + a + 1, b - 1, 2, 1, tuft); }
     }
   }
+  // The Sunday framing: the wall calendar and most of the window (the housing tier reads through its size) stay in shot. fn draws in apartment art units.
+  function sundaySpace(c, fn) { c.save(); c.translate(-36, -50); c.scale(1.18, 1.18); fn(c); c.restore(); }
+  // The two native-pixel edge rects over the Sunday picture (the left margin and the amber tab).
+  function SUN_EDGE(c) { X.rect(c, 0, 0, 5, 276, P.ink2); X.rect(c, 0, 0, 44, 2, P.amberD); }
   function sundayShot(ctx, day, home, w) {
     // A closer Sunday camera holds on the phone and the unread material.
     // Monday's alarm is already intruding on the private room.
-    ctx.save();
-    // Framed so the wall calendar and most of the window (the housing tier
-    // reads through its size) stay in shot.
-    ctx.translate(-36, -50);
-    ctx.scale(1.18, 1.18);
-    apartmentShot(ctx, day, home, true, w);
-    ctx.restore();
-    X.rect(ctx, 0, 0, 5, 276, P.ink2);
-    X.rect(ctx, 0, 0, 44, 2, P.amberD);
+    sundaySpace(ctx, (c) => apartmentShot(c, day, home, true, w));
+    SUN_EDGE(ctx);
   }
 
   // Saturday, five layers back to front. The window frame overlaps the opening by 3 px, which hides the
@@ -817,56 +834,87 @@
   const clampN = (v, a, b) => Math.max(a, Math.min(b, v));
   // `when`: a time t (s) is in [a, b) for any of the given spans.
   const within = (t, spans) => spans.some((sp) => t >= sp[0] && t < sp[1]);
-  function saturdayLayers(day, home, w, id) {
-    const M = B.Motion, s = R.season(day), { wx, wy, ww, wh } = windowRect(home), lay = LAYOUT[home.id] || LAYOUT.studio;
-    const part = (name) => (c) => apartmentShot(c, day, home, false, w, name);
+  // The pet's head and chest rise one pixel for one breath: the upper 13 rows drawn again one unit up.
+  function breathDraw(c, w) {
+    const cared = w.vet !== 'neglected';
+    c.save(); c.translate(420, 276 - 48 - (cared ? 6 : 0) - 1); c.scale(3, 3);
+    X.drawSprite(c, breathSprite(w.pet, cared), 0, 0);
+    c.restore();
+  }
+  // o (optional; absent, the five layers of Saturday exactly): night (the night room), space (fn(c, draw): wraps every layer's draw and animate, Sunday's 1.18 frame),
+  // t0 (chain time added to the weather), seed (the weather's seed, default id + ':wx'), dur (the beat's length, for the colon's end), blink (the colon blinks from the end
+  // so it is lit at dur), front (fn(c, t) replaces Saturday's phone and breath), top (fn(c) drawn after the grain, outside space), flat (outside, interior, grain: no camera).
+  function saturdayLayers(day, home, w, id, o) {
+    o = o || {};
+    const M = B.Motion, K = B.MotionKit, s = R.season(day), { wx, wy, ww, wh } = windowRect(home), lay = LAYOUT[home.id] || LAYOUT.studio;
+    const space = o.space || ((c, fn) => fn(c)), t0 = o.t0 || 0, wseed = o.seed || id + ':wx', dur = o.dur || SAT_DUR;
+    const part = (name) => (c) => space(c, (cc) => apartmentShot(cc, day, home, !!o.night, w, name));
     const weather = s.snow ? { kind: 'snow', n: clampN(Math.round(ww * wh / 1000 * (0.4 + 0.6 * s.snow)), 12, 40), rate: 12 }
       : s.id === 'autumn' ? { kind: 'paper', n: clampN(Math.round(ww / 30), 4, 14), rate: 12 }
       : { kind: 'rain', n: clampN(Math.round(ww * wh / 1500), 10, 40), rate: 0 };
+    const colon = (c, t) => {
+      if (o.blink) {
+        K.blink(c, lay.stand + 45, 204, 2, 2, t, { on: null, off: P.ink2, period: 1.0, duty: 0.5, end: dur });
+        K.blink(c, lay.stand + 45, 208, 2, 2, t, { on: null, off: P.ink2, period: 1.0, duty: 0.5, end: dur });
+      } else if (within(t, [[0.5, 1.0], [1.5, 2.0]])) { X.rect(c, lay.stand + 45, 204, 2, 2, P.ink2); X.rect(c, lay.stand + 45, 208, 2, 2, P.ink2); } // the 5:58 alarm's colon blinks off twice
+    };
+    const front = (c, t) => {
+      if (o.front) { o.front(c, t); return; }
+      // the phone on the floor lights at 1.0 s (a sky screen and floor glow, crimson when rent is late),
+      // the notification bar follows at 1.08 s, and a second silent notification blinks it dark from 1.6 to 1.7 s
+      const late = w && w.lateWeeks > 0;
+      if (t >= 1.0 && !(t >= 1.6 && t < 1.7)) {
+        X.rect(c, 219, 264, 21, 6, late ? P.crimsonD : P.sky);
+        if (t >= 1.08) X.rect(c, 222, 266, 12, 2, late ? P.crimson : P.white);
+        c.save(); c.globalAlpha = 0.3; X.rect(c, 207, 276, 45, 3, late ? P.crimson : P.sky); c.restore();
+      }
+      // the pet's head and chest rise one pixel for one breath
+      if (w && w.pet && PET[w.pet.kind] && t >= 0.8 && t < 1.7) breathDraw(c, w);
+    };
+    const weatherAnim = (c, v, t) => space(c, (cc) => {
+      const T = t + t0, tp = weather.rate ? Math.floor(T * weather.rate) / weather.rate : T;
+      cc.save(); cc.beginPath(); cc.rect(wx, wy, ww, wh); cc.clip();
+      M.particles({ kind: weather.kind, seed: wseed, t: tp, x: wx, y: wy, w: ww, h: wh, count: weather.n }).forEach((q, i) => {
+        if (weather.kind === 'paper') X.rect(cc, q.x, q.y, 3, 2, i % 2 ? P.amber : P.crimsonD);
+        else if (weather.kind === 'rain') X.rect(cc, q.x, q.y, 1, 6, P.grey2);
+        else X.rect(cc, q.x, q.y, q.s === 2 ? 3 : 2, q.s === 2 ? 3 : 2, P.white);
+      });
+      cc.restore();
+    });
+    const outside = { id: 'outside', depth: o.flat ? 1 : 0.25, draw: part('outside'), animate: weatherAnim };
+    const grain = { id: 'grain', depth: o.flat ? 1 : 0, draw(c) { part('grain')(c); if (o.top) o.top(c); } };
+    if (o.flat) {
+      return [outside, {
+        id: 'interior', depth: 1,
+        draw(c) { part('room')(c); part('furniture')(c); part('front')(c); },
+        animate(c, v, t) { space(c, (cc) => { colon(cc, t); front(cc, t); }); }
+      }, grain];
+    }
     return [
-      {
-        id: 'outside', depth: 0.25, draw: part('outside'),
-        animate(c, v, t) {
-          const tp = weather.rate ? Math.floor(t * weather.rate) / weather.rate : t;
-          c.save(); c.beginPath(); c.rect(wx, wy, ww, wh); c.clip();
-          M.particles({ kind: weather.kind, seed: id + ':wx', t: tp, x: wx, y: wy, w: ww, h: wh, count: weather.n }).forEach((q, i) => {
-            if (weather.kind === 'paper') X.rect(c, q.x, q.y, 3, 2, i % 2 ? P.amber : P.crimsonD);
-            else if (weather.kind === 'rain') X.rect(c, q.x, q.y, 1, 6, P.grey2);
-            else X.rect(c, q.x, q.y, q.s === 2 ? 3 : 2, q.s === 2 ? 3 : 2, P.white);
-          });
-          c.restore();
-        }
-      },
+      outside,
       { id: 'room', depth: 0.5, draw: part('room') },
-      {
-        id: 'furniture', depth: 0.85, draw: part('furniture'),
-        animate(c, v, t) {
-          // the 5:58 alarm's colon blinks off twice
-          if (within(t, [[0.5, 1.0], [1.5, 2.0]])) { X.rect(c, lay.stand + 45, 204, 2, 2, P.ink2); X.rect(c, lay.stand + 45, 208, 2, 2, P.ink2); }
-        }
-      },
-      {
-        id: 'front', depth: 1.2, draw: part('front'),
-        animate(c, v, t) {
-          // the phone on the floor lights at 1.0 s (a sky screen and floor glow, crimson when rent is late),
-          // the notification bar follows at 1.08 s, and a second silent notification blinks it dark from 1.6 to 1.7 s
-          const late = w && w.lateWeeks > 0;
-          if (t >= 1.0 && !(t >= 1.6 && t < 1.7)) {
-            X.rect(c, 219, 264, 21, 6, late ? P.crimsonD : P.sky);
-            if (t >= 1.08) X.rect(c, 222, 266, 12, 2, late ? P.crimson : P.white);
-            c.save(); c.globalAlpha = 0.3; X.rect(c, 207, 276, 45, 3, late ? P.crimson : P.sky); c.restore();
-          }
-          // the pet's head and chest rise one pixel for one breath
-          if (w && w.pet && PET[w.pet.kind] && t >= 0.8 && t < 1.7) {
-            const cared = w.vet !== 'neglected';
-            c.save(); c.translate(420, 276 - 48 - (cared ? 6 : 0) - 1); c.scale(3, 3);
-            X.drawSprite(c, breathSprite(w.pet, cared), 0, 0);
-            c.restore();
-          }
-        }
-      },
-      { id: 'grain', depth: 0, draw: part('grain') }
+      { id: 'furniture', depth: 0.85, draw: part('furniture'), animate(c, v, t) { space(c, (cc) => { colon(cc, t); if (o.furniture) o.furniture(cc, t); }); } },
+      { id: 'front', depth: 1.2, draw: part('front'), animate(c, v, t) { space(c, (cc) => front(cc, t)); } },
+      grain
     ];
+  }
+
+  // The dark trading floor at 3:17 (day 44, not pulled): a refresh wave crosses the lit screens left to right (the lit-floor wave of batch 5 on the screens this
+  // picture has). Art units inside at2x; the near-row screens only, row 3's clipped at art y 136 (screen 272) so nothing that matters moves under the caption.
+  function floor317Layers(day) {
+    const K = B.MotionKit, wave = SH.floorGeom(0.4, 60).filter((g) => g.on && g.x + g.w > 0 && g.x < 320)
+      .map((g) => ({ g, a: 0.35 + 0.5 * clampN((g.x + g.w / 2) / 320, 0, 1), h: Math.min(g.h, 136 - g.y) })).filter((q) => q.h > 0);
+    return [{
+      id: 'floor', depth: 1,
+      draw(c) { at2x(c, (cc) => SH.tradingFloor(cc, 0.4, false, 60), day); },
+      animate(c, v, t) {
+        if (t >= 1.25) return;
+        at2x(c, (cc) => wave.forEach(({ g, a, h }) => {
+          K.crt(cc, g.x, g.y, g.w, h, t, { mode: 'roll', at: a, dur: 0.36, band: 12 });
+          K.ping(cc, t, { at: a, flare: { x: g.x, y: g.y, w: g.w, h, col: P.bone, a: 0.18, dur: 0.08 } });
+        }), day);
+      }
+    }];
   }
 
   function story(o) { const g = o && o.game; return g && g.mode && g.mode.S; }
@@ -878,6 +926,36 @@
     const key = `${week}:${home.id}:${w ? Math.min(3, w.lateWeeks | 0) : 0}:${pulled ? 'p' : ''}:${pet}`;
     const sat = w && w.weeks && w.weeks[week] ? `WEEK ${week} · ${home.name.toUpperCase()} · PAYSLIP ${B.fmt.money(w.weeks[week].net, true)}` : `WEEK ${week} · SATURDAY · ${home.name.toUpperCase()}`;
     const satId = `weekend:${key}:sat`;
+    const K = B.MotionKit, late = w ? w.lateWeeks | 0 : 0, fig = home.id === 'couch' || late > 0, pulled44 = day === 44 && pulled;
+    // Sunday and the hold carry what Sunday changes: the lit floor phone (no figure) or the dead laptop (day 44, plug pulled)
+    const lap = laptopRect(home), SP = phoneSpill(late > 0), spillOn = [].concat(SP.spill, [SP.screen, SP.bar]);
+    const sunFront = (c, t) => {
+      if (w && w.pet && PET[w.pet.kind] && t >= 0.40 && t < 1.00) breathDraw(c, w);
+      if (pulled44) return;
+      if (fig) {
+        const g = faceGlow(home);
+        K.flicker(c, g.x, g.y, g.w, g.h, 'weekend:sun:face', t, { spans: [[0.45, 0.55], [0.80, 0.90], [1.15, 1.30]], col: late > 0 ? P.crimson : P.screenGlow, a: 0.40 });
+        return;
+      }
+      const flare = { x: 216, y: 261, w: 27, h: 12, col: P.bone, a: 0.15, dur: 0.08 };
+      if (day === 39) {
+        // the phones ring all night: the screen and bar show while the badge phase is on (and end lit); the spill stays
+        K.ping(c, t, { at: 1.15, on: SP.spill, flare });
+        const bl = (r, from) => { if (t >= from) K.blink(c, r.x, r.y, r.w, r.h, t, { on: r.col, off: null, period: 0.5, duty: 0.6, end: 1.8 }); };
+        bl(SP.screen, 1.15); bl(SP.bar, 1.23);
+      } else {
+        K.ping(c, t, { at: 1.15, on: SP.spill.concat([SP.screen]), flare });
+        K.ping(c, t, { at: 1.23, on: [SP.bar] });
+      }
+    };
+    const holdFront = (c, t) => {
+      if (pulled44) X.rect(c, lap.x, lap.y, lap.w, lap.h, P.screenD);
+      else if (!fig) K.ping(c, t, { at: -1, on: spillOn });
+    };
+    const dim03 = (c) => { c.save(); c.globalAlpha = 0.3; X.rect(c, 0, 0, V.w, V.h, P.ink); c.restore(); };
+    const sunCues = pulled44 ? [{ at: 1.15, sfx: 'click' }] : day === 39 ? [{ at: 1.15, sfx: 'ring' }] : fig ? [] : [{ at: 1.15, sfx: 'news' }];
+    const sunBeat = R.beat('weekend', `${key}:sun`, 1.8, (c) => sundayShot(c, day, home, w), story$ || 'SUNDAY NIGHT. THE ALARM IS SET FOR 5:58.', { sfx: 'apartment', informative: !!story$ });
+    const holdBeat = R.beat('weekend', `${key}:hold`, 0.8, (c) => { apartmentShot(c, day, home, true, w); c.save(); c.globalAlpha = 0.3; X.rect(c, 0, 0, V.w, V.h, P.ink); c.restore(); }, '', {});
     const beats = [
       B.Motion.layered(R.beat('weekend', `${key}:sat`, SAT_DUR, null, sat, {
         sfx: 'apartment', transition: 'fade', informative: !story$, cache: false,
@@ -885,7 +963,13 @@
         camera: { from: { x: 0, y: CAM_Y, zoom: 1 }, to: { x: 0, y: 0, zoom: 1 }, ease: B.Motion.ease.inOut },
         layers: saturdayLayers(day, home, w, satId)
       })),
-      R.beat('weekend', `${key}:sun`, 1.8, (c) => sundayShot(c, day, home, w), story$ || 'SUNDAY NIGHT. THE ALARM IS SET FOR 5:58.', { sfx: 'apartment', informative: !!story$ })
+      B.Motion.layered(Object.assign({}, sunBeat, {
+        camera: { from: { x: 0, y: 6, zoom: 1 }, to: { x: 0, y: 0, zoom: 1 }, ease: B.Motion.ease.inOut }, cues: sunCues,
+        layers: saturdayLayers(day, home, w, satId, {
+          night: true, space: sundaySpace, t0: 2.4, seed: satId + ':wx', blink: true, dur: 1.8, front: sunFront, top: SUN_EDGE,
+          furniture: pulled44 ? (c, t) => K.crt(c, lap.x, lap.y, lap.w, lap.h, t, { mode: 'off', at: 1.15, bg: P.screenD }) : null
+        })
+      }))
     ];
     // One weekend gets a second room: the whip's phones the night before the vote.
     if (day === 39 && B.DecisionArt) {
@@ -893,13 +977,22 @@
       const wl = B.DecisionArt.roomLayers && B.DecisionArt.roomLayers('c8', day, false, null, 'whip');
       beats.push(wl ? B.Motion.layered(Object.assign({}, whip, wl)) : whip);
     }
-    beats.push(R.beat('weekend', `${key}:hold`, 0.8, (c) => { apartmentShot(c, day, home, true, w); c.save(); c.globalAlpha = 0.3; X.rect(c, 0, 0, V.w, V.h, P.ink); c.restore(); }, '', {}));
-    if (day === 44) beats.push(R.beat('weekend', `${key}:317`, 1.6, (c) => (pulled && B.DecisionArt ? B.DecisionArt.room(c, 'c10', day, true, S) : at2x(c, (cc) => SH.tradingFloor(cc, 0.4, false, 60), day)),
-      pulled ? 'THE FLOOR IS DARK. SO ARE THE RACKS.' : 'THE FLOOR IS DARK. THE RACKS ARE NOT.', {}));
+    // the hold: the night room under a 0.3 dim, no camera; the colon and the weather continue and Sunday's change stays
+    beats.push(B.Motion.layered(Object.assign({}, holdBeat, {
+      camera: null,
+      layers: saturdayLayers(day, home, w, satId, { night: true, flat: true, t0: day === 39 ? 5.8 : 4.2, seed: satId + ':wx', blink: true, dur: 0.8, front: holdFront, top: dim03 })
+    })));
+    if (day === 44) {
+      const f317 = R.beat('weekend', `${key}:317`, 1.6, (c) => (pulled && B.DecisionArt ? B.DecisionArt.room(c, 'c10', day, true, S) : at2x(c, (cc) => SH.tradingFloor(cc, 0.4, false, 60), day)),
+        pulled ? 'THE FLOOR IS DARK. SO ARE THE RACKS.' : 'THE FLOOR IS DARK. THE RACKS ARE NOT.', {});
+      const rl = pulled && B.DecisionArt && B.DecisionArt.roomLayers && B.DecisionArt.roomLayers('c10', day, true, S, '317');
+      if (pulled) beats.push(rl ? B.Motion.layered(Object.assign({}, f317, rl)) : f317);
+      else beats.push(B.Motion.layered(Object.assign({}, f317, { camera: null, cues: [{ at: 0.30, sfx: 'office' }], layers: floor317Layers(day) })));
+    }
     return beats;
   };
 
-  B.Storyboard = { PET, petRows, SHEET, DOCS, ANOMALY_DAYS, row, variant, lit, actTurns, HOMES, WEEKENDS, insertShot, actCard, DOC_DRAW, deskWithDoc, shotFrame, skylineShot, racksShot, at2x, tableau, tableauSpace, finePass, bellSwing, apartmentShot, windowRect, homeOf, SAT_DUR, sundayShot };
+  B.Storyboard = { PET, petRows, SHEET, DOCS, ANOMALY_DAYS, row, variant, lit, actTurns, HOMES, WEEKENDS, insertShot, actCard, DOC_DRAW, deskWithDoc, shotFrame, skylineShot, racksShot, at2x, tableau, tableauSpace, finePass, bellSwing, apartmentShot, windowRect, homeOf, SAT_DUR, sundayShot, sundaySpace, SUN_EDGE, phoneSpill, faceGlow, laptopRect, saturdayLayers };
 
   // Session 1 opens in the lobby: the counter climbs to 41, the car arrives, the doors part.
   // Built on the same cached parts as news:0:detail and :hold (`elevBase`: wall, car, top in the flat picture's own order), so at the cut the two
