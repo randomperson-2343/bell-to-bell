@@ -2183,6 +2183,25 @@ async function run() {
     assert(b0[2] >= 94 && b0[3] <= 206 && b0[3] - b0[2] >= 100, `model flow establish: the rack column ${b0} is not 56x112 px at y 94-206`);
   }
 
+  // 4. Bank queue (session 20): the queue shuffles forward, front (left) to back, one figure every 0.07 s
+  {
+    const E = await beat7(20, 'establish', { layers: 'art,glass,marks', depths: '1,1,0', cam: '-6>0', sfx: 'apartment', dur: 1.7 });
+    const D = await beat7(20, 'detail', { layers: 'art,glass', depths: '1,1', cam: 'none', sfx: 'broadcast', dur: 2.3 });
+    const H = { o: mkS(20) }; H.i = await newsIdx(H.o, ':hold$');
+    assert((await info('news', H.o, H.i)).layers === '', 'bank queue hold must stay flat');
+    // figure i sits at screen x 2 (52 + 27 i) (plus a sway of 4 px on the odd ones, which p = 0.6 keeps); the box of its own column
+    const left = async (B_, i, t) => (await box7(B_.o, B_.i, t, [B_ === D ? Math.round(2.6 * (52 + 27 * i) - 96) - 14 : 2 * (52 + 27 * i) - 12, 0, B_ === D ? 52 : 40, 360]))[0];
+    for (let i = 0; i < 9; i++) {
+      const a = 0.40 + 0.07 * i, b = a + 0.28;
+      const e0 = await left(E, i, a - 0.02), e1 = await left(E, i, a + 0.02);
+      assert(e0 - e1 === 4 && await left(E, i, 1.69) === e1 && await left(E, i, 0.05) === e0, `bank queue establish: figure ${i} does not step 4 px left at ${a.toFixed(2)} s (${e0} ${e1})`);
+      const d0 = await left(D, i, a - 0.02), d1 = await left(D, i, a + 0.02), d2 = await left(D, i, b + 0.02);
+      assert(d0 - d1 >= 4 && d0 - d1 <= 7 && d2 === d0 && await left(D, i, 2.29) === d0, `bank queue detail: figure ${i} does not lean in 2 units from ${a.toFixed(2)} to ${b.toFixed(2)} s (${d0} ${d1} ${d2})`);
+    }
+    const bx = await box7(E.o, E.i, 0.1, [0, 0, 640, 360]);
+    assert(bx[2] >= 164 && bx[3] <= 246 && bx[3] - bx[2] >= 40, `bank queue establish: the figures' box ${bx} is not the queue (y 182-240)`);
+  }
+
   // reduced effects: every reworked beat is one still
   await page.evaluate(() => BTB.Settings.set('effects', 'reduced'));
   for (const o of [nOpts(8), nOpts(32), nOpts(1), nOpts(4), nOpts(2), nOpts(3), nOpts(5), nOpts(11), nOpts(36), nOpts(15), nOpts(10)]) {
@@ -2258,6 +2277,7 @@ async function run() {
     // batch 6: the story tableaux
     { scene: 'news', opts: { day: 6, brief: { title: 'KAVRO STRAIT', feed: [] } } },
     { scene: 'news', opts: { day: 9, brief: { title: 'THE GRID', feed: [] } } },
+    { scene: 'news', opts: { day: 20, brief: { title: 'RUN ON RIDGEWAY TRUST', feed: [] } } },
     { scene: 'news', opts: { day: 17, brief: { title: 'FOUR FUNDS', feed: [] } } },
     { scene: 'close', opts: { report: { day: 3, pnl: 1200, quotaMet: true, quota: 900 } } },
     { scene: 'close', opts: { report: { day: 30, pnl: 1200, quotaMet: true, quota: 900 } } },

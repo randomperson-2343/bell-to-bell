@@ -1389,6 +1389,11 @@
         }
       };
     }
+    else if (n === 9 && !hold) {
+      // the queue edges up (establish: each figure steps 2 units from its place at 0.40 + 0.07 i, front first) or leans in and back (detail); the sway of p = 0.6 stays
+      const d = est ? (i, t) => (t < 0.40 + 0.07 * i ? 2 : 0) : (i, t) => (t >= 0.40 + 0.07 * i && t < 0.68 + 0.07 * i ? -2 : 0);
+      paint = (g, t) => SH.tableauMover(g, 9, 0.6, { shift: (i) => [d(i, t), 0] });
+    }
     if (!paint) return null;
     return [
       {
