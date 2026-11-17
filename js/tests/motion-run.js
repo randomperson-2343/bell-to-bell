@@ -241,6 +241,7 @@ async function run() {
     vetCheck: [14, 'Your vet'], toothache: [25, 'Your dentist'], vetER: [27, 'Your vet'] };
   const dopts = (id, S, extra) => Object.assign({ id, day: DEC8[id][0], speaker: DEC8[id][1], role: 'Role of the speaker', title: 'The title of the decision', S }, extra || {});
   const reduced8 = [];
+  const REDUCED8_SCENE = 'decision';
   // generic checks of one layered beat of the decision scene: info, moving, deterministic, no holes, a long title, no story state
   const beat8 = async (o, i, want, tag) => {
     const a = await D8('info', 'decision', o, i);
@@ -481,6 +482,39 @@ async function run() {
     assert(await D8('pic', 'decision', o, 0, 'room', 0.2, false, lamp) !== await D8('pic', 'decision', o, 0, 'room', 0.6, false, lamp), `${tag}: the light does not change`);
     RECT8[tag] = await rect8(o, 0, id === 'vetER' ? 215 : 110, tag);
   }
+
+  // the face beat (every decision): the room dimmed at depth 0.3, the speaker at depth 1 rising 12 px from 0.30 to 0.80 s, one blink at 1.55-1.67 s
+  for (const id of ['c1', 'perry', 'rentHike', 'toothache', 'adopt', 'c8']) {
+    const o = dopts(id), tag = 'face ' + id, name = DEC8[id][1];
+    const a = await beat8(o, 1, { id: `decision:${id}:${Math.floor(DEC8[id][0] / 5)}:face`, dur: 2.1, layers: 'room,speaker', depths: '0.3,1', cam: '-12>0', cues: '', sfx: 'broadcast' }, tag);
+    assert(await page.evaluate(([o]) => BTB.Motion.transitionFor(BTB.Scenes.decision(o)[1], 1), [o]) === 'cross', `${tag}: the face does not cross in`);
+    const cams = await page.evaluate(([o]) => { const b = BTB.Scenes.decision(o)[1]; return [0.1, 0.30, 0.55, 0.80, 1.2, 2.1].map((t) => BTB.Motion.cameraAt(b.camera, t / b.dur).y); }, [o]);
+    assert(cams[0] === -12 && cams[1] === -12 && cams[2] < -2 && cams[2] > -10 && cams[3] === 0 && cams[4] === 0 && cams[5] === 0, `${tag}: the rise is not 12 px between 0.30 and 0.80 s (${cams})`);
+    // the room layer holds still and is the same picture at any time; the portrait is drawn once
+    assert(await D8('pic', 'decision', o, 1, 'room', 0.1, false) === await D8('pic', 'decision', o, 1, 'room', 1.9, false), `${tag}: the room layer moves`);
+    const eyes = [120, 121, 90, 40], E = (t) => D8('cnt', 'decision', o, 1, 'speaker', t, [0, 0, 640, 360], 'any');
+    assert(await E(0.2) === 0 && await E(1.5) === 0 && await E(1.56) > 0 && await E(1.66) > 0 && await E(1.68) === 0 && await E(2.1) === 0, `${tag}: no blink in [1.55, 1.67)`);
+    const bb = await D8('box', 'decision', o, 1, 'speaker', 1.6);
+    const human = id !== 'rentHike';
+    assert(human ? bb[0] >= 120 && bb[1] <= 205 && bb[2] >= 136 && bb[3] <= 151 : bb[0] >= 130 && bb[1] <= 190 && bb[2] >= 121 && bb[3] <= 136, `${tag}: the blink is outside its band ${bb}`);
+    const faceBox = human ? [120, 136, 86, 16] : [130, 121, 61, 16];
+    assert(await D8('pic', 'decision', o, 1, 'speaker', 1.6, false, faceBox) !== await D8('pic', 'decision', o, 1, 'speaker', 1.4, false, faceBox) && await D8('pic', 'decision', o, 1, 'speaker', 1.7, false, faceBox) === await D8('pic', 'decision', o, 1, 'speaker', 1.4, false, faceBox), `${tag}: the blink does not close the eyes and open them`);
+    RECT8[tag] = await rect8(o, 1, 55, tag);
+  }
+  // a speaker with no portrait stays flat (as does an empty name); any title and no story state draw
+  for (const spk of ['Nobody At All', '']) {
+    const o = Object.assign(dopts('c1'), { speaker: spk }), a = await D8('info', 'decision', o, 1);
+    assert(a.layers === '' && a.cam === 'flat' && await D8('holes', 'decision', o, 1, 1) === 0, `a face beat with no portrait ('${spk}') is not flat`);
+  }
+
+  // effects reduced: every reworked decision beat and borrowed room is one still
+  await page.evaluate(() => BTB.Settings.set('effects', 'reduced'));
+  for (const [o, i, scene] of reduced8) {
+    const a = await D8('info', scene, o, i);
+    assert(await shot(scene, o, i, 0.4) === await shot(scene, o, i, a.dur - 0.05), `batch 7: ${a.id}: reduced effects still moves`);
+  }
+  await page.evaluate(() => BTB.Settings.set('effects', 'full'));
+  console.log('batch 7: rectangles a frame (worst case)', JSON.stringify(RECT8));
   if (process.env.P8_ONLY) { console.log('motion-run: batch 7 pins pass'); return; }
 
   assert(await shot('news', day7, 1, 0.5) !== await shot('news', day7, 1, 2.2), 'default camera does not move the shot');
@@ -2799,6 +2833,16 @@ async function run() {
     { scene: 'news', opts: { day: 25, brief: { title: 'PRESERVE ALL RECORDS', feed: [] } } },
     { scene: 'news', opts: { day: 20, brief: { title: 'RUN ON RIDGEWAY TRUST', feed: [] } } },
     { scene: 'news', opts: { day: 17, brief: { title: 'FOUR FUNDS', feed: [] } } },
+    // batch 7: the decision scenes (a room beat and a face beat each): the vote room, the night office, the dinner, the clinic, the shelter, the treasury, the kitchen with the phone and the one with a pet's postcard, the lobby
+    { scene: 'decision', opts: { id: 'c8', day: 39, speaker: 'Sen. Marcus Thorne', role: 'Chair', title: 'THE STABILIZATION ACT' } },
+    { scene: 'decision', opts: { id: 'c7', day: 24, speaker: 'Desmond Kroll', role: 'Head of Trading', title: 'THE ADDENDUM' } },
+    { scene: 'decision', opts: { id: 'advance', day: 31, speaker: 'Desmond Kroll', role: 'At dinner', title: 'THE ADVANCE' } },
+    { scene: 'decision', opts: { id: 'vetER', day: 27, speaker: 'Your vet', role: 'After hours', title: 'VET ER' } },
+    { scene: 'decision', opts: { id: 'adopt', day: 4, speaker: 'Harbor Street Animal Shelter', role: 'Open late', title: 'ADOPT' } },
+    { scene: 'decision', opts: { id: 'c5', day: 21, speaker: 'Adele Venn', role: 'Treasury', title: 'RESCUE NIGHT' } },
+    { scene: 'decision', opts: { id: 'dadBill', day: 18, speaker: 'Mom', role: 'Calling', title: 'DAD BILL' } },
+    { scene: 'decision', opts: { id: 'vetCheck', day: 14, speaker: 'Your vet', role: 'Reminder', title: 'CHECKUP', S: { f: {}, wallet: { pet: { kind: 'cat', sex: 'boy', name: 'Rosco' } } } } },
+    { scene: 'decision', opts: { id: 'rentHike', day: 11, speaker: 'Your landlord', role: 'Building management', title: 'RENT HIKE' } },
     { scene: 'close', opts: { report: { day: 3, pnl: 1200, quotaMet: true, quota: 900 } } },
     { scene: 'close', opts: { report: { day: 30, pnl: 1200, quotaMet: true, quota: 900 } } },
     // the close: a loss with the quota missed on the empty floor, and the two days with a Sqwak breaking insert (no game needed): a profit in autumn, and a seven-digit loss in winter
@@ -2888,8 +2932,8 @@ async function run() {
     for (const { scene, opts } of PERF_SCENES) {
       const r = await perf(scene, opts);
       results.push(r);
-      r.day = opts.day != null ? opts.day : opts.report && opts.report.day; const wal = opts.game && opts.game.mode.S.wallet; r.tier = wal ? wal.tier : undefined; r.pet = !!(wal && wal.pet);
-      console.log(`perf ${scene}${r.day != null ? ' day ' + r.day : ''}${r.tier != null ? ' tier ' + r.tier : ''}${r.pet ? ' pet' : ''}: ${r.status} attempts=${r.attempts.length} framesMeasured=${r.framesMeasured}/${r.framesTotal} avg=${r.avgMs} p95=${r.p95Ms} max=${r.maxMs} firstMax=${Math.max(0, ...r.firstFrameMs.map((f) => f.ms))}`);
+      r.day = opts.day != null ? opts.day : opts.report && opts.report.day; if (opts.id) r.id = opts.id; const wal = opts.game && opts.game.mode.S.wallet; r.tier = wal ? wal.tier : undefined; r.pet = !!(wal && wal.pet);
+      console.log(`perf ${scene}${opts.id ? " " + opts.id : ""}${r.day != null ? ' day ' + r.day : ''}${r.tier != null ? ' tier ' + r.tier : ''}${r.pet ? ' pet' : ''}: ${r.status} attempts=${r.attempts.length} framesMeasured=${r.framesMeasured}/${r.framesTotal} avg=${r.avgMs} p95=${r.p95Ms} max=${r.maxMs} firstMax=${Math.max(0, ...r.firstFrameMs.map((f) => f.ms))}`);
     }
     const outDir = path.join(root, 'qa', 'evidence', 'motion');
     fs.mkdirSync(outDir, { recursive: true });

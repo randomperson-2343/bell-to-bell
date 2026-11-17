@@ -621,7 +621,14 @@
   function faceLayers(id, day, S, name) {
     const M = B.Motion, K = B.MotionKit;
     if (!M || !M.layered || !K || !B.Portraits || !B.Portraits.has(name)) return null;
-    return null;
+    // the room dimmed behind (depth 0.3), the speaker rising 12 px into frame from 0.30 to 0.80 s, one blink at 1.55 s (after the caption has typed)
+    return {
+      camera: K.rise(12, 2.1, 0.30, 0.80),
+      layers: [
+        { id: 'room', depth: 0.3, draw(c) { room(c, id, day, false, S); dim(c, 0.35); } },
+        { id: 'speaker', depth: 1, draw(c) { speaker(c, name, 40); }, animate(g, v, t) { if (t >= 1.55 && t < 1.67) speakerSpace(g, (sp) => B.Portraits.paintEyes(sp, name)); } }
+      ]
+    };
   }
 
   B.Scenes.decision = function (o) {
