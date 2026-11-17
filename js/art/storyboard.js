@@ -1358,6 +1358,39 @@
     ];
   }
 
+  // ---- Stage 3, batch 6: the story tableaux ----
+  // Layers: `art` (the picture without its mover and scanlines, cached; the animate draws the mover and the covers in the tableau's own transform),
+  // `glass` (the scanlines, the header strip and the fine marks, above every cover and mover) and `marks` (establish: the corner brackets and the tear)
+  // or `dim` (hold: the 0.18 ink rect). Coordinates in the paints are art units (320x180, before the 7 px drop). Returns null for a flat beat.
+  const TAB_CUES = { 25: [{ at: 1.10, sfx: 'click' }] };
+  function tableauLayers(day, r, phase, dur) {
+    const K = B.MotionKit, M = B.Motion, n = r.arg, G = SH.tableauGeom(n), P_ = P;
+    const est = phase === 'establish', det = phase === 'detail', hold = phase === 'hold', Z = det ? 1.3 : 0;
+    const noMover = n === 3 || n === 9 || n === 12 || n === 13, over = n === 9;
+    let paint = null;
+    if (n === 3) {
+      if (est) paint = (g, t) => SH.tableauMover(g, 3, (-4 + Math.round(9 * M.ease.out(K.span(t, 0.35, 1.35)))) / 9);
+      else if (det) paint = (g, t) => SH.tableauMover(g, 3, Math.min(9, 5 + Math.floor(4 * K.span(t, 0.35, 1.95) + 1e-9)) / 9);
+    }
+    if (!paint) return null;
+    return [
+      {
+        id: 'art', depth: 1,
+        draw(c) { at2x(c, (cc) => tableau(cc, n, Z, { part: 'art', noMover, over }), day); },
+        animate(c, v, t) { at2x(c, (cc) => tableauSpace(cc, Z, (g) => paint(g, t)), day); }
+      },
+      {
+        id: 'glass', depth: 1,
+        draw(c) {
+          at2x(c, (cc) => tableau(cc, n, Z, { part: 'scan', over }), day);
+          if (est) finePass(c, day, r, 'establish', 'world'); else if (det) finePass(c, day, r, 'detail');
+        }
+      },
+      hold ? { id: 'dim', depth: 0, draw(c) { c.save(); c.globalAlpha = 0.18; X.rect(c, 0, 0, V.w, V.h, P.ink); c.restore(); } }
+        : est ? { id: 'marks', depth: 0, draw(c) { finePass(c, day, r, 'establish', 'frame'); tell(c, day); } } : null
+    ].filter(Boolean);
+  }
+
   B.Scenes.news = function (o) {
     const day = o.day || 0, r = row(day, story(o)), n = WEIGHTS[r.weight] || 2;
     const title = R.clean((o.brief || {}).title);
@@ -1394,6 +1427,12 @@
       }
       else if (r.shot === 'skyline' && /:establish$/.test(b.id)) beats[i] = B.Motion.layered(Object.assign({}, b, { camera: null, layers: skylineLayers(day, r) }));
       else if (r.shot === 'racks' && /:establish$/.test(b.id)) beats[i] = B.Motion.layered(Object.assign({}, b, { camera: null, layers: racksLayers(day, r, title) }));
+      else if (r.shot === 'tableau') {
+        const ph = /:establish$/.test(b.id) ? 'establish' : /:detail$/.test(b.id) ? 'detail' : 'hold', L = tableauLayers(day, r, ph, b.dur);
+        if (L) beats[i] = B.Motion.layered(Object.assign({}, b, { camera: ph === 'establish' ? SETTLE() : null, layers: L }, TAB_CUES[day] && ph === 'establish' ? { cues: TAB_CUES[day] } : {}));
+        // Kavro Strait: the hold shows the ships where the detail left them (p = 1)
+        else if (r.arg === 3 && ph === 'hold') beats[i] = Object.assign({}, b, { draw: (c) => { at2x(c, (cc) => tableau(cc, 3, 0, { p: 1 }), day); c.save(); c.globalAlpha = 0.18; X.rect(c, 0, 0, V.w, V.h, P.ink); c.restore(); } });
+      }
       else if (r.shot === 'place' && /:(establish|detail)$/.test(b.id)) {
         const L = placeLayers(day, r, title, /:detail$/.test(b.id));
         if (L) beats[i] = B.Motion.layered(Object.assign({}, b, L));
