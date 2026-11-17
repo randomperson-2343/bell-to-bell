@@ -463,7 +463,7 @@
   // roomLayers(id, day, after, S, phase) and faceLayers(id, day, S, name) return { camera, cues, layers } for B.Motion.layered, or null (the beat stays flat).
   // phase: 'room' (the decision's room beat, 1.5 s), 'establish' (the news establish that borrows the room, 1.7 s), 'whip' (the weekend's whip, 1.6 s).
   // Every layer is the flat room() split into cached parts (noGrain, the scanlines in a layer of their own on top) with the moving things drawn above.
-  const TILT = () => ({ from: { x: 0, y: -6, zoom: 1 }, to: { x: 0, y: 0, zoom: 1 }, ease: B.Motion.ease.inOut });
+  const TILT = () => B.MotionKit.settle(6, B.Motion.ease.inOut);
   const PHASE_DUR = { room: 1.5, establish: 1.7, whip: 1.6, '317': 1.6, after: 2.2 };
   const LAYER = {};
   // ---- shot 1 and 2: Kroll's office ----

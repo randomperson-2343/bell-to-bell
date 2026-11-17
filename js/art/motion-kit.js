@@ -38,8 +38,16 @@
   const span = (T, a, b) => (b === a ? (T >= b ? 1 : 0) : clamp01((T - a) / (b - a)));
   // An easing for a beat camera that moves only between seconds a and b of a beat of length dur.
   const camSpan = (dur, a, b, ease) => (p) => ease((p * dur - a) / (b - a));
+  // A beat camera that starts dy px above rest (below, when dy is negative) and eases to 0 over the whole beat; the layers' depths set how far each one travels.
+  // opts.step2: the ease is quantised to steps of 2 px (an even y at every time). For art drawn at 2x (320x180 through at2x), where a one-pixel
+  // step flips the phase of the dither and the walls change tone for a frame: dy / 2 steps, e.g. 6 px is Math.round(ease(p) * 3) / 3.
+  const settle = (dy, ease, opts) => {
+    let e = ease;
+    if (opts && opts.step2) { const n = Math.max(1, Math.round(Math.abs(dy) / 2)); e = (p) => Math.round(ease(p) * n) / n; }
+    return { from: { x: 0, y: -dy, zoom: 1 }, to: { x: 0, y: 0, zoom: 1 }, ease: e };
+  };
   // A depth-1 layer lifts dy px into place between a and b seconds; depth-0 layers stay still.
-  const rise = (dy, dur, a, b) => ({ from: { x: 0, y: -dy, zoom: 1 }, to: { x: 0, y: 0, zoom: 1 }, ease: camSpan(dur, a, b, B.Motion.ease.out) });
+  const rise = (dy, dur, a, b) => settle(dy, camSpan(dur, a, b, B.Motion.ease.out));
 
   // ---- 1. blink --------------------------------------------------------------
   // One rect, on or off. With `end` the phase is taken from the end, so the light is on at T = end.
@@ -312,5 +320,5 @@
     if (f && T < o.at + (f.dur == null ? 0.08 : f.dur)) fillAlpha(ctx, f.x, f.y, f.w, f.h, f.col || P.bone, f.a == null ? 0.15 : f.a);
   }
 
-  B.MotionKit = { span, camSpan, rise, blink, crt, flicker, trace, tally, typeOn, stamp, marker, lamps, weather, motes, figure, passing, ping };
+  B.MotionKit = { span, camSpan, settle, rise, blink, crt, flicker, trace, tally, typeOn, stamp, marker, lamps, weather, motes, figure, passing, ping };
 })(window.BTB);

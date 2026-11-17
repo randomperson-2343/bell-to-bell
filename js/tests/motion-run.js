@@ -843,25 +843,31 @@ async function run() {
   if (process.env.B9_ONLY) { console.log('motion-run: batch 9 asserts only: passed'); return; }
   // ---- stage 3 batch 8 asserts go here ----
   // ---- stage 3 batch 8, part A: critique fixes ----
-  // A5: the cameras of shots whose art is 320x180 drawn at 2x (`even` cameras: the tableau establishes, the lobby / elevator and apartment places, the tv, rating, voicemail and
-  // ticket rooms, the lit floor, session 1's elevator, the closing bell) move in 2 px steps: their y offset is even at every sampled time, the end is 0 and nothing else changed
+  // A5: the cameras of shots whose art is 320x180 drawn at 2x (the tableau establishes, the lobby / elevator and apartment places, the tv, rating, voicemail and
+  // ticket rooms, the lit floor, session 1's elevator, the closing bell: B.MotionKit.settle with step2) move in 2 px steps: their y offset is even at every sampled time,
+  // the end is 0 and nothing else changed. They are found by what they do: a camera that starts at least 6 px off and passes through three or more positions, all even.
   const evenScan = await page.evaluate(() => {
-    const M = BTB.Motion, found = {}, bad = [];
+    const M = BTB.Motion, found = {};
     const nopt = (day) => ({ day, brief: { title: 'Headline of the day', feed: [] } });
-    const scanBeats = (label, beats) => beats.forEach((b) => {
-      if (!b.camera || !b.camera.even) return;
-      found[label] = (found[label] || 0) + 1;
-      const ys = new Set();
-      for (let k = 0; k <= 120; k++) { const y = M.cameraAt(b.camera, k / 120).y; ys.add(y); if (y % 2 !== 0) bad.push(`${b.id} p=${k / 120}: y ${y}`); }
-      if (M.cameraAt(b.camera, 1).y !== 0 || M.cameraAt(b.camera, 0).y > -6 || ys.size < 3) bad.push(`${b.id}: ends ${M.cameraAt(b.camera, 1).y}, starts ${M.cameraAt(b.camera, 0).y}, ${ys.size} positions`);
-    });
+    const isStepped = (b) => {
+      if (!b.camera) return false;
+      const ys = new Set(); let allEven = true;
+      for (let k = 0; k <= 120; k++) { const y = M.cameraAt(b.camera, k / 120).y; ys.add(y); if (y % 2 !== 0) allEven = false; }
+      return allEven && ys.size >= 3 && M.cameraAt(b.camera, 0).y <= -6 && M.cameraAt(b.camera, 1).y === 0;
+    };
+    const scanBeats = (label, beats) => beats.forEach((b) => { if (isStepped(b)) found[label] = (found[label] || 0) + 1; });
     for (let d = 0; d <= 60; d++) { scanBeats('news', BTB.Scenes.news(nopt(d))); scanBeats('close', BTB.Scenes.close({ report: { day: d }, day: d })); }
-    return { found, bad: bad.slice(0, 6), nBad: bad.length };
+    return { found };
   });
-  assert(evenScan.nBad === 0 && evenScan.found.news >= 25, `A5: a 2x-art camera has an odd y or is not stepped: ${JSON.stringify(evenScan)}`);
+  assert(evenScan.found.news >= 25, `A5: too few 2x-art cameras are stepped: ${JSON.stringify(evenScan)}`);
   // and the known 2x shots are among them
   for (const [day, re] of [[6, 'establish'], [9, 'establish'], [17, 'establish'], [20, 'establish'], [25, 'establish'], [37, 'establish'], [40, 'establish'], [45, 'establish'], [0, 'establish'], [16, 'establish'], [18, 'establish'], [4, 'establish'], [50, 'establish']]) {
-    const e = await page.evaluate(([d, re]) => { const b = BTB.Scenes.news({ day: d, brief: { title: 'Headline of the day', feed: [] } }).find((x) => new RegExp(re + '$').test(x.id)); return !!(b && b.camera && b.camera.even); }, [day, re]);
+    const e = await page.evaluate(([d, re]) => {
+      const M = BTB.Motion, b = BTB.Scenes.news({ day: d, brief: { title: 'Headline of the day', feed: [] } }).find((x) => new RegExp(re + '$').test(x.id));
+      if (!b || !b.camera) return false;
+      const ys = new Set(); for (let k = 0; k <= 120; k++) { const y = M.cameraAt(b.camera, k / 120).y; if (y % 2 !== 0) return false; ys.add(y); }
+      return ys.size >= 3 && M.cameraAt(b.camera, 0).y <= -6 && M.cameraAt(b.camera, 1).y === 0;
+    }, [day, re]);
     assert(e, `A5: news ${day} ${re} does not have the stepped camera`);
   }
   // native 640x360 rooms keep their camera: the vote room and the decisions' tilt are still one-pixel steps

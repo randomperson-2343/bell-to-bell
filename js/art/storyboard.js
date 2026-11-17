@@ -867,12 +867,9 @@
   // so it is lit at dur), front (fn(c, t) replaces Saturday's phone and breath), top (fn(c) drawn after the grain, outside space), flat (outside, interior, grain: no camera).
   function saturdayLayers(day, home, w, id, o) {
     o = o || {};
-    const M = B.Motion, K = B.MotionKit, s = R.season(day), { wx, wy, ww, wh } = windowRect(home), lay = LAYOUT[home.id] || LAYOUT.studio;
+    const K = B.MotionKit, s = R.season(day), { wx, wy, ww, wh } = windowRect(home), lay = LAYOUT[home.id] || LAYOUT.studio;
     const space = o.space || ((c, fn) => fn(c)), t0 = o.t0 || 0, wseed = o.seed || id + ':wx', dur = o.dur || SAT_DUR;
     const part = (name) => (c) => space(c, (cc) => apartmentShot(cc, day, home, !!o.night, w, name));
-    const weather = s.snow ? { kind: 'snow', n: clampN(Math.round(ww * wh / 1000 * (0.4 + 0.6 * s.snow)), 12, 40), rate: 12 }
-      : s.id === 'autumn' ? { kind: 'paper', n: clampN(Math.round(ww / 30), 4, 14), rate: 12 }
-      : { kind: 'rain', n: clampN(Math.round(ww * wh / 1500), 10, 40), rate: 0 };
     const colon = (c, t) => {
       if (o.blink) {
         K.blink(c, lay.stand + 45, 204, 2, 2, t, { on: null, off: P.ink2, period: 1.0, duty: 0.5, end: dur });
@@ -892,16 +889,8 @@
       // the pet's head and chest rise one pixel for one breath
       if (w && w.pet && PET[w.pet.kind] && t >= 0.8 && t < 1.7) breathDraw(c, w);
     };
-    const weatherAnim = (c, v, t) => space(c, (cc) => {
-      const T = t + t0, tp = weather.rate ? Math.floor(T * weather.rate) / weather.rate : T;
-      cc.save(); cc.beginPath(); cc.rect(wx, wy, ww, wh); cc.clip();
-      M.particles({ kind: weather.kind, seed: wseed, t: tp, x: wx, y: wy, w: ww, h: wh, count: weather.n }).forEach((q, i) => {
-        if (weather.kind === 'paper') X.rect(cc, q.x, q.y, 3, 2, i % 2 ? P.amber : P.crimsonD);
-        else if (weather.kind === 'rain') X.rect(cc, q.x, q.y, 1, 6, P.grey2);
-        else X.rect(cc, q.x, q.y, q.s === 2 ? 3 : 2, q.s === 2 ? 3 : 2, P.white);
-      });
-      cc.restore();
-    });
+    // the window's weather is the kit's own (snow, leaves or rain by the season); the least number of flakes, leaves or drops differs by kind
+    const weatherAnim = (c, v, t) => space(c, (cc) => K.weather(cc, wx, wy, ww, wh, day, wseed, t, { t0, min: s.snow ? 12 : s.id === 'autumn' ? 4 : 10 }));
     const outside = { id: 'outside', depth: o.flat ? 1 : 0.25, draw: part('outside'), animate: weatherAnim };
     const grain = { id: 'grain', depth: o.flat ? 1 : 0, draw(c) { part('grain')(c); if (o.top) o.top(c); } };
     if (o.flat) {
@@ -981,11 +970,11 @@
       B.Motion.layered(R.beat('weekend', `${key}:sat`, SAT_DUR, null, sat, {
         sfx: 'apartment', transition: 'fade', informative: !story$, cache: false,
         cues: [{ at: 1.0, sfx: 'news' }],
-        camera: { from: { x: 0, y: CAM_Y, zoom: 1 }, to: { x: 0, y: 0, zoom: 1 }, ease: B.Motion.ease.inOut },
+        camera: B.MotionKit.settle(-CAM_Y, B.Motion.ease.inOut),
         layers: saturdayLayers(day, home, w, satId)
       })),
       B.Motion.layered(Object.assign({}, sunBeat, {
-        camera: { from: { x: 0, y: 6, zoom: 1 }, to: { x: 0, y: 0, zoom: 1 }, ease: B.Motion.ease.inOut }, cues: sunCues,
+        camera: B.MotionKit.settle(-6, B.Motion.ease.inOut), cues: sunCues,
         layers: saturdayLayers(day, home, w, satId, {
           night: true, space: sundaySpace, t0: 2.4, seed: satId + ':wx', blink: true, dur: 1.8, front: sunFront, top: SUN_EDGE,
           furniture: pulled44 ? (c, t) => K.crt(c, lap.x, lap.y, lap.w, lap.h, t, { mode: 'off', at: 1.15, bg: P.screenD }) : null
@@ -1027,7 +1016,7 @@
     return M.layered({
       id: `news:${day}:establish`, view: V, dur: 2.4, line: date, cache: false, sfx: 'apartment', informative: false, transition: 'fade',
       cues: [{ at: 1.05, sfx: 'elevator' }],
-      camera: { from: { x: 0, y: -8, zoom: 1 }, to: { x: 0, y: 0, zoom: 1 }, ease: step2(8, M.ease.inOut), even: true },
+      camera: B.MotionKit.settle(8, M.ease.inOut, { step2: true }),
       layers: [
         {
           id: 'room', depth: 1, draw: elevBase(0),
@@ -1050,7 +1039,7 @@
           }
         },
         { id: 'frame', depth: 1, draw(c) { at2x(c, (cc) => SH.elevator(cc, 0, 41, 'frame'), 0); finePass(c, day, rr, 'establish', 'world'); } },
-        { id: 'marks', depth: 0, draw(c) { finePass(c, day, rr, 'establish', 'frame'); tell(c, day); } }
+        marksLayer(day, rr, false, 'frame')
       ]
     });
   }
@@ -1189,12 +1178,15 @@
 
   // ---- The establishes of the documents' places as layers (stage 3, batch 4, part 2) ----
   // The art is drawn through framed(), so every moving mark is drawn through framed() too, with noBack, in the same transform.
-  const SETTLE = () => ({ from: { x: 0, y: -6, zoom: 1 }, to: { x: 0, y: 0, zoom: 1 }, ease: B.Motion.ease.inOut });
-  // Art drawn at 2x (320x180 through at2x): a one-pixel camera step flips the phase of the dither and the walls change tone for a frame, so these cameras
-  // move in steps of 2 px (an even y at every time): the easing is quantised to travel / 2 steps. 6 px: Math.round(inOut(p) * 3) / 3.
-  const step2 = (travel, ease) => { const n = Math.max(1, Math.round(travel / 2)); return (p) => Math.round(ease(p) * n) / n; };
-  const SETTLE2 = () => ({ from: { x: 0, y: -6, zoom: 1 }, to: { x: 0, y: 0, zoom: 1 }, ease: step2(6, B.Motion.ease.inOut), even: true });
-  const marksLayer = (day, r) => ({ id: 'marks', depth: 0, draw(c) { finePass(c, day, r, 'establish'); tell(c, day); } });
+  // The places' tilt, 6 px: SETTLE for native 640x360 art, SETTLE2 for art drawn at 2x (see B.MotionKit.settle: steps of 2 px).
+  const SETTLE = () => B.MotionKit.settle(6, B.Motion.ease.inOut);
+  const SETTLE2 = () => B.MotionKit.settle(6, B.Motion.ease.inOut, { step2: true });
+  // The marks layer on top (depth 0, never moved by the camera): the shot's fine marks, and on an establish the anomaly tear. part 'frame': the corner brackets only
+  // (the shot's own marks are drawn by another layer); no part: both.
+  const marksLayer = (day, r, detail, part) => ({ id: 'marks', depth: 0, draw(c) { finePass(c, day, r, detail ? 'detail' : 'establish', part); if (!detail) tell(c, day); } });
+  // The 0.18 ink dim a hold lies under.
+  const holdDim = (c) => { c.save(); c.globalAlpha = 0.18; X.rect(c, 0, 0, V.w, V.h, P.ink); c.restore(); };
+  const dimLayer = () => ({ id: 'dim', depth: 0, draw: holdDim });
   // The desk with the day's paper (memo and footnote). The establish slides the paper up 16 art units onto the desk; the hold has it at rest.
   // Both blink the TRADE monitor's standby LED (a 5x5 flat-bezel cover over the 3x3 light while it is off, nothing while it is on).
   function deskLayers(day, r, title, hold, dur) {
@@ -1203,7 +1195,7 @@
     if (hold) {
       return [
         { id: 'desk', depth: 1, draw(c) { deskWithDoc(c, day, r, Z); }, animate(c, v, t) { led(c, t); } },
-        { id: 'dim', depth: 0, draw(c) { c.save(); c.globalAlpha = 0.18; X.rect(c, 0, 0, V.w, V.h, P.ink); c.restore(); } }
+        dimLayer()
       ];
     }
     return [
@@ -1214,7 +1206,7 @@
           framed(c, day, r, title, { noBack: true, draw: (cc) => { led(cc, t); deskWithDoc(cc, day, r, Z, { part: 'paper', dy }); } });
         }
       },
-      marksLayer(day, r)
+      marksLayer(day, r, false)
     ];
   }
   // The voicemail on the couch arm: the room is cached with the phone's screen dark; it lights at 0.45 s with one bone flare.
@@ -1225,13 +1217,13 @@
         animate(c, v, t) {
           framed(c, day, r, title, { noBack: true, draw: (cc) => at2x(cc, (c2) => K.ping(c2, t, { at: 0.45, off: [], on: [{ x: 192, y: 113, w: 8, h: 13, col: P.screenGlow }, { x: 194, y: 115, w: 2, h: 2, col: P.sky }], flare: { x: 186, y: 106, w: 20, h: 26, col: P.bone, a: 0.15, dur: 0.08 } }), day) });
         } },
-      marksLayer(day, r)
+      marksLayer(day, r, false)
     ];
   }
   // The vote and hearing rooms borrowed by the floor-tally establishes (sessions 11, 38 and the bill passed on 41): the decision room's own layers, then the marks.
   function voteRoomLayers(day, r) {
     const D = B.DecisionArt, L = D && D.roomLayers && D.roomLayers(day > 27 ? 'c8' : 'c3', day, true, { f: { billPassed: /PASSES/.test(r.arg || '') } }, 'establish');
-    return L ? L.layers.concat(marksLayer(day, r)) : null;
+    return L ? L.layers.concat(marksLayer(day, r, false)) : null;
   }
   // The post establish is the phone handoff's recipe: the room still, a small dark device rising into it, waking on the one post.
   function postRoomLayers(day, r, title) {
@@ -1252,7 +1244,7 @@
           });
         }
       },
-      marksLayer(day, r)
+      marksLayer(day, r, false)
     ];
   }
   // The chart establish is the office wide: a refresh band down each live monitor in turn (the monitors the office wide of the morning rolls).
@@ -1263,7 +1255,7 @@
         animate(c, v, t) {
           framed(c, day, r, title, { noBack: true, draw: (cc) => G.monitors.forEach((m) => { if (!m.off) K.crt(cc, m.screen.x, m.screen.y, m.screen.w, m.screen.h, t, { mode: 'roll', at: 0.35 + 0.12 * m.i, dur: 0.36, band: 12 }); }) });
         } },
-      marksLayer(day, r)
+      marksLayer(day, r, false)
     ];
   }
 
@@ -1273,14 +1265,13 @@
   // the corner brackets and the anomaly tear sit on `marks`, which the tilt never moves. Establishes draw every layer through framed(); the
   // details are unframed. placeFrame's own coordinates are 640x360 (no at2x).
   const placeArt = (c, day, r, title, detail, o, fn) => (detail ? fn(c) : framed(c, day, r, title, Object.assign({ draw: fn }, o)));
-  const framesLayer = (day, r, detail) => ({ id: 'marks', depth: 0, draw(c) { finePass(c, day, r, detail ? 'detail' : 'establish', 'frame'); if (!detail) tell(c, day); } });
   function placeSandwich(day, r, title, detail, mid) {
     const sb = R.storyboard(day), ph = detail ? 'detail' : 'establish', art = (c, o, fn) => placeArt(c, day, r, title, detail, o, fn);
     return [
       { id: 'back', depth: 1, draw(c) { art(c, null, (cc) => R.placeFrame(cc, sb, title, detail, { part: 'back', noSpeckle: mid.noSpeckle })); } },
       { id: mid.id, depth: 1, draw() {}, animate(c, v, t) { art(c, { noBack: true }, (cc) => mid.paint(cc, t)); } },
       { id: 'front', depth: 1, draw(c) { art(c, { noBack: true }, (cc) => R.placeFrame(cc, sb, title, detail, { part: 'front' })); finePass(c, day, r, ph, 'world'); }, animate: mid.refresh ? (c, v, t) => mid.refresh(c, t) : undefined },
-      framesLayer(day, r, detail)
+      marksLayer(day, r, detail, 'frame')
     ];
   }
   // Shot 1: a lit train sweeps past behind the seven window cells without stopping. One train of 14 windows, 28 px apart, moving at 330 px/s (a
@@ -1339,7 +1330,7 @@
         draw(c) { placeArt(c, day, r, title, detail, null, (cc) => R.placeFrame(cc, sb, title, detail)); finePass(c, day, r, ph, 'world'); },
         animate(c, v, t) { refresh(c, t); }
       },
-      framesLayer(day, r, detail)
+      marksLayer(day, r, detail, 'frame')
     ];
   }
 
@@ -1364,7 +1355,7 @@
           });
         }
       },
-      framesLayer(day, r, false)
+      marksLayer(day, r, false, 'frame')
     ];
   }
 
@@ -1390,7 +1381,7 @@
         }
       },
       { id: 'frame', depth: 1, draw(c) { framed(c, day, r, title, { noBack: true, draw: elevE(day, 'frame', 0, 41) }); finePass(c, day, r, 'establish', 'world'); } },
-      framesLayer(day, r, false)
+      marksLayer(day, r, false, 'frame')
     ];
   }
   // Session 1's detail and hold: the doors carry on from the opening (0.6 open): to fully open on the detail, back to 0.6 on the hold.
@@ -1402,7 +1393,7 @@
         animate(c, v, t) { elevE(day, 'doors', hold ? 1.0 - 0.4 * M.ease.inOut(K.span(t, 0.20, 0.90)) : 0.6 + 0.4 * M.ease.inOut(K.span(t, 0.35, 1.05)), 41)(c); }
       },
       hold ? { id: 'frame', depth: 1, draw: elevE(day, 'frame', 0, 41) } : { id: 'frame', depth: 1, draw(c) { elevE(day, 'frame', 0, 41)(c); finePass(c, day, r, 'detail', 'world'); } },
-      hold ? { id: 'dim', depth: 0, draw(c) { c.save(); c.globalAlpha = 0.18; X.rect(c, 0, 0, V.w, V.h, P.ink); c.restore(); } } : framesLayer(day, r, true)
+      hold ? dimLayer() : marksLayer(day, r, true, 'frame')
     ];
   }
 
@@ -1444,7 +1435,7 @@
           }, true);
         }
       },
-      hold ? { id: 'dim', depth: 0, draw(c) { c.save(); c.globalAlpha = 0.18; X.rect(c, 0, 0, V.w, V.h, P.ink); c.restore(); } } : framesLayer(day, r, detail)
+      hold ? dimLayer() : marksLayer(day, r, detail, 'frame')
     ];
   }
 
@@ -1487,7 +1478,7 @@
         // once the last strip has switched the art shows as it is (drawing screenD over screenD again would blend the edges the 1.18 zoom leaves half covered)
         animate(c, v, t) { if (t >= 0.35 + 135 * 0.0075) return; framed(c, day, r, title, { noBack: true, draw: (cc) => K.lamps(cc, cells, t, { at: 0.35, step: 0.0075, on: P.screenD, off: P.phosphorD }) }); }
       },
-      marksLayer(day, r)
+      marksLayer(day, r, false)
     ];
   }
 
@@ -1573,8 +1564,8 @@
           if (est) finePass(c, day, r, 'establish', 'world'); else if (det) finePass(c, day, r, 'detail');
         }
       },
-      hold ? { id: 'dim', depth: 0, draw(c) { c.save(); c.globalAlpha = 0.18; X.rect(c, 0, 0, V.w, V.h, P.ink); c.restore(); } }
-        : est ? { id: 'marks', depth: 0, draw(c) { finePass(c, day, r, 'establish', 'frame'); tell(c, day); } } : null
+      hold ? dimLayer()
+        : est ? marksLayer(day, r, false, 'frame') : null
     ].filter(Boolean);
   }
 
@@ -1589,7 +1580,7 @@
     else beats.push(R.beat('news', `${day}${v}:establish`, n === 1 ? 2.4 : 1.7, (c) => { framed(c, day, r, title); finePass(c, day, r, 'establish'); tell(c, day); }, n === 1 ? title : date,
       Object.assign({ sfx: r.shot === 'tv' ? 'room' : r.shot === 'floor' || r.shot === 'dark' ? 'office' : 'apartment', informative: n === 1 }, beats.length ? {} : { transition: 'fade' })));
     if (n >= 2) beats.push(R.beat('news', `${day}${v}:detail`, 2.3, (c) => { detailFrame(c, day, r, title); finePass(c, day, r, 'detail'); }, title, { sfx: 'broadcast', informative: true }));
-    if (n >= 3) beats.push(R.beat('news', `${day}${v}:hold`, 1.1, (c) => { shotFrame(c, day, r, title); c.save(); c.globalAlpha = 0.18; X.rect(c, 0, 0, V.w, V.h, P.ink); c.restore(); }, '', {}));
+    if (n >= 3) beats.push(R.beat('news', `${day}${v}:hold`, 1.1, (c) => { shotFrame(c, day, r, title); holdDim(c); }, '', {}));
     // Stage 3, batch 4: the act card and the documents' details as layers. Beat ids, durations, captions and sounds stay as they were.
     // the establish of a document's place (the weight S establish draws the document itself, as the detail: no session has one)
     const insertEstablish = r.shot === 'insert' && r.weight !== 'S';
@@ -1618,7 +1609,7 @@
         const ph = /:establish$/.test(b.id) ? 'establish' : /:detail$/.test(b.id) ? 'detail' : 'hold', L = tableauLayers(day, r, ph, b.dur);
         if (L) beats[i] = B.Motion.layered(Object.assign({}, b, { camera: ph === 'establish' ? SETTLE2() : null, layers: L }, TAB_CUES[day] && ph === 'establish' ? { cues: TAB_CUES[day] } : {}));
         // Kavro Strait: the hold shows the ships where the detail left them (p = 1)
-        else if (r.arg === 3 && ph === 'hold') beats[i] = Object.assign({}, b, { draw: (c) => { at2x(c, (cc) => tableau(cc, 3, 0, { p: 1 }), day); c.save(); c.globalAlpha = 0.18; X.rect(c, 0, 0, V.w, V.h, P.ink); c.restore(); } });
+        else if (r.arg === 3 && ph === 'hold') beats[i] = Object.assign({}, b, { draw: (c) => { at2x(c, (cc) => tableau(cc, 3, 0, { p: 1 }), day); holdDim(c); } });
         // a flat detail (the records, day 25) stays where it is: no camera
         else if (ph === 'detail') beats[i] = Object.assign({}, b, { camera: null });
       }
@@ -1755,7 +1746,7 @@
     } else if (beats[0]) {
       beats[0] = B.Motion.layered(Object.assign({}, beats[0], {
         dur: BELL_DUR,
-        camera: { from: { x: 0, y: -8, zoom: 1 }, to: { x: 0, y: 0, zoom: 1 }, ease: step2(8, B.Motion.ease.out), even: true },
+        camera: B.MotionKit.settle(8, B.Motion.ease.out, { step2: true }),
         layers: bellLayers(day, day >= 25)
       }));
     }
@@ -1764,7 +1755,7 @@
       const b = beats[i];
       if (/:sqwak$/.test(b.id)) beats[i] = M.layered(Object.assign({}, b, { camera: K.rise(40, b.dur, 0.20, 0.70), layers: sqwakLayers(R.storyboard(day), b, false) }));
       else if (/:sqwak-read$/.test(b.id)) beats[i] = M.layered(Object.assign({}, b, { camera: K.rise(26, b.dur, 0, 0.6), layers: sqwakLayers(R.storyboard(day), b, true) }));
-      else if (/:report$/.test(b.id)) beats[i] = M.layered(Object.assign({}, b, { camera: { from: { x: 0, y: -6, zoom: 1 }, to: { x: 0, y: 0, zoom: 1 }, ease: M.ease.out }, layers: closeLayers(r, false) }));
+      else if (/:report$/.test(b.id)) beats[i] = M.layered(Object.assign({}, b, { camera: K.settle(6, M.ease.out), layers: closeLayers(r, false) }));
       else if (/:hold$/.test(b.id)) beats[i] = M.layered(Object.assign({}, b, { camera: null, layers: closeLayers(r, true) }));
     }
     // The report says the one number the desk cares about.
@@ -1841,7 +1832,7 @@
     beats[0] = M.layered(Object.assign({}, beats[0], { camera: K.rise(56, beats[0].dur, 0.15, 0.75), layers: phoneHandoffLayers(sb, feed) }));
     const read = Object.assign({}, beats[1], {
       cues: [{ at: 0.70, sfx: 'news' }],
-      camera: arrival ? { from: { x: 0, y: 44, zoom: 1 }, to: { x: 0, y: 0, zoom: 1 }, ease: K.camSpan(beats[1].dur, 0.70, 1.00, M.ease.out) } : null,
+      camera: arrival ? K.settle(-44, K.camSpan(beats[1].dur, 0.70, 1.00, M.ease.out)) : null,
       layers: phoneReadLayers(sb, feed)
     });
     delete read.sfx;
@@ -1894,7 +1885,7 @@
     const beats = office(o), day = o.day || 0, g = o.game, S = g && g.mode && g.mode.S, down = R.marketDown(day - 1), M = B.Motion;
     const kinds = ['wide', 'desk', 'hold'];
     return beats.map((b, i) => M.layered(Object.assign({}, b, {
-      camera: i === 0 ? { from: { x: 0, y: -8, zoom: 1 }, to: { x: 0, y: 0, zoom: 1 }, ease: M.ease.inOut } : null,
+      camera: i === 0 ? B.MotionKit.settle(8, M.ease.inOut) : null,
       layers: officeLayers(day, S, down, kinds[i])
     })));
   };
@@ -2061,7 +2052,7 @@
         pulled ? 'THE RACKS STAY DARK. FOR NOW.' : 'FIRST LIGHT. THE CITY IS STILL THERE.', { sfx: 'room' })
     ];
     beats[0] = M.layered(Object.assign({}, beats[0], {
-      camera: { from: { x: 0, y: -8, zoom: 1 }, to: { x: 0, y: 0, zoom: 1 }, ease: (p) => Math.round(M.ease.inOut(p) * 4) / 4, even: true },
+      camera: B.MotionKit.settle(8, M.ease.inOut, { step2: true }),
       layers: endingWorldLayers(o)
     }));
     beats[1] = M.layered(Object.assign({}, beats[1], { camera: null, cues: [{ at: 1.30, sfx: 'click' }], layers: endingCardLayers(o) }));
