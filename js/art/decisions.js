@@ -269,6 +269,8 @@
 
   // The steakhouse: good wine, a candle, and an $8,000 advance.
   const ENV = { x: 246, y: 219, w: 114, h: 27 };
+  // the postcard's photo square (a cel with a 3 px outline, drawn in the kitchen with a postcard); the animate covers it with the card's paper
+  const PHOTO = { x: 321, y: 171, w: 30, h: 30 };
   // The $8,000 envelope at x (it slides in from 36 px to the right).
   function envelope(ctx, x) { cel(ctx, x, ENV.y, ENV.w, ENV.h, P.bone, P.white, P.plasticD); R.text(ctx, '$8,000', x + 57, 229, P.jadeD, 'center'); }
   function dinner(ctx, day, o) {
@@ -302,7 +304,7 @@
     }
     if (o.postcard) { // the vet's reminder, face up on the table, with a cartoon cross
       const pet = S && S.wallet && S.wallet.pet ? S.wallet.pet.name.toUpperCase() : 'YOUR PET';
-      cel(ctx, 312, 165, 132, 45, P.bone, P.white, P.putty2); cel(ctx, 321, 171, 30, 30, P.sky, P.white, P.slate2);
+      cel(ctx, 312, 165, 132, 45, P.bone, P.white, P.putty2); cel(ctx, PHOTO.x, PHOTO.y, PHOTO.w, PHOTO.h, P.sky, P.white, P.slate2);
       X.rect(ctx, 327, 184, 18, U, P.crimson); X.rect(ctx, 334, 177, U, 18, P.crimson);
       R.text(ctx, pet, 399, 177, P.ink, 'center'); R.text(ctx, 'CHECKUP DUE', 399, 192, P.crimsonD, 'center');
     }
@@ -548,11 +550,11 @@
   LAYER.dinner = (e, flat, grain) => ({
     layers: [{ id: 'room', depth: 1, draw: flat({ skip: 'envelope' }), animate(g, v, t) { envelope(g, ENV.x + 3 * Math.round(12 * (1 - e.M.ease.out(e.K.span(t, 0.40, 0.85))))); } }, grain]
   });
-  // ---- shots 10 and 11: the kitchen (the phone rings twice; the postcard's cross blinks) ----
+  // ---- shots 10 and 11: the kitchen (the phone rings twice; the postcard's photo blinks under a paper cover) ----
   LAYER.kitchen = (e, flat, grain) => {
     const K = e.K;
     if (e.opt.phone) return { cues: [{ at: 0.40, sfx: 'ring' }], layers: [{ id: 'room', depth: 1, draw: flat(), animate(g, v, t) { K.flicker(g, 477, 165, 78, 45, 'decision:phone', t, { spans: [[0.40, 0.60], [0.90, 1.10]], col: P.phosphor, a: 0.30 }); } }, grain] };
-    if (e.opt.postcard) return { layers: [{ id: 'room', depth: 1, draw: flat(), animate(g, v, t) { if (t >= 0.30) K.blink(g, 327, 177, 18, 18, t, { on: null, off: P.sky, period: 0.5, duty: 0.6, end: e.dur }); } }, grain] };
+    if (e.opt.postcard) return { layers: [{ id: 'room', depth: 1, draw: flat(), animate(g, v, t) { if (t >= 0.30) K.blink(g, PHOTO.x, PHOTO.y, PHOTO.w, PHOTO.h, t, { on: null, off: P.bone, period: 0.5, duty: 0.6, end: e.dur }); } }, grain] };
     return null;
   };
 
@@ -658,5 +660,5 @@
     return true;
   }
 
-  B.DecisionArt = { ROOMS, room, still, glow, cityCells, senator: senatorRows, lobbyEyes, waveBars, kennel, roomLayers, faceLayers };
+  B.DecisionArt = { ROOMS, room, still, glow, cityCells, senator: senatorRows, lobbyEyes, waveBars, kennel, roomLayers, faceLayers, postcardPhoto: () => Object.assign({}, PHOTO) };
 })(window.BTB);

@@ -659,9 +659,15 @@ async function run() {
   {
     const S = { f: {}, wallet: { pet: { kind: 'cat', sex: 'boy', name: 'Rosco' } } }, o = dopts('vetCheck', S), tag = 'kitchen postcard';
     await beat8(o, 0, { id: 'decision:vetCheck:2:Rosco:room', dur: 1.5, layers: 'room,grain', depths: '1,1', cam: '-6>0', cues: '' }, tag);
-    const A = (t) => D8('cnt', 'decision', o, 0, 'room', t, [327, 177, 18, 18], 'sky');
-    assert(await A(0.2) === 0 && await A(0.6) === 18 * 18 && await A(1.1) === 18 * 18 && await A(0.8) === 0 && await A(1.35) === 0 && await A(1.5) === 0, `${tag}: the cross does not blink from 0.30 s and end lit`);
-    assert(await D8('cnt', 'decision', o, 0, 'room', 0.6, [0, 0, 640, 360], 'any') === 18 * 18, `${tag}: more than the cross is covered`);
+    // A4: a paper-coloured cover over the whole photo square (the shared geometry's rect, the card's flat bone), at the badge rate, off (covering) in 0.5 to 0.7 and 1.0 to 1.2 s, ending uncovered
+    const PH = await page.evaluate(() => BTB.DecisionArt.postcardPhoto());
+    assert(JSON.stringify(PH) === '{"x":321,"y":171,"w":30,"h":30}', `${tag}: the photo rect is ${JSON.stringify(PH)}`);
+    const A = (t) => D8('cnt', 'decision', o, 0, 'room', t, [PH.x, PH.y, PH.w, PH.h], 'bone');
+    assert(await A(0.2) === 0 && await A(0.6) === 900 && await A(1.1) === 900 && await A(0.8) === 0 && await A(1.35) === 0 && await A(1.5) === 0, `${tag}: the photo's cover does not blink from 0.30 s and end uncovered`);
+    assert(await D8('cnt', 'decision', o, 0, 'room', 0.6, [0, 0, 640, 360], 'any') === 900, `${tag}: more than the photo square is covered`);
+    // the cover sits on the art's flat paper: the card's own pixels around the photo are the same bone
+    const paper = await page.evaluate((o) => { const b = BTB.Scenes.decision(o)[0], c = document.createElement('canvas'); c.width = 640; c.height = 360; const g = c.getContext('2d', { willReadFrequently: true }); b.draw(g, { w: 640, h: 360 }, 1, {}); const px = (x, y) => Array.from(g.getImageData(x, y, 1, 1).data).join(); return [px(319, 172), px(352, 172), px(330, 202), px(430, 190)].join('|'); }, o);
+    assert(new Set(paper.split('|')).size === 1, `${tag}: the card's paper beside the photo is not one flat colour: ${paper}`);
     RECT8[tag] = await rect8(o, 0, 3, tag);
   }
 
