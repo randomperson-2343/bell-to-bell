@@ -577,12 +577,12 @@
     return { x: (home.id === 'share' ? 132 : 150) + 6, y: top - 21, w: 42, h: 18 };
   }
   // The Sunday phone's light (apartment art units): the lit floor phone's screen and notification bar, and the light it throws up
-  // from a face-up screen in three hard steps. late: the crimson family.
-  function phoneSpill(late) {
-    const col = late ? P.crimson : P.sky;
+  // from a face-up screen in three hard steps. Only the sky blue screen exists: a late week (crimson) sits a figure at the phone, whose face glows instead.
+  function phoneSpill() {
+    const col = P.sky;
     return {
-      screen: { x: 219, y: 264, w: 21, h: 6, col: late ? P.crimsonD : P.sky },
-      bar: { x: 222, y: 266, w: 12, h: 2, col: late ? P.crimson : P.white },
+      screen: { x: 219, y: 264, w: 21, h: 6, col: P.sky },
+      bar: { x: 222, y: 266, w: 12, h: 2, col: P.white },
       spill: [{ x: 204, y: 240, w: 51, h: 21, col, a: 0.10 }, { x: 210, y: 249, w: 39, h: 12, col, a: 0.12 }, { x: 216, y: 258, w: 27, h: 6, col, a: 0.14 }]
     };
   }
@@ -938,7 +938,7 @@
     const satId = `weekend:${key}:sat`;
     const K = B.MotionKit, late = w ? w.lateWeeks | 0 : 0, fig = home.id === 'couch' || late > 0, pulled44 = day === 44 && pulled;
     // Sunday and the hold carry what Sunday changes: the lit floor phone (no figure) or the dead laptop (day 44, plug pulled)
-    const lap = laptopRect(home), SP = phoneSpill(late > 0), spillOn = [].concat(SP.spill, [SP.screen, SP.bar]);
+    const lap = laptopRect(home), SP = phoneSpill(), spillOn = [].concat(SP.spill, [SP.screen, SP.bar]);
     const sunFront = (c, t) => {
       if (w && w.pet && PET[w.pet.kind] && t >= 0.40 && t < 1.00) breathDraw(c, w);
       if (pulled44) return;

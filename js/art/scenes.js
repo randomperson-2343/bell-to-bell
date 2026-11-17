@@ -415,10 +415,10 @@
     return g;
   }
   // The tableau's mover: the three ships (3), the nine queue figures (9), the witness at the table (12, 13). The flat picture draws it in its place in the
-  // order of the art. A layer builder passes o.shift(i) -> [dx, dy] (whole art units added to item i) and o.maxY (rects are cut at that art y).
+  // order of the art. A layer builder passes o.shift(i) -> [dx, dy] (whole art units added to item i).
   function tableauMover(ctx, n, p, o) {
-    const sh = (i) => (o && o.shift ? o.shift(i) : [0, 0]), maxY = o && o.maxY != null ? o.maxY : null;
-    const rc = (x, y, w, h, c) => { if (maxY != null && y + h > maxY) h = maxY - y; if (h > 0) X.rect(ctx, x, y, w, h, c); };
+    const sh = (i) => (o && o.shift ? o.shift(i) : [0, 0]);
+    const rc = (x, y, w, h, c) => { if (h > 0) X.rect(ctx, x, y, w, h, c); };
     if (n === 3) {
       for (let i = 0; i < 3; i++) {
         const d = sh(i), x = 123 + i * 35 + Math.round(p * 9) + d[0];

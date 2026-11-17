@@ -1925,15 +1925,9 @@
     assert(g2.mode.S.crashK === 1 && g2.mode.S.crashDay === 20, 'old save is pinned to the base depth');
   });
 
-  test('Motion: easing, stepping and keyframes', () => {
+  test('Motion: easing', () => {
     const M = B.Motion;
     assert(M.ease.inOut(0) === 0 && M.ease.inOut(1) === 1 && M.ease.out(2) === 1 && M.ease.in(-1) === 0, 'easing is not clamped to 0..1');
-    assert(M.stepped(0.49, 4) === 0.25 && M.stepped(1, 4) === 1, 'stepped does not quantise down');
-    assert(M.tween(10, 20, 0.5) === 15, 'tween midpoint');
-    assert(M.keyframes([[0, 0], [0.5, 10], [1, 0]], 0.25) === 5 && M.keyframes([[0.2, 3], [1, 9]], 0) === 3, 'keyframes');
-    assert(M.stepped(0.4, 0) === 0.4 && M.cycle(1, 4, 0) === 0, 'stepped or cycle with n < 1');
-    assert(M.keyframes([], 0.5) === 0, 'empty keyframes');
-    assert(M.cycle(0.26, 4, 3) === 1 && M.count(0, 41, 1) === 41 && M.typed('BELL', 0.5) === 'BE', 'cycle, count or typed');
   });
   test('Motion: particles and flicker repeat exactly and stay in their box', () => {
     const M = B.Motion, o = { kind: 'snow', seed: 'a', t: 1.3, x: 10, y: 20, w: 100, h: 50, count: 30 };
@@ -2047,10 +2041,10 @@
     assert(fewer >= 2, 'run merging saved no rectangles (dark-to-light cells above half merge into runs): ' + fewer);
   });
 
-  test('MotionKit: loads headless and exposes the helpers and fourteen elements', () => {
+  test('MotionKit: loads headless and exposes the helpers and twelve elements', () => {
     const K = B.MotionKit;
     assert(K, 'B.MotionKit missing');
-    ['span', 'camSpan', 'rise', 'blink', 'crt', 'flicker', 'trace', 'tally', 'typeOn', 'stamp', 'marker', 'lamps', 'weather', 'motes', 'figure', 'passing', 'ping']
+    ['span', 'camSpan', 'rise', 'blink', 'crt', 'flicker', 'trace', 'tally', 'typeOn', 'stamp', 'marker', 'lamps', 'weather', 'passing', 'ping']
       .forEach((n) => assert(typeof K[n] === 'function', 'missing ' + n));
     assert(B.Shots.WALKER && B.Shots.WALKER_B && B.Shots.WALKER.length === 10 && B.Shots.WALKER_B.length === 10, 'B.Shots must expose WALKER and WALKER_B');
   });
@@ -2324,62 +2318,6 @@
     assert(KIT_PX(run(aut, 1, {})) !== KIT_PX(recOf((c) => K.weather(c, R.x, R.y, R.w, R.h, aut, 'office:0:wx1', 1, {}))), 'the seed matters');
   });
 
-  test('MotionKit.motes: dust at 12 poses a second, mirrored for steam', () => {
-    const K = B.MotionKit, P = B.Pal;
-    const run = (t, o) => recOf((c) => K.motes(c, 30, 40, 50, 60, 'shaft', t, o || {}));
-    const a = run(1);
-    assert(a.rects.length === 8 && a.rects.every((q) => q.fillStyle === P.bone && q.globalAlpha === 0.45 && ((q.w === 1 && q.h === 1) || (q.w === 2 && q.h === 2))) && a.depth() === 0, 'defaults');
-    assert(run(1, { count: 30 }).rects.length === 12 && run(1, { count: 3 }).rects.length === 3, 'count, capped at 12');
-    assert(KIT_PX(run(1)) === KIT_PX(run(1 + 0.05)) && KIT_PX(run(1)) !== KIT_PX(run(3)), '12 poses a second');
-    const up = run(1.5, { up: true }), dn = run(1.5);
-    assert(up.rects.every((q, i) => q.y === 2 * 40 + 60 - 1 - dn.rects[i].y && q.x === dn.rects[i].x), 'up mirrors y inside the rect');
-    assert(run(1, { col: P.white, a: 0.2 }).rects.every((q) => q.fillStyle === P.white && q.globalAlpha === 0.2), 'col and a');
-    assert(KIT_PX(run(0.5, { t0: 0.5 })) === KIT_PX(run(1)), 't0 shifts time');
-  });
-
-  test('B.Rhythm.person: no pose is today, pose 1 lifts the left foot, pose 2 the right', () => {
-    const rec = (pose) => recOf((c) => B.Rhythm.person(c, 100, 200, 2, 1, 1, 2, pose));
-    const none = recOf((c) => B.Rhythm.person(c, 100, 200, 2, 1, 1, 2)), p0 = rec(0), p1 = rec(1), p2 = rec(2);
-    assert(none.rects.length > 100 && KIT_PX(none) === KIT_PX(p0), 'pose 0 equals no pose');
-    assert(p1.rects.length < p0.rects.length && p2.rects.length < p0.rects.length && KIT_PX(p1) !== KIT_PX(p2) && KIT_PX(p1) !== KIT_PX(p0), 'poses 1 and 2 are shorter and differ');
-    assert(KIT_PX(p1) === KIT_PX(rec(1)) && KIT_PX(p2) === KIT_PX(rec(2)), 'deterministic');
-  });
-
-  test('MotionKit.figure: person and walker cross in whole steps, idle breathes', () => {
-    const K = B.MotionKit, P = B.Pal;
-    const run = (kind, t, o) => recOf((c) => K.figure(c, 40, 100, t, Object.assign({ kind, mode: 'cross', at: 1, dur: 1, x1: 140, step: 2 }, o)));
-    ['person', 'walker'].forEach((kind) => {
-      const still = recOf((c) => K.figure(c, 40, 100, 0, { kind, mode: 'idle', at: 5 })), end = recOf((c) => K.figure(c, 140, 100, 0, { kind, mode: 'idle', at: 5 }));
-      assert(KIT_PX(run(kind, 0.5)) === KIT_PX(still), kind + ': before at it stands at x');
-      assert(KIT_PX(run(kind, 2)) === KIT_PX(end) && KIT_PX(run(kind, 9)) === KIT_PX(end), kind + ': at the end it equals the art at x1');
-      assert(KIT_PX(run(kind, 1.5)) !== KIT_PX(still) && KIT_PX(run(kind, 1.5)) !== KIT_PX(end), kind + ': mid-walk moved');
-      assert(KIT_PX(run(kind, 1.5)) === KIT_PX(run(kind, 1.5 + 0.03)), kind + ': 12 poses a second');
-      assert(KIT_PX(run(kind, 0.5, { t0: 1 })) === KIT_PX(run(kind, 1.5)), kind + ': t0');
-      const idle = (t) => recOf((c) => K.figure(c, 40, 100, t, { kind, mode: 'idle', at: 1, period: 2.4, dy: 2 }));
-      const base = idle(0.5).rects, dropped = idle(1.5).rects;
-      assert(dropped.length === base.length && dropped.every((q, i) => q.dy === base[i].dy + 2 && q.dx === base[i].dx), kind + ': idle drops by dy during [at, at + 0.8)');
-      assert(KIT_PX(idle(1.9)) === KIT_PX(idle(0.5)) && KIT_PX(idle(1 + 2.4 + 0.1)) === KIT_PX(idle(1.5)) && KIT_PX(idle(1 + 0.8)) === KIT_PX(idle(0.5)), kind + ': idle repeats every period');
-    });
-    // a crossing person alternates poses 1 and 2 and stands in pose 0
-    const per = (t) => KIT_PX(run('person', t));
-    const stand = recOf((c) => B.Rhythm.person(c, 40, 100, 1, 0, 1, 0, 0)), l = recOf((c) => B.Rhythm.person(c, 40, 100, 1, 0, 1, 0, 1)), r2 = recOf((c) => B.Rhythm.person(c, 40, 100, 1, 0, 1, 0, 2));
-    assert(per(0.5) === KIT_PX(stand), 'person stands in pose 0 before at');
-    const shape = (c) => c.rects.map((q) => `${q.dx - c.rects[0].dx},${q.dy - c.rects[0].dy}`).join('|');
-    let usedL = false, usedR = false;
-    for (let t = 1.05; t < 1.95; t += 1 / 12) { const g = shape(run('person', t)); if (g === shape(l)) usedL = true; if (g === shape(r2)) usedR = true; }
-    assert(usedL && usedR, 'a walk uses both lifted poses');
-    assert(per(5) === KIT_PX(recOf((c) => B.Rhythm.person(c, 140, 100, 1, 0, 1, 0, 0))), 'pose 0 after the walk');
-    // the walker uses the scenes.js sprites, the person the commuter sprite
-    const w0 = recOf((c) => K.figure(c, 40, 100, 0, { kind: 'walker', mode: 'idle', at: 5, scale: 1 }));
-    const spr = recOf((c) => B.Pixel.drawSprite(c, B.Pixel.sprite(B.Shots.WALKER), 40, 100));
-    assert(KIT_PX(w0) === KIT_PX(spr), 'walker is the WALKER sprite');
-    const xs = []; for (let t = 1; t <= 2.001; t += 1 / 12) xs.push(run('walker', t + 0.001).rects[0].dx - 2);
-    assert(xs.every((x) => x % 2 === 0) && xs[0] === 40 && xs[xs.length - 1] === 140 && xs.every((x, i) => i === 0 || x >= xs[i - 1]), 'walker x moves in whole steps of 2: ' + xs);
-    // WALKER_B differs from WALKER in its last two rows (the feet)
-    const feet = (t) => { const r = run('walker', t).rects; return r.filter((q) => q.dy >= 116).map((q) => q.dx - r[0].dx).join(); };
-    const seen = new Set(); for (let t = 1.05; t < 1.9; t += 1 / 12) seen.add(feet(t));
-    assert(seen.size === 2 && seen.has(feet(0.5)), 'the walker alternates its two poses while crossing and stands in pose A');
-  });
 
   test('MotionKit.passing: cars and a train, clipped to the band', () => {
     const K = B.MotionKit, P = B.Pal, R = { x: 30, y: 60, w: 200, h: 14 };
@@ -2461,9 +2399,6 @@
       ['weather autumn', 40, (c, t, o) => K.weather(c, 40, 20, 90, 60, aut, 'wx', t, o)],
       ['weather grey', 40, (c, t, o) => K.weather(c, 40, 20, 90, 60, gry, 'wx', t, o)],
       ['weather winter', 40, (c, t, o) => K.weather(c, 40, 20, 90, 60, win, 'wx', t, o)],
-      ['motes', 12, (c, t, o) => K.motes(c, 30, 40, 50, 60, 'm', t, Object.assign({ count: 12 }, o))],
-      ['figure person', 400, (c, t, o) => K.figure(c, 40, 100, t, Object.assign({ kind: 'person', mode: 'cross', at: 1, dur: 1, x1: 140, step: 2 }, o))],
-      ['figure walker', 40, (c, t, o) => K.figure(c, 40, 100, t, Object.assign({ kind: 'walker', mode: 'cross', at: 1, dur: 1, x1: 140, step: 2 }, o))],
       ['passing car', 40, (c, t, o) => K.passing(c, 30, 60, 200, 14, 'n', t, Object.assign({ kind: 'car', at: 1, every: 0.3 }, o))],
       ['passing train', 40, (c, t, o) => K.passing(c, 30, 60, 200, 14, 'n', t, Object.assign({ kind: 'train', at: 1 }, o))],
       ['ping', 4, (c, t, o) => K.ping(c, t, Object.assign({}, ping, o))]

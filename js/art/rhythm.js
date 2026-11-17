@@ -8,7 +8,6 @@
   const CAMERAS = ['wide','profile','over-shoulder','insert','close','desk'];
   const ENDING_IDS = ['wiped','fired','exit','nobody','master','whistle','revolving','perp','fall-guy','cassandra','acquirer','ward','clawback','right-early','fund','everything-rally','lost-decade','soft','quiet','replaced','depression','grind'];
 
-  function hash(s) { return B.hashSeed(String(s || '')); }
   // Which way the market went on a session, from the authored scenario: the
   // charts follow the tape, not the act. Pre-open frames show yesterday.
   function marketDown(day) {
@@ -143,24 +142,21 @@
     { head: 'short', H: '1', h: '3', S: 'D', s: 'd', K: '4', k: '5', x: '2', W: '9', T: 'b', L: '1', l: '2' }
   ];
   const FIG_SP = {};
-  function figureSprite(who, late, pose) {
-    const key = who + (late ? 'L' : '') + (pose === 1 || pose === 2 ? 'P' + pose : '');
+  function figureSprite(who, late) {
+    const key = who + (late ? 'L' : '');
     if (FIG_SP[key]) return FIG_SP[key];
     const m = Object.assign({}, CAST[who]);
     if (late && who === 0) Object.assign(m, { K: '3', k: '4', x: '2' });
-    let rows = HEADS[m.head].concat(BODY).map((r) => r.replace(/[HhSsKkxWTLl]/g, (ch) => m[ch]));
-    // pose 1 lifts the left foot, pose 2 the right: the bottom outline row under that leg (cols 4-7 or 9-12) is not drawn
-    if (pose === 1 || pose === 2) rows = rows.map((r, i) => (i < rows.length - 1 ? r : pose === 1 ? '....' + '....' + r.slice(8) : r.slice(0, 9) + '....' + r.slice(13)));
+    const rows = HEADS[m.head].concat(BODY).map((r) => r.replace(/[HhSsKkxWTLl]/g, (ch) => m[ch]));
     return (FIG_SP[key] = X.sprite(rows));
   }
   // who: 0 is you; 1-3 are the strangers on your commute.
-  // pose: 0 or undefined is the standing figure; 1 lifts the left foot, 2 the right (one sprite row shorter on that leg).
-  function person(ctx, x, y, scale, act, face, who, pose) {
+  function person(ctx, x, y, scale, act, face, who) {
     const s = scale || 1;
     ctx.save();
     ctx.translate(x, y - 20 * s);
     ctx.scale((face < 0 ? -2 : 2) * s, 2 * s);
-    X.drawSprite(ctx, figureSprite(who || 0, act > 2, pose), -8, 0);
+    X.drawSprite(ctx, figureSprite(who || 0, act > 2), -8, 0);
     ctx.restore();
   }
   function monitor(ctx, x, y, w, h, headline, act) {
@@ -454,27 +450,6 @@
     if (!o.noPnl) text(ctx,B.fmt.money(G.pnl,true),G.pnlAt.x,G.pnlAt.y,G.good?P.jade:P.crimson,'center');
     if(detail){text(ctx,`QUOTA ${B.fmt.money(report.quota||0)}`,G.quotaAt.x,G.quotaAt.y,P.grey2,'center');text(ctx,clean(report.date||''),G.dateAt.x,G.dateAt.y,P.putty,'center');}
   }
-  function weekendFrame(ctx, sb, night) {
-    const c=colors(sb.act);X.rect(ctx,0,0,V.w,V.h,P.ink);X.gradient(ctx,0,0,V.w,250,night?P.ink2:P.sky,P.ink,12);skyline(ctx,sb.act,sb.week*9,250);
-    X.rect(ctx,0,250,V.w,110,night?P.ink2:P.carpetD);X.plate(ctx,92,216,360,54,P.slate,P.slate2,P.ink);
-    X.plate(ctx,492,194,86,114,P.ink2,P.slate2,P.ink);chart(ctx,502,208,66,76,sb.week,night);
-    phone(ctx,386,226,54,78,[],sb.act,sb.day);
-    if(night) { ctx.save();ctx.globalAlpha=.09;X.rect(ctx,376,216,74,98,c.signal);ctx.restore(); }
-  }
-  function endingFrame(ctx, o, detail) {
-    const id=o.id||'grind', dark=!!o.dark, seed=hash(id), c=colors(dark?4:1);
-    X.rect(ctx,0,0,V.w,V.h,P.ink);X.gradient(ctx,0,0,V.w,238,dark?P.slate2:P.amber,dark?P.ink2:P.crimsonD,12);skyline(ctx,dark?4:1,seed%97,244);X.rect(ctx,0,244,V.w,116,P.ink);
-    // Every ending gets a stable, visibly unique signature made from its id.
-    for(let i=0;i<12;i++){
-      const bit=(seed >>> (i%24))&1, x=128+i*32, h=20+((seed >>> ((i*3)%24))&31);
-      X.rect(ctx,x,190-h,bit?20:11,h,bit?c.signal:c.wash);
-      if((seed+i)%3===0) X.rect(ctx,x+3,184-h,5,5,P.bone);
-    }
-    text(ctx,clean(o.title||id.replace(/-/g,' ')).toUpperCase().slice(0,48),320,42,c.signal,'center');
-    if(detail){X.box(ctx,80,82,480,92);text(ctx,clean(o.title).slice(0,42),320,104,dark?P.bone:P.amber,'center');X.wrap(clean(o.deck),430).slice(0,3).forEach((line,i)=>text(ctx,line,320,130+i*11,P.bone,'center'));}
-  }
-
-
   // Sqwak breaking-news insert: a phone held in one hand against the act's
   // skyline, one post filling the screen. Content comes from B.SqwakStory.
   function big(ctx, value, x, y, color, scale, align) {
@@ -548,23 +523,11 @@
   B.Rhythm = {
     view:V, endingIds:ENDING_IDS,
     // Drawing helpers for js/art/storyboard.js.
-    placeFrame, monitorGeom, phoneFrame, phoneGeom, lockMinute, stackSlip, CLOSE_DIM, officeFrame, officeGeom, closeFrame, closeGeom, closeDown, sqwakFrame, sqwakGeom, sqwakStats, weekendFrame, skyline, skylineWindows, season, sky, weather, text, colors, clean, chart, chartSeries, person, marketDown, beat,
+    placeFrame, monitorGeom, phoneFrame, phoneGeom, lockMinute, stackSlip, CLOSE_DIM, officeFrame, officeGeom, closeFrame, closeGeom, closeDown, sqwakFrame, sqwakGeom, sqwakStats, skyline, skylineWindows, season, sky, weather, text, colors, clean, chart, chartSeries, person, marketDown, beat,
     phoneRowCount(feed){return Math.min(4,(feed||[]).length);},
-    storyboard:board,
-    frameMap(day){const sb=this.storyboard(day);return [
-      {id:`news:${day}:place`,purpose:'establish',camera:sb.camera},
-      {id:`news:${day}:headline`,purpose:'meaningful insert',camera:'insert'},
-      {id:`news:${day}:reaction`,purpose:'environmental reaction',camera:'profile'},
-      {id:`news:${day}:hold`,purpose:'pressure hold',camera:'still'}
-    ];}
+    storyboard:board
   };
 
-  B.Scenes.news = function(o){const sb=board(o.day||0), title=clean((o.brief||{}).title), date=B.Calendar&&B.Calendar.storyLabel?B.Calendar.storyLabel(o.day||0):`SESSION ${(o.day||0)+1}`;return [
-    beat('news',`${sb.day}:place`,1.65,(c)=>placeFrame(c,sb,title,false),date,{sfx:/subway|platform/.test(sb.place)?'transit':sb.place==='street'?'street':/kitchen|breakroom/.test(sb.place)?'kitchen':'apartment',transition:'fade'}),
-    beat('news',`${sb.day}:headline`,2.15,(c)=>placeFrame(c,sb,title,true),title,{sfx:'broadcast',informative:true}),
-    beat('news',`${sb.day}:reaction`,1.55,(c)=>placeFrame(c,Object.assign({},sb,{crop:-sb.crop}),title,false),'',{}),
-    beat('news',`${sb.day}:hold`,1.0,(c)=>{placeFrame(c,sb,title,true);c.save();c.globalAlpha=.12;X.rect(c,0,0,V.w,V.h,P.ink);c.restore();},'',{})
-  ];};
   B.Scenes.phone = function(o){const sb=board(o.day||0),feed=(o.brief&&o.brief.feed)||[];return [
     beat('phone',`${sb.day}:handoff`,1.4,(c)=>phoneFrame(c,sb,feed,true),'',{sfx:'apartment',transition:'fade'}),
     beat('phone',`${sb.day}:read`,2.0,(c)=>phoneFrame(c,sb,feed,true),'PRE-OPEN FEED',{sfx:'news',informative:true})
@@ -586,14 +549,4 @@
       beat('close',`${tag}:report`,2.0,(c)=>closeFrame(c,r,true),(r.pnl||0)>=0?'YOU MADE MONEY. NOBODY SAYS WELL DONE.':'YOU LOST MONEY. EVERYBODY NOTICED.',{sfx:'office',informative:true}),
       beat('close',`${tag}:hold`,.85,(c)=>closeFrame(c,r,true),'',{})
     ]);};
-  B.Scenes.weekend = function(o){const sb=board(o.day||0);return [
-    beat('weekend',`${sb.week}:sat`,1.6,(c)=>weekendFrame(c,sb,false),`WEEK ${sb.week} · SATURDAY`,{sfx:'apartment',transition:'fade',informative:true}),
-    beat('weekend',`${sb.week}:sun`,1.8,(c)=>weekendFrame(c,sb,true),'SUNDAY NIGHT',{sfx:'apartment'}),
-    beat('weekend',`${sb.week}:hold`,.8,(c)=>weekendFrame(c,sb,true),'',{})
-  ];};
-  B.Scenes.ending = function(o){return [
-    beat('ending',`${o.id}:world`,1.7,(c)=>endingFrame(c,o,false),'',{sfx:'apartment',transition:'fade'}),
-    beat('ending',`${o.id}:card`,2.4,(c)=>endingFrame(c,o,true),clean(o.deck),{informative:true}),
-    beat('ending',`${o.id}:hold`,1.0,(c)=>endingFrame(c,o,true),'ENDING REACHED',{})
-  ];};
 })(window.BTB);

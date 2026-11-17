@@ -1,4 +1,4 @@
-// The motion kit: fourteen reusable animated drawing elements and three helpers for cutscene shots.
+// The motion kit: twelve reusable animated drawing elements and three helpers for cutscene shots.
 // Every element is a pure function of (geometry, t, options): same arguments, same rectangles. Nothing here
 // reads the clock, Math.random, document or B.Settings, so the Node runners can load it. B.Rhythm and
 // B.Shots are only touched at draw time, never at load.
@@ -232,53 +232,6 @@
     ctx.restore();
   }
 
-  // ---- 11. motes -------------------------------------------------------------
-  // Dust in a light shaft; `up` mirrors the fall for steam.
-  function motes(ctx, x, y, w, h, seed, t, o) {
-    o = o || {};
-    const T = timeOf(t, o), tp = Math.floor(T * 12) / 12;
-    x = R(x); y = R(y); w = R(w); h = R(h);
-    const count = clamp(o.count == null ? 8 : o.count, 0, 12);
-    ctx.save(); ctx.globalAlpha = o.a == null ? 0.45 : o.a;
-    B.Motion.particles({ kind: 'dust', seed, t: tp, x, y, w, h, count }).forEach((q) => {
-      const py = o.up ? 2 * y + h - 1 - q.y : q.y, sz = q.s === 2 ? 2 : 1;
-      fill(ctx, q.x, py, sz, sz, o.col || P.bone);
-    });
-    ctx.restore();
-  }
-
-  // ---- 12. figure ------------------------------------------------------------
-  const spriteCache = new WeakMap();
-  const spriteOf = (rows) => { let s = spriteCache.get(rows); if (!s) { s = X.sprite(rows); spriteCache.set(rows, s); } return s; };
-
-  // A person: the commuter sprite of B.Rhythm.person (about 400 rects) or the WALKER sprites of scenes.js (36 rects).
-  // The bible's original pose wording (swap the leg columns) was replaced by the coordinator's ruling: person poses 1 and 2 lift one foot.
-  // 'cross' steps from x to o.x1 between o.at and o.at + o.dur; 'idle' drops the sprite o.dy px for 0.8 s of every o.period.
-  function figure(ctx, x, y, t, o) {
-    const T = timeOf(t, o);
-    let px = R(x), py = R(y), pose = 0, lift = 0;
-    if (o.mode === 'cross') {
-      const step = o.step || 2, tp = Math.floor(T * 12) / 12, q = span(tp, o.at, o.at + o.dur);
-      if (T >= o.at + o.dur) px = R(o.x1);
-      else {
-        const steps = R((o.x1 - x) * q / step);
-        px = R(x) + steps * step;
-        pose = Math.abs(steps) % 2;
-        lift = steps === 0 ? 0 : pose ? 1 : 2;
-      }
-    } else if (o.mode === 'idle') {
-      if (T >= o.at && wrap(T - o.at, o.period || 2.4) < 0.8) py += o.dy == null ? 2 : o.dy;
-    }
-    if (o.kind === 'walker') {
-      const S = B.Shots, sc = o.scale || 2;
-      ctx.save(); ctx.translate(px, py); ctx.scale(sc, sc);
-      X.drawSprite(ctx, spriteOf(pose ? S.WALKER_B : S.WALKER), 0, 0);
-      ctx.restore();
-    } else {
-      B.Rhythm.person(ctx, px, py, o.scale || 1, o.act || 0, o.face == null ? 1 : o.face, o.who || 0, lift);
-    }
-  }
-
   // ---- 13. passing -----------------------------------------------------------
   // Lights crossing a band, clipped to it: cars (headlight pair and a tail) or one train of windows (o.gap px apart, default 18).
   function passing(ctx, x, y, w, h, seed, t, o) {
@@ -320,5 +273,5 @@
     if (f && T < o.at + (f.dur == null ? 0.08 : f.dur)) fillAlpha(ctx, f.x, f.y, f.w, f.h, f.col || P.bone, f.a == null ? 0.15 : f.a);
   }
 
-  B.MotionKit = { span, camSpan, settle, rise, blink, crt, flicker, trace, tally, typeOn, stamp, marker, lamps, weather, motes, figure, passing, ping };
+  B.MotionKit = { span, camSpan, settle, rise, blink, crt, flicker, trace, tally, typeOn, stamp, marker, lamps, weather, passing, ping };
 })(window.BTB);

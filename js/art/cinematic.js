@@ -331,7 +331,6 @@
       const fn = B.SFX[beat.sfx];
       if (typeof fn === 'function') fn.call(B.SFX);
     },
-    skip() { this.skipAll(); },
     skipAll() { if (this.running) { this.skippingChain = !!this.chain; this.finish(); } },
     finish() {
       this.running = false;

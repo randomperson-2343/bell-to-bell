@@ -1,4 +1,4 @@
-// Motion maths for cutscenes: easing, keyframes, seeded particles, camera
+// Motion maths for cutscenes: easing, seeded particles, camera
 // maths and default transitions. Pure and DOM-free so Node runners can load
 // it; nothing here reads the clock, Math.random, document or B.Settings.
 (function (B) {
@@ -14,26 +14,7 @@
     inOut: (p) => { p = clamp01(p); return p * p * (3 - 2 * p); }
   };
 
-  const stepped = (p, n) => (n < 1 ? clamp01(p) : Math.floor(clamp01(p) * n) / n);
   const tween = (a, b, p, fn) => a + (b - a) * (fn ? fn(p) : p);
-
-  function keyframes(frames, p) {
-    if (!frames.length) return 0;
-    const last = frames.length - 1;
-    if (p <= frames[0][0]) return frames[0][1];
-    if (p >= frames[last][0]) return frames[last][1];
-    for (let i = 1; i <= last; i++) {
-      if (p <= frames[i][0]) {
-        const a = frames[i - 1], b = frames[i];
-        return b[0] === a[0] ? b[1] : a[1] + (b[1] - a[1]) * ((p - a[0]) / (b[0] - a[0]));
-      }
-    }
-    return frames[last][1];
-  }
-
-  const cycle = (t, fps, n) => (n < 1 ? 0 : wrap(Math.floor(t * fps), n));
-  const count = (from, to, p) => Math.round(tween(from, to, clamp01(p)));
-  const typed = (str, p) => str.slice(0, Math.floor(str.length * clamp01(p)));
 
   // One value per 1/rate second, so a lamp holds still between steps.
   const flicker = (seed, t, rate) => B.RNG(B.hashSeed(seed + ':' + Math.floor(t * rate))).next();
@@ -206,5 +187,5 @@
 
   const CACHE_BYTES = 36 * 1024 * 1024;
 
-  B.Motion = { enabled, ease, stepped, tween, keyframes, cycle, count, typed, flicker, particles, cameraAt, transitionFor, TRANSITION_DUR, drawTransition, releaseScratch, layered, composite, CACHE_BYTES };
+  B.Motion = { enabled, ease, flicker, particles, cameraAt, transitionFor, TRANSITION_DUR, drawTransition, releaseScratch, layered, composite, CACHE_BYTES };
 })(window.BTB);
