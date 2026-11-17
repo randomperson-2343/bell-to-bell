@@ -464,7 +464,7 @@
   // phase: 'room' (the decision's room beat, 1.5 s), 'establish' (the news establish that borrows the room, 1.7 s), 'whip' (the weekend's whip, 1.6 s).
   // Every layer is the flat room() split into cached parts (noGrain, the scanlines in a layer of their own on top) with the moving things drawn above.
   const TILT = () => ({ from: { x: 0, y: -6, zoom: 1 }, to: { x: 0, y: 0, zoom: 1 }, ease: B.Motion.ease.inOut });
-  const PHASE_DUR = { room: 1.5, establish: 1.7, whip: 1.6, '317': 1.6 };
+  const PHASE_DUR = { room: 1.5, establish: 1.7, whip: 1.6, '317': 1.6, after: 2.2 };
   const LAYER = {};
   // ---- shot 1 and 2: Kroll's office ----
   // By day: his screen switches on at 0.45 s (dark, the phosphor line, one flare, then the lit screen of the cached picture).
@@ -547,7 +547,17 @@
   let LEDS_C = null;
   const LEDS = { forEach(fn) { (LEDS_C || (LEDS_C = rackLeds())).forEach(fn); } };
   const RACK_DEATH = (L) => (L.r ? 0.40 : 0.45) + 0.10 * L.i;
-  LAYER.racks = (e, flat, grain) => e.after && e.S && e.S.f && e.S.f.pulledPlug && e.phase === '317' ? ({
+  // The ending's after beat with the plug pulled (phase 'after', 2.2 s, no camera): the dark rack room and one amber standby light on the first front rack's top panel
+  // (art x 183-188, y 39-44, over the panel's flat screenD strip) with its halo, blinking at the standby rate and on at the end of the beat ("for now").
+  const standbyOn = (t, dur) => (((dur - t) % 1.0) + 1.0) % 1.0 < 0.5;
+  LAYER.racks = (e, flat, grain) => e.after && e.S && e.S.f && e.S.f.pulledPlug && e.phase === 'after' ? ({
+    camera: null,
+    layers: [{ id: 'room', depth: 1, draw: flat(), animate(g, v, t) {
+      if (t < 0.40) return;
+      if (standbyOn(t, e.dur)) glow(g, 186, 42, [21, 12], P.amber, 0.12);
+      e.K.blink(g, 183, 39, 6, 6, t, { on: P.amber, period: 1.0, duty: 0.5, end: e.dur });
+    } }, grain]
+  }) : e.after && e.S && e.S.f && e.S.f.pulledPlug && e.phase === '317' ? ({
     camera: null, cues: [{ at: 0.40, sfx: 'click' }],
     layers: [{ id: 'room', depth: 1, draw: flat(), animate(g, v, t) { LEDS.forEach((L) => { if (t < RACK_DEATH(L)) X.rect(g, L.x, L.y, L.w, L.h, L.col); }); } }, grain]
   }) : ({ layers: [{ id: 'room', depth: 1, draw: flat(), animate(g, v, t) {

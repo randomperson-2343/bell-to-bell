@@ -1915,13 +1915,128 @@
     X.dither(ctx, 0, 180, V.w, 90, P.ink, P.amber, 0.18);
     X.rect(ctx, 0, 270, V.w, 90, P.ink);
   }
+  // ---- The endings, animated (stage 3, batch 9) ----
+  // World: one layer (the city and the prop without its mover, the street's signature), the prop's one movement drawn above it inside endingSpace.
+  // Card: the cached card, the ENDING REACHED line hidden until a stamp lands round the box. After: the city's windows going out, or the dark racks' one standby light.
+  const quietRank = (() => {
+    let cache = null;
+    return () => {
+      if (cache) return cache;
+      const cells = SH.endingGeom('quiet').cells, idx = cells.map((c, k) => k), key = idx.map((k) => B.hashSeed('ending:quiet:' + k));
+      idx.sort((x, y) => key[x] - key[y] || x - y);
+      const pos = []; idx.forEach((k, r) => { pos[k] = r; });
+      return (cache = pos);
+    };
+  })();
+  // each id's movement: a function (g, t) drawing in endingSpace. n(t) counts items 0..N, one every `step` from `a`.
+  function endingMotion(id) {
+    const K = B.MotionKit, M = B.Motion, G = SH.endingGeom(id);
+    const D = (g, q, extra) => SH.endingDetail(g, id, q, Object.assign({ part: 'mover' }, extra));
+    const count = (t, a, step, N) => Math.max(0, Math.min(N, Math.floor((t - a) / step + 1e-9) + 1));
+    const COUNT = { cassandra: [0.40, 0.12, 6], 'lost-decade': [0.40, 0.09, 10], depression: [0.40, 0.10, 9], 'right-early': [0.40, 0.07, 13], 'everything-rally': [0.40, 0.12, 7], fund: [0.40, 0.08, 10], clawback: [0.50, 0.15, 6] };
+    if (id === 'wiped') return (g, t) => D(g, M.ease.in(K.span(t, 0.40, 1.30)));
+    if (id === 'perp') return (g, t) => D(g, t < 0.50 ? 0 : (t >= 1.30 || (t >= 0.60 && t < 0.68) || (t >= 0.95 && t < 1.03)) ? 1 : 0.45);
+    if (COUNT[id]) { const c = COUNT[id]; return (g, t) => D(g, 1, { n: count(t, c[0], c[1], c[2]) }); }
+    if (id === 'master') return (g, t) => D(g, 1, { dx: -24 + Math.round(24 * M.ease.out(K.span(t, 0.40, 1.40))) });
+    if (id === 'acquirer' || id === 'ward') { const far = id === 'ward' ? 10 : 12; return (g, t) => D(g, 1, { dy: Math.round(far * (1 - M.ease.out(K.span(t, 0.40, 1.40)))) }); }
+    if (id === 'soft') {
+      // each window is covered with the building's flat slate; the three tree sprites that overlap windows 3, 18 and 26 are drawn again over the covers
+      const need = G.wins.map((w, k) => (G.leaves.some((l) => w.x < l.x + l.w && w.x + w.w > l.x && w.y < l.y + l.h && w.y + w.h > l.y) ? 0.40 + 0.03 * k : 0));
+      const last = Math.max.apply(null, need);
+      return (g, t) => {
+        G.wins.forEach((w, k) => { if (t < 0.40 + 0.03 * k) X.rect(g, w.x, w.y, 6, 6, P.slate); });
+        if (t < last) D(g, 1);
+      };
+    }
+    if (id === 'fired') {
+      // PERSONAL is written letter by letter: each letter's 5 x 7 cell of the label is covered with the label's paper. The text starts on the label's outline
+      // column (x 136, ink2) and its second column is the white highlight; the last letter ends on the shade column (x 182, putty2).
+      return (g, t) => {
+        for (let k = 0; k < 8; k++) {
+          if (t >= 0.50 + 0.09 * k) continue;
+          const x = G.label.x + 6 * k, y = G.label.y;
+          if (k === 0) { X.rect(g, x, y, 1, 7, P.ink2); X.rect(g, x + 1, y, 1, 7, P.white); X.rect(g, x + 2, y, 3, 7, P.bone); }
+          else if (k === 7) { X.rect(g, x, y, 4, 7, P.bone); X.rect(g, x + 4, y, 1, 7, P.putty2); }
+          else X.rect(g, x, y, 5, 7, P.bone);
+        }
+      };
+    }
+    if (id === 'quiet') return (g, t) => { const rk = quietRank(); G.cells.forEach((c, k) => { if (t < 0.40 + 1.00 * rk[k] / 33) X.rect(g, c.x, c.y, 7, 6, P.amberD); }); };
+    if (id === 'nobody') return (g, t) => G.screens.forEach((s, i) => K.crt(g, s.x, s.y, 18, 30, t, { mode: 'on', at: 0.45 + 0.15 * i, bg: P.screenD }));
+    if (id === 'replaced') {
+      return (g, t) => {
+        for (let i = 0; i < 4; i++) {
+          if (!(t >= 0.45 + 0.12 * i && t < 0.60 + 0.12 * i)) continue;
+          g.save(); g.globalAlpha = 0.45; G.strips[i].forEach((r) => X.rect(g, r.x, r.y, r.w, r.h, P.phosphorD)); g.restore();
+        }
+      };
+    }
+    if (id === 'whistle' || id === 'fall-guy') {
+      const s = G.stamp;
+      return (g, t) => {
+        const ph = K.stamp(g, s.x - 2, s.y - 2, s.w + 4, s.h + 4, t, { at: 0.70, col: P.crimson, frame: 0.04, grow: [16, 6], style: 'none' });
+        if (ph < 3) X.rect(g, s.x, s.y, s.w, s.h, P.bone);
+      };
+    }
+    if (id === 'exit') {
+      const d = G.door;
+      return (g, t) => { const a = t < 0.50 ? 0.60 : t < 0.70 ? 0.40 : t < 0.90 ? 0.20 : 0; if (a) { g.save(); g.globalAlpha = a; X.rect(g, d.x, d.y, d.w, d.h, P.ink); g.restore(); } };
+    }
+    if (id === 'revolving') {
+      const WING = [163, 167, 151, 155, 159, 163, 167, 151, 155, 159];
+      return (g, t) => {
+        if (t < 0.40 || t >= 1.40) return;
+        const xb = WING[Math.floor((t - 0.40) / 0.10 + 1e-9)];
+        X.rect(g, 159, 44, 2, 26, P.sky); X.rect(g, 159, 56, 2, 1, P.slate2); X.rect(g, xb, 44, 2, 26, P.slate2);
+      };
+    }
+    // grind (and any id with no prop of its own): the monitor switches on
+    return (g, t) => K.crt(g, G.screen.x, G.screen.y, G.screen.w, G.screen.h, t, { mode: 'on', at: 0.60, bg: P.screenD });
+  }
+  function endingWorldLayers(o) {
+    const motion = endingMotion(o.id || 'grind');
+    return [{ id: 'world', depth: 1, draw(c) { endingWorld(c, o, 1, false, { part: 'base' }); }, animate(c, v, t) { endingSpace(c, (g) => motion(g, t)); } }];
+  }
+  function endingCardLayers(o) {
+    const K = B.MotionKit;
+    return [{
+      id: 'card', depth: 1,
+      draw(c) { endingWorld(c, o, 1, true); },
+      animate(c, v, t) {
+        // ENDING REACHED (art x 119-201, y 117-123) is hidden on the box's flat ink and its ink2 bottom line until the stamp has landed
+        at2x(c, (g) => {
+          const ph = K.stamp(g, 40, 100, 240, 26, t, { at: 1.30, col: o.dark ? P.crimson : P.amber, frame: 0.04, grow: [16, 6], style: 'none' });
+          if (ph < 3) { X.rect(g, 119, 117, 83, 6, P.ink); X.rect(g, 119, 123, 83, 1, P.ink2); }
+        }, 60);
+      }
+    }];
+  }
+  // the city's lit windows go out from the right: window w is lit (amber, brighter than the art's) until 0.40 + (1 - x / 640) s
+  function endingCityLayers() {
+    const wins = R.skylineWindows(1, 61, 270).filter((w) => w.shown);
+    return [{
+      id: 'city', depth: 1,
+      draw(c) { lastLight(c, false, { part: 'city' }); },
+      animate(c, v, t) { for (const w of wins) if (t < 0.40 + 1.00 * (1 - (w.x + 1) / 640)) X.rect(c, w.x, w.y, 2, 2, P.amber); }
+    }];
+  }
   B.Scenes.ending = function (o) {
-    const id = o.id || 'grind', pulled = !!o.pulled;
-    return [
-      R.beat('ending', `${id}:world`, 1.8, (c) => endingWorld(c, o, 0.3, false), '', { sfx: 'apartment', transition: 'fade' }),
+    const id = o.id || 'grind', pulled = !!o.pulled, M = B.Motion;
+    const beats = [
+      R.beat('ending', `${id}:world`, 1.8, (c) => endingWorld(c, o, 1, false), '', { sfx: 'apartment', transition: 'fade' }),
       R.beat('ending', `${id}:card`, 2.6, (c) => endingWorld(c, o, 1, true), R.clean(o.deck), { informative: true }),
       R.beat('ending', `${id}:after:${pulled ? 'p' : ''}`, 2.2, (c) => lastLight(c, pulled),
         pulled ? 'THE RACKS STAY DARK. FOR NOW.' : 'FIRST LIGHT. THE CITY IS STILL THERE.', { sfx: 'room' })
     ];
+    beats[0] = M.layered(Object.assign({}, beats[0], {
+      camera: { from: { x: 0, y: -8, zoom: 1 }, to: { x: 0, y: 0, zoom: 1 }, ease: (p) => Math.round(M.ease.inOut(p) * 4) / 4, even: true },
+      layers: endingWorldLayers(o)
+    }));
+    beats[1] = M.layered(Object.assign({}, beats[1], { camera: null, cues: [{ at: 1.30, sfx: 'click' }], layers: endingCardLayers(o) }));
+    if (pulled && B.DecisionArt) {
+      const L = B.DecisionArt.roomLayers('c10', 60, true, { f: { pulledPlug: true } }, 'after');
+      if (L) beats[2] = M.layered(Object.assign({}, beats[2], { camera: null, cues: L.cues, layers: L.layers }));
+    } else beats[2] = M.layered(Object.assign({}, beats[2], { camera: null, layers: endingCityLayers() }));
+    return beats;
   };
 })(window.BTB);

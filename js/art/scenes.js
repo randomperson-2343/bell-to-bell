@@ -629,15 +629,16 @@
         const h = 34 + (i % 2) * 9;
         g.wins[4 * i + 2 * r + w] = { x: 66 + 28 * i + 4 + 9 * w, y: 74 - h + 6 + 12 * r, w: 6, h: 6 };
       }
+      g.leaves = [84, 176, 232].map((x) => ({ x, y: 60, w: 8, h: 6 })); // drawn over windows 3, 18 and 26
     } else if (id === 'quiet') {
       g.cells = [];
       for (let y = 0; y < 5; y++) for (let x = 0; x < 7; x++) if (!(x === 4 && y === 2)) g.cells.push({ x: 116 + 13 * x, y: 20 + 11 * y, w: 7, h: 6 });
       g.lit = { x: 116 + 13 * 4, y: 20 + 11 * 2, w: 7, h: 6 };
-    } else if (id === 'fired') g.label = { x: 137, y: 51, w: 47, h: 7 };
+    } else if (id === 'fired') g.label = { x: 136, y: 51, w: 47, h: 7 }; // 'PERSONAL' centred on 160 starts at x 136 (the sheet said 137)
     else if (id === 'nobody') g.screens = [0, 1, 2, 3, 4].map((i) => ({ x: 93 + 28 * i, y: 25, w: 18, h: 30 }));
     else if (id === 'replaced') g.strips = [0, 1, 2, 3].map((i) => [0, 1, 2, 3, 4].map((r) => ({ x: 102 + 34 * i, y: 26 + 9 * r, w: 20, h: 5 })));
     else if (id === 'whistle') g.stamp = { x: 126, y: 50, w: 44, h: 11 };
-    else if (id === 'fall-guy') g.stamp = { x: 137, y: 50, w: 47, h: 7 };
+    else if (id === 'fall-guy') g.stamp = { x: 136, y: 50, w: 47, h: 7 }; // 'NOT MINE' centred on 160 starts at x 136 (the sheet said 137)
     else if (id === 'exit') g.door = { x: 142, y: 22, w: 36, h: 56 };
     else if (id === 'revolving') { g.glass = { x: 145, y: 44, w: 28, h: 26 }; g.bar = { x: 159, w: 2 }; g.rail = { y: 56 }; }
     else if (!MOVER[id]) g.screen = { x: 145, y: 27, w: 30, h: 16 }; // grind, and every id with no prop of its own
@@ -647,7 +648,7 @@
   // o (optional): { part: 'base' | 'mover', n, dx, dy }. With no o every function draws what it always drew.
   // part 'base' leaves out the prop's mover, part 'mover' draws only the mover (nothing for the ids without one). n is how many of the mover's
   // repeated items are drawn (default all), dx / dy an offset added to the mover. Where the two parts overlap, the mover is drawn after the base.
-  const MOVER = { wiped: 1, perp: 1, master: 1, cassandra: 1, acquirer: 1, ward: 1, clawback: 1, fund: 1, 'right-early': 1, 'everything-rally': 1, 'lost-decade': 1, depression: 1 };
+  const MOVER = { soft: 1, wiped: 1, perp: 1, master: 1, cassandra: 1, acquirer: 1, ward: 1, clawback: 1, fund: 1, 'right-early': 1, 'everything-rally': 1, 'lost-decade': 1, depression: 1 };
   function endingDetail(ctx, id, p, o) {
     const cx = 160;
     o = o || {};
@@ -698,12 +699,12 @@
       if (mov) for (let i = 0; i < 9 && i < n; i++) spr(ctx, FIG, 78 + i * 18, 66);
       if (base) R(ctx, 54, 74, 212, 3, P.crimsonD);
     } else if (id === 'soft') { // a street with its lights back on
-      for (let i = 0; i < 7; i++) {
+      if (base) for (let i = 0; i < 7; i++) {
         const x = 66 + i * 28, h = 34 + (i % 2) * 9; c1(ctx, x, 74 - h, 24, h, P.slate, P.slate2, P.ink2);
         for (let w = 0; w < 2; w++) for (let r = 0; r < 2; r++) { const W = G.wins[4 * i + 2 * r + w]; c1(ctx, W.x, W.y, W.w, W.h, P.amber, P.white, P.amberD); }
       }
-      for (const tx of [84, 176, 232]) spr(ctx, LEAF, tx, 60);
-      R(ctx, 52, 74, 216, 3, P.jade);
+      for (const L of G.leaves) spr(ctx, LEAF, L.x, L.y);
+      if (base) R(ctx, 52, 74, 216, 3, P.jade);
     } else if (id === 'quiet') { // one window lit on a dark tower
       c1(ctx, 108, 14, 104, 64, P.ink2, P.slate, P.ink, P.ink);
       for (let y = 0; y < 5; y++) for (let x = 0; x < 7; x++) { const on = x === 4 && y === 2; R(ctx, 116 + x * 13, 20 + y * 11, 7, 6, on ? P.amber : P.screenD); if (on) rings(ctx, 171, 45, [12], P.amber, 0.15); }

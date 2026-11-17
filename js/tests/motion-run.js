@@ -219,7 +219,9 @@ async function run() {
   // batch 8 (ruled, the sheet's final-frame sections): the weekend's sun and hold beats show the weather's pose at chain time and the lit floor phone (or the dead laptop on day 44 with the plug pulled); only these six
   const P8_CHANGED = {
     'bw:wk39:sun': 'ac0b679a', 'bw:wk39:hold': '65ad87fa', 'bw:wk44:sun': '89481e60', 'bw:wk44:hold': '23753157', 'bw:wk44p:sun': 'fa6106a0',
-    'bw:wk44p:hold': '54a7eea9'
+    'bw:wk44p:hold': '54a7eea9',
+    // batch 9 (ruled, the sheet's final-frame sections): the wiped and perp world beats end on the card's state; the after beat ends with the city's windows out and no still snow speckle (it is the same picture for every id)
+    'en:wiped:0': '6652cc9', 'en:wiped:2': 'cdb224eb', 'en:fired:2': 'cdb224eb', 'en:exit:2': 'cdb224eb', 'en:nobody:2': 'cdb224eb', 'en:master:2': 'cdb224eb', 'en:whistle:2': 'cdb224eb', 'en:revolving:2': 'cdb224eb', 'en:perp:0': '330f8d20', 'en:perp:2': 'cdb224eb', 'en:fall-guy:2': 'cdb224eb', 'en:cassandra:2': 'cdb224eb', 'en:acquirer:2': 'cdb224eb', 'en:ward:2': 'cdb224eb', 'en:clawback:2': 'cdb224eb', 'en:right-early:2': 'cdb224eb', 'en:fund:2': 'cdb224eb', 'en:everything-rally:2': 'cdb224eb', 'en:lost-decade:2': 'cdb224eb', 'en:soft:2': 'cdb224eb', 'en:quiet:2': 'cdb224eb', 'en:replaced:2': 'cdb224eb', 'en:depression:2': 'cdb224eb', 'en:grind:2': 'cdb224eb'
   };
   const p8now = await collectP8();
   for (const k of Object.keys(P8_REF)) assert(p8now[k] === (P8_CHANGED[k] || P8_REF[k]), `batch 7 ${k}: the picture changed (${p8now[k]}, was ${P8_CHANGED[k] || P8_REF[k]})`);
@@ -455,7 +457,10 @@ async function run() {
     'eb:grind:l:l:1': 'ac5a3dbb', 'eb:grind:d:n:0': 'a739e72a', 'eb:grind:d:n:1': 'f2386742', 'eb:grind:d:e:1': '9e350f4a', 'eb:grind:d:l:1': 'c304da1a',
     'eb:pulled:l:2': 'f8a99c80', 'eb:pulled:d:2': 'f8a99c80'
   };
-  const P10_CHANGED = {};
+  // batch 9: the wiped and perp world finals (sheets fallen; flash stars and the burst) and the after finals (windows out, no still speckle; the pulled room's standby light on)
+  const P10_CHANGED = {
+    'eb:wiped:l:n:0': '6652cc9', 'eb:wiped:l:n:2': 'cdb224eb', 'eb:wiped:d:n:0': 'a51e9d65', 'eb:wiped:d:n:2': 'cdb224eb', 'eb:perp:l:n:0': '330f8d20', 'eb:perp:d:n:0': 'eb745eb1', 'eb:pulled:l:2': '65acaf38', 'eb:pulled:d:2': '65acaf38'
+  };
   const p10now = await collectP10();
   for (const k of Object.keys(P10_REF)) assert(p10now[k] === (P10_CHANGED[k] || P10_REF[k]), `batch 9 ${k}: the picture changed (${p10now[k]}, was ${P10_CHANGED[k] || P10_REF[k]})`);
   assert(Object.keys(p10now).length === Object.keys(P10_REF).length, 'batch 9: the set of reference pictures changed');
@@ -465,7 +470,7 @@ async function run() {
   // ---- stage 3 batch 9: the endings ----
   // the split of endingDetail: base then mover is what endingDetail draws with no options; nothing is drawn for 'mover' of an id with no mover; the option values that mean "all" and "none"
   const splitRes = await page.evaluate(() => {
-    const SH = BTB.Shots, ids = BTB.Rhythm.endingIds, bad = [], MOV = ['wiped', 'perp', 'master', 'cassandra', 'acquirer', 'ward', 'clawback', 'fund', 'right-early', 'everything-rally', 'lost-decade', 'depression'];
+    const SH = BTB.Shots, ids = BTB.Rhythm.endingIds, bad = [], MOV = ['soft', 'wiped', 'perp', 'master', 'cassandra', 'acquirer', 'ward', 'clawback', 'fund', 'right-early', 'everything-rally', 'lost-decade', 'depression'];
     const mk = () => { const cv = document.createElement('canvas'); cv.width = 320; cv.height = 180; const g = cv.getContext('2d', { willReadFrequently: true }); g.imageSmoothingEnabled = false; return g; };
     const pix = (fn) => { const g = mk(); fn(g); return Array.from(g.getImageData(0, 0, 320, 180).data).join(','); };
     const blank = pix(() => {});
@@ -481,12 +486,359 @@ async function run() {
     for (const id of MOV) {
       const whole = pix((g) => SH.endingDetail(g, id, 1)), b = pix((g) => SH.endingDetail(g, id, 1, { part: 'base' })), m = pix((g) => SH.endingDetail(g, id, 1, { part: 'mover' }));
       if (id !== 'wiped' && b === blank) bad.push(`${id}: base is blank`);
-      if (id !== 'wiped' && b === whole) bad.push(`${id}: base is the whole`);
+      if (id !== 'wiped' && id !== 'soft' && b === whole) bad.push(`${id}: base is the whole`);
       if (m === blank || (id !== 'wiped' && m === whole)) bad.push(`${id}: mover blank or whole`);
     }
     return { bad: bad.slice(0, 8), n: bad.length };
   });
   assert(splitRes.n === 0, `endingDetail split: ${JSON.stringify(splitRes)}`);
+  // ---- stage 3 batch 9: the endings' beats ----
+  await page.evaluate(() => {
+    const view = { w: 640, h: 360 }, SH = BTB.Shots, P = BTB.Pal;
+    const canvas = () => { const c = document.createElement('canvas'); c.width = 640; c.height = 360; const g = c.getContext('2d', { willReadFrequently: true }); g.imageSmoothingEnabled = false; return g; };
+    const OPT = (id, extra) => Object.assign({ id, title: 'The Title of It', deck: 'A line of deck text.', dark: false }, extra);
+    const hashData = (d) => { let x = 2166136261; for (let k = 0; k < d.length; k++) { x ^= d[k]; x = Math.imul(x, 16777619); } return (x >>> 0).toString(16); };
+    const rgbOf = (name) => { const hex = P[name]; return [1, 3, 5].map((k) => parseInt(hex.slice(k, k + 2), 16)); };
+    const W = window.w9 = {
+      OPT, canvas, rgbOf,
+      beat: (id, i, extra) => BTB.Scenes.ending(OPT(id, extra))[i],
+      // a layer's animate alone on a transparent canvas: { n: pixels with alpha, box: [x0, y0, x1, y1], hash, d }
+      anim: (b, lid, t) => {
+        const layer = b.layers.find((l) => l.id === lid), g = canvas();
+        layer.animate(g, view, t, t / b.dur, {});
+        const d = g.getImageData(0, 0, 640, 360).data; let n = 0, x0 = 1e9, y0 = 1e9, x1 = -1, y1 = -1;
+        for (let y = 0; y < 360; y++) for (let x = 0; x < 640; x++) if (d[(y * 640 + x) * 4 + 3]) { n++; if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+        return { n, box: [x0, y0, x1, y1], hash: hashData(d), d };
+      },
+      pic: (b, t) => { const g = canvas(); b.draw(g, view, t / b.dur, {}); return g.getImageData(0, 0, 640, 360).data; },
+      // the most fillRect calls the animates of all layers make in one frame, over the beat in 0.05 s steps
+      rects: (b) => {
+        const g = canvas(), P2 = CanvasRenderingContext2D.prototype, orig = P2.fillRect; let n = 0, worst = 0, at = 0;
+        P2.fillRect = function (...a) { n++; return orig.apply(this, a); };
+        try { for (let k = 0; k <= Math.round(b.dur / 0.05) + 1; k++) { const t = Math.min(b.dur, k * 0.05); n = 0; b.layers.forEach((l) => { if (l.animate) { g.save(); l.animate(g, view, t, t / b.dur, {}); g.restore(); } }); if (n > worst) { worst = n; at = t; } } } finally { P2.fillRect = orig; }
+        return [worst, at];
+      },
+      px: (d, x, y) => { const k = (y * 640 + x) * 4; return [d[k], d[k + 1], d[k + 2], d[k + 3]]; },
+      diffOutside: (a, z, rects) => { // pixels that differ between a and z outside the given screen rects [x, y, w, h]
+        let bad = 0;
+        for (let y = 0; y < 360; y++) for (let x = 0; x < 640; x++) {
+          const k = (y * 640 + x) * 4;
+          if (a[k] === z[k] && a[k + 1] === z[k + 1] && a[k + 2] === z[k + 2]) continue;
+          if (!rects.some((r) => x >= r[0] && x < r[0] + r[2] && y >= r[1] && y < r[1] + r[3])) bad++;
+        }
+        return bad;
+      }
+    };
+  });
+  const IDS9 = await page.evaluate(() => BTB.Rhythm.endingIds.slice());
+  assert(IDS9.length === 22, 'the endings are not 22');
+  // ---- world ----
+  const worldRes = await page.evaluate((ids) => {
+    const W = window.w9, bad = [], M = BTB.Motion;
+    const fail = (m) => bad.push(m);
+    for (const id of ids) for (const dark of [false, true]) {
+      const b = W.beat(id, 0, { dark });
+      const tag = `${id}${dark ? ' dark' : ''}`;
+      const cam = [b.camera.from.y, b.camera.to.y].join('>');
+      if (b.id !== `ending:${id}:world` || b.dur !== 1.8 || !b.layers || b.layers.map((l) => l.id).join() !== 'world' || b.layers[0].depth !== 1 || cam !== '-8>0' || b.sfx !== 'apartment' || b.transition !== 'fade' || (b.cues || []).length || b.line !== '' || b.layers[0].w || b.layers[0].h) fail(`${tag}: beat shape ${b.id} ${b.dur} ${cam} ${b.sfx} ${b.transition}`);
+      const ys = new Set(); for (let k = 0; k <= 120; k++) { const y = M.cameraAt(b.camera, k / 120).y; ys.add(y); if (y % 2) fail(`${tag}: odd camera y ${y}`); }
+      if (M.cameraAt(b.camera, 1).y !== 0 || M.cameraAt(b.camera, 0).y !== -8 || ys.size !== 5) fail(`${tag}: camera ends ${M.cameraAt(b.camera, 1).y}, ${ys.size} positions`);
+      // nothing moves under the fade: the animate at 0 and at 0.35 are the same picture
+      if (W.anim(b, 'world', 0).hash !== W.anim(b, 'world', 0.35).hash) fail(`${tag}: the animate changes before 0.40 s`);
+      // deterministic, moving between 0.1 and 1.7 and still after the movement
+      const a = W.pic(b, 0.1), z = W.pic(b, 1.7), z2 = W.pic(b, 1.7);
+      let same = 0, differ = 0, holes = 0; for (let k = 0; k < a.length; k += 4) { if (a[k] !== z[k] || a[k + 1] !== z[k + 1] || a[k + 2] !== z[k + 2]) differ++; if (z[k] !== z2[k]) same++; if (a[k + 3] !== 255) holes++; }
+      if (same || holes) fail(`${tag}: picture not deterministic ${same}, holes ${holes}`);
+      if (W.anim(b, 'world', 1.45).hash !== W.anim(b, 'world', 1.8).hash) fail(`${tag}: still moving after 1.40 s`);
+      // the picture at dur is the beat's final still
+      const fin = W.pic(b, 1.8), full = (() => { const g = W.canvas(); b.draw(g, { w: 640, h: 360 }, 1, {}); return g.getImageData(0, 0, 640, 360).data; })();
+      let fd = 0; for (let k = 0; k < fin.length; k++) if (fin[k] !== full[k]) fd++;
+      if (fd) fail(`${tag}: final still differs from draw(p = 1)`);
+      // the world's final frame is the card's state: it differs from the card's final only inside the card's band (art y 96-136 -> screen 192-272)
+      const c = W.beat(id, 1, { dark }), cf = W.pic(c, 2.6);
+      if (W.diffOutside(fin, cf, [[0, 190, 640, 84]])) fail(`${tag}: world final differs from the card final outside the card band`);
+    }
+    return { bad: bad.slice(0, 10), n: bad.length };
+  }, IDS9);
+  assert(worldRes.n === 0, `batch 9 world: ${JSON.stringify(worldRes)}`);
+  // the live picture (camera and fade included) differs between 0.1 and 1.7 s, the same time gives the same picture
+  for (const id of IDS9) for (const dark of [false, true]) {
+    const o = { id, title: 'The Title of It', deck: 'A line of deck text.', dark };
+    assert(await shot('ending', o, 0, 0.1) !== await shot('ending', o, 0, 1.7) && await shot('ending', o, 0, 0.9) === await shot('ending', o, 0, 0.9), `ending ${id}${dark ? ' dark' : ''} world: not moving or not deterministic`);
+  }
+  // ---- the ten recipes ----
+  const recipeRes = await page.evaluate((ids) => {
+    const W = window.w9, bad = [], info = {}, fail = (m) => bad.push(m);
+    const A = (id, t, extra) => W.anim(W.beat(id, 0, extra), 'world', t);
+    const sweep = (id, a, z, step) => { const out = []; for (let t = a; t <= z + 1e-9; t += step) out.push(A(id, Math.round(t * 1000) / 1000)); return out; };
+    const distinct = (list) => new Set(list.map((r) => r.hash)).size;
+    // the sheet's screen boxes (0.3) are loose for a few ids (the art's own rectangles are wider or taller: wiped, nobody, acquirer's cable, clawback, everything-rally), so the check is the rule they state:
+    // everything the animate draws lies clear of the caption box (screen y 280 and below) and of the card's band, i.e. between y 30 and 198 (the world beat has no caption), and inside the screen
+    const boxes = {};
+    for (const id of ids) {
+      const all = sweep(id, 0, 1.8, 0.01);
+      let u = [1e9, 1e9, -1, -1]; for (const r of all) if (r.n) u = [Math.min(u[0], r.box[0]), Math.min(u[1], r.box[1]), Math.max(u[2], r.box[2]), Math.max(u[3], r.box[3])];
+      boxes[id] = u.join(',');
+      if (u[1] < 30 || u[3] > 198 || u[0] < 0 || u[2] > 639) fail(`${id}: animated pixels ${u} leave the world band (y 30-198)`);
+      info[id] = distinct(all);
+    }
+    // A: wiped - six sheets fall, the lowest 20 px, gravity easing; nothing before 0.40 s, at rest from 1.30 s
+    {
+      const a = A('wiped', 0.40), m = A('wiped', 1.0), z = A('wiped', 1.30), z2 = A('wiped', 1.7);
+      if (a.hash !== A('wiped', 0.2).hash || z.hash !== z2.hash || z.box[3] - a.box[3] !== 20) fail(`wiped: lowest sheet falls ${z.box[3] - a.box[3]} px (want 20), still ${a.hash === A('wiped', 0.2).hash}, rest ${z.hash === z2.hash}`);
+      let prev = a.box[3], maxStep = 0; for (let t = 0.40; t <= 1.30; t += 1 / 30) { const y = A('wiped', t).box[3]; maxStep = Math.max(maxStep, y - prev); prev = y; if (y < prev) fail('wiped: backwards'); }
+      if (maxStep > 4) fail(`wiped: a step of ${maxStep} px`);
+      if (A('wiped', 0.85).box[3] - a.box[3] > 10) fail('wiped: the fall is not slow at first (gravity easing)');
+    }
+    // A: perp - nothing, stars at 0.50, burst at 0.60 and 0.95 for 0.08 s, then the card's state from 1.30
+    {
+      const e = A('perp', 0.45), s = A('perp', 0.55), bu = A('perp', 0.64), s2 = A('perp', 0.80), bu2 = A('perp', 0.99), s3 = A('perp', 1.15), f = A('perp', 1.32);
+      if (e.n || !s.n || s.hash !== s2.hash || s.hash !== s3.hash || bu.hash !== bu2.hash || bu.n <= s.n * 5 || f.hash !== bu.hash) fail(`perp: flashes: ${e.n} ${s.n} ${bu.n} ${s2.n} ${bu2.n} ${f.n}`);
+      const w = bu.box[2] - bu.box[0] + 1, h = bu.box[3] - bu.box[1] + 1;
+      if (w < 340 || h < 120) fail(`perp: burst ${w}x${h} px (the art's 360x132)`);
+    }
+    // B: count - the items appear one by one, whole, on the sheet's steps; the first at the start, the last at the end
+    const B = { cassandra: [0.40, 0.12, 6], 'lost-decade': [0.40, 0.09, 10], depression: [0.40, 0.10, 9], 'right-early': [0.40, 0.07, 13], 'everything-rally': [0.40, 0.12, 7], fund: [0.40, 0.08, 10], clawback: [0.50, 0.15, 6] };
+    for (const id of Object.keys(B)) {
+      const [a, step, N] = B[id], end = a + step * (N - 1);
+      let prev = -1, changes = [];
+      for (let t = 0; t <= 1.8 + 1e-9; t += 0.005) { const h = A(id, Math.round(t * 1000) / 1000).hash; if (h !== prev) { changes.push(Math.round(t * 1000) / 1000); prev = h; } }
+      // changes: the picture at t = 0 plus one change per step (and, for clawback, the first state already has the extra coins)
+      const want = id === 'clawback' ? N : N + 1;
+      if (id === 'clawback' ? changes.length !== N + 1 : changes.length !== N + 1) fail(`${id}: ${changes.length} states (want ${N + 1}): ${changes.join(' ')}`);
+      const steps = changes.slice(1);
+      if (steps[0] < a - 0.006 || steps[0] > a + 0.006 || steps[steps.length - 1] > end + 0.006 || steps[steps.length - 1] < end - 0.006) fail(`${id}: steps ${steps[0]} to ${steps[steps.length - 1]} (want ${a} to ${end})`);
+      if (id !== 'clawback' && A(id, 0.2).n) fail(`${id}: items before 0.40 s`);
+      if (id === 'clawback' && !A(id, 0.2).n) fail('clawback: the extra coins are missing at the start');
+      if (id === 'clawback' && A(id, 1.7).box[3] > 136) fail('clawback: ' + A(id, 1.7).box);
+    }
+    // C: master 48 px in 1.00 s (steps of at most 4 px at 30 fps), acquirer 24 px, ward 20 px, ending in place
+    {
+      const x = (t) => A('master', t).box[0];
+      if (x(0.40) - x(1.40) !== -48 || x(1.4) !== x(1.8) || x(0.2) !== x(0.40)) fail(`master: moves ${x(1.40) - x(0.40)} px (want 48)`);
+      let prev = x(0.40), mx = 0; for (let t = 0.40; t <= 1.40; t += 1 / 30) { const v = x(t); mx = Math.max(mx, v - prev); if (v < prev) fail('master: backwards'); prev = v; } if (mx > 4) fail(`master: step ${mx}`);
+      const y = (id, t) => A(id, t).box[1];
+      const yb = (t) => A('acquirer', t).box[3];
+      if (yb(0.40) - yb(1.40) !== 24 || yb(1.40) !== yb(1.8) || yb(0.2) !== yb(0.40)) fail(`acquirer: hoists ${yb(0.40) - yb(1.40)} px`);
+      if (y('ward', 0.40) - y('ward', 1.40) !== 20 || y('ward', 1.40) !== y('ward', 1.8) || y('ward', 0.2) !== y('ward', 0.40)) fail(`ward: hoists ${y('ward', 0.40) - y('ward', 1.40)} px`);
+    }
+    return { bad: bad.slice(0, 12), n: bad.length, info, boxes };
+  }, IDS9);
+  console.log('batch 9 distinct animate pictures per id:', JSON.stringify(recipeRes.info), 'boxes:', JSON.stringify(recipeRes.boxes));
+  assert(recipeRes.n === 0, `batch 9 recipes: ${JSON.stringify(recipeRes)}`);
+  const coverRes = await page.evaluate((ids) => {
+    const W = window.w9, SH = BTB.Shots, bad = [], info = {}, fail = (m) => bad.push(m);
+    const A = (id, t, extra) => W.anim(W.beat(id, 0, extra), 'world', t);
+    const times = (id, a, z) => { const out = []; let prev = null; for (let t = a; t <= z + 1e-9; t += 0.002) { const h = A(id, Math.round(t * 1000) / 1000).hash; if (h !== prev) { out.push(Math.round(t * 1000) / 1000); prev = h; } } return out; };
+    const near = (a, b) => Math.abs(a - b) < 0.0035;
+    const same = (u, v) => u[0] === v[0] && u[1] === v[1] && u[2] === v[2];
+    const sc = (r) => [r.x * 2, (r.y + 8) * 2, r.w * 2, r.h * 2]; // art rect -> screen rect
+    const pics = (id) => { const b = W.beat(id, 0); return { a: W.pic(b, 0.1), z: W.pic(b, 1.8), b }; };
+    // D soft: 28 windows, building by building (0.03 s apart from 0.40 s), a cover on flat slate
+    {
+      const { a, z } = pics('soft'), G = SH.endingGeom('soft'), slate = W.rgbOf('slate');
+      if (G.wins.length !== 28) fail('soft: ' + G.wins.length + ' windows');
+      if (W.diffOutside(a, z, G.wins.map(sc))) fail('soft: the cover changes pixels outside the windows');
+      G.wins.forEach((w, k) => {
+        const r = sc(w);
+        const leafy = G.leaves.some((l) => w.x < l.x + l.w && w.x + w.w > l.x && w.y < l.y + l.h && w.y + w.h > l.y);
+        for (const [dx, dy] of [[-1, 4], [r[2], 4], [4, -1], [4, r[3]], [r[2] / 2, r[3] / 2], [0, 0], [r[2] - 1, r[3] - 1]]) {
+          const q = W.px(a, r[0] + dx, r[1] + dy);
+          if (!same(q, slate) && !(leafy && same(q, W.px(z, r[0] + dx, r[1] + dy)))) { fail(`soft: window ${k}: ${q} next to or in the cover is not slate`); break; }
+        }
+      });
+      const ts = times('soft', 0, 1.8); // t = 0 plus one change per window
+      if (ts.length !== 29 || !near(ts[1], 0.40 + 0.03 * 0 + 0.002) && !near(ts[1], 0.40) || !near(ts[28], 0.40 + 0.03 * 27)) fail(`soft: ${ts.length} states, first ${ts[1]}, last ${ts[28]}`);
+    }
+    // D fired: PERSONAL written letter by letter, 0.50 s + 0.09 s a letter; the cover is the label's paper
+    {
+      const { a, z } = pics('fired'), L = SH.endingGeom('fired').label, r = sc(L), ink = W.rgbOf('ink'), ok = ['bone', 'white', 'putty2', 'ink2'].map(W.rgbOf);
+      if (W.diffOutside(a, z, [r])) fail('fired: the cover changes pixels outside the label');
+      let inkIn = 0, other = 0, inkZ = 0;
+      for (let y = r[1]; y < r[1] + r[3]; y++) for (let x = r[0]; x < r[0] + r[2]; x++) { const q = W.px(a, x, y); if (same(q, ink)) inkIn++; if (!ok.some((c) => same(q, c))) other++; if (same(W.px(z, x, y), ink)) inkZ++; }
+      if (inkIn || other || inkZ < 100) fail(`fired: covered label has ${inkIn} ink and ${other} odd pixels, the written one ${inkZ} ink`);
+      const ts = times('fired', 0, 1.8);
+      if (ts.length !== 9 || !ts.slice(1).every((t, k) => near(t, 0.50 + 0.09 * k))) fail('fired: letters at ' + ts.join(' '));
+    }
+    // E quiet: 34 cells lit in dim amber go out one by one, seeded, from 0.40 to 1.40 s; yours stays
+    {
+      const { a, z } = pics('quiet'), G = SH.endingGeom('quiet'), amberD = W.rgbOf('amberD'), amber = W.rgbOf('amber');
+      if (G.cells.length !== 34) fail('quiet: cells ' + G.cells.length);
+      if (W.diffOutside(a, z, G.cells.map(sc))) fail('quiet: the lights change pixels outside the cells');
+      if (!G.cells.every((c) => same(W.px(a, c.x * 2 + 3, (c.y + 8) * 2 + 3), amberD))) fail('quiet: the dim amber is missing at 0.1 s');
+      const close = (u, v) => Math.abs(u[0] - v[0]) <= 2 && Math.abs(u[1] - v[1]) <= 2 && Math.abs(u[2] - v[2]) <= 2;
+      const l = G.lit; if (!close(W.px(z, l.x * 2 + 3, (l.y + 8) * 2 + 3), amber) || !close(W.px(a, l.x * 2 + 3, (l.y + 8) * 2 + 3), amber)) fail('quiet: your window is not bright amber at the start and the end');
+      const ts = times('quiet', 0, 1.8), ns = ts.map((t) => A('quiet', t).n);
+      if (ts.length !== 35 || !near(ts[1], 0.40) || !near(ts[34], 1.40) || !ns.every((n, k) => k === 0 || n === ns[k - 1] - 6 * 7 * 4)) fail(`quiet: ${ts.length} states, ${ts[1]} to ${ts[34]}, ${ns.join()}`);
+      // the same order every time (seeded)
+      if (A('quiet', 0.9).hash !== A('quiet', 0.9, { dark: true }).hash) fail('quiet: the order depends on dark');
+    }
+    // F grind: dark from the start, the 0.05 s line at 0.60, the flare at 0.65, lit from 0.70
+    {
+      const { a, z } = pics('grind'), S = SH.endingGeom('grind').screen, ts = times('grind', 0, 1.8);
+      if (W.diffOutside(a, z, [sc(S)])) fail('grind: the cover changes pixels outside the screen');
+      const q = W.px(a, S.x * 2 + 1, (S.y + 8) * 2 + 1);
+      if (!same(q, W.rgbOf('screenD'))) fail('grind: the screen is not dark at 0.1 s: ' + q);
+      if (ts.length !== 4 || !near(ts[1], 0.60) || !near(ts[2], 0.65) || !near(ts[3], 0.70)) fail('grind: states at ' + ts.join(' '));
+    }
+    // F nobody: five screens at 0.45 + 0.15 i, each dark, line, flare, lit
+    {
+      const { a, z } = pics('nobody'), G = SH.endingGeom('nobody'), ts = times('nobody', 0, 1.8), crim = W.rgbOf('crimson');
+      if (W.diffOutside(a, z, G.screens.map(sc))) fail('nobody: the cover changes pixels outside the screens');
+      let crimIn = 0; G.screens.forEach((s) => { const r = sc(s); for (let y = r[1]; y < r[1] + r[3]; y++) for (let x = r[0]; x < r[0] + r[2]; x++) if (same(W.px(a, x, y), crim)) crimIn++; });
+      if (crimIn) fail('nobody: ' + crimIn + ' red pixels show on a dark screen');
+      const want = [0, 1, 2, 3, 4].flatMap((i) => [0.45 + 0.15 * i, 0.50 + 0.15 * i, 0.55 + 0.15 * i]);
+      if (ts.length !== 16 || !want.every((t, k) => near(ts[k + 1], t))) fail('nobody: states at ' + ts.join(' '));
+    }
+    // G replaced: the pulse passes rack 0 to 3 (0.45 + 0.12 i to 0.60 + 0.12 i), an overlay of five strips, never a cover
+    {
+      let prevX = -1, ok = true, n0 = A('replaced', 0.3).n, n1 = A('replaced', 1.2).n; const c = [];
+      for (const [i, t] of [[0, 0.5], [1, 0.62], [2, 0.74], [3, 0.86]]) { const r = A('replaced', t); c.push(r.box[0]); if (r.n !== 5 * 20 * 5 * 4 || r.box[0] <= prevX) ok = false; prevX = r.box[0]; }
+      if (!ok || n0 || n1 || A('replaced', 0.45).n === 0 || A('replaced', 1.11).n) fail(`replaced: pulse ${c.join()} ${n0} ${n1}`);
+      const ts = times('replaced', 0, 1.8); if (!near(ts[1], 0.45) || !near(ts[ts.length - 1], 0.60 + 0.36)) fail('replaced: ' + ts.join(' '));
+    }
+    // H whistle, fall-guy: a blank page, two hard stamp frames at 0.70 and 0.74, the cached mark from 0.78
+    for (const id of ['whistle', 'fall-guy']) {
+      const { a, z } = pics(id), S = SH.endingGeom(id).stamp, r = sc(S), bone = W.rgbOf('bone'), ts = times(id, 0, 1.8);
+      if (W.diffOutside(a, z, [r])) fail(id + ': the cover changes pixels outside the stamp');
+      let notBone = 0, ring = 0;
+      for (let y = r[1] - 2; y < r[1] + r[3]; y++) for (let x = r[0] - 2; x < r[0] + r[2] + 2; x++) { if (!same(W.px(a, x, y), bone)) notBone++; }
+      if (notBone) fail(`${id}: ${notBone} pixels in or around the cover are not the page's bone (the ring above and beside the cover; the row below is the page's shade)`);
+      if (ts.length !== 4 || !near(ts[1], 0.70) || !near(ts[2], 0.74) || !near(ts[3], 0.78)) fail(id + ': states at ' + ts.join(' '));
+      const f1 = A(id, 0.72), f2 = A(id, 0.76); if (f1.box[2] - f1.box[0] <= f2.box[2] - f2.box[0] || f2.box[2] - f2.box[0] <= r[2]) fail(id + ': the stamp does not close in');
+    }
+    // I exit: the door's light in four hard steps (0.60, 0.40, 0.20, then the art)
+    {
+      const b = W.beat('exit', 0), D = SH.endingGeom('exit').door, r = sc(D), lum = (t) => { const d = W.pic(b, t); let s = 0; for (let y = r[1]; y < r[1] + r[3]; y += 2) for (let x = r[0]; x < r[0] + r[2]; x += 2) { const q = W.px(d, x, y); s += q[0] + q[1] + q[2]; } return s; };
+      const ts = times('exit', 0, 1.8), l = [0.3, 0.6, 0.8, 1.0].map(lum);
+      if (ts.length !== 4 || !near(ts[1], 0.50) || !near(ts[2], 0.70) || !near(ts[3], 0.90) || !(l[0] < l[1] && l[1] < l[2] && l[2] < l[3])) fail(`exit: steps ${ts.join(' ')}, brightness ${l.join(' ')}`);
+      const [a, z] = [W.pic(b, 0.1), W.pic(b, 1.8)]; if (W.diffOutside(a, z, [r])) fail('exit: the dim changes pixels outside the door');
+    }
+    // J revolving: the wing turns once round in ten steps of 0.10 s from 0.40 s and stops where the art has it
+    {
+      const b = W.beat('revolving', 0), ts = times('revolving', 0, 1.8), glass = SH.endingGeom('revolving').glass, sky = W.rgbOf('sky'), slate2 = W.rgbOf('slate2');
+      const WING = [163, 167, 151, 155, 159, 163, 167, 151, 155, 159], hs = WING.map((x, k) => A('revolving', 0.45 + 0.1 * k).hash);
+      const okPattern = WING.every((x, k) => WING.every((y, j) => (x === y) === (hs[k] === hs[j])));
+      if (!okPattern || A('revolving', 0.3).n || A('revolving', 1.45).n || A('revolving', 0.40).n === 0 || A('revolving', 1.39).n === 0) fail('revolving: the wing does not take the ten positions ' + hs.join());
+      const [a, z] = [W.pic(b, 0.1), W.pic(b, 1.8)]; if (W.diffOutside(a, z, [])) fail('revolving: differs at 0.1 s');
+      // while the wing is at 163 the art's wing column (159) is glass sky again, and the rail runs through
+      const d = W.pic(b, 0.45), gx = 159 * 2, gy = (48 + 8) * 2; if (!same(W.px(d, gx, gy), sky) || !same(W.px(d, gx + 1, gy + 3), sky) || !same(W.px(d, gx, (56 + 8) * 2), slate2) || !same(W.px(d, 163 * 2, gy), slate2)) fail('revolving: the cover is not the glass or the rail is lost');
+      const dd = W.pic(b, 0.45), de = W.pic(b, 1.45); if (W.diffOutside(dd, de, [[glass.x * 2, (glass.y + 8) * 2, glass.w * 2, glass.h * 2]])) fail('revolving: the wing leaves the glass');
+    }
+    return { bad: bad.slice(0, 12), n: bad.length };
+  }, IDS9);
+  assert(coverRes.n === 0, `batch 9 covers and overlays: ${JSON.stringify(coverRes)}`);
+  // rectangles a frame (the sheet's worst cases, with a little room)
+  const RECTB9 = {};
+  const rectLimits = { wiped: 80, perp: 45, cassandra: 150, 'lost-decade': 150, depression: 250, 'right-early': 150, 'everything-rally': 120, fund: 60, clawback: 399, master: 40, acquirer: 85, ward: 20, soft: 130, fired: 12, quiet: 40, grind: 8, nobody: 30, replaced: 12, whistle: 20, 'fall-guy': 20, exit: 4, revolving: 8 };
+  for (const id of IDS9) {
+    const [n, at] = await page.evaluate(([id]) => window.w9.rects(window.w9.beat(id, 0)), [id]);
+    RECTB9[id] = `${n} at ${at}`;
+    assert(n <= rectLimits[id] && n < 400, `ending ${id} world: ${n} rectangles at ${at} s (limit ${rectLimits[id]})`);
+  }
+  console.log('batch 9 world rect counts:', JSON.stringify(RECTB9));
+  // ---- card ----
+  const cardRes = await page.evaluate((ids) => {
+    const W = window.w9, SH = BTB.Shots, bad = [], fail = (m) => bad.push(m), M = BTB.Motion;
+    const same = (u, v) => u[0] === v[0] && u[1] === v[1] && u[2] === v[2];
+    const reg = (d, r) => { let h = 2166136261; for (let y = r[1]; y < r[1] + r[3]; y++) for (let x = r[0]; x < r[0] + r[2]; x++) { const k = (y * 640 + x) * 4; h ^= d[k] ^ (d[k + 1] << 8) ^ (d[k + 2] << 16); h = Math.imul(h, 16777619); } return h >>> 0; };
+    for (const id of ids) for (const dark of [false, true]) for (const title of ['The Title of It', '', 'W'.repeat(80)]) {
+      const b = W.beat(id, 1, { dark, title }), tag = `${id}${dark ? ' dark' : ''} '${title.slice(0, 3)}'`;
+      const a = b.layers.map((l) => l.id).join(), cues = (b.cues || []).map((c) => c.at + ':' + c.sfx).join();
+      if (b.id !== `ending:${id}:card` || b.dur !== 2.6 || a !== 'card' || b.layers[0].depth !== 1 || b.camera || cues !== '1.3:click' || b.sfx || !b.informative || b.line !== 'A line of deck text.') fail(`${tag}: card beat ${b.id} ${b.dur} ${a} ${b.camera} ${cues} ${b.sfx}`);
+      const p1 = W.pic(b, 0.1), p2 = W.pic(b, 1.0), p3 = W.pic(b, 1.5), pz = W.pic(b, 2.5), pz2 = W.pic(b, 2.5);
+      // the box and title never move: the title rows (art y 106-114, screen 212-230) and the box interior above the line are the same at every time
+      for (const q of [p1, p2, p3, pz]) if (reg(q, [80, 212, 480, 19]) !== reg(pz, [80, 212, 480, 19])) { fail(`${tag}: the title changes`); break; }
+      // the line: hidden at 0.1 and 1.0 (ink inside its rect), there at 1.5; the card at 2.5 is the cached card
+      const lr = [119 * 2, 117 * 2, 83 * 2, 14];
+      if (reg(p1, lr) !== reg(p2, lr) || reg(p1, lr) === reg(p3, lr) || reg(p3, lr) !== reg(pz, lr)) fail(`${tag}: ENDING REACHED does not appear between 1.0 and 1.5 s`);
+      // outside the stamp's outline and the line, the card at 0.1 is the final card
+      if (W.diffOutside(p1, pz, [lr, [60, 188, 520, 76]])) fail(`${tag}: the card at 0.1 s differs from the final outside the line and the stamp`);
+      for (let k = 0; k < pz.length; k++) if (pz[k] !== pz2[k]) { fail(`${tag}: not deterministic`); break; }
+      // the hidden line is only ink / ink2 (the box's flat interior)
+      const ink = W.rgbOf('ink'), ink2 = W.rgbOf('ink2'); let odd = 0;
+      for (let y = lr[1]; y < lr[1] + lr[3]; y++) for (let x = lr[0]; x < lr[0] + lr[2]; x++) { const q = W.px(p1, x, y); if (!same(q, ink) && !same(q, ink2)) odd++; }
+      if (odd) fail(`${tag}: ${odd} pixels of the hidden line are not box ink`);
+    }
+    // the stamp: cover only before 1.30, outline (title colour) 1.30-1.34 (256 x 34), 1.34-1.38 (246 x 29), nothing from 1.38
+    for (const [id, dark] of [['fund', false], ['wiped', true]]) {
+      const b = W.beat(id, 1, { dark }), at = (t) => W.anim(b, 'card', t), col = W.rgbOf(dark ? 'crimson' : 'amber');
+      const a0 = at(1.0), a1 = at(1.32), a2 = at(1.36), a3 = at(1.40), a4 = at(2.5);
+      if (a0.hash !== at(0.1).hash || a1.hash === a0.hash || a2.hash === a1.hash || a3.hash === a2.hash || a3.hash !== a4.hash || a3.n || !a0.n) fail(`${id}: stamp states`);
+      const w1 = a1.box[2] - a1.box[0] + 1, h1 = a1.box[3] - a1.box[1] + 1, w2 = a2.box[2] - a2.box[0] + 1;
+      if (w1 !== 512 || h1 !== 68 || w2 < 490 || w2 > 500) fail(`${id}: stamp frames ${w1}x${h1}, ${w2}`);
+      const q = W.px(a1.d, a1.box[0], a1.box[1] + 10); if (!same(q, col)) fail(`${id}: stamp colour ${q}`);
+    }
+    return { bad: bad.slice(0, 10), n: bad.length };
+  }, IDS9);
+  assert(cardRes.n === 0, `batch 9 card: ${JSON.stringify(cardRes)}`);
+  for (const [id, dark] of [['fund', false], ['wiped', true], ['clawback', true]]) {
+    const o = { id, title: 'The Title of It', deck: 'A line of deck text.', dark };
+    assert(await shot('ending', o, 1, 0.5) !== await shot('ending', o, 1, 2.5), `ending ${id} card: not moving`);
+  }
+  // ---- after ----
+  const afterRes = await page.evaluate(() => {
+    const W = window.w9, R = BTB.Rhythm, bad = [], fail = (m) => bad.push(m), P = BTB.Pal;
+    const wins = R.skylineWindows(1, 61, 270);
+    const info = { windows: wins.length, shown: wins.filter((w) => w.shown).length };
+    for (const id of ['grind', 'wiped']) {
+      const b = W.beat(id, 2, {});
+      if (b.id !== `ending:${id}:after:` || b.dur !== 2.2 || b.layers.map((l) => l.id).join() !== 'city' || b.camera || (b.cues || []).length || b.sfx !== 'room' || b.line !== 'FIRST LIGHT. THE CITY IS STILL THERE.') fail(`after ${id}: beat shape ${b.id}`);
+      // lit amber windows go out from the right between 0.40 and 1.40 s
+      let prevMax = 1e9, prevN = 1e9, ok = true; const maxes = [];
+      for (let t = 0.40; t <= 1.40; t += 1 / 30) { const r = W.anim(b, 'city', t); if (r.n > prevN || (r.n && r.box[2] > prevMax)) ok = false; prevMax = r.n ? r.box[2] : prevMax; prevN = r.n; maxes.push(r.n ? r.box[2] : -1); }
+      const r0 = W.anim(b, 'city', 0.3), r1 = W.anim(b, 'city', 1.45), r2 = W.anim(b, 'city', 2.2);
+      if (!ok || !r0.n || r1.n || r2.n || W.anim(b, 'city', 0).hash !== W.anim(b, 'city', 0.35).hash) fail(`after ${id}: lights: ${ok} ${r0.n} ${r1.n}`);
+      const frontStep = Math.max.apply(null, maxes.slice(1).map((m, k) => (maxes[k] >= 0 && m >= 0 ? maxes[k] - m : 0)));
+      info.frontStep = frontStep;
+      if (r0.box[3] > 270) fail('after: a window below y 270');
+      const ids = new Set(); for (let t = 0; t <= 2.2; t += 0.01) ids.add(W.anim(b, 'city', t).hash); info.states = ids.size;
+      // the final still: no lit window left (the art's wash colour and the animate's amber are both gone at each window) and the picture differs from the start
+      const z = W.pic(b, 2.2), a = W.pic(b, 0.1), wash = W.rgbOf('wash' in P ? 'wash' : 'amber'), amber = W.rgbOf('amber');
+      let lit = 0; wins.filter((w) => w.shown).forEach((w) => { const q = W.px(z, w.x, w.y); if (q[0] === amber[0] && q[1] === amber[1] && q[2] === amber[2]) lit++; });
+      if (lit || W.diffOutside(a, z, []) === 0) fail(`after ${id}: lit ${lit} at the end, or no change`);
+    }
+    // pulled: the dark rack room, one standby light blinking at the standby rate, on at the end
+    const b = W.beat('grind', 2, { pulled: true }), L = (t) => W.anim(b, 'room', t);
+    if (b.id !== 'ending:grind:after:p' || b.dur !== 2.2 || b.layers.map((l) => l.id).join() !== 'room,grain' || b.camera || b.sfx !== 'room' || b.line !== 'THE RACKS STAY DARK. FOR NOW.') fail('pulled: beat shape ' + b.id + ' ' + b.layers.map((l) => l.id));
+    const amber = W.rgbOf('amber'), led = (t) => { const q = W.px(L(t).d, 186, 42); return q[3] === 255 && q[0] === amber[0]; };
+    const on = [0.3, 0.55, 0.69, 0.75, 1.15, 1.25, 1.65, 1.75, 2.15, 2.2].map(led);
+    const want = [false, false, false, true, true, false, false, true, true, true];
+    if (on.join() !== want.join()) fail('pulled: standby ' + on.join());
+    if (L(0.75).n <= 36 * 4 || L(0.75).box[0] < 150 || L(0.75).box[2] > 220 || L(0.75).box[1] < 15 || L(0.75).box[3] > 70) fail('pulled: halo ' + L(0.75).box);
+    if (L(0.3).n || L(1.25).n || !L(2.2).n || L(2.2).hash !== L(0.75).hash) fail('pulled: states');
+    info.pulledBox = L(0.75).box.join(',');
+    return { bad: bad.slice(0, 10), n: bad.length, info };
+  });
+  console.log('batch 9 after:', JSON.stringify(afterRes.info));
+  assert(afterRes.n === 0, `batch 9 after: ${JSON.stringify(afterRes)}`);
+  for (const [lab, o] of [['city', { id: 'grind' }], ['pulled', { id: 'grind', pulled: true }]]) {
+    const oo = Object.assign({ title: 'T', deck: 'D', dark: false }, o);
+    assert(await shot('ending', oo, 2, 0.1) !== await shot('ending', oo, 2, 2.1) && await shot('ending', oo, 2, 1.1) === await shot('ending', oo, 2, 1.1), `ending after ${lab}: not moving or not deterministic`);
+  }
+  // rectangles a frame
+  for (const [lab, id, o, lim] of [['city', 'grind', {}, 125], ['pulled', 'grind', { pulled: true }, 40], ['card', 'fund', {}, 8]]) {
+    const [n, at] = await page.evaluate(([id, o, i]) => window.w9.rects(window.w9.beat(id, i, o)), [id, o, lab === 'card' ? 1 : 2]);
+    RECTB9[lab] = `${n} at ${at}`;
+    assert(n <= lim, `ending ${lab}: ${n} rectangles at ${at} s (limit ${lim})`);
+  }
+  console.log('batch 9 card/after rect counts:', JSON.stringify(RECTB9));
+  // every beat of every ending draws whole for dark and light, pulled or not, with an empty or very long title and deck, and effects reduced gives one still
+  const wholeRes = await page.evaluate((ids) => {
+    const W = window.w9, bad = [];
+    for (const id of ids) for (const dark of [false, true]) for (const pulled of [false, true]) for (const [title, deck] of [['', ''], ['W'.repeat(200), 'V'.repeat(400)]]) {
+      BTB.Scenes.ending({ id, title, deck, dark, pulled }).forEach((b, i) => { for (const t of [0, b.dur * 0.5, b.dur]) { let holes = 0; const d = W.pic(b, t); for (let k = 3; k < d.length; k += 4) if (d[k] !== 255) holes++; if (holes) bad.push(`${id} ${i} t${t}: ${holes} holes`); } });
+    }
+    return bad.slice(0, 5);
+  }, IDS9);
+  assert(wholeRes.length === 0, `batch 9: beats with holes: ${JSON.stringify(wholeRes)}`);
+  await page.evaluate(() => BTB.Settings.set('effects', 'reduced'));
+  for (const id of IDS9) for (const pulled of [false, true]) for (let i = 0; i < 3; i++) {
+    if (pulled && id !== 'grind' && id !== 'wiped') continue;
+    const o = { id, title: 'T', deck: 'D', dark: false, pulled };
+    assert(await shot('ending', o, i, 0.4) === await shot('ending', o, i, [1.8, 2.6, 2.2][i] - 0.05), `ending ${id} beat ${i}${pulled ? ' pulled' : ''}: reduced effects still moves`);
+  }
+  await page.evaluate(() => BTB.Settings.set('effects', 'full'));
   // ---- stage 3 batch 9 asserts end ----
   if (process.env.B9_ONLY) { console.log('motion-run: batch 9 asserts only: passed'); return; }
   // ---- stage 3 batch 8 asserts go here ----
@@ -549,7 +901,8 @@ async function run() {
       .concat(Object.keys(BTB.StoryData.CHOICES).filter((k) => !BTB.StoryData.CHOICES[k].mid).map((k) => { const c = BTB.StoryData.CHOICES[k]; return { id: k, day: c.day, speaker: c.speaker, role: c.role, title: c.title }; }));
     for (const it of items) scan('decision', BTB.Scenes.decision(Object.assign({ S: BTB.StoryMode.freshState(250000) }, it)));
     for (const d of [4, 9, 14, 24, 34, 39, 44]) for (const plug of [false, true]) scan('weekend', BTB.Scenes.weekend({ day: d, game: { mode: { S: Object.assign({ wallet: { tier: 2, lateWeeks: d % 3, pet: d % 2 ? { kind: 'cat', sex: 'boy' } : undefined } }, plug ? { f: { pulledPlug: true } } : {}) } } }));
-    for (const id of BTB.Rhythm.endingIds) scan('ending', BTB.Scenes.ending({ id, title: id, deck: 'Deck', dark: false }));
+    for (const id of BTB.Rhythm.endingIds) { scan('ending', BTB.Scenes.ending({ id, title: id, deck: 'Deck', dark: false })); scan('ending dark', BTB.Scenes.ending({ id, title: id, deck: 'Deck', dark: true })); }
+    scan('ending pulled', BTB.Scenes.ending({ id: 'grind', title: 'T', deck: 'Deck', dark: false, pulled: true }));
     K.blink = orig;
     return { bad: bad.slice(0, 8), nBad: bad.length, n: seen.n, beats: seen.beats };
   });
@@ -3515,6 +3868,20 @@ async function run() {
     { scene: 'close', opts: { report: { day: 30, pnl: -54321, quotaMet: false, quota: 2000, date: 'FRI NOV 14', indexPct: -2 } } },
     { scene: 'close', opts: { report: { day: 6, pnl: 1200, quotaMet: true, quota: 900, date: 'FRI OCT 10' } } },
     { scene: 'close', opts: { report: { day: 40, pnl: -1234567, quotaMet: false, quota: 5000, date: 'THU DEC 18', indexPct: -9 } } },
+    // batch 9: the endings, one per recipe (wiped A, cassandra B, master C, soft D, quiet E, grind F, replaced G, whistle H, exit I, revolving J), clawback (the rectangle ceiling), and the pulled-plug after
+    { scene: 'ending', opts: { id: 'wiped', title: 'WIPED OUT', deck: 'A line of deck text.', dark: true } },
+    { scene: 'ending', opts: { id: 'cassandra', title: 'CASSANDRA', deck: 'A line of deck text.', dark: true } },
+    { scene: 'ending', opts: { id: 'master', title: 'MASTER OF NOTHING', deck: 'A line of deck text.', dark: false } },
+    { scene: 'ending', opts: { id: 'soft', title: 'SOFT LANDING', deck: 'A line of deck text.', dark: false } },
+    { scene: 'ending', opts: { id: 'quiet', title: 'QUIET', deck: 'A line of deck text.', dark: false } },
+    { scene: 'ending', opts: { id: 'grind', title: 'THE GRIND', deck: 'A line of deck text.', dark: false } },
+    { scene: 'ending', opts: { id: 'replaced', title: 'REPLACED', deck: 'A line of deck text.', dark: true } },
+    { scene: 'ending', opts: { id: 'whistle', title: 'WHISTLE', deck: 'A line of deck text.', dark: false } },
+    { scene: 'ending', opts: { id: 'exit', title: 'EXIT', deck: 'A line of deck text.', dark: false } },
+    { scene: 'ending', opts: { id: 'revolving', title: 'REVOLVING DOOR', deck: 'A line of deck text.', dark: false } },
+    { scene: 'ending', opts: { id: 'clawback', title: 'CLAWBACK', deck: 'A line of deck text.', dark: true } },
+    { scene: 'ending', opts: { id: 'depression', title: 'DEPRESSION', deck: 'A line of deck text.', dark: true } },
+    { scene: 'ending', opts: { id: 'grind', title: 'THE GRIND', deck: 'A line of deck text.', dark: false, pulled: true } },
     { scene: 'weekend', opts: { day: 4 } },
     // heaviest variants: winter snow plus the breath on a cat in a penthouse, and autumn leaves with no pet
     { scene: 'weekend', opts: { day: 44, game: { mode: { S: { wallet: { tier: 5, pet: { kind: 'cat', sex: 'boy' } } } } } } },
@@ -3602,7 +3969,7 @@ async function run() {
     for (const { scene, opts } of PERF_SCENES) {
       const r = await perf(scene, opts);
       results.push(r);
-      r.day = opts.day != null ? opts.day : opts.report && opts.report.day; if (opts.id) r.id = opts.id; const wal = opts.game && opts.game.mode.S.wallet; r.tier = wal ? wal.tier : undefined; r.pet = !!(wal && wal.pet);
+      r.day = opts.day != null ? opts.day : opts.report && opts.report.day; if (opts.id) r.id = opts.id; if (opts.pulled) r.pulled = true; const wal = opts.game && opts.game.mode.S.wallet; r.tier = wal ? wal.tier : undefined; r.pet = !!(wal && wal.pet);
       console.log(`perf ${scene}${opts.id ? " " + opts.id : ""}${r.day != null ? ' day ' + r.day : ''}${r.tier != null ? ' tier ' + r.tier : ''}${r.pet ? ' pet' : ''}: ${r.status} attempts=${r.attempts.length} framesMeasured=${r.framesMeasured}/${r.framesTotal} avg=${r.avgMs} p95=${r.p95Ms} max=${r.maxMs} firstMax=${Math.max(0, ...r.firstFrameMs.map((f) => f.ms))}`);
     }
     const outDir = path.join(root, 'qa', 'evidence', 'motion');
