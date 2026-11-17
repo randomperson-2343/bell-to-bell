@@ -1868,11 +1868,14 @@
   };
 
   // ---- Endings: the hand-drawn city and a prop for each of the 22 ----
-  function endingWorld(ctx, o, p, card) {
+  // The endings' prop space: 320x180 art at 2x with the 8-unit drop of the prop. fn draws in it. (Never nest it: it is an at2x.)
+  function endingSpace(c, fn) { at2x(c, (cc) => { cc.save(); cc.translate(0, 8); fn(cc); cc.restore(); }, 60); }
+  // lo (optional): lo.part 'base' draws the prop without its mover (endingDetail's part), for the layered world beat.
+  function endingWorld(ctx, o, p, card, lo) {
     at2x(ctx, (c) => {
       X.rect(c, 0, 0, 320, 180, P.ink);
       SH.endingShot(c, o.dark ? 'dark' : 'light', o.id);
-      c.save(); c.translate(0, 8); SH.endingDetail(c, o.id || 'grind', p); c.restore();
+      c.save(); c.translate(0, 8); SH.endingDetail(c, o.id || 'grind', p, lo && lo.part ? { part: lo.part } : undefined); c.restore();
       if (card) {
         c.save(); c.globalAlpha = 0.5; X.rect(c, 0, 96, 320, 40, P.ink); c.restore();
         X.box(c, 40, 100, 240, 26);
@@ -1903,10 +1906,12 @@
   }
   // Whatever happened, the last picture is the morning after: the city at
   // first light, or, if you pulled the plug, the rack room in the dark.
-  function lastLight(ctx, pulled) {
+  // lo (optional): lo.part 'city' draws the skyline with no lit windows and no still snow speckle (the layered after beat draws the windows).
+  function lastLight(ctx, pulled, lo) {
     if (pulled && B.DecisionArt) return B.DecisionArt.room(ctx, 'c10', 60, true, { f: { pulledPlug: true } });
     X.rect(ctx, 0, 0, V.w, V.h, P.ink);
-    R.skyline(ctx, 1, 61, 270, 60);
+    if (lo && lo.part === 'city') R.skyline(ctx, 1, 61, 270, 60, true, { noWindows: true });
+    else R.skyline(ctx, 1, 61, 270, 60);
     X.dither(ctx, 0, 180, V.w, 90, P.ink, P.amber, 0.18);
     X.rect(ctx, 0, 270, V.w, 90, P.ink);
   }

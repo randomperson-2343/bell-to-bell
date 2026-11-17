@@ -71,19 +71,43 @@
     }
     return s;
   }
+  // The skyline's towers: x, width and height of tower i (they are drawn in this order, each over the one before).
+  const towerOf = (i, seed) => ({ w: 10 + ((i * 17 + seed * 3) % 22), h: 34 + ((i * 41 + seed * 11) % 128), x: i * 20 - 9 });
+  // The lit windows of tower i: 2x2 rectangles, tower-relative offsets in (xx, yy).
+  function towerWindows(i, seed, y) {
+    const t = towerOf(i, seed), out = [];
+    for (let yy = 7; yy < t.h - 5; yy += 10) for (let xx = 4; xx < t.w - 3; xx += 8) {
+      if ((i * 13 + xx + yy + seed) % 11 < 2) out.push({ x: t.x + xx, y: y - t.h + yy, w: 2, h: 2 });
+    }
+    return out;
+  }
+  // The lit window rectangles of skyline(ctx, act, seed, y), all towers, in drawing order. `shown` is false for a window that a later tower
+  // (drawn over it) hides completely.
+  function skylineWindows(act, seed, y) {
+    y = y || 248;
+    const out = [];
+    for (let i = 0; i < 34; i++) towerWindows(i, seed, y).forEach((w) => {
+      let shown = true;
+      for (let j = i + 1; j < 34 && shown; j++) {
+        const t = towerOf(j, seed);
+        if (w.x >= t.x && w.x + w.w <= t.x + t.w && w.y >= y - t.h) shown = false;
+      }
+      out.push(Object.assign(w, { shown }));
+    });
+    return out;
+  }
   // noSpeckle (optional): the still snow speckle is left out where falling snow is drawn instead; autumn leaves stay.
-  function skyline(ctx, act, seed, y, day, noSpeckle) {
+  // o.noWindows (optional): the lit windows are left out (a shot draws them itself).
+  function skyline(ctx, act, seed, y, day, noSpeckle, o) {
     const c = colors(act); y = y || 248;
     X.gradient(ctx, 0, 0, V.w, y, c.sky, P.ink, 12);
     const s = day == null ? null : season(day);
     if (s) X.dither(ctx, 0, Math.round(y * 0.6), V.w, Math.round(y * 0.4), P.ink, s.dawn, s.glow);
     for (let i = 0; i < 34; i++) {
-      const w = 10 + ((i * 17 + seed * 3) % 22), h = 34 + ((i * 41 + seed * 11) % 128), x = i * 20 - 9;
+      const t = towerOf(i, seed), w = t.w, h = t.h, x = t.x;
       X.rect(ctx, x, y - h, w, h, i % 4 ? P.ink2 : P.slate);
       if (s && s.snow) X.rect(ctx, x, y - h, w, 2, P.bone);
-      for (let yy = 7; yy < h - 5; yy += 10) for (let xx = 4; xx < w - 3; xx += 8) {
-        if ((i * 13 + xx + yy + seed) % 11 < 2) X.rect(ctx, x + xx, y - h + yy, 2, 2, c.wash);
-      }
+      if (!(o && o.noWindows)) towerWindows(i, seed, y).forEach((q) => X.rect(ctx, q.x, q.y, 2, 2, c.wash));
     }
     if (s) weather(ctx, 0, 0, V.w, y - 20, day, noSpeckle);
   }
@@ -520,7 +544,7 @@
   B.Rhythm = {
     view:V, endingIds:ENDING_IDS,
     // Drawing helpers for js/art/storyboard.js.
-    placeFrame, monitorGeom, phoneFrame, phoneGeom, lockMinute, stackSlip, CLOSE_DIM, officeFrame, officeGeom, closeFrame, closeGeom, sqwakFrame, sqwakGeom, sqwakStats, weekendFrame, skyline, season, sky, weather, text, colors, clean, chart, chartSeries, person, marketDown, beat,
+    placeFrame, monitorGeom, phoneFrame, phoneGeom, lockMinute, stackSlip, CLOSE_DIM, officeFrame, officeGeom, closeFrame, closeGeom, sqwakFrame, sqwakGeom, sqwakStats, weekendFrame, skyline, skylineWindows, season, sky, weather, text, colors, clean, chart, chartSeries, person, marketDown, beat,
     phoneRowCount(feed){return Math.min(4,(feed||[]).length);},
     storyboard:board,
     frameMap(day){const sb=this.storyboard(day);return [

@@ -461,6 +461,34 @@ async function run() {
   assert(Object.keys(p10now).length === Object.keys(P10_REF).length, 'batch 9: the set of reference pictures changed');
   for (const k of Object.keys(P10_CHANGED)) assert(P10_CHANGED[k] !== P10_REF[k], `batch 9 ${k}: the ruled change is not a change`);
 
+  // ---- stage 3 batch 9 asserts ----
+  // ---- stage 3 batch 9: the endings ----
+  // the split of endingDetail: base then mover is what endingDetail draws with no options; nothing is drawn for 'mover' of an id with no mover; the option values that mean "all" and "none"
+  const splitRes = await page.evaluate(() => {
+    const SH = BTB.Shots, ids = BTB.Rhythm.endingIds, bad = [], MOV = ['wiped', 'perp', 'master', 'cassandra', 'acquirer', 'ward', 'clawback', 'fund', 'right-early', 'everything-rally', 'lost-decade', 'depression'];
+    const mk = () => { const cv = document.createElement('canvas'); cv.width = 320; cv.height = 180; const g = cv.getContext('2d', { willReadFrequently: true }); g.imageSmoothingEnabled = false; return g; };
+    const pix = (fn) => { const g = mk(); fn(g); return Array.from(g.getImageData(0, 0, 320, 180).data).join(','); };
+    const blank = pix(() => {});
+    for (const id of ids) for (const p of [0, 0.3, 0.45, 1]) {
+      const whole = pix((g) => SH.endingDetail(g, id, p));
+      if (whole !== pix((g) => SH.endingDetail(g, id, p, {}))) bad.push(`${id} p${p}: {} differs`);
+      if (whole !== pix((g) => { SH.endingDetail(g, id, p, { part: 'base' }); SH.endingDetail(g, id, p, { part: 'mover' }); })) bad.push(`${id} p${p}: base + mover differs`);
+      if (whole !== pix((g) => SH.endingDetail(g, id, p, { n: 99, dx: 0, dy: 0 }))) bad.push(`${id} p${p}: n 99, dx 0, dy 0 differs`);
+      if (MOV.indexOf(id) < 0 && pix((g) => SH.endingDetail(g, id, p, { part: 'mover' })) !== blank) bad.push(`${id}: a mover is drawn`);
+      if (MOV.indexOf(id) < 0 && whole !== pix((g) => SH.endingDetail(g, id, p, { part: 'base' }))) bad.push(`${id}: base differs from the whole`);
+    }
+    // each mover id: base alone differs from the whole (it leaves something out) and mover alone is not blank
+    for (const id of MOV) {
+      const whole = pix((g) => SH.endingDetail(g, id, 1)), b = pix((g) => SH.endingDetail(g, id, 1, { part: 'base' })), m = pix((g) => SH.endingDetail(g, id, 1, { part: 'mover' }));
+      if (id !== 'wiped' && b === blank) bad.push(`${id}: base is blank`);
+      if (id !== 'wiped' && b === whole) bad.push(`${id}: base is the whole`);
+      if (m === blank || (id !== 'wiped' && m === whole)) bad.push(`${id}: mover blank or whole`);
+    }
+    return { bad: bad.slice(0, 8), n: bad.length };
+  });
+  assert(splitRes.n === 0, `endingDetail split: ${JSON.stringify(splitRes)}`);
+  // ---- stage 3 batch 9 asserts end ----
+  if (process.env.B9_ONLY) { console.log('motion-run: batch 9 asserts only: passed'); return; }
   // ---- stage 3 batch 8 asserts go here ----
   // ---- stage 3 batch 8, part A: critique fixes ----
   // A5: the cameras of shots whose art is 320x180 drawn at 2x (`even` cameras: the tableau establishes, the lobby / elevator and apartment places, the tv, rating, voicemail and
