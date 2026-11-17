@@ -1387,6 +1387,28 @@
     for (const id of Object.keys(A.ROOMS)) for (const S of [null, { f: {}, wallet: { pet: { kind: 'cat', sex: 'boy', name: 'Rosco' } } }]) A.room(ctx, id, 20, true, S);
   });
 
+  test('Decision rooms: the layered options draw on the plain stub context, and the blink needs no more', () => {
+    const A = B.DecisionArt;
+    const ctx = { save() {}, restore() {}, translate() {}, scale() {}, beginPath() {}, rect() {}, clip() {}, fillRect() {}, fillText() {}, set fillStyle(v) {}, set globalAlpha(v) {}, set font(v) {}, set textAlign(v) {}, set textBaseline(v) {}, measureText: () => ({ width: 6 }) };
+    for (const id of Object.keys(A.ROOMS)) {
+      for (const o of [{ noGrain: true }, { part: 'back', noGrain: true }, { part: 'front', noGrain: true }, { skip: 'chair' }, { skip: 'count' }, { skip: 'envelope' }, { skip: 'cells' }]) A.room(ctx, id, 20, false, null, o);
+      assert(typeof A.roomLayers === 'function', 'roomLayers is exported');
+    }
+    // the face of every cast member shuts its eyes with at most 51 cells, inside the band, and the closed sprite is the open one except for the eyes
+    let cells = 0, outside = 0;
+    const rec = { fillRect(x, y) { cells++; if (!(x >= 16 && x <= 32 && y >= 18 && y <= 20) && !(x >= 18 && x <= 29 && y >= 15 && y <= 17)) outside++; }, set fillStyle(v) {} };
+    for (const name of Object.keys(B.Portraits.CAST)) {
+      const open = B.Portraits.sprite(name), shut = B.Portraits.sprite(name, { closed: true }), screen = !!B.Portraits.CAST[name].screen;
+      assert(shut !== open && shut.h === 48 && shut.rows.every((r) => r.length === 48), name + ' has no closed sprite');
+      const rows = screen ? [15, 16, 17] : [18, 19, 20];
+      for (let y = 0; y < 48; y++) if (!rows.includes(y)) assert(open.rows[y] === shut.rows[y], `${name}: row ${y} differs between the open and the closed face`);
+      assert(rows.some((y) => open.rows[y] !== shut.rows[y]), name + ': the eyes do not close');
+      assert(B.Portraits.sprite(name, { closed: true }) === shut, name + ': the closed sprite is not cached');
+      cells = 0; outside = 0; B.Portraits.paintEyes(rec, name);
+      assert(cells > 0 && cells <= (screen ? 36 : 51) && outside === 0, `${name}: paintEyes drew ${cells} cells, ${outside} outside the band`);
+    }
+  });
+
   test('Pet food is billed weekly and the pet shows up in the weekend art', () => {
     const E = B.Economy, W = Object.assign(E.fresh(), { cash: 5000, peakEq: 250000 });
     const t = E.tier(W);
