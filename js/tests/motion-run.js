@@ -337,6 +337,31 @@ async function run() {
 
   // ---- stage 3 batch 8 asserts go here ----
   // ---- stage 3 batch 8, part A: critique fixes ----
+  // A5: the cameras of shots whose art is 320x180 drawn at 2x (`even` cameras: the tableau establishes, the lobby / elevator and apartment places, the tv, rating, voicemail and
+  // ticket rooms, the lit floor, session 1's elevator, the closing bell) move in 2 px steps: their y offset is even at every sampled time, the end is 0 and nothing else changed
+  const evenScan = await page.evaluate(() => {
+    const M = BTB.Motion, found = {}, bad = [];
+    const nopt = (day) => ({ day, brief: { title: 'Headline of the day', feed: [] } });
+    const scanBeats = (label, beats) => beats.forEach((b) => {
+      if (!b.camera || !b.camera.even) return;
+      found[label] = (found[label] || 0) + 1;
+      const ys = new Set();
+      for (let k = 0; k <= 120; k++) { const y = M.cameraAt(b.camera, k / 120).y; ys.add(y); if (y % 2 !== 0) bad.push(`${b.id} p=${k / 120}: y ${y}`); }
+      if (M.cameraAt(b.camera, 1).y !== 0 || M.cameraAt(b.camera, 0).y > -6 || ys.size < 3) bad.push(`${b.id}: ends ${M.cameraAt(b.camera, 1).y}, starts ${M.cameraAt(b.camera, 0).y}, ${ys.size} positions`);
+    });
+    for (let d = 0; d <= 60; d++) { scanBeats('news', BTB.Scenes.news(nopt(d))); scanBeats('close', BTB.Scenes.close({ report: { day: d }, day: d })); }
+    return { found, bad: bad.slice(0, 6), nBad: bad.length };
+  });
+  assert(evenScan.nBad === 0 && evenScan.found.news >= 25, `A5: a 2x-art camera has an odd y or is not stepped: ${JSON.stringify(evenScan)}`);
+  // and the known 2x shots are among them
+  for (const [day, re] of [[6, 'establish'], [9, 'establish'], [17, 'establish'], [20, 'establish'], [25, 'establish'], [37, 'establish'], [40, 'establish'], [45, 'establish'], [0, 'establish'], [16, 'establish'], [18, 'establish'], [4, 'establish'], [50, 'establish']]) {
+    const e = await page.evaluate(([d, re]) => { const b = BTB.Scenes.news({ day: d, brief: { title: 'Headline of the day', feed: [] } }).find((x) => new RegExp(re + '$').test(x.id)); return !!(b && b.camera && b.camera.even); }, [day, re]);
+    assert(e, `A5: news ${day} ${re} does not have the stepped camera`);
+  }
+  // native 640x360 rooms keep their camera: the vote room and the decisions' tilt are still one-pixel steps
+  const nativeCam = await page.evaluate(() => { const M = BTB.Motion, b = BTB.Scenes.decision({ id: 'c3', day: 10, speaker: 'x', role: 'y', title: 't' })[0]; let odd = 0; for (let k = 0; k <= 120; k++) if (M.cameraAt(b.camera, k / 120).y % 2 !== 0) odd++; return odd; });
+  assert(nativeCam > 0, 'A5: the native hearing room tilt was changed');
+
   // A1: every blink that passes `end` is on at the end of its beat. Scans the beats of the news (days 0 to 60, also with the bill passed and the plug pulled), every decision,
   // the weekends and the endings: each K.blink with `end` must have end === the beat's duration and be on at dur - 0.02 and at p = 1 (the last frames a player draws are just
   // before dur); and for the hearing (37) and floor vote (40) establishes the blink's own screen region at dur - 0.02 is the region of the final still.

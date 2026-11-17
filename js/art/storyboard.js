@@ -913,7 +913,7 @@
     return M.layered({
       id: `news:${day}:establish`, view: V, dur: 2.4, line: date, cache: false, sfx: 'apartment', informative: false, transition: 'fade',
       cues: [{ at: 1.05, sfx: 'elevator' }],
-      camera: { from: { x: 0, y: -8, zoom: 1 }, to: { x: 0, y: 0, zoom: 1 }, ease: M.ease.inOut },
+      camera: { from: { x: 0, y: -8, zoom: 1 }, to: { x: 0, y: 0, zoom: 1 }, ease: step2(8, M.ease.inOut), even: true },
       layers: [
         {
           id: 'room', depth: 1, draw: elevBase(0),
@@ -1076,6 +1076,10 @@
   // ---- The establishes of the documents' places as layers (stage 3, batch 4, part 2) ----
   // The art is drawn through framed(), so every moving mark is drawn through framed() too, with noBack, in the same transform.
   const SETTLE = () => ({ from: { x: 0, y: -6, zoom: 1 }, to: { x: 0, y: 0, zoom: 1 }, ease: B.Motion.ease.inOut });
+  // Art drawn at 2x (320x180 through at2x): a one-pixel camera step flips the phase of the dither and the walls change tone for a frame, so these cameras
+  // move in steps of 2 px (an even y at every time): the easing is quantised to travel / 2 steps. 6 px: Math.round(inOut(p) * 3) / 3.
+  const step2 = (travel, ease) => { const n = Math.max(1, Math.round(travel / 2)); return (p) => Math.round(ease(p) * n) / n; };
+  const SETTLE2 = () => ({ from: { x: 0, y: -6, zoom: 1 }, to: { x: 0, y: 0, zoom: 1 }, ease: step2(6, B.Motion.ease.inOut), even: true });
   const marksLayer = (day, r) => ({ id: 'marks', depth: 0, draw(c) { finePass(c, day, r, 'establish'); tell(c, day); } });
   // The desk with the day's paper (memo and footnote). The establish slides the paper up 16 art units onto the desk; the hold has it at rest.
   // Both blink the TRADE monitor's standby LED (a 5x5 flat-bezel cover over the 3x3 light while it is off, nothing while it is on).
@@ -1193,8 +1197,8 @@
     if (p === 'street') return Object.assign({ camera: SETTLE(), layers: placeSandwich(day, r, title, detail, { id: 'road', noSpeckle: true, paint: roadPaint(day), refresh: monitorRefresh(day, r, title, detail) }) }, cue('street'));
     if (detail) return { camera: SETTLE(), layers: monitorLayers(day, r, title, true) };
     if (p === 'kitchen' || p === 'breakroom' || p === 'rideshare') return { camera: SETTLE(), cues: [{ at: 0.30, sfx: p === 'rideshare' ? 'street' : 'kitchen' }], layers: monitorLayers(day, r, title, false) };
-    if (p === 'lobby' || p === 'elevator') return { camera: SETTLE(), cues: [{ at: 0.35, sfx: 'elevator' }], layers: elevatorPlaceLayers(day, r, title) };
-    if (p === 'apartment') return { camera: SETTLE(), layers: tvRoomLayers(day, r, title, 0.5, [0.45, 0.95]) };
+    if (p === 'lobby' || p === 'elevator') return { camera: SETTLE2(), cues: [{ at: 0.35, sfx: 'elevator' }], layers: elevatorPlaceLayers(day, r, title) };
+    if (p === 'apartment') return { camera: SETTLE2(), layers: tvRoomLayers(day, r, title, 0.5, [0.45, 0.95]) };
     return null;
   }
 
@@ -1482,13 +1486,13 @@
       else if (docDetail && /:detail$/.test(b.id)) beats[i] = B.Motion.layered(Object.assign({}, b, docLayers(day, r, b.dur)));
       else if (insertEstablish && /:establish$/.test(b.id)) {
         const doc = r.doc, L = doc === 'memo' || doc === 'footnote' ? deskLayers(day, r, title, false, b.dur) : doc === 'voicemail' ? voicemailRoomLayers(day, r, title) : doc === 'post' ? postRoomLayers(day, r, title) : doc === 'chart' ? chartRoomLayers(day, r, title) : doc === 'rating' ? tvRoomLayers(day, r, title, 0.7, [0.45, 0.95]) : doc === 'ticket' ? floorLayers(day, r, title, { phase: 'establish', zoom: FLOOR_ZOOM(day, r, false), dur: b.dur }) : doc === 'vote' ? voteRoomLayers(day, r) : null;
-        if (L) beats[i] = B.Motion.layered(Object.assign({}, b, { camera: doc === 'post' ? B.MotionKit.rise(56, b.dur, 0.30, 0.90) : doc === 'voicemail' || doc === 'chart' || doc === 'rating' || doc === 'ticket' || doc === 'vote' ? SETTLE() : null, layers: L }, doc === 'ticket' ? { cues: [{ at: 0.30, sfx: 'office' }] } : {}));
+        if (L) beats[i] = B.Motion.layered(Object.assign({}, b, { camera: doc === 'post' ? B.MotionKit.rise(56, b.dur, 0.30, 0.90) : doc === 'voicemail' || doc === 'rating' || doc === 'ticket' ? SETTLE2() : doc === 'chart' || doc === 'vote' ? SETTLE() : null, layers: L }, doc === 'ticket' ? { cues: [{ at: 0.30, sfx: 'office' }] } : {}));
       } else if (insertEstablish && /:hold$/.test(b.id) && (r.doc === 'memo' || r.doc === 'footnote')) beats[i] = B.Motion.layered(Object.assign({}, b, { camera: null, layers: deskLayers(day, r, title, true, b.dur) }));
-      else if (r.shot === 'tv' && /:establish$/.test(b.id)) beats[i] = B.Motion.layered(Object.assign({}, b, { camera: SETTLE(), layers: tvRoomLayers(day, r, title, 0.7, [0.55, 1.15]) }));
+      else if (r.shot === 'tv' && /:establish$/.test(b.id)) beats[i] = B.Motion.layered(Object.assign({}, b, { camera: SETTLE2(), layers: tvRoomLayers(day, r, title, 0.7, [0.55, 1.15]) }));
       else if (r.shot === 'elevator' && /:(detail|hold)$/.test(b.id)) beats[i] = B.Motion.layered(Object.assign({}, b, { camera: null, layers: elevatorDoorsLayers(day, r, /:hold$/.test(b.id)) }));
       else if (r.shot === 'floor' && /:(establish|detail)$/.test(b.id)) {
         const det = /:detail$/.test(b.id);
-        beats[i] = B.Motion.layered(Object.assign({}, b, { camera: SETTLE(), layers: floorLayers(day, r, title, { phase: det ? 'detail' : 'establish', zoom: FLOOR_ZOOM(day, r, det), dur: b.dur }) }));
+        beats[i] = B.Motion.layered(Object.assign({}, b, { camera: SETTLE2(), layers: floorLayers(day, r, title, { phase: det ? 'detail' : 'establish', zoom: FLOOR_ZOOM(day, r, det), dur: b.dur }) }));
       }
       else if (r.shot === 'dark' && (/:(establish|hold)$/.test(b.id) || (/:detail$/.test(b.id) && !r.arg))) {
         const ph = /:hold$/.test(b.id) ? 'hold' : /:detail$/.test(b.id) ? 'detail' : 'establish';
@@ -1498,7 +1502,7 @@
       else if (r.shot === 'racks' && /:establish$/.test(b.id)) beats[i] = B.Motion.layered(Object.assign({}, b, { camera: null, layers: racksLayers(day, r, title) }));
       else if (r.shot === 'tableau') {
         const ph = /:establish$/.test(b.id) ? 'establish' : /:detail$/.test(b.id) ? 'detail' : 'hold', L = tableauLayers(day, r, ph, b.dur);
-        if (L) beats[i] = B.Motion.layered(Object.assign({}, b, { camera: ph === 'establish' ? SETTLE() : null, layers: L }, TAB_CUES[day] && ph === 'establish' ? { cues: TAB_CUES[day] } : {}));
+        if (L) beats[i] = B.Motion.layered(Object.assign({}, b, { camera: ph === 'establish' ? SETTLE2() : null, layers: L }, TAB_CUES[day] && ph === 'establish' ? { cues: TAB_CUES[day] } : {}));
         // Kavro Strait: the hold shows the ships where the detail left them (p = 1)
         else if (r.arg === 3 && ph === 'hold') beats[i] = Object.assign({}, b, { draw: (c) => { at2x(c, (cc) => tableau(cc, 3, 0, { p: 1 }), day); c.save(); c.globalAlpha = 0.18; X.rect(c, 0, 0, V.w, V.h, P.ink); c.restore(); } });
       }
@@ -1632,7 +1636,7 @@
     } else if (beats[0]) {
       beats[0] = B.Motion.layered(Object.assign({}, beats[0], {
         dur: BELL_DUR,
-        camera: { from: { x: 0, y: -8, zoom: 1 }, to: { x: 0, y: 0, zoom: 1 }, ease: B.Motion.ease.out },
+        camera: { from: { x: 0, y: -8, zoom: 1 }, to: { x: 0, y: 0, zoom: 1 }, ease: step2(8, B.Motion.ease.out), even: true },
         layers: bellLayers(day, day >= 25)
       }));
     }
