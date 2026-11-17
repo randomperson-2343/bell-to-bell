@@ -1394,6 +1394,15 @@
       const d = est ? (i, t) => (t < 0.40 + 0.07 * i ? 2 : 0) : (i, t) => (t >= 0.40 + 0.07 * i && t < 0.68 + 0.07 * i ? -2 : 0);
       paint = (g, t) => SH.tableauMover(g, 9, 0.6, { shift: (i) => [d(i, t), 0] });
     }
+    else if (n === 11 && est) {
+      // six HOLD stamps land carton by carton: the bar and the word are hidden under the plate's flat desk2 until the stamp's third frame (nothing is drawn after the last, 1.18 s)
+      paint = (g, t) => {
+        G.marks.forEach((m, i) => {
+          const ph = K.stamp(g, m.x, m.y, m.w, m.h, t, { at: 0.55 + 0.11 * i, col: P.crimson, frame: 0.04, grow: [16, 6], style: 'none' });
+          if (ph < 3) X.rect(g, m.x, m.y, m.w, m.h, P.desk2);
+        });
+      };
+    }
     if (!paint) return null;
     return [
       {

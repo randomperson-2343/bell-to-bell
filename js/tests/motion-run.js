@@ -2202,6 +2202,25 @@ async function run() {
     assert(bx[2] >= 164 && bx[3] <= 246 && bx[3] - bx[2] >= 40, `bank queue establish: the figures' box ${bx} is not the queue (y 182-240)`);
   }
 
+  // 5. Records (session 25, establish only): HOLD stamps land on six cartons, left to right, the last at 1.10 s
+  {
+    const E = await beat7(25, 'establish', { layers: 'art,glass,marks', depths: '1,1,0', cam: '-6>0', sfx: 'apartment', dur: 1.7, cues: '1.1:click' });
+    const D = { o: mkS(25) }; D.i = await newsIdx(D.o, ':detail$');
+    assert((await info('news', D.o, D.i)).layers === '' && (await info('news', D.o, D.i)).n === 2, 'records: the detail stays flat and there is no hold');
+    // the cover is drawn on the plate's flat desk2 face: before its stamp the whole carton mark area is exactly desk2 (the art layer, bar and word hidden)
+    for (let i = 0; i < 6; i++) {
+      const r = [2 * (16 + 50 * i + 6), 2 * (85 + 7), 60, 32], a = 0.55 + 0.11 * i;
+      assert(await cc(E.o, E.i, 'art', a - 0.02, r, 'desk2', false) === 60 * 32, `records: carton ${i} is not blank on the plate's desk2 before its stamp`);
+      assert(await cc(E.o, E.i, 'art', a + 0.06, r, 'desk2', false) === 60 * 32 && await cc(E.o, E.i, 'art', a + 0.10, r, 'desk2', false) < 60 * 32 && await cc(E.o, E.i, 'art', a + 0.10, r, 'desk2', true) === 0, `records: carton ${i} is not revealed at its third frame ${(a + 0.08).toFixed(2)} s`);
+      const ring = (t) => cc(E.o, E.i, 'art', t, [r[0] - 20, r[1] - 12, 100, 56], 'crimson');
+      assert(await ring(a - 0.01) === 0 && await ring(a + 0.01) > 0 && await ring(a + 0.05) > 0 && await ring(a + 0.09) === 0, `records: carton ${i} stamp frames are not 0.04 s apart`);
+    }
+    const o2 = (t) => any6(E.o, E.i, 'art', t);
+    assert(await o2(0.3) === 6 * 60 * 32 && await o2(1.17) > 0 && await o2(1.19) === 0 && await o2(1.69) === 0, 'records: covers and stamps do not end at 1.18 s');
+    const f = await box7(E.o, E.i, 0.57, [0, 0, 640, 360]);
+    assert(f[3] >= 162 && f[2] <= 226 + 12, `records: stamp box ${f} is not the cartons' row (y 162-226)`);
+  }
+
   // reduced effects: every reworked beat is one still
   await page.evaluate(() => BTB.Settings.set('effects', 'reduced'));
   for (const o of [nOpts(8), nOpts(32), nOpts(1), nOpts(4), nOpts(2), nOpts(3), nOpts(5), nOpts(11), nOpts(36), nOpts(15), nOpts(10)]) {
@@ -2277,6 +2296,7 @@ async function run() {
     // batch 6: the story tableaux
     { scene: 'news', opts: { day: 6, brief: { title: 'KAVRO STRAIT', feed: [] } } },
     { scene: 'news', opts: { day: 9, brief: { title: 'THE GRID', feed: [] } } },
+    { scene: 'news', opts: { day: 25, brief: { title: 'PRESERVE ALL RECORDS', feed: [] } } },
     { scene: 'news', opts: { day: 20, brief: { title: 'RUN ON RIDGEWAY TRUST', feed: [] } } },
     { scene: 'news', opts: { day: 17, brief: { title: 'FOUR FUNDS', feed: [] } } },
     { scene: 'close', opts: { report: { day: 3, pnl: 1200, quotaMet: true, quota: 900 } } },
