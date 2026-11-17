@@ -378,14 +378,16 @@
     const dead = board(day).act - 1, st = S && S.m ? S.m.stability : 100, slip = stackSlip(st), windows = [], monitors = [];
     for (let i = 0; i < 6; i++) { const x = 18 + i * 104; windows.push({ x, y: 16, w: 90, h: 44, sky: { x: x + 2, y: 18, w: 86, h: 40 } }); }
     for (let i = 0; i < 5; i++) { const x = 24 + i * 124; monitors.push({ i, x, y: 78, w: 104, h: 126, off: i >= 5 - dead, screen: { x: x + 10, y: 92, w: 84, h: 78 }, bar: { x: x + 20, y: 176, w: 64, h: 3 } }); }
-    return { dead, live: 5 - dead, st, slip, windows, monitors, deskChart: { x: 540, y: 218, w: 86, h: 50 } };
+    // the red HOLD FILES stack on your desk appears once the heat is on
+    const f = (S && S.f) || {}, files = !!(S && S.m && (S.m.heat >= 50 || f.insiderTraded || f.raid));
+    return { dead, live: 5 - dead, st, slip, files, windows, monitors, deskChart: { x: 540, y: 218, w: 86, h: 50 } };
   }
   function officeFrame(ctx, day, detail, down, S, o) {
     o = o || {};
     const part = o.part, wall = !part || part === 'wall', mons = !part || part === 'monitors', desk = !part || part === 'desk';
     const sb=board(day), c=colors(sb.act), s=season(day);
     if (down == null) down = marketDown(day - 1);
-    const G=officeGeom(day,S), st=G.st, slip=G.slip, f=(S&&S.f)||{};
+    const G=officeGeom(day,S), st=G.st, slip=G.slip;
     const sheet = (i, sl) => {const x=58+i*4+(i>1?sl:0),y=250-i*9;X.rect(ctx,x+4,y+4,110,16,P.deskD);cel3(ctx,x,y,110,16,P.bone,P.white,P.plasticD);X.rect(ctx,x+6,y+5,40,2,i>1&&st<60?P.crimsonD:P.sky);X.rect(ctx,x+6,y+10,80,1,P.grey);};
     if (part === 'top') {
       const sl = o.slipNow == null ? slip : o.slipNow;
@@ -413,11 +415,13 @@
         for(let i=0;i<(top?4:2);i++) sheet(i, slip);
         if(top) text(ctx,'CASCADE',64,216,c.signal);
         if(st<40){X.rect(ctx,176+slip,262,8,4,P.crimson);X.rect(ctx,188+slip,266,5,3,P.crimsonD);}
-        if(S&&S.m&&(S.m.heat>=50||f.insiderTraded||f.raid)){cel3(ctx,470,236,56,34,P.crimsonD,P.crimson,P.ink);text(ctx,'HOLD',498,246,P.white,'center');text(ctx,'FILES',498,256,P.bone,'center');}
+        if(G.files){cel3(ctx,470,236,56,34,P.crimsonD,P.crimson,P.ink);text(ctx,'HOLD',498,246,P.white,'center');text(ctx,'FILES',498,256,P.bone,'center');}
         const dc=G.deskChart;chart(ctx,dc.x,dc.y,dc.w,dc.h,day,down,o.deskChart==='screen'?'screen':undefined);
       }
     }
   }
+  // Whether the market fell on the day a report closes: the index change when it has one, else the P&L.
+  const closeDown = (report) => (report.indexPct != null ? report.indexPct : (report.pnl||0)) < 0;
   // The report card and its verdict (a real quota decided it) as numbers: the box, the lines, the nine tally dashes and the stamp's final rect.
   function closeGeom(report) {
     const pnl = report.pnl || 0, met = !!report.quotaMet, verdict = report.quota > 0;
@@ -439,7 +443,7 @@
     o = o || {};
     const part = o.part, G = closeGeom(report), b = G.box;
     if (!part || part === 'office') {
-      officeFrame(ctx, report.day||0, true, (report.indexPct != null ? report.indexPct : (report.pnl||0)) < 0); ctx.save(); ctx.globalAlpha=CLOSE_DIM;X.rect(ctx,0,0,V.w,V.h,P.ink);ctx.restore();
+      officeFrame(ctx, report.day||0, true, closeDown(report)); ctx.save(); ctx.globalAlpha=CLOSE_DIM;X.rect(ctx,0,0,V.w,V.h,P.ink);ctx.restore();
     }
     if (part === 'office') return;
     X.box(ctx,b.x,b.y,b.w,b.h);
@@ -544,7 +548,7 @@
   B.Rhythm = {
     view:V, endingIds:ENDING_IDS,
     // Drawing helpers for js/art/storyboard.js.
-    placeFrame, monitorGeom, phoneFrame, phoneGeom, lockMinute, stackSlip, CLOSE_DIM, officeFrame, officeGeom, closeFrame, closeGeom, sqwakFrame, sqwakGeom, sqwakStats, weekendFrame, skyline, skylineWindows, season, sky, weather, text, colors, clean, chart, chartSeries, person, marketDown, beat,
+    placeFrame, monitorGeom, phoneFrame, phoneGeom, lockMinute, stackSlip, CLOSE_DIM, officeFrame, officeGeom, closeFrame, closeGeom, closeDown, sqwakFrame, sqwakGeom, sqwakStats, weekendFrame, skyline, skylineWindows, season, sky, weather, text, colors, clean, chart, chartSeries, person, marketDown, beat,
     phoneRowCount(feed){return Math.min(4,(feed||[]).length);},
     storyboard:board,
     frameMap(day){const sb=this.storyboard(day);return [

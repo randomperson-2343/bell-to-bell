@@ -1652,9 +1652,11 @@
   function closeLayers(r, rest) {
     const K = B.MotionKit, M = B.Motion, G = R.closeGeom(r), O = R.officeGeom(r.day || 0), S = G.stamp;
     const verdictCol = G.met ? P.jade : P.crimson, dim = R.CLOSE_DIM;
+    // Cache keys, shared by the report and the hold. office: the floor is a function of the day and whether the market fell (R.closeDown).
+    // card: the box, the label (G.label, G.met), the quota and the date; the P&L, the dashes and the stamp are animated, not in the picture.
     return [
       {
-        id: 'office', depth: 0.5, draw(c) { R.closeFrame(c, r, true, { part: 'office' }); },
+        id: 'office', key: `close:office:${r.day || 0}:${R.closeDown(r) ? 1 : 0}`, depth: 0.5, draw(c) { R.closeFrame(c, r, true, { part: 'office' }); },
         animate(c, v, t) {
           if (!rest) return;
           const dc = O.deskChart;
@@ -1668,7 +1670,7 @@
         }
       },
       {
-        id: 'card', depth: 1, draw(c) { R.closeFrame(c, r, true, { part: 'card', noPnl: true, noDashes: true }); },
+        id: 'card', key: `close:card:${JSON.stringify([G.label, G.met, r.quota || 0, r.date || ''])}`, depth: 1, draw(c) { R.closeFrame(c, r, true, { part: 'card', noPnl: true, noDashes: true }); },
         animate(c, v, t) {
           const at = rest ? -1 : 0.30, atStamp = rest ? -1 : 1.26;
           K.tally(c, G.pnlAt.x, G.pnlAt.y, t, { from: countStart(G.pnl), to: G.pnl, at, dur: rest ? 0.01 : 0.60, ease: M.ease.out, fps: 15, fmt: (x) => B.fmt.money(x, true), col: G.good ? P.jade : P.crimson, align: 'center', anchor: 'final' });
@@ -1693,7 +1695,8 @@
     const K = B.MotionKit, M = B.Motion, G = R.sqwakGeom(full), F = G.flag, b = beat.post, dur = beat.dur, period = 1.0; // the kit's standby rate (bible C5)
     const stats = R.sqwakStats(b).map(String);
     return [
-      { id: 'city', depth: full ? 0 : 0.25, draw(c) { R.sqwakFrame(c, sb, b, full, { part: 'city' }); } },
+      // key: the skyline is a function of the day alone (its act, seed and lights); the read and the insert draw the same city
+      { id: 'city', key: `sqwak:city:${sb.day}`, depth: full ? 0 : 0.25, draw(c) { R.sqwakFrame(c, sb, b, full, { part: 'city' }); } },
       {
         id: 'phone', depth: 1, draw(c) { R.sqwakFrame(c, sb, b, full, { part: 'phone', noFlag: true, noStats: true }); },
         animate(c, v, t) {
@@ -1831,16 +1834,22 @@
     const G = R.officeGeom(day, S), dc = G.deskChart, slip = G.slip;
     const t0 = wide ? 0 : hold ? 3.25 : 1.45, tc0 = hold ? 1.8 : 0;
     const x0 = dc.x + 6, Y = R.chartSeries(dc.y, dc.h, day, down, 25).map(Math.floor), col = down ? P.crimson : P.jade;
+    // Cache keys (see Cinematic.layerKey): the three beats of one morning draw these pictures identically, so they are built once.
+    // wall: the putty, the six windows and their skylines, season and sky are all functions of the day (no story state, no market).
+    // monitors: the five screens: which are dead (the act, from the day), and the charts (the day and whether the market fell).
+    // desk: the desk and your desk (detail, no top sheets, chart as a screen): the chart (day, market), the stack's slip and the red
+    // stack (stability), the HOLD FILES (the heat or the flags: G.files). The wide beat's desk has no detail and is its own picture.
+    const dn = down ? 1 : 0;
     const layers = [
-      { id: 'wall', depth: 0.5, draw(c) { R.officeFrame(c, day, false, down, S, { part: 'wall' }); }, animate(c, v, t) { officeWeather(c, day, t, t0); } },
-      { id: 'monitors', depth: 0.75, draw(c) { R.officeFrame(c, day, false, down, S, { part: 'monitors' }); } }
+      { id: 'wall', key: `office:wall:${day}`, depth: 0.5, draw(c) { R.officeFrame(c, day, false, down, S, { part: 'wall' }); }, animate(c, v, t) { officeWeather(c, day, t, t0); } },
+      { id: 'monitors', key: `office:monitors:${day}:${dn}`, depth: 0.75, draw(c) { R.officeFrame(c, day, false, down, S, { part: 'monitors' }); } }
     ];
     if (wide) {
       layers[1].animate = (c, v, t) => { G.monitors.forEach((m) => { if (!m.off) K.crt(c, m.screen.x, m.screen.y, m.screen.w, m.screen.h, t, { mode: 'roll', at: 0.35 + 0.12 * m.i, dur: 0.36, band: 12 }); }); };
       layers.push({ id: 'desk', depth: 1, draw(c) { R.officeFrame(c, day, false, down, S, { part: 'desk' }); } });
     } else {
       layers.push({
-        id: 'desk', depth: 1,
+        id: 'desk', key: `office:desk:${day}:${dn}:${G.st}:${G.files ? 1 : 0}`, depth: 1,
         draw(c) { R.officeFrame(c, day, true, down, S, { part: 'desk', noTopSheets: true, deskChart: 'screen' }); },
         animate(c, v, t) {
           const tc = t + tc0, s = Math.max(0, Math.min(10, Math.floor((tc - 0.25) / 0.25) + 1));

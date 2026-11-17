@@ -5,9 +5,11 @@
   const X = B.Pixel;
   const P = B.Pal;
 
+  const PREPARE_WINDOW = 0.5; // seconds before a beat ends that the next one's pictures start to be built
+
   const C = {
     el: null, canvas: null, running: false, beats: null, i: 0, t: 0,
-    done: null, raf: null, onKey: null, opts: null, scene: '',
+    done: null, raf: null, preparing: false, onKey: null, opts: null, scene: '',
     frameCache: new Map(), cacheBytes: 0, chain: null, skippingChain: false, short: false, fired: null, warned: new Set(),
 
     ensure() {
@@ -46,21 +48,29 @@
 
     clearCache() { this.frameCache.clear(); this.cacheBytes = 0; },
 
-    // Store a canvas and evict oldest-first while over budget, never touching the
-    // entries of the beat being drawn, the running beat or the one before it.
+    // The cache prefixes one beat owns: its own entries (`id|...`) and the shared entries of its keyed layers (`key|...`).
+    protect(beat, out) {
+      if (!beat) return;
+      out.push(beat.id + '|');
+      if (beat.layers) for (const layer of beat.layers) if (layer.key) out.push(layer.key + '|');
+    },
+
+    // Store a canvas and evict oldest-first while over budget, never touching the entries of the beat being drawn, the running
+    // beat, the one before it, or, while the next beat is being prepared, the next one.
     remember(key, canvas, beat) {
       this.frameCache.set(key, canvas);
       this.cacheBytes += canvas.width * canvas.height * 4;
       if (this.cacheBytes <= B.Motion.CACHE_BYTES) return;
-      const keep = [beat.id];
+      const keep = [];
+      this.protect(beat, keep);
       if (this.running && this.beats) {
-        const cur = this.beats[this.i], prev = this.beats[this.i - 1];
-        if (cur) keep.push(cur.id);
-        if (prev) keep.push(prev.id);
+        this.protect(this.beats[this.i], keep);
+        this.protect(this.beats[this.i - 1], keep);
+        if (this.preparing) this.protect(this.beats[this.i + 1], keep);
       }
       for (const [k, c] of this.frameCache) {
         if (this.cacheBytes <= B.Motion.CACHE_BYTES) break;
-        if (keep.some((id) => k.startsWith(id + '|'))) continue;
+        if (keep.some((pre) => k.startsWith(pre))) continue;
         this.frameCache.delete(k);
         this.cacheBytes -= c.width * c.height * 4;
       }
@@ -115,7 +125,7 @@
         this.last = ts;
         if (this.paused) { this.raf = requestAnimationFrame(step); return; }
         this.t += dt;
-        const beat = this.beats[this.i];
+        const beat = this.beats[this.i], at = this.i;
         this.fireCues(beat, this.t >= beat.dur);
         if (this.t >= beat.dur) {
           this.i++;
@@ -124,6 +134,7 @@
           this.playBeat();
         }
         this.draw();
+        if (this.i === at && this.t >= beat.dur - PREPARE_WINDOW) this.prepareNext(); else this.preparing = false;
         this.raf = requestAnimationFrame(step);
       };
       this.draw();
@@ -143,10 +154,14 @@
       return canvas;
     },
 
+    // A layer's cache key. A layer with a `key` is cached under `key|WxH`, shared by every beat that names the same key (the picture must be
+    // identical for all of them: the key lists everything it depends on); otherwise it belongs to its beat.
+    layerKey(beat, layer, w, h) { return `${layer.key ? layer.key : beat.id + '|' + layer.id}|${w}x${h}`; },
+
     // One layer of a layered beat, drawn once into a transparent canvas of its own size.
     layerCanvas(beat, layer, view) {
       const w = layer.w || view.w, h = layer.h || view.h;
-      const key = `${beat.id}|${layer.id}|${w}x${h}`;
+      const key = this.layerKey(beat, layer, w, h);
       if (this.frameCache.has(key)) return this.frameCache.get(key);
       const canvas = document.createElement('canvas');
       canvas.width = w; canvas.height = h;
@@ -156,6 +171,22 @@
       catch (e) { this.warnOnce(beat, 'layer ' + layer.id, e); }
       this.remember(key, canvas, beat);
       return canvas;
+    },
+
+    // Get the next beat's pictures ready during the last half second of this one: at most one layer (or the one cached still) per call,
+    // so the next beat's first frame, inside its dissolve, finds them built. The next beat of the same scene only: a later scene is another play().
+    // Mirrors paint(): live layers when the shot moves, the cached still otherwise.
+    prepareNext() {
+      const next = this.beats && this.beats[this.i + 1];
+      if (!next) { this.preparing = false; return; }
+      this.preparing = true;
+      const view = next.view || B.Scenes.V;
+      if (next.layers && B.Motion.enabled() && !this.short) {
+        for (const layer of next.layers) {
+          const w = layer.w || view.w, h = layer.h || view.h;
+          if (!this.frameCache.has(this.layerKey(next, layer, w, h))) { this.layerCanvas(next, layer, view); return; }
+        }
+      } else if ((next.cache !== false || next.layers) && !this.frameCache.has(`${next.id}|${view.w}x${view.h}`)) this.cachedFrame(next, view);
     },
 
     // The shot picture only (camera applied); letterbox and caption are drawn by draw() afterwards.
@@ -304,6 +335,7 @@
       this.onKey = null;
       this.releasePictures();
       this.fired = null;
+      this.preparing = false;
       this.warned.clear();
       if (!this.chain) this.clearCache();
       if (this.el) this.el.hidden = true;

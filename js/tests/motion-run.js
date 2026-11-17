@@ -1967,6 +1967,80 @@ async function run() {
   assert(budget.afterChain === 0, 'cache not cleared at the end of the chain');
   assert(budget.held > 0 && budget.unchained === 0, `unchained finish did not clear the cache: ${JSON.stringify([budget.held, budget.unchained])}`);
 
+  // ---- shared layer keys and building the next beat ahead ----
+  // a keyed layer is built once for every beat that names its key (the three beats of an office morning draw the wall and the monitors once)
+  const shared = await page.evaluate(() => {
+    const C = BTB.Cinematic, R = BTB.Rhythm, orig = R.officeFrame, parts = {}, out = {};
+    R.officeFrame = function (c, d, det, dn, S, o) { const k = o && o.part || 'whole'; parts[k] = (parts[k] || 0) + 1; return orig.apply(this, arguments); };
+    if (C.running) C.finish(); C.endChain();
+    window.openBeat('office', { day: 3 });
+    for (let i = 0; i < C.beats.length; i++) C.seek(i, 0.5);
+    for (let i = 0; i < C.beats.length; i++) C.seek(i, 0.9);
+    out.beats = C.beats.length; out.parts = Object.assign({}, parts); out.keys = [...C.frameCache.keys()].filter((k) => /^office:(wall|monitors|desk):/.test(k)).length;
+    C.finish(); C.endChain(); R.officeFrame = orig;
+    return out;
+  });
+  assert(shared.beats === 3 && shared.parts.wall === 1 && shared.parts.monitors === 1 && shared.parts.desk === 2, `office layers are not shared across the morning's beats: ${JSON.stringify(shared)}`);
+  // a key lists everything its picture depends on: across days, story states and reports, one key (with its size) is never two pictures
+  const keyed = await page.evaluate(() => {
+    const seen = new Map(), bad = [], hash = (cv) => { const d = cv.getContext('2d').getImageData(0, 0, cv.width, cv.height).data; let x = 2166136261; for (let i = 0; i < d.length; i++) { x ^= d[i]; x = Math.imul(x, 16777619); } return x >>> 0; };
+    let n = 0, hits = 0;
+    const check = (scene, o) => {
+      BTB.Scenes[scene](o).forEach((b) => (b.layers || []).forEach((L) => {
+        if (!L.key) return;
+        const w = L.w || 640, h = L.h || 360, k = `${L.key}|${w}x${h}`, cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+        L.draw(cv.getContext('2d'), { w, h }, o); const x = hash(cv); n++;
+        if (seen.has(k)) { hits++; if (seen.get(k) !== x) bad.push(`${k} (${b.id}/${L.id})`); } else seen.set(k, x);
+      }));
+    };
+    const stories = [undefined, { m: { stability: 70, heat: 20 }, f: {} }, { m: { stability: 30, heat: 60 }, f: {} }, { m: { stability: 45, heat: 10 }, f: { raid: true } }, { m: { stability: 39, heat: 10 }, f: { insiderTraded: true } }];
+    for (let d = 0; d < 46; d += 3) {
+      for (const S of stories) check('office', S ? { day: d, game: { mode: { S } } } : { day: d });
+      for (const pnl of [-123456, 1234]) for (const quota of [0, 1000]) for (const idx of [undefined, -2]) for (const date of ['', 'FRI OCT 10']) check('close', { report: { day: d, pnl, quota, quotaMet: pnl > 0, indexPct: idx, date } });
+    }
+    return { n, hits, keys: seen.size, bad: bad.slice(0, 5) };
+  });
+  assert(keyed.n > 500 && keyed.hits > 200 && !keyed.bad.length, `a layer key covers two different pictures: ${JSON.stringify(keyed)}`);
+  // pre-drawing: during the last 0.5 s the next beat's layers are built, at most one per frame; the first frame of the next beat builds nothing;
+  // and they survive an over-budget cache while they wait
+  await page.evaluate(() => {
+    const P = BTB.Pal;
+    window.__pre = { draws: [], builds: [] };
+    const lay = (tag, n) => Array.from({ length: n }, (_, k) => ({ id: tag + k, depth: k, w: 800, h: 450, draw(c) { window.__pre.draws.push({ tag: tag + k, beat: BTB.Cinematic.i, t: BTB.Cinematic.t }); c.fillStyle = P.slate; c.fillRect(0, 0, 800, 450); } }));
+    BTB.Scenes.__pre = (o) => [
+      BTB.Motion.layered({ id: 'qa:pre' + ((o && o.n) || '') + ':0', dur: 1.3, layers: lay('a', 1) }),
+      BTB.Motion.layered({ id: 'qa:pre' + ((o && o.n) || '') + ':1', dur: 1.0, layers: lay('b', 3) }),
+      BTB.Motion.layered({ id: 'qa:pre' + ((o && o.n) || '') + ':2', dur: 0.6, layers: lay('c', 2) })
+    ];
+  });
+  const pre = await page.evaluate(async () => {
+    const C = BTB.Cinematic, M = BTB.Motion, out = {}, orig = C.prepareNext, keep = M.CACHE_BYTES;
+    if (C.running) C.finish();
+    out.calls = [];
+    C.prepareNext = function () { const n = window.__pre.draws.length; const r = orig.apply(this, arguments); out.calls.push({ beat: this.i, t: this.t, built: window.__pre.draws.length - n }); return r; };
+    M.CACHE_BYTES = 4 * 1024 * 1024; // three 800x450 layers are 4.3 MB: over budget
+    C.startChain('pre');
+    await new Promise((resolve) => C.play('__pre', {}, resolve));
+    C.prepareNext = orig; M.CACHE_BYTES = keep;
+    // the first frame of a beat found its layers built: no layer draw happened while that beat was current and before 0.5 s from its end
+    out.draws = window.__pre.draws.slice(); out.keysAfter = C.frameCache.size;
+    C.endChain();
+    return out;
+  });
+  const when = (tag) => pre.draws.filter((d) => d.tag.startsWith(tag)).map((d) => ({ beat: d.beat, t: d.t }));
+  assert(pre.draws.length === 6, `pre-draw: each of the six layers is drawn exactly once: ${JSON.stringify(pre.draws.map((d) => d.tag))}`);
+  assert(when('b').every((d) => d.beat === 0 && d.t >= 1.3 - 0.5 - 0.1) && when('c').every((d) => d.beat === 1 && d.t >= 1.0 - 0.5 - 0.1), `pre-draw: next beat's layers not built in the last half second of the beat before: ${JSON.stringify([when('b'), when('c')])}`);
+  assert(pre.calls.length > 0 && pre.calls.every((c) => c.built <= 1), `pre-draw: more than one layer in a frame: ${JSON.stringify(pre.calls)}`);
+  assert(pre.calls.filter((c) => c.beat === 2).every((c) => c.built === 0), 'pre-draw: the last beat prepared something past the scene');
+  // two scenes in a chain: the first scene's last beat prepares nothing for the second
+  const nextScene = await page.evaluate(async () => {
+    const C = BTB.Cinematic; if (C.running) C.finish(); window.__pre.draws.length = 0;
+    C.startChain('pre2'); let atDone = -1;
+    await new Promise((resolve) => C.play('__pre', {}, () => { atDone = window.__pre.draws.length; C.play('__pre', { n: 'two' }, resolve); }));
+    C.endChain();
+    return { atDone, total: window.__pre.draws.length };
+  });
+  assert(nextScene.atDone === 6 && nextScene.total === 12, `pre-draw: scene one's end did not hold at its own six layers: ${JSON.stringify(nextScene)}`);
   // failures warn once with the beat id; a throwing layer leaves the rest of the shot
   const before = warnings.length;
   const thr = await page.evaluate(() => {
@@ -3926,7 +4000,8 @@ async function run() {
     { scene: 'office', opts: { day: 20, game: { mode: { S: { m: { stability: 70, heat: 20 }, f: {} } } } } },
     { scene: 'office', opts: { day: 40, game: { mode: { S: { m: { stability: 30, heat: 60 }, f: {} } } } } }
   ];
-  const PERF_AVG_MS = 8, PERF_MAX_MS = 33, PERF_ATTEMPTS = 3, PERF_TIMEOUT_MS = 20000;
+  // PERF_FIRST_MS: the first frame of every beat after a scene's first (built ahead during the beat before, inside no dissolve's budget)
+  const PERF_AVG_MS = 8, PERF_MAX_MS = 33, PERF_FIRST_MS = 50, PERF_ATTEMPTS = 3, PERF_TIMEOUT_MS = 20000;
   const pct = (sorted, q) => sorted.length ? sorted[Math.min(sorted.length - 1, Math.ceil(q * sorted.length) - 1)] : 0;
   const round = (x) => Math.round(x * 100) / 100;
 
@@ -3950,8 +4025,10 @@ async function run() {
         timer = setTimeout(() => reject(new Error(`perf: scene '${scene}' did not finish within ${PERF_TIMEOUT_MS / 1000} s`)), PERF_TIMEOUT_MS);
       });
       const playing = pg.evaluate(([s, o]) => new Promise((resolve) => {
-        const C = BTB.Cinematic, orig = C.draw, out = [];
+        const C = BTB.Cinematic, orig = C.draw, origPrep = C.prepareNext, out = [], prep = [];
         let lastBeat = -1;
+        // building the next beat's pictures ahead (not inside draw): its slowest call is recorded, not limited
+        C.prepareNext = function () { const t0 = performance.now(); const r = origPrep.apply(this, arguments); prep.push(performance.now() - t0); return r; };
         C.draw = function () {
           const t0 = performance.now();
           const r = orig.apply(this, arguments);
@@ -3962,7 +4039,7 @@ async function run() {
         };
         if (C.running) C.finish();
         C.startChain('perf-qa');
-        C.play(s, o, () => { C.draw = orig; resolve(out); });
+        C.play(s, o, () => { C.draw = orig; C.prepareNext = origPrep; resolve({ frames: out, prepareMaxMs: Math.max(0, ...prep) }); });
       }), [scene, opts]);
       playing.catch(() => {}); // the context is closed on timeout; its late rejection is not news
       return await Promise.race([playing, timeout]);
@@ -3977,16 +4054,17 @@ async function run() {
     let result;
     const attempts = [];
     for (let attempt = 1; attempt <= PERF_ATTEMPTS; attempt++) {
-      const frames = await perfRun(scene, opts);
+      const { frames, prepareMaxMs } = await perfRun(scene, opts);
       const rest = frames.filter((f) => !f.first).map((f) => f.ms);
       const sorted = rest.slice().sort((a, b) => a - b);
       const avg = rest.length ? rest.reduce((a, b) => a + b, 0) / rest.length : 0;
       const max = sorted.length ? sorted[sorted.length - 1] : 0;
       const firstFrames = frames.filter((f) => f.first).map((f) => ({ beat: f.beat, ms: round(f.ms) }));
-      const pass = rest.length > 0 && avg < PERF_AVG_MS && max <= PERF_MAX_MS;
-      attempts.push({ avgMs: round(avg), p95Ms: round(pct(sorted, 0.95)), maxMs: round(max) });
+      const lateFirst = Math.max(0, ...firstFrames.filter((f) => f.beat > 0).map((f) => f.ms));
+      const pass = rest.length > 0 && avg < PERF_AVG_MS && max <= PERF_MAX_MS && lateFirst <= PERF_FIRST_MS;
+      attempts.push({ avgMs: round(avg), p95Ms: round(pct(sorted, 0.95)), maxMs: round(max), lateFirstMs: lateFirst });
       // Top level: the passing attempt, or the last one when none passed.
-      result = { scene, status: pass ? 'pass' : 'fail', framesMeasured: rest.length, framesTotal: frames.length, avgMs: round(avg), p95Ms: round(pct(sorted, 0.95)), maxMs: round(max), firstFrameMs: firstFrames, attempts };
+      result = { scene, status: pass ? 'pass' : 'fail', framesMeasured: rest.length, framesTotal: frames.length, avgMs: round(avg), p95Ms: round(pct(sorted, 0.95)), maxMs: round(max), lateFirstMs: lateFirst, prepareMaxMs: round(prepareMaxMs), firstFrameMs: firstFrames, attempts };
       if (pass) break;
     }
     return result;
@@ -3999,12 +4077,12 @@ async function run() {
       const r = await perf(scene, opts);
       results.push(r);
       r.day = opts.day != null ? opts.day : opts.report && opts.report.day; if (opts.id) r.id = opts.id; if (opts.pulled) r.pulled = true; const wal = opts.game && opts.game.mode.S.wallet; r.tier = wal ? wal.tier : undefined; r.pet = !!(wal && wal.pet);
-      console.log(`perf ${scene}${opts.id ? " " + opts.id : ""}${r.day != null ? ' day ' + r.day : ''}${r.tier != null ? ' tier ' + r.tier : ''}${r.pet ? ' pet' : ''}: ${r.status} attempts=${r.attempts.length} framesMeasured=${r.framesMeasured}/${r.framesTotal} avg=${r.avgMs} p95=${r.p95Ms} max=${r.maxMs} firstMax=${Math.max(0, ...r.firstFrameMs.map((f) => f.ms))}`);
+      console.log(`perf ${scene}${opts.id ? " " + opts.id : ""}${r.day != null ? ' day ' + r.day : ''}${r.tier != null ? ' tier ' + r.tier : ''}${r.pet ? ' pet' : ''}: ${r.status} attempts=${r.attempts.length} framesMeasured=${r.framesMeasured}/${r.framesTotal} avg=${r.avgMs} p95=${r.p95Ms} max=${r.maxMs} firstMax=${Math.max(0, ...r.firstFrameMs.map((f) => f.ms))} lateFirstMax=${r.lateFirstMs}`);
     }
     const outDir = path.join(root, 'qa', 'evidence', 'motion');
     fs.mkdirSync(outDir, { recursive: true });
     fs.writeFileSync(path.join(outDir, 'perf.json'), JSON.stringify({
-      viewport: '844x390', deviceScaleFactor: 3, cpuThrottle: 4, limits: { avgMs: PERF_AVG_MS, maxMs: PERF_MAX_MS }, scenes: results
+      viewport: '844x390', deviceScaleFactor: 3, cpuThrottle: 4, limits: { avgMs: PERF_AVG_MS, maxMs: PERF_MAX_MS, lateFirstMs: PERF_FIRST_MS }, scenes: results
     }, null, 2) + '\n');
     const failed = results.filter((r) => r.status !== 'pass');
     assert(!failed.length, `perf limits exceeded: ${failed.map((r) => r.scene).join(', ')}`);
