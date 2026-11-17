@@ -478,6 +478,8 @@
         animate(g, v, t) {
           const lean = t >= 0.50 && t < 1.10;
           blit(g, chair, 399 + (lean ? 3 : 0), 144 + (lean ? 6 : 0));
+          // the committee board's screen (the interior of its cel, 441,45,168x42) refreshes once at 0.40 s: the key movement; the LIVE light stays background life
+          e.K.crt(g, 441, 45, 168, 42, t, { mode: 'roll', at: 0.40, dur: 0.36 });
           if (t >= 0.30) K.blink(g, 504, 70, 37, 9, t, { on: null, off: P.ink, period: 0.5, duty: 0.6, end: e.dur });
         }
       }, grain]

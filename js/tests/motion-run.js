@@ -529,6 +529,10 @@ async function run() {
     const bx = (t) => D8('box', 'decision', o, 0, 'room', t, [380, 130, 70, 60]), live = (t) => D8('cnt', 'decision', o, 0, 'room', t, [504, 70, 37, 9], 'any');
     assert(JSON.stringify(await bx(0.3)) === '[399,422,144,164]' && JSON.stringify(await bx(0.8)) === '[402,425,150,170]' && JSON.stringify(await bx(1.2)) === '[399,422,144,164]' && JSON.stringify(await bx(1.5)) === '[399,422,144,164]', `${tag}: the chair does not lean 3 px right and 6 down in 0.50-1.10 s: ${await bx(0.3)} ${await bx(0.8)}`);
     assert(await live(0.1) === 0 && await live(1.15) === 37 * 9 && await live(1.25) === 0 && await live(1.5) === 0, `${tag}: the LIVE light does not blink from 0.30 and end lit`);
+    // A3: the committee board (441,45,168x42, the interior of its cel) rolls once, 0.40 to 0.76 s: the band stays inside the board, nothing before or after
+    const roll = (t) => D8('box', 'decision', o, 0, 'room', t, [441, 45, 168, 42]), boardCnt = (t) => D8('cnt', 'decision', o, 0, 'room', t, [441, 45, 168, 42], 'any');
+    assert(await boardCnt(0.38) === 0 && await boardCnt(0.78) === 0 && await boardCnt(1.25) === 0 && await boardCnt(0.5) > 168 * 3 && await boardCnt(0.7) > 168 * 3, `${tag}: the board does not roll once from 0.40 to 0.76 s`);
+    for (const t of [0.45, 0.55, 0.7]) { const b = await roll(t); assert(b[0] >= 441 && b[1] <= 608 && b[2] >= 45 && b[3] <= 86, `${tag}: the roll leaves the board at ${t}: ${b}`); }
     RECT8[tag] = await rect8(o, 0, 60, tag);
     const [i, a] = await beatN('news', nOpt8(11), ':establish$', { id: 'news:11:establish', dur: 1.7, layers: 'room,grain,marks', depths: '1,1,0', cam: '-6>0', cues: '' }, 'news 11 establish (hearing)');
     assert(await D8('cnt', 'news', nOpt8(11), i, 'room', 1.7, [504, 70, 37, 9], 'any') === 0 && await D8('cnt', 'news', nOpt8(11), i, 'room', 1.35, [504, 70, 37, 9], 'any') === 333, 'news 11: the LIVE light does not end lit at 1.7 s');
