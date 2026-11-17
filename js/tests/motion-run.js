@@ -337,6 +337,61 @@ async function run() {
     assert(await ink(0.2, L1) === 2016 && await D8('cnt', 'weekend', wo, k, 'room', 0.2, L1, 'ink') === 2016 && await D8('cnt', 'weekend', wo, k, 'room', 1.12, L3, 'ink') === 0, 'whip: the board does not fill');
     reduced8.push([wo, k, 'weekend']);
   }
+
+  // shot 5: the treasury (c5 day 21): the five windows light left to right from 0.40 s, 0.12 s apart; the colon ticks
+  {
+    const o = dopts('c5'), tag = 'treasury';
+    await beat8(o, 0, { id: 'decision:c5:4:room', dur: 1.5, layers: 'room,mid,front,grain', depths: '1,1,1,1', cam: '-6>0', cues: '' }, tag);
+    const W = (i) => [246 + 78 * i - 9, 21, 54 + 18, 150], amber = (t, i) => D8('cnt', 'decision', o, 0, 'room', t, W(i), 'amber');
+    const have = await Promise.all([0, 1, 2, 3, 4].map((i) => amber(1.4, i))); // on day 23 the art itself has no lit cell in window 2
+    assert(have.filter((n) => n > 0).length >= 4, `${tag}: windows with lit cells ${have}`);
+    assert(await amber(0.3, 0) === 0 && await amber(0.3, 4) === 0, `${tag}: a window is lit before 0.40 s`);
+    for (let i = 0; i < 5; i++) {
+      const at = 0.40 + 0.12 * i;
+      assert(await amber(at - 0.02, i) === 0 && (have[i] === 0 || await amber(at + 0.02, i) > 20) && await amber(at + 0.02, i) === have[i], `${tag}: window ${i} does not light at ${at.toFixed(2)} s`);
+      if (i < 4) assert(await amber(at + 0.02, i + 1) === 0, `${tag}: window ${i + 1} is lit before its turn`);
+    }
+    // every lit cell is a 3x3 of the windows, inside the 54x138 window rects, y 30-168
+    const lb = await D8('box', 'decision', o, 0, 'room', 1.4, [0, 0, 640, 360]);
+    assert(lb[2] >= 30 && lb[3] <= 168 && lb[0] >= 246 && lb[1] <= 246 + 78 * 4 + 54, `${tag}: the lit windows are outside the five windows ${lb}`);
+    // the lit cells equal the art's: the whole picture's final frame is pinned (dc:c5:*); the colon is exactly the colon's pixels on bone
+    const colon = (t) => D8('pic', 'decision', o, 0, 'room', t, false, [56, 60, 6, 12]);
+    assert(await D8('cnt', 'decision', o, 0, 'room', 0.8, [56, 60, 6, 12], 'bone') === 72 && await D8('cnt', 'decision', o, 0, 'room', 1.25, [56, 60, 6, 12], 'bone') === 0 && await D8('cnt', 'decision', o, 0, 'room', 1.5, [56, 60, 6, 12], 'bone') === 0, `${tag}: the colon cover is not the 6x12 on bone, ending lit`);
+    // the cover hides the colon and nothing else: cached clock face with and without it differ only inside the rect, and no ink is left in it when covered
+    const inkLeft = await page.evaluate(([o]) => { const b = BTB.Scenes.decision(o)[0], L = b.layers[0], c = document.createElement('canvas'); c.width = 640; c.height = 360; const g = c.getContext('2d'); L.draw(g, { w: 640, h: 360 }, {}); L.animate(g, { w: 640, h: 360 }, 0.8, 0.8 / 1.5, {});
+      const d = g.getImageData(46, 52, 30, 28).data, ink = [0x17, 0x19, 0x22]; let n = 0, other = 0; for (let k = 0; k < d.length; k += 4) { if (d[k] === ink[0] && d[k + 1] === ink[1] && d[k + 2] === ink[2]) n++; } return n; }, [o]);
+    const inkOn = await page.evaluate(([o]) => { const b = BTB.Scenes.decision(o)[0], L = b.layers[0], c = document.createElement('canvas'); c.width = 640; c.height = 360; const g = c.getContext('2d'); L.draw(g, { w: 640, h: 360 }, {});
+      const d = g.getImageData(46, 52, 30, 28).data; let n = 0; for (let k = 0; k < d.length; k += 4) if (d[k] === 0x17 && d[k + 1] === 0x19 && d[k + 2] === 0x22) n++; return n; }, [o]);
+    // 2:14 has 3 digits in this window (the 2 at art x 21-25 reaches screen x 51; the 1 starts at 66): the covered picture keeps those and loses the 6x12 colon only
+    assert(inkOn - inkLeft > 20 && inkLeft > 100, `${tag}: the colon cover (${inkOn} ink pixels in the clock window, ${inkLeft} left) hides more or less than the colon`);
+    assert(await D8('cnt', 'decision', o, 0, 'room', 0.1, [0, 272, 640, 88], 'any') === 0, `${tag}: moves below y 272`);
+    RECT8[tag] = await rect8(o, 0, 80, tag);
+  }
+  // shot 6: the stairwell (c9 day 42): the EXIT sign stutters in four spans
+  {
+    const o = dopts('c9'), tag = 'stairwell';
+    await beat8(o, 0, { id: 'decision:c9:8:room', dur: 1.5, layers: 'room,grain', depths: '1,1', cam: '-6>0', cues: '' }, tag);
+    const A = (t) => D8('cnt', 'decision', o, 0, 'room', t, [0, 0, 640, 360], 'any');
+    for (const [t, on] of [[0.40, 0], [0.47, 1], [0.52, 0], [0.60, 1], [0.76, 0], [0.82, 1], [0.90, 0], [1.03, 1], [1.08, 0], [1.4, 0]]) assert((await A(t) > 0) === !!on, `${tag}: the sign is ${on ? 'lit' : 'dark'} wrong at ${t} s`);
+    const b = await D8('box', 'decision', o, 0, 'room', 0.6);
+    assert(b[0] >= 30 && b[1] <= 179 && b[2] >= 6 && b[3] <= 107, `${tag}: the stutter reaches ${b} (x 30-180, y 6-108)`);
+    assert(await D8('cnt', 'decision', o, 0, 'room', 0.6, [54, 36, 102, 42], 'any') === 102 * 42, `${tag}: the EXIT sign is not covered whole`);
+    assert(await D8('pic', 'decision', o, 0, 'room', 0.47, false, [54, 36, 102, 42]) !== await D8('pic', 'decision', o, 0, 'room', 0.52, false, [54, 36, 102, 42]), `${tag}: no stutter seen`);
+    RECT8[tag] = await rect8(o, 0, 5, tag);
+  }
+  // shot 7: the racks (c10 day 44): a pulse runs along the front row of seven racks, 0.40 to 1.06 s
+  {
+    const o = dopts('c10'), tag = 'racks';
+    await beat8(o, 0, { id: 'decision:c10:8:room', dur: 1.5, layers: 'room,grain', depths: '1,1', cam: '-6>0', cues: '' }, tag);
+    const A = (t, i) => D8('cnt', 'decision', o, 0, 'room', t, [177 + 69 * i, 30, 54, 222], 'any');
+    for (let i = 0; i < 7; i++) {
+      const at = 0.40 + 0.09 * i;
+      assert(await A(at - 0.01, i) === 0 && await A(at + 0.01, i) > 0 && await A(at + 0.12 + 0.005, i) === 0, `${tag}: rack ${i} does not pulse in [${at.toFixed(2)}, ${(at + 0.12).toFixed(2)})`);
+    }
+    const bx = await D8('box', 'decision', o, 0, 'room', 0.45);
+    assert(bx[2] >= 39 && bx[3] <= 243 && bx[0] >= 183 && bx[1] <= 183 + 41 + 69 * 6 && await D8('cnt', 'decision', o, 0, 'room', 1.2, [0, 0, 640, 360], 'any') === 0, `${tag}: the pulse is outside the racks ${bx} or runs past 1.06 s`);
+    RECT8[tag] = await rect8(o, 0, 40, tag); // two racks pulse at once (0.12 s pulses 0.09 s apart)
+  }
   if (process.env.P8_ONLY) { console.log('motion-run: batch 7 pins pass'); return; }
 
   assert(await shot('news', day7, 1, 0.5) !== await shot('news', day7, 1, 2.2), 'default camera does not move the shot');

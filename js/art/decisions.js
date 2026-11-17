@@ -166,13 +166,22 @@
   }
 
   // Treasury at 2:14 on a Sunday morning: every light on.
+  // part: 'back' is the windows, the clock and the carpet (the animate lights the windows there), 'glow' only the lamplight rings over them, 'front' the desk.
   function treasury(ctx, day, o) {
+    const part = o && o.part;
+    if (part === 'glow') { glow(ctx, 360, 150, [210, 150, 90], P.amber, 0.06); return; }
+    if (part !== 'front') treasuryBack(ctx, day, o);
+    if (!part) glow(ctx, 360, 150, [210, 150, 90], P.amber, 0.06);
+    if (part !== 'back') treasuryFront(ctx);
+  }
+  function treasuryBack(ctx, day, o) {
     X.gradient(ctx, 0, 0, V.w, 210, P.slate, P.ink2, 9);
     for (let i = 0; i < 5; i++) cityWindow(ctx, 246 + i * 78, 30, 54, 138, day + i, true, false, !!(o && o.skip === 'cells'));
     cel(ctx, 27, 27, 75, 75, P.plastic, P.plastic2, P.plasticD); cel(ctx, 36, 36, 57, 57, P.bone, P.white, P.putty2);
     big(ctx, '2:14', 65, 57, P.ink, 2, 'center');
     carpet(ctx, 210, P.carpetD, P.carpet);
-    glow(ctx, 360, 150, [210, 150, 90], P.amber, 0.06);
+  }
+  function treasuryFront(ctx) {
     cel(ctx, 45, 198, 582, 21, P.desk, P.desk2, P.deskD); cel(ctx, 57, 216, 558, 36, P.deskD, P.desk, P.ink2);
     for (let i = 0; i < 9; i++) {
       cel(ctx, 240 + i * 42, 195, 33, 9, P.bone, P.white, P.putty2);
@@ -409,7 +418,7 @@
   // 'chair' (hearing), 'count' (the YEAS number on the vote board), 'envelope' (dinner), 'cells' (the lit windows of the treasury).
   function room(ctx, id, day, after, S, o) {
     const [r, ropt] = ROOMS[id] || ['office'], opt = ropt || {};
-    if (!(o && o.part === 'front')) X.rect(ctx, 0, 0, V.w, V.h, P.ink);
+    if (!(o && (o.part === 'front' || o.part === 'glow'))) X.rect(ctx, 0, 0, V.w, V.h, P.ink);
     if (r === 'office') office(ctx, day, !!opt.night, o);
     else if (r === 'hearing') hearing(ctx, day, false, false, o);
     else if (r === 'vote') hearing(ctx, day, true, !!(after && S && S.f && S.f.billPassed), o);
@@ -489,6 +498,40 @@
       }, grain]
     };
   };
+
+  // ---- shot 5: the treasury (the five tall windows light one after another; the clock's colon ticks) ----
+  LAYER.treasury = (e, flat, grain) => {
+    const K = e.K, wins = [0, 1, 2, 3, 4].map((i) => cityCells(246 + 78 * i, 30, 54, 138, e.day + i));
+    return {
+      // split around the lamplight rings, which sit over the windows in the flat room: the cells are drawn under them, so the lit pixels are the art's exactly
+      layers: [{
+        id: 'room', depth: 1, draw: flat({ skip: 'cells', part: 'back' }),
+        animate(g, v, t) {
+          wins.forEach((cells, i) => K.lamps(g, cells, t, { at: 0.40 + 0.12 * i, step: 0, on: P.amber }));
+          // the colon of '2:14' (art x 28-29 at 2x, plus its shadow) on the clock face's flat bone
+          K.blink(g, 56, 60, 6, 12, t, { on: null, off: P.bone, period: 1.0, duty: 0.5, end: e.dur });
+        }
+      }, { id: 'mid', depth: 1, draw: flat({ part: 'glow' }) }, { id: 'front', depth: 1, draw: flat({ part: 'front' }) }, grain]
+    };
+  };
+  // ---- shot 6: the stairwell (the EXIT sign stutters) ----
+  const EXIT_SPANS = [[0.45, 0.50], [0.56, 0.74], [0.80, 0.84], [1.00, 1.06]];
+  LAYER.stairwell = (e, flat, grain) => {
+    const K = e.K;
+    return { layers: [{ id: 'room', depth: 1, draw: flat(), animate(g, v, t) {
+      K.flicker(g, 54, 36, 102, 42, 'decision:c9:exit', t, { spans: EXIT_SPANS, col: P.ink, a: 0.45 });
+      K.flicker(g, 30, 6, 150, 102, 'decision:c9:exit', t, { spans: EXIT_SPANS, col: P.ink, a: 0.10 });
+    } }, grain] };
+  };
+  // ---- shot 7: the racks (a pulse runs left to right along the front row) ----
+  LAYER.racks = (e, flat, grain) => ({ layers: [{ id: 'room', depth: 1, draw: flat(), animate(g, v, t) {
+    for (let i = 0; i < 7; i++) {
+      if (!(t >= 0.40 + 0.09 * i && t < 0.52 + 0.09 * i)) continue;
+      g.save(); g.globalAlpha = 0.45;
+      for (let sy = 9; sy < 213; sy += 12) X.rect(g, 177 + 69 * i + 6, 30 + sy, 42, 6, P.phosphorD);
+      g.restore();
+    }
+  } }, grain] });
 
   function roomLayers(id, day, after, S, phase) {
     const M = B.Motion, K = B.MotionKit;
