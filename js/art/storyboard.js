@@ -1372,6 +1372,12 @@
       if (est) paint = (g, t) => SH.tableauMover(g, 3, (-4 + Math.round(9 * M.ease.out(K.span(t, 0.35, 1.35)))) / 9);
       else if (det) paint = (g, t) => SH.tableauMover(g, 3, Math.min(9, 5 + Math.floor(4 * K.span(t, 0.35, 1.95) + 1e-9)) / 9);
     }
+    else if (n === 5) {
+      // the five load cells flash bright crimson in turn (a cover on the bars' flat fills), three recover at 1.10 s; the detail and hold pulse the two that stay red
+      const pulse = (from) => (g, t) => { if (t >= from) [3, 4].forEach((k) => { const b = G.bars[k]; K.blink(g, b.x, b.y, b.w, b.h, t, { on: null, off: P.crimson, period: 0.5, duty: 0.6, end: dur }); }); };
+      if (est) paint = (g, t) => { if (t < 1.10) K.lamps(g, G.bars, t, { at: 0.40, step: 0.10, on: P.crimson }); };
+      else paint = pulse(det ? 0.35 : 0.10);
+    }
     if (!paint) return null;
     return [
       {

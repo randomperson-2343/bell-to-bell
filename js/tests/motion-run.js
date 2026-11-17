@@ -2148,6 +2148,23 @@ async function run() {
     assert(await any6(E.o, E.i, 'art', 0.1) > 0 && await any6(E.o, E.i, 'art', 0.1) < 3000, 'Kavro establish: the animate draws the ships only');
   }
 
+  // 2. Grid (session 9): the five load cells flash red in sequence; the two that stay red pulse on the detail and the hold
+  {
+    const E = await beat7(9, 'establish', { layers: 'art,glass,marks', depths: '1,1,0', cam: '-6>0', sfx: 'apartment', dur: 1.7 });
+    const D = await beat7(9, 'detail', { layers: 'art,glass', depths: '1,1', cam: 'none', sfx: 'broadcast', dur: 2.3 });
+    const H = await beat7(9, 'hold', { layers: 'art,glass,dim', depths: '1,1,0', cam: 'none', sfx: '', dur: 1.1 });
+    const red = (b, t) => cc(b.o, b.i, 'art', t, [0, 0, 640, 360], 'crimson');
+    const n = [await red(E, 0.2), await red(E, 0.45), await red(E, 0.55), await red(E, 0.65), await red(E, 0.75), await red(E, 0.85), await red(E, 1.05), await red(E, 1.15), await red(E, 1.69)];
+    assert(n[0] === 0 && n[1] === 400 && n[2] === 800 && n[3] === 1200 && n[4] === 1600 && n[5] === 2000 && n[6] === 2000 && n[7] === 0 && n[8] === 0, `grid establish: the cells do not flash in turn 0.40 + 0.10 k and stop at 1.10 (${n})`);
+    const bx = await box7(E.o, E.i, 0.85, [0, 0, 640, 360]);
+    assert(bx[0] >= 360 && bx[1] <= 560 && bx[2] >= 170 && bx[3] <= 232, `grid establish: the cells' box ${bx} is not the cluster (176x52 px)`);
+    const d = [await red(D, 0.2), await red(D, 0.34), await red(D, 1.95), await red(D, 2.2), await red(D, 2.29)];
+    assert(d[0] === 0 && d[1] === 0 && d[2] > 0 && d[3] === 0 && d[4] === 0, `grid detail: the two red cells do not pulse from 0.35 s and end on the art (${d})`);
+    const h = [await red(H, 0.05), await red(H, 0.25), await red(H, 1.0), await red(H, 1.09)];
+    assert(h[0] === 0 && h[1] > 0 && h[2] === 0 && h[3] === 0, `grid hold: the cells do not pulse from 0.10 s and end on the art (${h})`);
+    // under the 1.3 zoom the pulse's edge pixels blend with the art (the sheet's risk 2.10); the last phase draws nothing, so the final frame is exact (pinned)
+  }
+
   // reduced effects: every reworked beat is one still
   await page.evaluate(() => BTB.Settings.set('effects', 'reduced'));
   for (const o of [nOpts(8), nOpts(32), nOpts(1), nOpts(4), nOpts(2), nOpts(3), nOpts(5), nOpts(11), nOpts(36), nOpts(15), nOpts(10)]) {
@@ -2222,6 +2239,7 @@ async function run() {
     { scene: 'news', opts: { day: 45, brief: { title: 'THE STACK IS OFF', feed: [] }, game: { mode: { S: { f: { pulledPlug: true } } } } } },
     // batch 6: the story tableaux
     { scene: 'news', opts: { day: 6, brief: { title: 'KAVRO STRAIT', feed: [] } } },
+    { scene: 'news', opts: { day: 9, brief: { title: 'THE GRID', feed: [] } } },
     { scene: 'close', opts: { report: { day: 3, pnl: 1200, quotaMet: true, quota: 900 } } },
     { scene: 'close', opts: { report: { day: 30, pnl: 1200, quotaMet: true, quota: 900 } } },
     // the close: a loss with the quota missed on the empty floor, and the two days with a Sqwak breaking insert (no game needed): a profit in autumn, and a seven-digit loss in winter
