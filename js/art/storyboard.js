@@ -1416,6 +1416,16 @@
         }
       };
     }
+    else if (n === 14 && !hold) {
+      if (est) {
+        // the four nodes on the right (3 to 6) are alive (sky, a cover on the node itself) until they die in turn, 0.60 + 0.18 k, each with one hard bone flash
+        paint = (g, t) => G.nodes.slice(3).forEach((nd, k) => K.ping(g, t, { at: 0.60 + 0.18 * k, off: [{ x: nd.x, y: nd.y, w: 5, h: 5, col: P.sky }], on: [], flare: { x: nd.x - 3, y: nd.y - 3, w: 11, h: 11, col: P.bone, a: 0.45, dur: 0.08 } }));
+      } else {
+        // the last live node stutters three times and holds (node 6 is off frame here, so the deaths are not replayed)
+        const nd = G.nodes[2];
+        paint = (g, t) => K.flicker(g, nd.x, nd.y, 5, 5, 'news:45:n2', t, { spans: [[0.50, 0.56], [0.64, 0.80], [0.90, 0.94]], col: P.ink, a: 0.6 });
+      }
+    }
     if (!paint) return null;
     return [
       {

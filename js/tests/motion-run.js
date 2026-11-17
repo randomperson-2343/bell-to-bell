@@ -2044,11 +2044,13 @@ async function run() {
     const rows = [];
     const COUNT = [['skyline', 27, null, ':establish$'], ['skyline', 28, null, ':establish$'], ['skyline', 29, null, ':establish$'], ['skyline', 35, null, ':establish$'],
       ['floor wave', 41, null, ':establish$'], ['floor wave', 41, null, ':detail$'], ['floor wave', 23, null, ':establish$'], ['floor wave', 5, null, ':establish$'],
-      ['subway', 21, null, ':establish$'], ['subway', 21, null, ':detail$'], ['subway', 31, null, ':establish$'], ['subway', 7, null, ':establish$']];
+      ['subway', 21, null, ':establish$'], ['subway', 21, null, ':detail$'], ['subway', 31, null, ':establish$'], ['subway', 7, null, ':establish$'],
+      ['tableau', 6, null, ':establish$'], ['tableau', 9, null, ':establish$'], ['tableau', 9, null, ':hold$'], ['tableau', 17, null, ':establish$'], ['tableau', 20, null, ':establish$'], ['tableau', 25, null, ':establish$'],
+      ['tableau', 37, null, ':establish$'], ['tableau', 37, null, ':hold$'], ['tableau', 40, null, ':establish$'], ['tableau', 40, null, ':detail$'], ['tableau', 45, null, ':establish$'], ['tableau', 45, null, ':detail$']];
     for (const [name, day, S, re] of COUNT) {
       const o = mkS(day, S), i = await newsIdx(o, re), r = await page.evaluate(([o, i]) => window.rectMax('news', o, i), [o, i]);
       rows.push(`${name} ${day}${re.slice(1, -1)}: ${r.worst} at ${r.at.toFixed(2)}`);
-      assert(r.worst < 400 && r.worst > 0 && (name !== 'skyline' || r.worst < 250), `${name} ${day} ${re}: ${r.worst} rectangles in the busiest frame (limit 400)`);
+      assert(r.worst < 400 && r.worst > 0 && (name !== 'skyline' || r.worst < 250) && (name !== 'tableau' || r.worst < 30), `${name} ${day} ${re}: ${r.worst} rectangles in the busiest frame (limit 400)`);
     }
     console.log('rect counts (busiest frame): ' + rows.join('; '));
   }
@@ -2266,6 +2268,29 @@ async function run() {
     assert(await cc(E.o, E.i, 'art', 1.35, [248, 250, 142, 14], 'ink', false) === 142 * 14, 'vote: the cover is not on a flat ink interior');
   }
 
+  // 8. Final day (session 45): four nodes die in sequence, each with a bone flash; the detail's last live node stutters
+  {
+    const E = await beat7(45, 'establish', { layers: 'art,glass,marks', depths: '1,1,0', cam: '-6>0', sfx: 'apartment', dur: 1.7 });
+    const D = await beat7(45, 'detail', { layers: 'art,glass', depths: '1,1', cam: 'none', sfx: 'broadcast', dur: 2.3 });
+    const H = { o: mkS(45) }; H.i = await newsIdx(H.o, ':hold$');
+    assert((await info('news', H.o, H.i)).layers === '', 'final day hold must stay flat');
+    const P45 = mkS(45, { f: { pulledPlug: true } }), pi = await newsIdx(P45, ':establish$');
+    assert((await info('news', P45, pi)).layers === 'racks,marks', 'final day with the plug pulled is still the racks');
+    const sky = (t) => cc(E.o, E.i, 'art', t, [0, 0, 640, 360], 'sky'), all = (t) => any6(E.o, E.i, 'art', t);
+    const alive = [await sky(0.3), await sky(0.7), await sky(0.85), await sky(1.0), await sky(1.2), await sky(1.69)];
+    assert(alive.join() === '400,300,200,100,0,0', `final day establish: the nodes do not die at 0.60, 0.78, 0.96 and 1.14 s (${alive})`);
+    // one hard flash a node: 22x22 px, 0.08 s; nothing after 1.22 s
+    for (let k = 0; k < 4; k++) {
+      const a = 0.60 + 0.18 * k, b = await box7(E.o, E.i, a + 0.02, [0, 0, 640, 360]);
+      assert(await any6(E.o, E.i, 'art', a + 0.02) > 0 && await any6(E.o, E.i, 'art', a + 0.10) === await sky(a + 0.10), `final day establish: no single flash for node ${k + 3}`);
+    }
+    assert(await all(1.25) === 0 && await all(1.69) === 0, 'final day establish: draws after the last death');
+    const fb = await box7(E.o, E.i, 0.62, [0, 0, 640, 360]);
+    assert(fb[2] >= 78 - 8 && fb[3] <= 184 + 8, `final day establish: the nodes' box ${fb} is not the network (y 78-184)`);
+    const f = [0.52, 0.7, 0.92].map((t) => any6(D.o, D.i, 'art', t)), g = [0.1, 0.6, 0.85, 0.96, 2.29].map((t) => any6(D.o, D.i, 'art', t));
+    assert((await Promise.all(f)).every((v) => v > 0) && (await Promise.all(g)).every((v) => v === 0), 'final day detail: the last node does not stutter in three spans and end lit');
+  }
+
   // reduced effects: every reworked beat is one still
   await page.evaluate(() => BTB.Settings.set('effects', 'reduced'));
   for (const o of [nOpts(8), nOpts(32), nOpts(1), nOpts(4), nOpts(2), nOpts(3), nOpts(5), nOpts(11), nOpts(36), nOpts(15), nOpts(10)]) {
@@ -2342,6 +2367,7 @@ async function run() {
     { scene: 'news', opts: { day: 6, brief: { title: 'KAVRO STRAIT', feed: [] } } },
     { scene: 'news', opts: { day: 9, brief: { title: 'THE GRID', feed: [] } } },
     { scene: 'news', opts: { day: 40, brief: { title: 'STABILIZATION VOTE PENDING', feed: [] } } },
+    { scene: 'news', opts: { day: 45, brief: { title: 'SYSTEM STATUS UNRESOLVED', feed: [] } } },
     { scene: 'news', opts: { day: 37, brief: { title: 'MARKETS COMMITTEE HEARING', feed: [] } } },
     { scene: 'news', opts: { day: 25, brief: { title: 'PRESERVE ALL RECORDS', feed: [] } } },
     { scene: 'news', opts: { day: 20, brief: { title: 'RUN ON RIDGEWAY TRUST', feed: [] } } },
