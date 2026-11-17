@@ -90,6 +90,32 @@ async function run() {
     }
     return out;
   });
+  // ---- stage 3 batch 8: reference pictures of the weekend beats and the flat Sunday and night room, recorded before the code changed ----
+  // The final frame of every beat (sat, sun, hold, whip, 317) of many weekends: three housing tiers, late rent 0 and 2, no pet / cat / neglected dog, an autumn, a grey and a
+  // winter weekend, the story days, day 44 with and without the pulled plug; and the flat sundayShot and apartmentShot(night). P9_CHANGED holds the ruled changes.
+  const collectP9 = () => page.evaluate(() => {
+    const hashOf = (fn) => { const cv = document.createElement('canvas'); cv.width = 640; cv.height = 360; const g = cv.getContext('2d', { willReadFrequently: true }); g.imageSmoothingEnabled = false; fn(g);
+      const d = g.getImageData(0, 0, 640, 360).data; let x = 2166136261; for (let i = 0; i < d.length; i += 1) { x ^= d[i]; x = Math.imul(x, 16777619); } return (x >>> 0).toString(16); };
+    const SB = BTB.Storyboard, out = {}, view = { w: 640, h: 360 };
+    const PETS = { n: null, cat: { pet: { kind: 'cat', sex: 'boy' } }, dog: { pet: { kind: 'dog', sex: 'girl' }, vet: 'neglected' } };
+    const mkW = (tier, late, pet) => Object.assign({ tier, lateWeeks: late }, PETS[pet] || {});
+    const mk = (day, tier, late, pet, plug) => ({ day, game: { mode: { S: Object.assign({ wallet: mkW(tier, late, pet) }, plug ? { f: { pulledPlug: true } } : {}) } } });
+    const take = (tag, o) => BTB.Scenes.weekend(o).forEach((b) => { out[`wk:${tag}:${b.id.split(':').pop()}`] = hashOf((g) => b.draw(g, view, 1, {})); });
+    for (const tier of [0, 2, 5]) for (const late of [0, 2]) for (const pet of ['n', 'cat', 'dog']) take(`9:t${tier}:l${late}:${pet}`, mk(9, tier, late, pet, false));
+    for (const day of [19, 49]) for (const [tier, late, pet] of [[2, 0, 'n'], [0, 2, 'cat'], [4, 0, 'dog'], [1, 2, 'n']]) take(`${day}:t${tier}:l${late}:${pet}`, mk(day, tier, late, pet, false));
+    for (const day of [4, 14, 24, 34, 39]) for (const [tier, late, pet] of [[2, 0, 'n'], [0, 2, 'cat'], [3, 0, 'dog'], [1, 2, 'n']]) take(`${day}:t${tier}:l${late}:${pet}`, mk(day, tier, late, pet, false));
+    for (const plug of [false, true]) for (const tier of [0, 2, 5]) for (const late of [0, 2]) for (const pet of ['n', 'cat']) take(`44:t${tier}:l${late}:${pet}:${plug ? 'p' : 'o'}`, mk(44, tier, late, pet, plug));
+    take('nogame:9', { day: 9 }); take('nogame:39', { day: 39 }); take('nogame:44', { day: 44 });
+    for (const day of [9, 39, 44]) for (let tier = 0; tier < 6; tier++) for (const late of [0, 2]) for (const pet of ['n', 'cat', 'dog']) {
+      const w = mkW(tier, late, pet), home = SB.homeOf(w), k = `${day}:t${tier}:l${late}:${pet}`;
+      out[`flat:sun:${k}`] = hashOf((g) => SB.sundayShot(g, day, home, w));
+      out[`flat:night:${k}`] = hashOf((g) => SB.apartmentShot(g, day, home, true, w));
+    }
+    out['flat:sun:nogame'] = hashOf((g) => SB.sundayShot(g, 9, SB.homeOf(undefined), undefined));
+    out['flat:night:nogame'] = hashOf((g) => SB.apartmentShot(g, 9, SB.homeOf(undefined), true, undefined));
+    return out;
+  });
+  if (process.env.DUMP_P9) { console.log(JSON.stringify(await collectP9())); return; }
   if (process.env.DUMP_P8) { console.log(JSON.stringify(await collectP8())); return; }
   const P8_REF = {
     'rm:rentHike:bn': 'a161a97d', 'rm:rentHike:bf': 'a161a97d', 'rm:rentHike:an': 'a161a97d', 'rm:rentHike:af': 'a161a97d',
@@ -173,6 +199,144 @@ async function run() {
   for (const k of Object.keys(P8_REF)) assert(p8now[k] === (P8_CHANGED[k] || P8_REF[k]), `batch 7 ${k}: the picture changed (${p8now[k]}, was ${P8_CHANGED[k] || P8_REF[k]})`);
   assert(Object.keys(p8now).length === Object.keys(P8_REF).length, 'batch 7: the set of reference pictures changed');
   for (const k of Object.keys(P8_CHANGED)) assert(P8_CHANGED[k] !== P8_REF[k], `batch 7 ${k}: the ruled change is not a change`);
+
+  const P9_REF = {
+    'wk:9:t0:l0:n:sat': '881d3835', 'wk:9:t0:l0:n:sun': 'c053280f', 'wk:9:t0:l0:n:hold': '6c062919', 'wk:9:t0:l0:cat:sat': '2567d786',
+    'wk:9:t0:l0:cat:sun': '359e97a8', 'wk:9:t0:l0:cat:hold': '205d707', 'wk:9:t0:l0:dog:sat': 'c5019d13', 'wk:9:t0:l0:dog:sun': '4ae8d479',
+    'wk:9:t0:l0:dog:hold': '5d4804d3', 'wk:9:t0:l2:n:sat': 'a25f2cd4', 'wk:9:t0:l2:n:sun': 'f9e32dac', 'wk:9:t0:l2:n:hold': '8b8ae7f1',
+    'wk:9:t0:l2:cat:sat': '522d4666', 'wk:9:t0:l2:cat:sun': '29ec398b', 'wk:9:t0:l2:cat:hold': 'a187becb', 'wk:9:t0:l2:dog:sat': 'e06f9a45',
+    'wk:9:t0:l2:dog:sun': 'c9e16082', 'wk:9:t0:l2:dog:hold': '9e5dde47', 'wk:9:t2:l0:n:sat': 'c4223587', 'wk:9:t2:l0:n:sun': 'fb989ec6',
+    'wk:9:t2:l0:n:hold': '2d2d8f60', 'wk:9:t2:l0:cat:sat': 'a870faf', 'wk:9:t2:l0:cat:sun': '7bcf59e1', 'wk:9:t2:l0:cat:hold': '602cb7ab',
+    'wk:9:t2:l0:dog:sat': '288407a6', 'wk:9:t2:l0:dog:sun': '2b2e6ac0', 'wk:9:t2:l0:dog:hold': '467bf451', 'wk:9:t2:l2:n:sat': '1878893d',
+    'wk:9:t2:l2:n:sun': '944741a2', 'wk:9:t2:l2:n:hold': '11f2f737', 'wk:9:t2:l2:cat:sat': '36c0ab40', 'wk:9:t2:l2:cat:sun': '96c39f25',
+    'wk:9:t2:l2:cat:hold': '2e2f94c', 'wk:9:t2:l2:dog:sat': '87be7e21', 'wk:9:t2:l2:dog:sun': '673f023c', 'wk:9:t2:l2:dog:hold': 'e1338bfe',
+    'wk:9:t5:l0:n:sat': '6e5ad161', 'wk:9:t5:l0:n:sun': '772840c8', 'wk:9:t5:l0:n:hold': '840f072a', 'wk:9:t5:l0:cat:sat': 'bfd3023',
+    'wk:9:t5:l0:cat:sun': 'cad2a403', 'wk:9:t5:l0:cat:hold': '971057f', 'wk:9:t5:l0:dog:sat': '69998194', 'wk:9:t5:l0:dog:sun': '2d50621b',
+    'wk:9:t5:l0:dog:hold': 'f7770e0a', 'wk:9:t5:l2:n:sat': 'b82016fb', 'wk:9:t5:l2:n:sun': 'fa3f44a3', 'wk:9:t5:l2:n:hold': '546c9a7',
+    'wk:9:t5:l2:cat:sat': '1167c418', 'wk:9:t5:l2:cat:sun': '54657188', 'wk:9:t5:l2:cat:hold': '83ae9fb2', 'wk:9:t5:l2:dog:sat': 'c171795c',
+    'wk:9:t5:l2:dog:sun': '1cb64a58', 'wk:9:t5:l2:dog:hold': '2d88928b', 'wk:19:t2:l0:n:sat': '75f93f13', 'wk:19:t2:l0:n:sun': '55e17b63',
+    'wk:19:t2:l0:n:hold': '564721e2', 'wk:19:t0:l2:cat:sat': '8cc77b48', 'wk:19:t0:l2:cat:sun': 'bb182b90', 'wk:19:t0:l2:cat:hold': '58abeae',
+    'wk:19:t4:l0:dog:sat': '53b7c025', 'wk:19:t4:l0:dog:sun': '7a3d61f5', 'wk:19:t4:l0:dog:hold': '6e23faa4', 'wk:19:t1:l2:n:sat': '6d76237f',
+    'wk:19:t1:l2:n:sun': 'c3aa2b2f', 'wk:19:t1:l2:n:hold': 'e6cf6d03', 'wk:49:t2:l0:n:sat': '47c9ceea', 'wk:49:t2:l0:n:sun': '572cc3e2',
+    'wk:49:t2:l0:n:hold': 'e6f03aef', 'wk:49:t0:l2:cat:sat': 'e53e740f', 'wk:49:t0:l2:cat:sun': 'f55c86af', 'wk:49:t0:l2:cat:hold': 'a6d524b4',
+    'wk:49:t4:l0:dog:sat': '4248b546', 'wk:49:t4:l0:dog:sun': '779fd0ef', 'wk:49:t4:l0:dog:hold': '693e7139', 'wk:49:t1:l2:n:sat': 'b6948b2c',
+    'wk:49:t1:l2:n:sun': '3584e462', 'wk:49:t1:l2:n:hold': '8f23bb83', 'wk:4:t2:l0:n:sat': '4ce801eb', 'wk:4:t2:l0:n:sun': 'c6cea1a0',
+    'wk:4:t2:l0:n:hold': '25c3c435', 'wk:4:t0:l2:cat:sat': 'c7e85975', 'wk:4:t0:l2:cat:sun': '3f3522e4', 'wk:4:t0:l2:cat:hold': '1619085b',
+    'wk:4:t3:l0:dog:sat': '950fce04', 'wk:4:t3:l0:dog:sun': '836288cd', 'wk:4:t3:l0:dog:hold': '4e61c04b', 'wk:4:t1:l2:n:sat': 'f2d389d6',
+    'wk:4:t1:l2:n:sun': 'b4a74155', 'wk:4:t1:l2:n:hold': '1d11f79', 'wk:14:t2:l0:n:sat': '64a714df', 'wk:14:t2:l0:n:sun': 'e4954ca4',
+    'wk:14:t2:l0:n:hold': 'e6e4ef17', 'wk:14:t0:l2:cat:sat': 'ad3c77eb', 'wk:14:t0:l2:cat:sun': '99e09afb', 'wk:14:t0:l2:cat:hold': '97b86147',
+    'wk:14:t3:l0:dog:sat': '625b456b', 'wk:14:t3:l0:dog:sun': '348a302', 'wk:14:t3:l0:dog:hold': 'ac7fcbcb', 'wk:14:t1:l2:n:sat': '3883920c',
+    'wk:14:t1:l2:n:sun': '8ee20bde', 'wk:14:t1:l2:n:hold': '1d47e9ec', 'wk:24:t2:l0:n:sat': '9c6ab1a0', 'wk:24:t2:l0:n:sun': '4b151f6f',
+    'wk:24:t2:l0:n:hold': '97091cda', 'wk:24:t0:l2:cat:sat': '501267e2', 'wk:24:t0:l2:cat:sun': 'd031f825', 'wk:24:t0:l2:cat:hold': 'dffddaed',
+    'wk:24:t3:l0:dog:sat': '77872e0c', 'wk:24:t3:l0:dog:sun': '24a58b3b', 'wk:24:t3:l0:dog:hold': '61b3200b', 'wk:24:t1:l2:n:sat': '8f9d7a1d',
+    'wk:24:t1:l2:n:sun': 'edaaa84b', 'wk:24:t1:l2:n:hold': '2a8f88f9', 'wk:34:t2:l0:n:sat': 'b02f36bf', 'wk:34:t2:l0:n:sun': '7f28cc82',
+    'wk:34:t2:l0:n:hold': '5dccfe47', 'wk:34:t0:l2:cat:sat': 'd30b746a', 'wk:34:t0:l2:cat:sun': '3701b33e', 'wk:34:t0:l2:cat:hold': 'ba27893a',
+    'wk:34:t3:l0:dog:sat': '72f7d52b', 'wk:34:t3:l0:dog:sun': '88d983a8', 'wk:34:t3:l0:dog:hold': '8a8028a1', 'wk:34:t1:l2:n:sat': 'e735215f',
+    'wk:34:t1:l2:n:sun': 'ac5c40e', 'wk:34:t1:l2:n:hold': 'f6f4991', 'wk:39:t2:l0:n:sat': 'c35fdaf', 'wk:39:t2:l0:n:sun': '1a3fb7d3',
+    'wk:39:t2:l0:n:whip': 'ed33bf24', 'wk:39:t2:l0:n:hold': 'a5fb555f', 'wk:39:t0:l2:cat:sat': '9bbece87', 'wk:39:t0:l2:cat:sun': '3303f0d8',
+    'wk:39:t0:l2:cat:whip': 'ed33bf24', 'wk:39:t0:l2:cat:hold': 'd29d3177', 'wk:39:t3:l0:dog:sat': 'd90ed43b', 'wk:39:t3:l0:dog:sun': '50b122fe',
+    'wk:39:t3:l0:dog:whip': 'ed33bf24', 'wk:39:t3:l0:dog:hold': 'a208cd25', 'wk:39:t1:l2:n:sat': '367495d8', 'wk:39:t1:l2:n:sun': 'e234e2b9',
+    'wk:39:t1:l2:n:whip': 'ed33bf24', 'wk:39:t1:l2:n:hold': 'f8056ad5', 'wk:44:t0:l0:n:o:sat': '2b5e96da', 'wk:44:t0:l0:n:o:sun': '965b3d44',
+    'wk:44:t0:l0:n:o:hold': 'b38c0c1d', 'wk:44:t0:l0:n:o:317': 'ffecf1f5', 'wk:44:t0:l0:cat:o:sat': 'f37ee992', 'wk:44:t0:l0:cat:o:sun': '463e93bb',
+    'wk:44:t0:l0:cat:o:hold': '94ce437b', 'wk:44:t0:l0:cat:o:317': 'ffecf1f5', 'wk:44:t0:l2:n:o:sat': '58e2a35c', 'wk:44:t0:l2:n:o:sun': 'd30e468f',
+    'wk:44:t0:l2:n:o:hold': 'f632e675', 'wk:44:t0:l2:n:o:317': 'ffecf1f5', 'wk:44:t0:l2:cat:o:sat': 'f5b73a1c', 'wk:44:t0:l2:cat:o:sun': 'bb9a9fb8',
+    'wk:44:t0:l2:cat:o:hold': '93bb34af', 'wk:44:t0:l2:cat:o:317': 'ffecf1f5', 'wk:44:t2:l0:n:o:sat': 'dadf9daa', 'wk:44:t2:l0:n:o:sun': 'dc56d92b',
+    'wk:44:t2:l0:n:o:hold': '3753fcd3', 'wk:44:t2:l0:n:o:317': 'ffecf1f5', 'wk:44:t2:l0:cat:o:sat': '930ba70a', 'wk:44:t2:l0:cat:o:sun': '1200bb4c',
+    'wk:44:t2:l0:cat:o:hold': 'c6e5de80', 'wk:44:t2:l0:cat:o:317': 'ffecf1f5', 'wk:44:t2:l2:n:o:sat': 'af4bb53', 'wk:44:t2:l2:n:o:sun': '28a41581',
+    'wk:44:t2:l2:n:o:hold': '1034b3ef', 'wk:44:t2:l2:n:o:317': 'ffecf1f5', 'wk:44:t2:l2:cat:o:sat': 'c842c21c', 'wk:44:t2:l2:cat:o:sun': '16bdb3be',
+    'wk:44:t2:l2:cat:o:hold': 'f0f349e4', 'wk:44:t2:l2:cat:o:317': 'ffecf1f5', 'wk:44:t5:l0:n:o:sat': 'bdbd2401', 'wk:44:t5:l0:n:o:sun': 'a1d9326b',
+    'wk:44:t5:l0:n:o:hold': '398607d9', 'wk:44:t5:l0:n:o:317': 'ffecf1f5', 'wk:44:t5:l0:cat:o:sat': '4064edc6', 'wk:44:t5:l0:cat:o:sun': 'e2afe34f',
+    'wk:44:t5:l0:cat:o:hold': 'a953a320', 'wk:44:t5:l0:cat:o:317': 'ffecf1f5', 'wk:44:t5:l2:n:o:sat': '396ed9e', 'wk:44:t5:l2:n:o:sun': '2a0316bd',
+    'wk:44:t5:l2:n:o:hold': '9edc0731', 'wk:44:t5:l2:n:o:317': 'ffecf1f5', 'wk:44:t5:l2:cat:o:sat': 'af2b3acf', 'wk:44:t5:l2:cat:o:sun': '3e3edfcd',
+    'wk:44:t5:l2:cat:o:hold': '917300e8', 'wk:44:t5:l2:cat:o:317': 'ffecf1f5', 'wk:44:t0:l0:n:p:sat': '8ca06136', 'wk:44:t0:l0:n:p:sun': '965b3d44',
+    'wk:44:t0:l0:n:p:hold': 'b38c0c1d', 'wk:44:t0:l0:n:p:317': 'f8a99c80', 'wk:44:t0:l0:cat:p:sat': '2d752ad3', 'wk:44:t0:l0:cat:p:sun': '463e93bb',
+    'wk:44:t0:l0:cat:p:hold': '94ce437b', 'wk:44:t0:l0:cat:p:317': 'f8a99c80', 'wk:44:t0:l2:n:p:sat': '6d6d5478', 'wk:44:t0:l2:n:p:sun': 'd30e468f',
+    'wk:44:t0:l2:n:p:hold': 'f632e675', 'wk:44:t0:l2:n:p:317': 'f8a99c80', 'wk:44:t0:l2:cat:p:sat': '1829c382', 'wk:44:t0:l2:cat:p:sun': 'bb9a9fb8',
+    'wk:44:t0:l2:cat:p:hold': '93bb34af', 'wk:44:t0:l2:cat:p:317': 'f8a99c80', 'wk:44:t2:l0:n:p:sat': '14b498c5', 'wk:44:t2:l0:n:p:sun': 'dc56d92b',
+    'wk:44:t2:l0:n:p:hold': '3753fcd3', 'wk:44:t2:l0:n:p:317': 'f8a99c80', 'wk:44:t2:l0:cat:p:sat': '5e334286', 'wk:44:t2:l0:cat:p:sun': '1200bb4c',
+    'wk:44:t2:l0:cat:p:hold': 'c6e5de80', 'wk:44:t2:l0:cat:p:317': 'f8a99c80', 'wk:44:t2:l2:n:p:sat': '6a2f002a', 'wk:44:t2:l2:n:p:sun': '28a41581',
+    'wk:44:t2:l2:n:p:hold': '1034b3ef', 'wk:44:t2:l2:n:p:317': 'f8a99c80', 'wk:44:t2:l2:cat:p:sat': '5ba4d08', 'wk:44:t2:l2:cat:p:sun': '16bdb3be',
+    'wk:44:t2:l2:cat:p:hold': 'f0f349e4', 'wk:44:t2:l2:cat:p:317': 'f8a99c80', 'wk:44:t5:l0:n:p:sat': 'c6f2dc13', 'wk:44:t5:l0:n:p:sun': 'a1d9326b',
+    'wk:44:t5:l0:n:p:hold': '398607d9', 'wk:44:t5:l0:n:p:317': 'f8a99c80', 'wk:44:t5:l0:cat:p:sat': '4ad17908', 'wk:44:t5:l0:cat:p:sun': 'e2afe34f',
+    'wk:44:t5:l0:cat:p:hold': 'a953a320', 'wk:44:t5:l0:cat:p:317': 'f8a99c80', 'wk:44:t5:l2:n:p:sat': '21d65731', 'wk:44:t5:l2:n:p:sun': '2a0316bd',
+    'wk:44:t5:l2:n:p:hold': '9edc0731', 'wk:44:t5:l2:n:p:317': 'f8a99c80', 'wk:44:t5:l2:cat:p:sat': 'dfc7a9ce', 'wk:44:t5:l2:cat:p:sun': '3e3edfcd',
+    'wk:44:t5:l2:cat:p:hold': '917300e8', 'wk:44:t5:l2:cat:p:317': 'f8a99c80', 'wk:nogame:9:sat': 'c4223587', 'wk:nogame:9:sun': 'fb989ec6',
+    'wk:nogame:9:hold': '2d2d8f60', 'wk:nogame:39:sat': 'c35fdaf', 'wk:nogame:39:sun': '1a3fb7d3', 'wk:nogame:39:whip': 'ed33bf24',
+    'wk:nogame:39:hold': 'a5fb555f', 'wk:nogame:44:sat': 'dadf9daa', 'wk:nogame:44:sun': 'dc56d92b', 'wk:nogame:44:hold': '3753fcd3',
+    'wk:nogame:44:317': 'ffecf1f5', 'flat:sun:9:t0:l0:n': 'c053280f', 'flat:night:9:t0:l0:n': '6910a1c4', 'flat:sun:9:t0:l0:cat': '359e97a8',
+    'flat:night:9:t0:l0:cat': '92c072bb', 'flat:sun:9:t0:l0:dog': '4ae8d479', 'flat:night:9:t0:l0:dog': '57b2dd43', 'flat:sun:9:t0:l2:n': 'f9e32dac',
+    'flat:night:9:t0:l2:n': 'f930a9df', 'flat:sun:9:t0:l2:cat': '29ec398b', 'flat:night:9:t0:l2:cat': '1ce94360', 'flat:sun:9:t0:l2:dog': 'c9e16082',
+    'flat:night:9:t0:l2:dog': '1a9c98cc', 'flat:sun:9:t1:l0:n': 'd85a8447', 'flat:night:9:t1:l0:n': 'a361ae2d', 'flat:sun:9:t1:l0:cat': 'e1b8324f',
+    'flat:night:9:t1:l0:cat': '727947fd', 'flat:sun:9:t1:l0:dog': '8cdffdf7', 'flat:night:9:t1:l0:dog': 'd368d2be', 'flat:sun:9:t1:l2:n': '194a81fd',
+    'flat:night:9:t1:l2:n': 'a3a194e9', 'flat:sun:9:t1:l2:cat': 'ce8177a1', 'flat:night:9:t1:l2:cat': '26bdfc1d', 'flat:sun:9:t1:l2:dog': 'bc5fa89',
+    'flat:night:9:t1:l2:dog': '9762fe4e', 'flat:sun:9:t2:l0:n': 'fb989ec6', 'flat:night:9:t2:l0:n': '42dd8757', 'flat:sun:9:t2:l0:cat': '7bcf59e1',
+    'flat:night:9:t2:l0:cat': '4d613aaa', 'flat:sun:9:t2:l0:dog': '2b2e6ac0', 'flat:night:9:t2:l0:dog': 'f19891bc', 'flat:sun:9:t2:l2:n': '944741a2',
+    'flat:night:9:t2:l2:n': 'c9dda7ab', 'flat:sun:9:t2:l2:cat': '96c39f25', 'flat:night:9:t2:l2:cat': '8c40fc3e', 'flat:sun:9:t2:l2:dog': '673f023c',
+    'flat:night:9:t2:l2:dog': 'd2b5e4a4', 'flat:sun:9:t3:l0:n': '8e8be37b', 'flat:night:9:t3:l0:n': '8648b046', 'flat:sun:9:t3:l0:cat': 'd1fffb06',
+    'flat:night:9:t3:l0:cat': '84f69781', 'flat:sun:9:t3:l0:dog': '4dcb606b', 'flat:night:9:t3:l0:dog': 'bc008bce', 'flat:sun:9:t3:l2:n': 'bb8098bd',
+    'flat:night:9:t3:l2:n': 'd24b78b3', 'flat:sun:9:t3:l2:cat': '4d693588', 'flat:night:9:t3:l2:cat': '700a8ff0', 'flat:sun:9:t3:l2:dog': '1679562d',
+    'flat:night:9:t3:l2:dog': 'a106f3ef', 'flat:sun:9:t4:l0:n': '193c048a', 'flat:night:9:t4:l0:n': '2f58e042', 'flat:sun:9:t4:l0:cat': 'd6ddeb0d',
+    'flat:night:9:t4:l0:cat': 'cd429c86', 'flat:sun:9:t4:l0:dog': '36b67dd0', 'flat:night:9:t4:l0:dog': 'e3397ef5', 'flat:sun:9:t4:l2:n': 'f7c99c4a',
+    'flat:night:9:t4:l2:n': '4e1deaf6', 'flat:sun:9:t4:l2:cat': '95e460c1', 'flat:night:9:t4:l2:cat': '1d673fe6', 'flat:sun:9:t4:l2:dog': 'e61a8544',
+    'flat:night:9:t4:l2:dog': 'a7fadb1', 'flat:sun:9:t5:l0:n': '772840c8', 'flat:night:9:t5:l0:n': 'aa91e68c', 'flat:sun:9:t5:l0:cat': 'cad2a403',
+    'flat:night:9:t5:l0:cat': '1f30db3c', 'flat:sun:9:t5:l0:dog': '2d50621b', 'flat:night:9:t5:l0:dog': '3fdffaec', 'flat:sun:9:t5:l2:n': 'fa3f44a3',
+    'flat:night:9:t5:l2:n': '46a5f402', 'flat:sun:9:t5:l2:cat': '54657188', 'flat:night:9:t5:l2:cat': '1c4c432e', 'flat:sun:9:t5:l2:dog': '1cb64a58',
+    'flat:night:9:t5:l2:dog': '5a224eee', 'flat:sun:39:t0:l0:n': '5ae48100', 'flat:night:39:t0:l0:n': 'c9cd8702', 'flat:sun:39:t0:l0:cat': '20d7538f',
+    'flat:night:39:t0:l0:cat': '4354fe09', 'flat:sun:39:t0:l0:dog': '9fe72156', 'flat:night:39:t0:l0:dog': '3976269d',
+    'flat:sun:39:t0:l2:n': 'a93446f', 'flat:night:39:t0:l2:n': 'fa229a01', 'flat:sun:39:t0:l2:cat': '3303f0d8', 'flat:night:39:t0:l2:cat': 'f54d92ba',
+    'flat:sun:39:t0:l2:dog': 'd58f61f1', 'flat:night:39:t0:l2:dog': 'c2ef2872', 'flat:sun:39:t1:l0:n': 'bd65d988',
+    'flat:night:39:t1:l0:n': 'f0a3891a', 'flat:sun:39:t1:l0:cat': 'a57e9560', 'flat:night:39:t1:l0:cat': '79f6a42a',
+    'flat:sun:39:t1:l0:dog': '3d20e768', 'flat:night:39:t1:l0:dog': '5170c55d', 'flat:sun:39:t1:l2:n': 'e234e2b9',
+    'flat:night:39:t1:l2:n': '44899164', 'flat:sun:39:t1:l2:cat': 'ed448259', 'flat:night:39:t1:l2:cat': '5fec7310',
+    'flat:sun:39:t1:l2:dog': '202ab141', 'flat:night:39:t1:l2:dog': '2de99ed7', 'flat:sun:39:t2:l0:n': '1a3fb7d3',
+    'flat:night:39:t2:l0:n': '8c174ff9', 'flat:sun:39:t2:l0:cat': 'ea64de4', 'flat:night:39:t2:l0:cat': '3f80c65c',
+    'flat:sun:39:t2:l0:dog': '14d6bf8d', 'flat:night:39:t2:l0:dog': '1c6e4aa2', 'flat:sun:39:t2:l2:n': 'd96ca3dc',
+    'flat:night:39:t2:l2:n': '83b6a51f', 'flat:sun:39:t2:l2:cat': '2fbcc04b', 'flat:night:39:t2:l2:cat': '7a2e587a',
+    'flat:sun:39:t2:l2:dog': 'c50b2266', 'flat:night:39:t2:l2:dog': 'ba41da0', 'flat:sun:39:t3:l0:n': 'e6ed75b6', 'flat:night:39:t3:l0:n': 'fa42c92a',
+    'flat:sun:39:t3:l0:cat': '3be8a017', 'flat:night:39:t3:l0:cat': 'c1a646d', 'flat:sun:39:t3:l0:dog': '50b122fe',
+    'flat:night:39:t3:l0:dog': '65bf7c72', 'flat:sun:39:t3:l2:n': 'd8ac1a48', 'flat:night:39:t3:l2:n': '150aec47',
+    'flat:sun:39:t3:l2:cat': 'a75b6d19', 'flat:night:39:t3:l2:cat': 'd9170fcc', 'flat:sun:39:t3:l2:dog': 'da9ec918',
+    'flat:night:39:t3:l2:dog': '8f577103', 'flat:sun:39:t4:l0:n': 'b45bf25c', 'flat:night:39:t4:l0:n': '370f920d',
+    'flat:sun:39:t4:l0:cat': 'eca64f7b', 'flat:night:39:t4:l0:cat': '93962c99', 'flat:sun:39:t4:l0:dog': 'a479a026',
+    'flat:night:39:t4:l0:dog': '78e4de7a', 'flat:sun:39:t4:l2:n': 'b28c2117', 'flat:night:39:t4:l2:n': '35520a42',
+    'flat:sun:39:t4:l2:cat': 'd54e7c64', 'flat:night:39:t4:l2:cat': '4e4500fa', 'flat:sun:39:t4:l2:dog': '76ba6845',
+    'flat:night:39:t4:l2:dog': 'd4b841f5', 'flat:sun:39:t5:l0:n': '30e27f8', 'flat:night:39:t5:l0:n': '49c8a9f2', 'flat:sun:39:t5:l0:cat': 'b0b0184b',
+    'flat:night:39:t5:l0:cat': '4c0ef0f1', 'flat:sun:39:t5:l0:dog': 'c822e89f', 'flat:night:39:t5:l0:dog': '99e85ad8',
+    'flat:sun:39:t5:l2:n': '1038974d', 'flat:night:39:t5:l2:n': '1977bed0', 'flat:sun:39:t5:l2:cat': 'eeedaf06',
+    'flat:night:39:t5:l2:cat': 'fbc04f1f', 'flat:sun:39:t5:l2:dog': '87e1bdc6', 'flat:night:39:t5:l2:dog': 'd3af91e',
+    'flat:sun:44:t0:l0:n': '965b3d44', 'flat:night:44:t0:l0:n': 'b6bff38a', 'flat:sun:44:t0:l0:cat': '463e93bb',
+    'flat:night:44:t0:l0:cat': '23f2b161', 'flat:sun:44:t0:l0:dog': 'e39cfdda', 'flat:night:44:t0:l0:dog': '9375e535',
+    'flat:sun:44:t0:l2:n': 'd30e468f', 'flat:night:44:t0:l2:n': '23270e01', 'flat:sun:44:t0:l2:cat': 'bb9a9fb8',
+    'flat:night:44:t0:l2:cat': '1e5206ba', 'flat:sun:44:t0:l2:dog': 'c2f135d1', 'flat:night:44:t0:l2:dog': 'ebf39c72',
+    'flat:sun:44:t1:l0:n': '501803f', 'flat:night:44:t1:l0:n': 'f8baaa08', 'flat:sun:44:t1:l0:cat': 'ffd110ef', 'flat:night:44:t1:l0:cat': '716bc4a0',
+    'flat:sun:44:t1:l0:dog': '2c18513', 'flat:night:44:t1:l0:dog': '880d6e07', 'flat:sun:44:t1:l2:n': '256801af', 'flat:night:44:t1:l2:n': '137312ac',
+    'flat:sun:44:t1:l2:cat': '4d5eb437', 'flat:night:44:t1:l2:cat': 'c35fc5d8', 'flat:sun:44:t1:l2:dog': 'd6f24ff7',
+    'flat:night:44:t1:l2:dog': '40d12767', 'flat:sun:44:t2:l0:n': 'dc56d92b', 'flat:night:44:t2:l0:n': '68c2ef94',
+    'flat:sun:44:t2:l0:cat': '1200bb4c', 'flat:night:44:t2:l0:cat': '5fa8ab69', 'flat:sun:44:t2:l0:dog': 'b203ac85',
+    'flat:night:44:t2:l0:dog': 'ee994207', 'flat:sun:44:t2:l2:n': '28a41581', 'flat:night:44:t2:l2:n': 'bda8bf23',
+    'flat:sun:44:t2:l2:cat': '16bdb3be', 'flat:night:44:t2:l2:cat': 'e09c3a46', 'flat:sun:44:t2:l2:dog': '3fead663',
+    'flat:night:44:t2:l2:dog': '9072593c', 'flat:sun:44:t3:l0:n': 'eceef0b6', 'flat:night:44:t3:l0:n': '6a645f9d',
+    'flat:sun:44:t3:l0:cat': '41ea1b17', 'flat:night:44:t3:l0:cat': '2e37efc6', 'flat:sun:44:t3:l0:dog': '56b29dfe',
+    'flat:night:44:t3:l0:dog': '417d50b1', 'flat:sun:44:t3:l2:n': '3f514625', 'flat:night:44:t3:l2:n': '6ff4fa79',
+    'flat:sun:44:t3:l2:cat': 'a50040d0', 'flat:night:44:t3:l2:cat': 'fcacab6a', 'flat:sun:44:t3:l2:dog': '4bbf50b5',
+    'flat:night:44:t3:l2:dog': '967aff59', 'flat:sun:44:t4:l0:n': '3c816c98', 'flat:night:44:t4:l0:n': '8a5e796a',
+    'flat:sun:44:t4:l0:cat': '73e14fbf', 'flat:night:44:t4:l0:cat': 'aa53098e', 'flat:sun:44:t4:l0:dog': '6d0641a',
+    'flat:night:44:t4:l0:dog': '9c8e0b5d', 'flat:sun:44:t4:l2:n': '96c1d798', 'flat:night:44:t4:l2:n': 'b2c65e25',
+    'flat:sun:44:t4:l2:cat': '8b24958b', 'flat:night:44:t4:l2:cat': '9cb6b375', 'flat:sun:44:t4:l2:dog': '1a40f5b6',
+    'flat:night:44:t4:l2:dog': 'ad658602', 'flat:sun:44:t5:l0:n': 'a1d9326b', 'flat:night:44:t5:l0:n': '149d79ca',
+    'flat:sun:44:t5:l0:cat': 'e2afe34f', 'flat:night:44:t5:l0:cat': '3639e780', 'flat:sun:44:t5:l0:dog': 'd986d2c4',
+    'flat:night:44:t5:l0:dog': '79d0913', 'flat:sun:44:t5:l2:n': '2a0316bd', 'flat:night:44:t5:l2:n': '46fea011', 'flat:sun:44:t5:l2:cat': '3e3edfcd',
+    'flat:night:44:t5:l2:cat': 'ac05a65b', 'flat:sun:44:t5:l2:dog': 'ec01ba0e', 'flat:night:44:t5:l2:dog': '2a9dedcc', 'flat:sun:nogame': 'fb989ec6',
+    'flat:night:nogame': '42dd8757'
+  };
+  const P9_CHANGED = {};
+  const p9now = await collectP9();
+  for (const k of Object.keys(P9_REF)) assert(p9now[k] === (P9_CHANGED[k] || P9_REF[k]), `batch 8 ${k}: the picture changed (${p9now[k]}, was ${P9_CHANGED[k] || P9_REF[k]})`);
+  assert(Object.keys(p9now).length === Object.keys(P9_REF).length, 'batch 8: the set of reference pictures changed');
+  for (const k of Object.keys(P9_CHANGED)) assert(P9_CHANGED[k] !== P9_REF[k], `batch 8 ${k}: the ruled change is not a change`);
+
+  // ---- stage 3 batch 8 asserts go here ----
+  if (process.env.B8_ONLY) { console.log('motion-run: batch 8 pins and asserts pass'); return; }
 
   // ---- stage 3 batch 7: the decision rooms and the speaker close-up as layers ----
   await page.evaluate(() => {
