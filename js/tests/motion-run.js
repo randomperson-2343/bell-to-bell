@@ -56,6 +56,125 @@ async function run() {
   }, [scene, opts, i, t]);
   const day7 = { day: 7, brief: { title: 'Headline', feed: [] } };
 
+  // ---- stage 3 batch 7: reference pictures of the decision rooms and their beats, recorded before the code changed ----
+  // room() flat for every id, after false and true, with and without story state, on four days; the final frame of both beats of B.Scenes.decision for every id;
+  // the news and weekend beats that draw the vote, hearing and rack rooms; the aftermath popup's still. P8_CHANGED holds the ruled changes (none).
+  const collectP8 = () => page.evaluate(() => {
+    const fnvS = (s) => { let x = 2166136261; for (let i = 0; i < s.length; i++) { x ^= s.charCodeAt(i); x = Math.imul(x, 16777619); } return (x >>> 0).toString(16); };
+    const hashOf = (fn) => { const cv = document.createElement('canvas'); cv.width = 640; cv.height = 360; const g = cv.getContext('2d'); g.imageSmoothingEnabled = false; fn(g, cv);
+      const d = g.getImageData(0, 0, 640, 360).data; let x = 2166136261; for (let i = 0; i < d.length; i++) { x ^= d[i]; x = Math.imul(x, 16777619); } return (x >>> 0).toString(16); };
+    const A = BTB.DecisionArt, out = {}, view = { w: 640, h: 360 };
+    const items = BTB.Life.LIFE.map((b) => ({ id: b.id, day: b.day, speaker: b.speaker, role: b.role, title: b.title }))
+      .concat(Object.keys(BTB.StoryData.CHOICES).filter((k) => !BTB.StoryData.CHOICES[k].mid).map((k) => { const c = BTB.StoryData.CHOICES[k]; return { id: k, day: c.day, speaker: c.speaker, role: c.role, title: c.title }; }));
+    const FULL = { f: { billPassed: true, pulledPlug: true }, wallet: { pet: { kind: 'cat', sex: 'boy', name: 'Rosco' } } };
+    for (const it of items) for (const after of [false, true]) for (const [sk, S] of [['n', null], ['f', FULL]]) {
+      const hs = [it.day, 0, 21, 40, 60].map((d) => hashOf((g) => A.room(g, it.id, d, after, S)));
+      out[`rm:${it.id}:${after ? 'a' : 'b'}${sk}`] = fnvS(hs.join());
+    }
+    for (const it of items) for (const [sk, S, spk] of [['fresh', BTB.StoryMode.freshState(250000), it.speaker], ['none', null, it.speaker], ['nobody', FULL, 'Nobody At All'], ['empty', null, '']]) {
+      BTB.Scenes.decision({ id: it.id, day: it.day, speaker: spk, role: it.role, title: sk === 'empty' ? '' : it.title, S }).forEach((b) => { out[`dc:${it.id}:${sk}:${b.id.split(':').pop()}`] = hashOf((g) => b.draw(g, view, 1, {})); });
+    }
+    // the news and weekend beats that borrow the rooms
+    const nopt = (day, S) => Object.assign({ day, brief: { title: 'Headline of the day', feed: [] } }, S ? { game: { mode: { S } } } : {});
+    const take = (key, scene, o) => BTB.Scenes[scene](o).forEach((b) => { out[`bw:${key}:${b.id.split(':').pop()}`] = hashOf((g) => b.draw(g, view, 1, {})); });
+    for (const d of [11, 38, 41]) take('news' + d, 'news', nopt(d));
+    take('news41p', 'news', nopt(41, { f: { billPassed: true } }));
+    take('news45p', 'news', nopt(45, { f: { pulledPlug: true } }));
+    take('wk39', 'weekend', { day: 39 });
+    take('wk44', 'weekend', { day: 44 });
+    take('wk44p', 'weekend', { day: 44, game: { mode: { S: { f: { pulledPlug: true } } } } });
+    for (const id of BTB.Rhythm.endingIds.slice(0, 22)) BTB.Scenes.ending({ id, title: id, deck: 'Deck', dark: false }).forEach((b, k) => { out[`en:${id}:${k}`] = hashOf((g) => b.draw(g, view, 1, {})); });
+    // the aftermath popup's still
+    for (const [k, id, day, S] of [['c1', 'c1', 3, null], ['c8', 'c8', 39, null], ['c8p', 'c8', 39, { f: { billPassed: true } }], ['c10p', 'c10', 44, { f: { pulledPlug: true } }], ['vetER', 'vetER', 27, null], ['adopt', 'adopt', 4, null], ['pet', 'vetCheck', 14, FULL]]) {
+      out['still:' + k] = hashOf((g, cv) => A.still(cv, { id, day, S }));
+    }
+    return out;
+  });
+  if (process.env.DUMP_P8) { console.log(JSON.stringify(await collectP8())); return; }
+  const P8_REF = {
+    'rm:rentHike:bn': 'a161a97d', 'rm:rentHike:bf': 'a161a97d', 'rm:rentHike:an': 'a161a97d', 'rm:rentHike:af': 'a161a97d',
+    'rm:advance:bn': '8aeadbed', 'rm:advance:bf': '8aeadbed', 'rm:advance:an': '8aeadbed', 'rm:advance:af': '8aeadbed', 'rm:dadBill:bn': '74f9b1e5',
+    'rm:dadBill:bf': '74f9b1e5', 'rm:dadBill:an': '74f9b1e5', 'rm:dadBill:af': '74f9b1e5', 'rm:perry:bn': '52c7eee0', 'rm:perry:bf': '52c7eee0',
+    'rm:perry:an': '52c7eee0', 'rm:perry:af': '52c7eee0', 'rm:pension:bn': '6b59759d', 'rm:pension:bf': '6b59759d', 'rm:pension:an': '6b59759d',
+    'rm:pension:af': '6b59759d', 'rm:adopt:bn': 'efb2c75c', 'rm:adopt:bf': 'efb2c75c', 'rm:adopt:an': 'efb2c75c', 'rm:adopt:af': 'efb2c75c',
+    'rm:dentist:bn': '8709599e', 'rm:dentist:bf': '8709599e', 'rm:dentist:an': '8709599e', 'rm:dentist:af': '8709599e', 'rm:vetCheck:bn': '3cec6504',
+    'rm:vetCheck:bf': '569dd968', 'rm:vetCheck:an': '3cec6504', 'rm:vetCheck:af': '569dd968', 'rm:toothache:bn': '9a42ede7',
+    'rm:toothache:bf': '9a42ede7', 'rm:toothache:an': '9a42ede7', 'rm:toothache:af': '9a42ede7', 'rm:vetER:bn': 'df03daf1',
+    'rm:vetER:bf': 'df03daf1', 'rm:vetER:an': 'df03daf1', 'rm:vetER:af': 'df03daf1', 'rm:c1:bn': '4d3c2a57', 'rm:c1:bf': '4d3c2a57',
+    'rm:c1:an': '4d3c2a57', 'rm:c1:af': '4d3c2a57', 'rm:c3:bn': '4c010a54', 'rm:c3:bf': '4c010a54', 'rm:c3:an': '4c010a54', 'rm:c3:af': '4c010a54',
+    'rm:c5:bn': '322f06fc', 'rm:c5:bf': '322f06fc', 'rm:c5:an': '322f06fc', 'rm:c5:af': '322f06fc', 'rm:c6:bn': 'd6bcd9c7', 'rm:c6:bf': 'd6bcd9c7',
+    'rm:c6:an': 'd6bcd9c7', 'rm:c6:af': 'd6bcd9c7', 'rm:c7:bn': 'd33e1cb3', 'rm:c7:bf': 'd33e1cb3', 'rm:c7:an': 'd33e1cb3', 'rm:c7:af': 'd33e1cb3',
+    'rm:c8:bn': '372c9ae8', 'rm:c8:bf': '372c9ae8', 'rm:c8:an': '372c9ae8', 'rm:c8:af': 'ea8b62f2', 'rm:c9:bn': '53f1b924', 'rm:c9:bf': '53f1b924',
+    'rm:c9:an': '53f1b924', 'rm:c9:af': '53f1b924', 'rm:c10:bn': '18e9eb34', 'rm:c10:bf': '18e9eb34', 'rm:c10:an': '18e9eb34',
+    'rm:c10:af': '59e6016d', 'dc:rentHike:fresh:room': 'efd72282', 'dc:rentHike:fresh:face': '49cb131', 'dc:rentHike:none:room': 'efd72282',
+    'dc:rentHike:none:face': '49cb131', 'dc:rentHike:nobody:room': 'efd72282', 'dc:rentHike:nobody:face': '8bef5c6f',
+    'dc:rentHike:empty:room': 'efd72282', 'dc:rentHike:empty:face': '8bef5c6f', 'dc:advance:fresh:room': '12b66ab0',
+    'dc:advance:fresh:face': 'a4bcb34e', 'dc:advance:none:room': '12b66ab0', 'dc:advance:none:face': 'a4bcb34e',
+    'dc:advance:nobody:room': '12b66ab0', 'dc:advance:nobody:face': '3dce8581', 'dc:advance:empty:room': '12b66ab0',
+    'dc:advance:empty:face': '3dce8581', 'dc:dadBill:fresh:room': '127aaa26', 'dc:dadBill:fresh:face': '3b3899bc',
+    'dc:dadBill:none:room': '127aaa26', 'dc:dadBill:none:face': '3b3899bc', 'dc:dadBill:nobody:room': '127aaa26',
+    'dc:dadBill:nobody:face': 'dc89d1d3', 'dc:dadBill:empty:room': '127aaa26', 'dc:dadBill:empty:face': 'dc89d1d3',
+    'dc:perry:fresh:room': 'ae61059d', 'dc:perry:fresh:face': '79e24a79', 'dc:perry:none:room': 'ae61059d', 'dc:perry:none:face': '79e24a79',
+    'dc:perry:nobody:room': 'ae61059d', 'dc:perry:nobody:face': '7dc0d2c5', 'dc:perry:empty:room': 'ae61059d', 'dc:perry:empty:face': '7dc0d2c5',
+    'dc:pension:fresh:room': 'bf279567', 'dc:pension:fresh:face': '7dfdaf01', 'dc:pension:none:room': 'bf279567', 'dc:pension:none:face': '7dfdaf01',
+    'dc:pension:nobody:room': 'bf279567', 'dc:pension:nobody:face': '877f00a6', 'dc:pension:empty:room': 'bf279567',
+    'dc:pension:empty:face': '877f00a6', 'dc:adopt:fresh:room': '7a3fe68e', 'dc:adopt:fresh:face': 'f2a840d0', 'dc:adopt:none:room': '7a3fe68e',
+    'dc:adopt:none:face': 'f2a840d0', 'dc:adopt:nobody:room': '7a3fe68e', 'dc:adopt:nobody:face': '172400e1', 'dc:adopt:empty:room': '7a3fe68e',
+    'dc:adopt:empty:face': '172400e1', 'dc:dentist:fresh:room': '582685ad', 'dc:dentist:fresh:face': 'dd18b4ae', 'dc:dentist:none:room': '582685ad',
+    'dc:dentist:none:face': 'dd18b4ae', 'dc:dentist:nobody:room': '582685ad', 'dc:dentist:nobody:face': '347414bd',
+    'dc:dentist:empty:room': '582685ad', 'dc:dentist:empty:face': '347414bd', 'dc:vetCheck:fresh:room': '34391d17',
+    'dc:vetCheck:fresh:face': '933f4598', 'dc:vetCheck:none:room': '34391d17', 'dc:vetCheck:none:face': '933f4598',
+    'dc:vetCheck:nobody:room': '8a534ba5', 'dc:vetCheck:nobody:face': '6e92be7c', 'dc:vetCheck:empty:room': '34391d17',
+    'dc:vetCheck:empty:face': '449524d1', 'dc:toothache:fresh:room': '8fce00d4', 'dc:toothache:fresh:face': 'b1ebc973',
+    'dc:toothache:none:room': '8fce00d4', 'dc:toothache:none:face': 'b1ebc973', 'dc:toothache:nobody:room': '8fce00d4',
+    'dc:toothache:nobody:face': '3665513b', 'dc:toothache:empty:room': '8fce00d4', 'dc:toothache:empty:face': '3665513b',
+    'dc:vetER:fresh:room': '21c4b3c', 'dc:vetER:fresh:face': 'ba830aa4', 'dc:vetER:none:room': '21c4b3c', 'dc:vetER:none:face': 'ba830aa4',
+    'dc:vetER:nobody:room': '21c4b3c', 'dc:vetER:nobody:face': '64c0d14d', 'dc:vetER:empty:room': '21c4b3c', 'dc:vetER:empty:face': '64c0d14d',
+    'dc:c1:fresh:room': 'e330fd3', 'dc:c1:fresh:face': 'c41283cd', 'dc:c1:none:room': 'e330fd3', 'dc:c1:none:face': 'c41283cd',
+    'dc:c1:nobody:room': 'e330fd3', 'dc:c1:nobody:face': '30da3d84', 'dc:c1:empty:room': 'e330fd3', 'dc:c1:empty:face': '30da3d84',
+    'dc:c3:fresh:room': '66d0ce29', 'dc:c3:fresh:face': '79aeebda', 'dc:c3:none:room': '66d0ce29', 'dc:c3:none:face': '79aeebda',
+    'dc:c3:nobody:room': '66d0ce29', 'dc:c3:nobody:face': '166fe59f', 'dc:c3:empty:room': '66d0ce29', 'dc:c3:empty:face': '166fe59f',
+    'dc:c5:fresh:room': 'a062e52d', 'dc:c5:fresh:face': '2ceb0ae6', 'dc:c5:none:room': 'a062e52d', 'dc:c5:none:face': '2ceb0ae6',
+    'dc:c5:nobody:room': 'a062e52d', 'dc:c5:nobody:face': 'b7ee595', 'dc:c5:empty:room': 'a062e52d', 'dc:c5:empty:face': 'b7ee595',
+    'dc:c6:fresh:room': 'e1933fb7', 'dc:c6:fresh:face': '670f4aa3', 'dc:c6:none:room': 'e1933fb7', 'dc:c6:none:face': '670f4aa3',
+    'dc:c6:nobody:room': 'e1933fb7', 'dc:c6:nobody:face': 'b639d8ff', 'dc:c6:empty:room': 'e1933fb7', 'dc:c6:empty:face': 'b639d8ff',
+    'dc:c7:fresh:room': 'c94e9bee', 'dc:c7:fresh:face': '21d6969', 'dc:c7:none:room': 'c94e9bee', 'dc:c7:none:face': '21d6969',
+    'dc:c7:nobody:room': 'c94e9bee', 'dc:c7:nobody:face': '4ff0908a', 'dc:c7:empty:room': 'c94e9bee', 'dc:c7:empty:face': '4ff0908a',
+    'dc:c8:fresh:room': 'ed33bf24', 'dc:c8:fresh:face': '46724ba4', 'dc:c8:none:room': 'ed33bf24', 'dc:c8:none:face': '46724ba4',
+    'dc:c8:nobody:room': 'ed33bf24', 'dc:c8:nobody:face': '3c129475', 'dc:c8:empty:room': 'ed33bf24', 'dc:c8:empty:face': '3c129475',
+    'dc:c9:fresh:room': 'eea86758', 'dc:c9:fresh:face': '25342649', 'dc:c9:none:room': 'eea86758', 'dc:c9:none:face': '25342649',
+    'dc:c9:nobody:room': 'eea86758', 'dc:c9:nobody:face': 'a142a57f', 'dc:c9:empty:room': 'eea86758', 'dc:c9:empty:face': 'a142a57f',
+    'dc:c10:fresh:room': '1b8567b', 'dc:c10:fresh:face': '6dcbf188', 'dc:c10:none:room': '1b8567b', 'dc:c10:none:face': '6dcbf188',
+    'dc:c10:nobody:room': '1b8567b', 'dc:c10:nobody:face': '7c0a89b6', 'dc:c10:empty:room': '1b8567b', 'dc:c10:empty:face': '7c0a89b6',
+    'bw:news11:establish': '110cf4d2', 'bw:news11:detail': '2b9c42fd', 'bw:news38:establish': 'c6fb2c3', 'bw:news38:detail': 'af5be3db',
+    'bw:news38:hold': 'dfd1f71a', 'bw:news41:establish': 'f65c71ae', 'bw:news41:detail': '212ffc84', 'bw:news41:hold': '3435cd15',
+    'bw:news41p:establish': 'eecf53', 'bw:news41p:detail': '4edd49f9', 'bw:news41p:hold': 'a3c2e72f', 'bw:news45p:establish': '65ddd720',
+    'bw:news45p:detail': 'c5845d35', 'bw:news45p:hold': 'fb86be25', 'bw:wk39:sat': 'c35fdaf', 'bw:wk39:sun': '1a3fb7d3', 'bw:wk39:whip': 'ed33bf24',
+    'bw:wk39:hold': 'a5fb555f', 'bw:wk44:sat': 'dadf9daa', 'bw:wk44:sun': 'dc56d92b', 'bw:wk44:hold': '3753fcd3', 'bw:wk44:317': 'ffecf1f5',
+    'bw:wk44p:sat': '14b498c5', 'bw:wk44p:sun': 'dc56d92b', 'bw:wk44p:hold': '3753fcd3', 'bw:wk44p:317': 'f8a99c80', 'en:wiped:0': '3c21d529',
+    'en:wiped:1': 'fccc4df7', 'en:wiped:2': '90d5e1c5', 'en:fired:0': '7d134b80', 'en:fired:1': 'b7ecf876', 'en:fired:2': '90d5e1c5',
+    'en:exit:0': 'e745aeaa', 'en:exit:1': 'e9855378', 'en:exit:2': '90d5e1c5', 'en:nobody:0': '3c550175', 'en:nobody:1': '89ab932d',
+    'en:nobody:2': '90d5e1c5', 'en:master:0': 'a0e5af85', 'en:master:1': '913e45c3', 'en:master:2': '90d5e1c5', 'en:whistle:0': 'ba25f19',
+    'en:whistle:1': 'a98033c8', 'en:whistle:2': '90d5e1c5', 'en:revolving:0': '8a781c89', 'en:revolving:1': '6af4b0c0', 'en:revolving:2': '90d5e1c5',
+    'en:perp:0': '41b6be90', 'en:perp:1': '8fde03d6', 'en:perp:2': '90d5e1c5', 'en:fall-guy:0': 'f98d3c00', 'en:fall-guy:1': '18db3953',
+    'en:fall-guy:2': '90d5e1c5', 'en:cassandra:0': 'e1616c7b', 'en:cassandra:1': '50cca0ec', 'en:cassandra:2': '90d5e1c5',
+    'en:acquirer:0': 'ec5ac43d', 'en:acquirer:1': 'd1b3f2c3', 'en:acquirer:2': '90d5e1c5', 'en:ward:0': '514baa8f', 'en:ward:1': '887fe114',
+    'en:ward:2': '90d5e1c5', 'en:clawback:0': 'd66082a1', 'en:clawback:1': 'c30704b8', 'en:clawback:2': '90d5e1c5', 'en:right-early:0': '2aee2d23',
+    'en:right-early:1': '70585d6e', 'en:right-early:2': '90d5e1c5', 'en:fund:0': 'a6b9606a', 'en:fund:1': '735d0490', 'en:fund:2': '90d5e1c5',
+    'en:everything-rally:0': '71c3b524', 'en:everything-rally:1': 'cdbd1763', 'en:everything-rally:2': '90d5e1c5', 'en:lost-decade:0': '22b1d074',
+    'en:lost-decade:1': 'e2e44797', 'en:lost-decade:2': '90d5e1c5', 'en:soft:0': '4f92a3aa', 'en:soft:1': '5d3177ad', 'en:soft:2': '90d5e1c5',
+    'en:quiet:0': '1db26c4a', 'en:quiet:1': 'af5ce437', 'en:quiet:2': '90d5e1c5', 'en:replaced:0': '5a858a68', 'en:replaced:1': '6d9df26e',
+    'en:replaced:2': '90d5e1c5', 'en:depression:0': '1fa21238', 'en:depression:1': 'f1bf77bb', 'en:depression:2': '90d5e1c5',
+    'en:grind:0': '6130e464', 'en:grind:1': 'adc43623', 'en:grind:2': '90d5e1c5', 'still:c1': 'cce31cad', 'still:c8': '555127f',
+    'still:c8p': '253beda9', 'still:c10p': 'a7b1ee59', 'still:vetER': '5c769bd7', 'still:adopt': 'cfc09921', 'still:pet': 'cc7ee552'
+  };
+  const P8_CHANGED = {};
+  const p8now = await collectP8();
+  for (const k of Object.keys(P8_REF)) assert(p8now[k] === (P8_CHANGED[k] || P8_REF[k]), `batch 7 ${k}: the picture changed (${p8now[k]}, was ${P8_CHANGED[k] || P8_REF[k]})`);
+  assert(Object.keys(p8now).length === Object.keys(P8_REF).length, 'batch 7: the set of reference pictures changed');
+  for (const k of Object.keys(P8_CHANGED)) assert(P8_CHANGED[k] !== P8_REF[k], `batch 7 ${k}: the ruled change is not a change`);
+  if (process.env.P8_ONLY) { console.log('motion-run: batch 7 pins pass'); return; }
+
   assert(await shot('news', day7, 1, 0.5) !== await shot('news', day7, 1, 2.2), 'default camera does not move the shot');
   assert(await frame('news', day7, 1, 1.0) === await frame('news', day7, 1, 1.0), 'same time must give the same picture');
   assert(await band('news', day7, 1, 0.5) === await band('news', day7, 1, 2.2), 'the camera moved the letterbox');
