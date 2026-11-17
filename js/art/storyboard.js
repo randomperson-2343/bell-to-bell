@@ -202,6 +202,22 @@
   function valueLines(value, width) { return X.wrap(R.clean(value), width).slice(0, 2); }
   // The footnote's circled line (y of the pen's middle).
   const footnoteLine = (day) => 50 + (6 + day % 6) * 12;
+  // Where the documents' moving marks sit, read by the flat art (DOC_DRAW) and by the layered documents (docLayers), so the two cannot drift apart.
+  // ticket: the order book's bars at step s (0 = the art, 3 = the start); vote: the 6 x 18 lamp banks and which lamps are lit; voicemail: the 34 level bars (the day sets
+  // the heights); memo: the highlighter band.
+  const DOC_GEOM = {
+    memo: { band: { x: 112, y: 96, w: 416, h: 58 } },
+    ticket: {
+      bid: (i, s) => ({ x: 100, y: 80 + i * 14, w: 100 - i * 18 + 12 * (s || 0), h: 8 }),
+      ask: (i, s) => { const w = 60 + i * 12 - 12 * (s || 0); return { x: 540 - w, y: 80 + i * 14, w, h: 8 }; }
+    },
+    vote: {
+      rows: 6, cols: 18,
+      yea: (q, k) => ({ x: 64 + 13 * k, y: 56 + 13 * q, w: 9, h: 9 }), nay: (q, k) => ({ x: 340 + 13 * k, y: 56 + 13 * q, w: 9, h: 9 }),
+      yeaLit: (q, k) => (q * 18 + k) % 7 !== 0, nayLit: (q, k) => (q * 18 + k) % 5 !== 0
+    },
+    voicemail: { count: 34, bar: (i, day) => { const h = 4 + ((i * 37 + day) % 36); return { x: 224 + i * 5.8, y: 110 - h / 2, w: 3, h }; } }
+  };
   const DOC_DRAW = {
     // o (all optional; absent draws the whole flat picture) is each document's own options: memo part 'paper' (desk, paper, grey lines)
     // or 'ink' (the value only), the highlighter band only when no part; footnote noMarker; post part 'city' / 'phone' / 'glass' and noFlag;
@@ -212,7 +228,7 @@
         deskUnder(ctx); paper(ctx, 96, 34, 448, 232, LABELS.memo);
         for (let i = 0; i < 5; i++) X.rect(ctx, 116, 180 + i * 12, 200 + ((i * 67 + day * 13) % 200), 2, P.grey2);
       }
-      if (!part) X.rect(ctx, 112, 96, 416, 58, c.wash);
+      if (!part) { const b = DOC_GEOM.memo.band; X.rect(ctx, b.x, b.y, b.w, b.h, c.wash); }
       if (!part || part === 'ink') {
         const lines = valueLines(value, 200);
         lines.forEach((ln, i) => big(ctx, ln, 320, 104 + i * 22 + (lines.length === 1 ? 10 : 0), P.ink, 2, 'center'));
@@ -279,8 +295,9 @@
       }
       if (!part) {
         for (let i = 0; i < 5; i++) {
-          X.rect(ctx, 100, 80 + i * 14, 100 - i * 18, 8, i ? P.screenGlow : P.jadeD);
-          X.rect(ctx, 540 - (60 + i * 12), 80 + i * 14, 60 + i * 12, 8, P.crimsonD);
+          const bid = DOC_GEOM.ticket.bid(i), ask = DOC_GEOM.ticket.ask(i);
+          X.rect(ctx, bid.x, bid.y, bid.w, bid.h, i ? P.screenGlow : P.jadeD);
+          X.rect(ctx, ask.x, ask.y, ask.w, ask.h, P.crimsonD);
         }
       }
       if (!part || part === 'glass') {
@@ -293,9 +310,11 @@
       X.cel(ctx, 40, 20, 560, 256, P.ink, P.slate2, P.ink2, P.ink2, 3);
       R.text(ctx, LABELS.vote, 320, 32, P.amber, 'center');
       // Two banks of lamps, yea and nay.
-      for (let r = 0; r < 6; r++) for (let k = 0; k < 18; k++) {
-        X.rect(ctx, 64 + k * 13, 56 + r * 13, 9, 9, (r * 18 + k) % 7 && !(o && o.unlit) ? P.jadeD : P.ink2);
-        X.rect(ctx, 340 + k * 13, 56 + r * 13, 9, 9, (r * 18 + k) % 5 && !(o && o.unlit) ? P.crimsonD : P.ink2);
+      const VG = DOC_GEOM.vote;
+      for (let r = 0; r < VG.rows; r++) for (let k = 0; k < VG.cols; k++) {
+        const y = VG.yea(r, k), n = VG.nay(r, k);
+        X.rect(ctx, y.x, y.y, y.w, y.h, VG.yeaLit(r, k) && !(o && o.unlit) ? P.jadeD : P.ink2);
+        X.rect(ctx, n.x, n.y, n.w, n.h, VG.nayLit(r, k) && !(o && o.unlit) ? P.crimsonD : P.ink2);
       }
       valueLines(value, 180).forEach((ln, i) => big(ctx, ln, 320, 160 + i * 28, P.bone, 3, 'center'));
     },
@@ -304,7 +323,7 @@
       X.cel(ctx, 200, 14, 240, 290, P.ink2, P.slate2, P.ink, P.ink2, 3);
       X.rect(ctx, 212, 28, 216, 262, P.screen);
       R.text(ctx, LABELS.voicemail, 320, 40, P.grey2, 'center');
-      for (let i = 0; i < 34; i++) { const h = 4 + ((i * 37 + day) % 36); X.rect(ctx, 224 + i * 5.8, 110 - h / 2, 3, h, i < (o && o.played != null ? o.played : 12) ? P.phosphor : P.slate2); }
+      for (let i = 0; i < DOC_GEOM.voicemail.count; i++) { const b = DOC_GEOM.voicemail.bar(i, day); X.rect(ctx, b.x, b.y, b.w, b.h, i < (o && o.played != null ? o.played : 12) ? P.phosphor : P.slate2); }
       valueLines(value, 90).forEach((ln, i) => big(ctx, ln, 320, 150 + i * 22, P.bone, 2, 'center'));
     }
   };
@@ -337,12 +356,14 @@
     fn(c);
     c.restore();
   }
+  // The desk's zoom (1.15 when none is given) and the y it is placed at: one source for the paper and the marks drawn on it.
+  const deskZoom = (zoom) => ({ z: zoom || 1.15, ty: zoom ? 84 : 104 });
   function deskSpace(ctx, day, zoom, fn) {
-    const z = zoom || 1.15, ty = zoom ? 84 : 104;
+    const { z, ty } = deskZoom(zoom);
     at2x(ctx, (c) => deskXform(c, z, ty, fn), day);
   }
   function deskWithDoc(ctx, day, r, zoom, o) {
-    const z = zoom || 1.15, ty = zoom ? 84 : 104, part = o && o.part, dy = (o && o.dy) || 0;
+    const { z, ty } = deskZoom(zoom), part = o && o.part, dy = (o && o.dy) || 0;
     at2x(ctx, (c) => {
       if (part !== 'paper') X.rect(c, 0, 0, 320, 180, P.desk);
       deskXform(c, z, ty, (g) => {
@@ -1062,7 +1083,7 @@
       return {
         camera, layers: [
           { id: 'paper', depth: 1, draw(g) { D(g, day, value, cc, { part: 'paper' }); } },
-          { id: 'band', depth: 1, draw() {}, animate(g, v, t) { K.marker(g, [{ x: 112, y: 96, w: 416, h: 58 }], t, { at: 0.35, dur: 0.50, col: cc.wash, fps: 20 }); } },
+          { id: 'band', depth: 1, draw() {}, animate(g, v, t) { K.marker(g, [DOC_GEOM.memo.band], t, { at: 0.35, dur: 0.50, col: cc.wash, fps: 20 }); } },
           top('ink', 'ink')
         ]
       };
@@ -1121,9 +1142,9 @@
             id: 'book', depth: 1, draw() {},
             animate(g, v, t) {
               for (let i = 0; i < 5; i++) {
-                const s = bookStep(i, t), w = 60 + i * 12 - 12 * s;
-                X.rect(g, 100, 80 + i * 14, 100 - i * 18 + 12 * s, 8, i ? P.screenGlow : P.jadeD);
-                X.rect(g, 540 - w, 80 + i * 14, w, 8, P.crimsonD);
+                const s = bookStep(i, t), bid = DOC_GEOM.ticket.bid(i, s), ask = DOC_GEOM.ticket.ask(i, s);
+                X.rect(g, bid.x, bid.y, bid.w, bid.h, i ? P.screenGlow : P.jadeD);
+                X.rect(g, ask.x, ask.y, ask.w, ask.h, P.crimsonD);
               }
             }
           },
@@ -1132,12 +1153,12 @@
       };
     }
     if (doc === 'vote') {
-      const yea = [], nay = [];
-      for (let q = 0; q < 6; q++) {
+      const VG = DOC_GEOM.vote, yea = [], nay = [];
+      for (let q = 0; q < VG.rows; q++) {
         yea.push([]); nay.push([]);
-        for (let k = 0; k < 18; k++) {
-          if ((q * 18 + k) % 7) yea[q].push({ x: 64 + 13 * k, y: 56 + 13 * q, w: 9, h: 9 });
-          if ((q * 18 + k) % 5) nay[q].push({ x: 340 + 13 * k, y: 56 + 13 * q, w: 9, h: 9 });
+        for (let k = 0; k < VG.cols; k++) {
+          if (VG.yeaLit(q, k)) yea[q].push(VG.yea(q, k));
+          if (VG.nayLit(q, k)) nay[q].push(VG.nay(q, k));
         }
       }
       return {
@@ -1157,7 +1178,7 @@
     }
     // voicemail: the twelve bars the flat art lights, in X.rect's own truncation
     const cells = [];
-    for (let i = 0; i < 12; i++) { const h = 4 + ((i * 37 + day) % 36); cells.push({ x: (224 + i * 5.8) | 0, y: (110 - h / 2) | 0, w: 3, h }); }
+    for (let i = 0; i < 12; i++) { const b = DOC_GEOM.voicemail.bar(i, day); cells.push({ x: b.x | 0, y: b.y | 0, w: b.w, h: b.h }); }
     return {
       camera, layers: [
         { id: 'doc', depth: 1, draw(g) { D(g, day, value, cc, { played: 0 }); }, animate(g, v, t) { K.lamps(g, cells, t, { at: 0.40, step: 0.06, on: P.phosphor }); } },
