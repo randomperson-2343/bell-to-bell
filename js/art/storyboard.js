@@ -1598,6 +1598,8 @@
         if (L) beats[i] = B.Motion.layered(Object.assign({}, b, { camera: ph === 'establish' ? SETTLE2() : null, layers: L }, TAB_CUES[day] && ph === 'establish' ? { cues: TAB_CUES[day] } : {}));
         // Kavro Strait: the hold shows the ships where the detail left them (p = 1)
         else if (r.arg === 3 && ph === 'hold') beats[i] = Object.assign({}, b, { draw: (c) => { at2x(c, (cc) => tableau(cc, 3, 0, { p: 1 }), day); c.save(); c.globalAlpha = 0.18; X.rect(c, 0, 0, V.w, V.h, P.ink); c.restore(); } });
+        // a flat detail (the records, day 25) stays where it is: no camera
+        else if (ph === 'detail') beats[i] = Object.assign({}, b, { camera: null });
       }
       else if (r.shot === 'place' && /:(establish|detail)$/.test(b.id)) {
         const L = placeLayers(day, r, title, /:detail$/.test(b.id));

@@ -1536,7 +1536,7 @@ async function run() {
       const d = cv.getContext('2d').getImageData(0, Math.round(12 * k), cv.width, Math.round(335 * k)).data;
       let clear = 0; for (let i = 3; i < d.length; i += 4) if (d[i] === 0) clear++;
       const beat = BTB.Cinematic.beats[1];
-      return { clear, zoom: BTB.Motion.cameraAt(beat.camera || BTB.Motion.presetFor(beat), t / beat.dur).zoom };
+      return { clear, zoom: BTB.Motion.cameraAt(beat.camera, t / beat.dur).zoom };
     }, t);
     assert(r.clear === 0, `transparent pixels in the shot rows at t=${t}`);
     assert(r.zoom === 1, `default camera zoom ${r.zoom} at t=${t}`);
@@ -1838,6 +1838,12 @@ async function run() {
   const sh = [await lay(0.5), await lay(1.2)];
   await page.evaluate(() => BTB.Settings.set('cinematics', 'full'));
   assert(sh[0] === sh[1] && sh[0] === refShot, 'short: a layered shot is not its final still');
+  // short mode on a real flat beat (the records tableau, news day 25, once tilted by a default camera): the picture area is the same at two times
+  await page.evaluate(() => BTB.Settings.set('cinematics', 'short'));
+  const r25 = { day: 25, brief: { title: 'Headline', feed: [] } };
+  const shortFlat = [await shot('news', r25, 0, 0.5), await shot('news', r25, 0, 1.3)];
+  await page.evaluate(() => BTB.Settings.set('cinematics', 'full'));
+  assert(shortFlat[0] === shortFlat[1], 'short: the shown flat beat (news 25 detail) moves');
 
   // the still path paints ink first: transparent holes show ink, never the previous frame
   const hole = await page.evaluate(() => {
@@ -1884,6 +1890,29 @@ async function run() {
     return window.__cue;
   });
   assert(late === 2, `cues at or past the duration should fire on the last frame, fired ${late}`);
+  // cues belong to movements: they sound only with Screen effects full and not in short mode; the beat's own sfx plays in every mode
+  const cueModes = await page.evaluate(async () => {
+    const C = BTB.Cinematic, out = {};
+    window.__beat = 0;
+    BTB.SFX.qaBeat = () => { window.__beat++; };
+    BTB.Scenes.__sfxCue = () => [BTB.Motion.layered({ id: 'qa:sfxcue', dur: 0.9, sfx: 'qaBeat', cues: [{ at: 0.2, sfx: 'qaCue' }, { at: 0.5, sfx: 'qaCue' }], layers: [{ id: 'x', draw() {} }] })];
+    const run = async (effects, cin) => {
+      if (C.running) C.finish();
+      BTB.Settings.set('effects', effects); BTB.Settings.set('cinematics', cin);
+      window.__cue = 0; window.__beat = 0;
+      C.startChain('cuemodes'); C.play('__sfxCue', {}, () => {});
+      await new Promise((r) => setTimeout(r, 1300)); C.endChain();
+      return { cue: window.__cue, beat: window.__beat };
+    };
+    out.full = await run('full', 'full');
+    out.reduced = await run('reduced', 'full');
+    out.off = await run('off', 'full');
+    out.short = await run('full', 'short');
+    BTB.Settings.set('effects', 'full'); BTB.Settings.set('cinematics', 'full');
+    return out;
+  });
+  assert(cueModes.full.cue === 2 && cueModes.reduced.cue === 0 && cueModes.off.cue === 0 && cueModes.short.cue === 0, `cues over stills: ${JSON.stringify(cueModes)}`);
+  assert(['full', 'reduced', 'off', 'short'].every((k) => cueModes[k].beat === 1), `the beat's own sfx must play in every mode: ${JSON.stringify(cueModes)}`);
   // sound gate: the real B.SFX gate decides; spy on the audio nodes the cue would create
   const gate = await page.evaluate(async () => {
     const C = BTB.Cinematic, proto = (window.AudioContext || window.webkitAudioContext).prototype, orig = {};

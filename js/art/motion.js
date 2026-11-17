@@ -1,5 +1,5 @@
 // Motion maths for cutscenes: easing, keyframes, seeded particles, camera
-// presets and default transitions. Pure and DOM-free so Node runners can load
+// maths and default transitions. Pure and DOM-free so Node runners can load
 // it; nothing here reads the clock, Math.random, document or B.Settings.
 (function (B) {
   'use strict';
@@ -59,21 +59,13 @@
     return out;
   }
 
-  // Whole-pixel vertical tilts only: zoom or sideways drift makes dithered walls band and crawl.
-  // The few rows a tilt exposes sit under the 12 px letterbox bars.
-  const PRESETS = {
-    tiltUp: { from: { y: 4 }, to: { y: -4 }, ease: ease.inOut },
-    tiltDown: { from: { y: -4 }, to: { y: 4 }, ease: ease.inOut }
-  };
-  const PRESET_NAMES = Object.keys(PRESETS);
-
   function cameraAt(camera, p) {
     if (!camera) return { x: 0, y: 0, zoom: 1 };
     const f = camera.from || {}, t = camera.to || {}, e = camera.ease || ease.linear;
     return {
       x: Math.round(tween(f.x || 0, t.x || 0, p, e)),
       y: Math.round(tween(f.y || 0, t.y || 0, p, e)),
-      // zoom other than 1 is only for layered shots; presets never zoom
+      // zoom other than 1 is only for layered shots
       zoom: tween(f.zoom || 1, t.zoom || 1, p, e)
     };
   }
@@ -89,11 +81,6 @@
   }
 
   const isHold = (beat) => /:hold(:|$)/.test(beat.id);
-
-  function presetFor(beat) {
-    if (beat.dur < 1.2 || isHold(beat)) return null;
-    return PRESETS[PRESET_NAMES[B.hashSeed(beat.id) % PRESET_NAMES.length]];
-  }
 
   function transitionFor(beat, index) {
     if (beat.transition) return beat.transition;
@@ -219,5 +206,5 @@
 
   const CACHE_BYTES = 36 * 1024 * 1024;
 
-  B.Motion = { enabled, ease, stepped, tween, keyframes, cycle, count, typed, flicker, particles, cameraAt, presetFor, PRESETS, transitionFor, TRANSITION_DUR, drawTransition, releaseScratch, layered, composite, CACHE_BYTES };
+  B.Motion = { enabled, ease, stepped, tween, keyframes, cycle, count, typed, flicker, particles, cameraAt, transitionFor, TRANSITION_DUR, drawTransition, releaseScratch, layered, composite, CACHE_BYTES };
 })(window.BTB);

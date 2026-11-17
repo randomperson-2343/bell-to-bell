@@ -173,7 +173,7 @@
         return;
       }
       if (motion && !beat.layers) {
-        const cam = B.Motion.cameraAt(beat.camera || B.Motion.presetFor(beat), progress);
+        const cam = this.short ? { x: 0, y: 0, zoom: 1 } : B.Motion.cameraAt(beat.camera, progress); // short mode: the one beat is a still
         const cx = view.w / 2, cy = view.h / 2;
         X.rect(ctx, 0, 0, view.w, view.h, P.ink); // rows a camera offset exposes stay opaque ink
         ctx.translate(cx + cam.x, cy + cam.y);
@@ -272,12 +272,17 @@
     // Timed sound cues: each fires once when the beat's clock passes `at`. Never from seek or skip.
     // The B.SFX functions gate themselves on the Sound effects setting (B.SFX.setEnabled), exactly as playBeat relies on.
     // `last`: the beat's final frame, so a cue at or past the duration still fires.
+    // Cues belong to movements, so they sound only while the shot moves: Screen effects full and not short mode. When it is a
+    // still, due cues are spent silently (turning effects back on mid-beat does not play the ones already missed).
+    // The beat's own `sfx` (playBeat) is not a cue and plays in every mode.
     fireCues(beat, last) {
       if (!beat.cues || !B.SFX) return;
       if (!this.fired || this.fired.beat !== beat) this.fired = { beat, done: new Set() };
+      const live = !this.short && B.Motion.enabled();
       beat.cues.forEach((cue, n) => {
         if ((this.t < cue.at && !last) || this.fired.done.has(n)) return;
         this.fired.done.add(n);
+        if (!live) return;
         const fn = B.SFX[cue.sfx];
         if (typeof fn === 'function') fn.call(B.SFX);
       });
