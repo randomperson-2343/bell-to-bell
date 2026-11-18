@@ -2071,6 +2071,16 @@ async function run() {
   assert(reent.afterNested === 'A,B', `re-entrant play: done order before the nested scene ends: ${JSON.stringify(reent)}`);
   assert(reent.final === 'A,B,C' && !reent.running && reent.raf === null && reent.key === null && reent.listeners === 0, `re-entrant play leaked a loop or listener, or a done ran twice: ${JSON.stringify(reent)}`);
 
+  // the OS reduce-motion preference is read once and kept current by the media query's change event: enabled() does not ask matchMedia again
+  await page.evaluate(() => { window.__mm = 0; window.__mmOrig = window.matchMedia; window.matchMedia = function () { window.__mm++; return window.__mmOrig.apply(this, arguments); }; });
+  const osOn = await page.evaluate(() => { for (let k = 0; k < 50; k++) BTB.Motion.enabled(); return { on: BTB.Motion.enabled(), calls: window.__mm }; });
+  await page.emulateMedia({ reducedMotion: 'reduce' }); await wait(150);
+  const osReduce = await page.evaluate(() => BTB.Motion.enabled());
+  await page.emulateMedia({ reducedMotion: 'no-preference' }); await wait(150);
+  const osBack = await page.evaluate(() => { const on = BTB.Motion.enabled(); window.matchMedia = window.__mmOrig; return on; });
+  assert(osOn.on === true && osOn.calls === 0, `enabled() asked matchMedia again: ${JSON.stringify(osOn)}`);
+  assert(osReduce === false && osBack === true, `the OS reduce-motion change was not followed: ${JSON.stringify([osReduce, osBack])}`);
+
   // failures warn once with the beat id; a throwing layer leaves the rest of the shot
   const before = warnings.length;
   const thr = await page.evaluate(() => {

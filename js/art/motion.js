@@ -51,14 +51,23 @@
     };
   }
 
+  // The OS "reduce motion" preference, read once and kept current by the query's change event: enabled() runs every frame.
+  // Without matchMedia (Node, old browsers) it stays false: motion allowed.
+  let osReduced = false;
+  try {
+    if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
+      const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+      osReduced = !!mq.matches;
+      const onChange = (e) => { osReduced = !!e.matches; };
+      if (typeof mq.addEventListener === 'function') mq.addEventListener('change', onChange);
+      else if (typeof mq.addListener === 'function') mq.addListener(onChange);
+    }
+  } catch (e) { /* no media query support: treat as allowed */ }
+
   // True only when the Screen effects setting is full and the OS does not ask for reduced motion.
   function enabled() {
     if (!B.Settings || typeof B.Settings.motion !== 'function' || !B.Settings.motion()) return false;
-    try {
-      if (typeof window !== 'undefined' && typeof window.matchMedia === 'function' &&
-          window.matchMedia('(prefers-reduced-motion: reduce)').matches) return false;
-    } catch (e) { /* no media query support: treat as allowed */ }
-    return true;
+    return !osReduced;
   }
 
   const isHold = (beat) => /:hold(:|$)/.test(beat.id);
