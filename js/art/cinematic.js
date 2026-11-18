@@ -5,10 +5,12 @@
   const X = B.Pixel;
   const P = B.Pal;
 
+  const PREPARE_WINDOW = 0.5; // seconds before a beat ends that the next one's pictures start to be built
+
   const C = {
     el: null, canvas: null, running: false, beats: null, i: 0, t: 0,
-    done: null, raf: null, onKey: null, opts: null, scene: '',
-    frameCache: new Map(), chain: null, skippingChain: false,
+    done: null, raf: null, preparing: false, onKey: null, opts: null, scene: '',
+    frameCache: new Map(), cacheBytes: 0, chain: null, skippingChain: false, short: false, fired: null, warned: new Set(),
 
     ensure() {
       if (this.el) return;
@@ -20,7 +22,7 @@
       this.el = wrap;
       this.canvas = wrap.querySelector('#cine-canvas');
       wrap.addEventListener('pointerdown', () => this.skipAll());
-      window.addEventListener('resize', () => this.layout());
+      window.addEventListener('resize', () => { this.layout(); if (this.running && this.paused) this.draw(); });
       this.layout();
     },
 
@@ -42,23 +44,70 @@
     },
 
     startChain(name) { this.chain = name || 'scene'; this.skippingChain = false; },
-    endChain() { this.chain = null; this.skippingChain = false; },
+    endChain() { this.chain = null; this.skippingChain = false; this.clearCache(); },
+
+    clearCache() { this.frameCache.clear(); this.cacheBytes = 0; },
+
+    // The cache prefixes one beat owns: its own entries (`id|...`) and the shared entries of its keyed layers (`key|...`).
+    protect(beat, out) {
+      if (!beat) return;
+      out.push(beat.id + '|');
+      if (beat.layers) for (const layer of beat.layers) if (layer.key) out.push(layer.key + '|');
+    },
+
+    // Store a canvas and evict oldest-first while over budget, never touching the entries of the beat being drawn, the running
+    // beat, the one before it, or, while the next beat is being prepared, the next one.
+    remember(key, canvas, beat) {
+      this.frameCache.set(key, canvas);
+      this.cacheBytes += canvas.width * canvas.height * 4;
+      if (this.cacheBytes <= B.Motion.CACHE_BYTES) return;
+      const keep = [];
+      this.protect(beat, keep);
+      if (this.running && this.beats) {
+        this.protect(this.beats[this.i], keep);
+        this.protect(this.beats[this.i - 1], keep);
+        if (this.preparing) this.protect(this.beats[this.i + 1], keep);
+      }
+      for (const [k, c] of this.frameCache) {
+        if (this.cacheBytes <= B.Motion.CACHE_BYTES) break;
+        if (keep.some((pre) => k.startsWith(pre))) continue;
+        this.frameCache.delete(k);
+        this.cacheBytes -= c.width * c.height * 4;
+      }
+    },
+
+    warnOnce(beat, what, e) {
+      const key = beat.id + '|' + what;
+      if (this.warned.has(key)) return;
+      this.warned.add(key);
+      console.warn(`cinematic: ${what} threw for beat ${beat.id}: ${e && e.message}`);
+    },
 
     play(name, opts, done) {
+      if (this.running) {
+        this.finish(); // end the scene in progress: loop stopped, listener removed, its done called once
+        // That done may have started the next scene of a chain (a nested play): it owns the loop and the key listener now, and starting this one
+        // would overwrite both and leak them. This call is the one that yields: it is not played, and its own done is called once, at once.
+        // So exactly one scene is running, and every done (the old one's, the nested one's later, and this one's) is called exactly once.
+        if (this.running) return done && done();
+      }
       const builder = B.Scenes[name];
       const mode = this.mode();
       if (this.skippingChain || !builder || mode === 'off') return done && done();
       let beats;
-      try { beats = builder(opts || {}); } catch (e) { return done && done(); }
+      try { beats = builder(opts || {}); } catch (e) { console.warn(`cinematic: scene builder ${name} threw: ${e && e.message}`); return done && done(); }
       if (!beats || !beats.length) return done && done();
       beats = beats.map((beat, index) => Object.assign({
         id: `${name}:${(opts && (opts.day != null ? opts.day : opts.id)) || 'default'}:${index}`,
-        transition: index ? 'cut' : 'fade', cache: true
+        cache: true
       }, beat));
+      beats.forEach((beat, index) => { beat.transition = B.Motion.transitionFor(beat, index); });
       if (mode === 'short') {
         const informative = beats.find((beat) => beat.informative) || beats.find((beat) => beat.line && String(beat.line).trim()) || beats[0];
         beats = [Object.assign({}, informative, { dur: 1.35, transition: 'fade' })];
       }
+      this.short = mode === 'short';
+      this.warned.clear();
       this.ensure();
       this.scene = name;
       this.opts = opts || {};
@@ -67,6 +116,8 @@
       this.t = 0;
       this.done = done;
       this.running = true;
+      this.paused = false;
+      this.releasePictures();
       this.el.hidden = false;
       this.layout();
       B.Music.stop();
@@ -78,8 +129,10 @@
         if (!this.running) return;
         const dt = Math.min(0.08, (ts - this.last) / 1000);
         this.last = ts;
+        if (this.paused) { this.raf = requestAnimationFrame(step); return; }
         this.t += dt;
-        const beat = this.beats[this.i];
+        const beat = this.beats[this.i], at = this.i;
+        this.fireCues(beat, this.t >= beat.dur);
         if (this.t >= beat.dur) {
           this.i++;
           this.t = 0;
@@ -87,6 +140,7 @@
           this.playBeat();
         }
         this.draw();
+        if (this.i === at && this.t >= beat.dur - PREPARE_WINDOW) this.prepareNext(); else this.preparing = false;
         this.raf = requestAnimationFrame(step);
       };
       this.draw();
@@ -101,27 +155,123 @@
       const ctx = canvas.getContext('2d');
       ctx.imageSmoothingEnabled = false;
       try { beat.draw(ctx, view, beat.cacheAt == null ? 1 : beat.cacheAt, this.opts); }
-      catch (e) { X.rect(ctx, 0, 0, view.w, view.h, P.ink); }
-      this.frameCache.set(key, canvas);
-      // Each 640x360 frame is about 0.9 MB. 40 of them is plenty for any one
-      // scene chain; 220 (about 200 MB) could get a phone tab killed.
-      if (this.frameCache.size > 40) this.frameCache.delete(this.frameCache.keys().next().value);
+      catch (e) { this.warnOnce(beat, 'draw', e); X.rect(ctx, 0, 0, view.w, view.h, P.ink); }
+      this.remember(key, canvas, beat);
       return canvas;
+    },
+
+    // A layer's cache key. A layer with a `key` is cached under `key|WxH`, shared by every beat that names the same key (the picture must be
+    // identical for all of them: the key lists everything it depends on); otherwise it belongs to its beat.
+    layerKey(beat, layer, w, h) { return `${layer.key ? layer.key : beat.id + '|' + layer.id}|${w}x${h}`; },
+
+    // One layer of a layered beat, drawn once into a transparent canvas of its own size.
+    layerCanvas(beat, layer, view) {
+      const w = layer.w || view.w, h = layer.h || view.h;
+      const key = this.layerKey(beat, layer, w, h);
+      if (this.frameCache.has(key)) return this.frameCache.get(key);
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      ctx.imageSmoothingEnabled = false;
+      try { layer.draw(ctx, w === view.w && h === view.h ? view : Object.assign({}, view, { w, h }), this.opts); }
+      catch (e) { this.warnOnce(beat, 'layer ' + layer.id, e); }
+      this.remember(key, canvas, beat);
+      return canvas;
+    },
+
+    // Get the next beat's pictures ready during the last half second of this one: at most one layer (or the one cached still) per call,
+    // so the next beat's first frame, inside its dissolve, finds them built. The next beat of the same scene only: a later scene is another play().
+    // Mirrors paint(): live layers when the shot moves, the cached still otherwise.
+    prepareNext() {
+      const next = this.beats && this.beats[this.i + 1];
+      if (!next) { this.preparing = false; return; }
+      this.preparing = true;
+      const view = next.view || B.Scenes.V;
+      if (next.layers && B.Motion.enabled() && !this.short) {
+        for (const layer of next.layers) {
+          const w = layer.w || view.w, h = layer.h || view.h;
+          if (!this.frameCache.has(this.layerKey(next, layer, w, h))) { this.layerCanvas(next, layer, view); return; }
+        }
+      } else if ((next.cache !== false || next.layers) && !this.frameCache.has(`${next.id}|${view.w}x${view.h}`)) this.cachedFrame(next, view);
+    },
+
+    // The shot picture only (camera applied); letterbox and caption are drawn by draw() afterwards.
+    paint(ctx, beat, view, progress) {
+      ctx.save();
+      const motion = B.Motion && B.Motion.enabled();
+      if (beat.layers && motion && !this.short) {
+        // live layers: parallax camera, no preset; the beat's own camera may use x, y and zoom
+        X.rect(ctx, 0, 0, view.w, view.h, P.ink);
+        try {
+          B.Motion.composite(ctx, view, beat, progress * beat.dur, progress, this.opts, B.Motion.cameraAt(beat.camera, progress), (layer) => this.layerCanvas(beat, layer, view), (layer, e) => this.warnOnce(beat, 'layer ' + layer.id + ' animate', e));
+        } catch (e) { this.warnOnce(beat, 'composite', e); X.rect(ctx, 0, 0, view.w, view.h, P.ink); }
+        if (beat.drawDynamic) beat.drawDynamic(ctx, view, progress, this.opts);
+        ctx.restore();
+        return;
+      }
+      if (motion && !beat.layers) {
+        const cam = this.short ? { x: 0, y: 0, zoom: 1 } : B.Motion.cameraAt(beat.camera, progress); // short mode: the one beat is a still
+        const cx = view.w / 2, cy = view.h / 2;
+        X.rect(ctx, 0, 0, view.w, view.h, P.ink); // rows a camera offset exposes stay opaque ink
+        ctx.translate(cx + cam.x, cy + cam.y);
+        ctx.scale(cam.zoom, cam.zoom);
+        ctx.translate(-cx, -cy);
+      }
+      if (beat.layers) X.rect(ctx, 0, 0, view.w, view.h, P.ink); // the still may have transparent holes; never show stale pixels
+      if (beat.cache !== false || beat.layers) ctx.drawImage(this.cachedFrame(beat, view), 0, 0, view.w, view.h);
+      else {
+        try { beat.draw(ctx, view, progress, this.opts); }
+        catch (e) { this.warnOnce(beat, 'draw', e); X.rect(ctx, 0, 0, view.w, view.h, P.ink); }
+      }
+      if (beat.drawDynamic) beat.drawDynamic(ctx, view, progress, this.opts);
+      ctx.restore();
+    },
+
+    // Reused scratch picture: allocated once, resized only when the view size changes.
+    pictureCanvas(c, w, h) {
+      if (!c) c = document.createElement('canvas');
+      if (c.width !== w || c.height !== h) { c.width = w; c.height = h; }
+      const g = c.getContext('2d');
+      g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, w, h);
+      g.imageSmoothingEnabled = false;
+      return c;
+    },
+
+    // Which transition the current beat plays right now: motion off turns cross/wipe/push into fade.
+    transitionNow() {
+      const beat = this.beats[this.i];
+      let name = beat.transition || B.Motion.transitionFor(beat, this.i);
+      if (name !== 'cut' && name !== 'fade' && (this.i === 0 || !B.Motion.enabled())) name = 'fade';
+      return name;
+    },
+
+    releasePictures() {
+      this.snap = null; this.pic = null; this.snapFor = -1;
+      if (B.Motion && B.Motion.releaseScratch) B.Motion.releaseScratch();
     },
 
     draw() {
       const beat = this.beats[this.i];
       const view = beat.view || B.Scenes.V;
-      const { ctx } = X.fit(this.canvas, view.w, view.h);
+      const { ctx } = X.fitSuper(this.canvas, view.w, view.h);
       const progress = B.clamp(this.t / beat.dur, 0, 1);
-      ctx.save();
-      if (beat.cache !== false) ctx.drawImage(this.cachedFrame(beat, view), 0, 0, view.w, view.h);
-      else {
-        try { beat.draw(ctx, view, progress, this.opts); }
-        catch (e) { X.rect(ctx, 0, 0, view.w, view.h, P.ink); }
+      const name = this.transitionNow();
+      // never longer than the beat, so the blend always finishes by its last frame
+      const tdur = Math.min(B.Motion.TRANSITION_DUR[name] || 0, beat.dur);
+      if (name !== 'fade' && name !== 'cut' && this.t < tdur) {
+        // Outgoing picture: the previous beat at its end. Incoming: this beat now, camera included.
+        if (this.snapFor !== this.i) {
+          const prev = this.beats[this.i - 1], pv = prev.view || B.Scenes.V;
+          this.snap = this.pictureCanvas(this.snap, pv.w, pv.h);
+          this.paint(this.snap.getContext('2d'), prev, pv, 1);
+          this.snapFor = this.i;
+        }
+        this.pic = this.pictureCanvas(this.pic, view.w, view.h);
+        this.paint(this.pic.getContext('2d'), beat, view, progress);
+        B.Motion.drawTransition(ctx, view, name, this.t / tdur, this.snap, this.pic);
+      } else {
+        this.paint(ctx, beat, view, progress);
       }
-      if (beat.drawDynamic) beat.drawDynamic(ctx, view, progress, this.opts);
-      ctx.restore();
 
       const unit = view.w / 320;
       X.rect(ctx, 0, 0, view.w, Math.round(6 * unit), P.ink);
@@ -146,20 +296,41 @@
           }
         });
       }
-      if (beat.transition === 'fade') {
-        const fade = 1 - B.clamp(this.t / 0.28, 0, 1);
+      if (name === 'fade') {
+        const fade = 1 - B.clamp(this.t / Math.min(B.Motion.TRANSITION_DUR.fade, beat.dur), 0, 1);
         if (fade > 0) { ctx.save(); ctx.globalAlpha = fade; X.rect(ctx, 0, 0, view.w, view.h, P.ink); ctx.restore(); }
       }
     },
 
+    // Test hooks: freeze the loop, and draw one frame at a chosen beat and time (no sound).
+    pause() { this.paused = true; },
+    seek(i, t) { if (!this.running || !this.beats || i < 0 || i >= this.beats.length) return; this.i = i; this.t = t; this.draw(); },
     optsOf() { return this.opts || {}; },
+    // Timed sound cues: each fires once when the beat's clock passes `at`. Never from seek or skip.
+    // The B.SFX functions gate themselves on the Sound effects setting (B.SFX.setEnabled), exactly as playBeat relies on.
+    // `last`: the beat's final frame, so a cue at or past the duration still fires.
+    // Cues belong to movements, so they sound only while the shot moves: Screen effects full and not short mode. When it is a
+    // still, due cues are spent silently (turning effects back on mid-beat does not play the ones already missed).
+    // The beat's own `sfx` (playBeat) is not a cue and plays in every mode.
+    fireCues(beat, last) {
+      if (!beat.cues || !B.SFX) return;
+      if (!this.fired || this.fired.beat !== beat) this.fired = { beat, done: new Set() };
+      const live = !this.short && B.Motion.enabled();
+      beat.cues.forEach((cue, n) => {
+        if ((this.t < cue.at && !last) || this.fired.done.has(n)) return;
+        this.fired.done.add(n);
+        if (!live) return;
+        const fn = B.SFX[cue.sfx];
+        if (typeof fn === 'function') fn.call(B.SFX);
+      });
+    },
     playBeat() {
+      this.fired = null;
       const beat = this.beats && this.beats[this.i];
       if (!beat || !beat.sfx || !B.SFX) return;
       const fn = B.SFX[beat.sfx];
       if (typeof fn === 'function') fn.call(B.SFX);
     },
-    skip() { this.skipAll(); },
     skipAll() { if (this.running) { this.skippingChain = !!this.chain; this.finish(); } },
     finish() {
       this.running = false;
@@ -167,6 +338,11 @@
       this.raf = null;
       if (this.onKey) window.removeEventListener('keydown', this.onKey);
       this.onKey = null;
+      this.releasePictures();
+      this.fired = null;
+      this.preparing = false;
+      this.warned.clear();
+      if (!this.chain) this.clearCache();
       if (this.el) this.el.hidden = true;
       const done = this.done;
       this.done = null;

@@ -43,7 +43,7 @@
   ];
 
   const Pixel = {
-    FONT,
+    FONT, BAYER,
 
     // Fit a virtual-pixel canvas to its element at an integer scale.
     // Returns the scale used, so callers can lay out in virtual pixels.
@@ -52,12 +52,32 @@
       const dpr = Math.min(2, window.devicePixelRatio || 1);
       let s = Math.max(1, Math.floor(Math.min(r.width / vw, r.height / vh)));
       if (maxScale) s = Math.min(s, maxScale);
-      canvas.width = Math.round(vw * s * dpr);
-      canvas.height = Math.round(vh * s * dpr);
+      const w = Math.round(vw * s * dpr), h = Math.round(vh * s * dpr);
       const ctx = canvas.getContext('2d');
+      // Assigning width/height reallocates and clears the backing store, so only do it
+      // when the size really changes; otherwise reset the transform and clear by hand.
+      if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; }
+      else { ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over'; ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, w, h); }
       ctx.setTransform(s * dpr, 0, 0, s * dpr, 0, 0);
       ctx.imageSmoothingEnabled = false;
       return { ctx, scale: s, vw, vh };
+    },
+
+    // Supersampled fit for a canvas the browser scales smoothly (image-rendering: auto).
+    // The bitmap is view * k, with k the smallest whole number that covers the device pixels
+    // the element occupies, so each virtual pixel is exactly k x k bitmap pixels.
+    // Uses the real devicePixelRatio (no cap of 2); k is clamped to 1..maxK.
+    fitSuper(canvas, vw, vh, maxK) {
+      const r = canvas.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      const k = Math.max(1, Math.min(maxK || 6, Math.ceil(r.width * dpr / vw - 1e-6)));
+      const w = vw * k, h = vh * k;
+      const ctx = canvas.getContext('2d');
+      if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; }
+      else { ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over'; ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, w, h); }
+      ctx.setTransform(k, 0, 0, k, 0, 0);
+      ctx.imageSmoothingEnabled = false;
+      return { ctx, scale: k, vw, vh };
     },
 
     rect(ctx, x, y, w, h, col) {
@@ -87,9 +107,14 @@
       if (lvl <= 0) return;
       if (lvl >= 16) { this.rect(ctx, x, y, w, h, colB); return; }
       ctx.fillStyle = colB;
+      // The same pixels as one 1x1 fill per set cell, merged into horizontal runs (far fewer calls).
       for (let j = 0; j < h; j++) {
-        for (let i = 0; i < w; i++) {
-          if (BAYER[j & 3][i & 3] < lvl) ctx.fillRect((x + i) | 0, (y + j) | 0, 1, 1);
+        const row = BAYER[j & 3], yy = (y + j) | 0;
+        let start = -1;
+        for (let i = 0, n = Math.ceil(w); i <= n; i++) {
+          const on = i < w && row[i & 3] < lvl;
+          if (on) { if (start < 0) start = i; }
+          else if (start >= 0) { ctx.fillRect((x + start) | 0, yy, i - start, 1); start = -1; }
         }
       }
     },

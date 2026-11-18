@@ -489,7 +489,8 @@
       if (this.lock) this.unlock();
       m.close();
       this.interrupts.endDay();
-      if (this.earlyEnd !== 'wiped') B.SFX.marketClose();
+      const silentBell = B.Storyboard && B.Storyboard.bellSilent && B.Storyboard.bellSilent(this.day);
+      if (this.earlyEnd !== 'wiped' && !silentBell) B.SFX.marketClose();
       B.Music.stop({ fade: 0.5 });
       const eod = b.endOfDay(this.day);
       const eq = b.equity();

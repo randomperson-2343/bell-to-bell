@@ -1,0 +1,200 @@
+// Motion maths for cutscenes: easing, seeded particles, camera
+// maths and default transitions. Pure and DOM-free so Node runners can load
+// it; nothing here reads the clock, Math.random, document or B.Settings.
+(function (B) {
+  'use strict';
+
+  const clamp01 = (p) => (p < 0 ? 0 : p > 1 ? 1 : p);
+  const wrap = (v, m) => ((v % m) + m) % m;
+
+  const ease = {
+    linear: (p) => clamp01(p),
+    in: (p) => { p = clamp01(p); return p * p; },
+    out: (p) => { p = clamp01(p); return 1 - (1 - p) * (1 - p); },
+    inOut: (p) => { p = clamp01(p); return p * p * (3 - 2 * p); }
+  };
+
+  const tween = (a, b, p, fn) => a + (b - a) * (fn ? fn(p) : p);
+
+  // One value per 1/rate second, so a lamp holds still between steps.
+  const flicker = (seed, t, rate) => B.RNG(B.hashSeed(seed + ':' + Math.floor(t * rate))).next();
+
+  // Fall speed (px/s), sideways speed (px/s) and sway amplitude (px) per kind.
+  const KINDS = {
+    snow: { vy: 14, vx: 3, sway: 4, big: 0.25 },
+    rain: { vy: 120, vx: -18, sway: 0, big: 0 },
+    dust: { vy: 2, vx: 3, sway: 2, big: 0.1 },
+    paper: { vy: 22, vx: 6, sway: 9, big: 0.5 }
+  };
+
+  function particles(o) {
+    const k = KINDS[o.kind] || KINDS.dust, out = [];
+    const w = Math.max(1, o.w), h = Math.max(1, o.h), ox = Math.round(o.x), oy = Math.round(o.y);
+    for (let i = 0; i < o.count; i++) {
+      const r = B.RNG(B.hashSeed(o.seed + ':' + o.kind + ':' + i));
+      const x0 = r.next() * w, y0 = r.next() * h, sp = 0.7 + r.next() * 0.6, ph = r.next() * 6.2832, big = r.next() < k.big;
+      const px = wrap(x0 + k.vx * sp * o.t + Math.sin(o.t * 1.3 * sp + ph) * k.sway, w);
+      const py = wrap(y0 + k.vy * sp * o.t, h);
+      out.push({ x: ox + Math.floor(px), y: oy + Math.floor(py), s: big ? 2 : 1 });
+    }
+    return out;
+  }
+
+  function cameraAt(camera, p) {
+    if (!camera) return { x: 0, y: 0, zoom: 1 };
+    const f = camera.from || {}, t = camera.to || {}, e = camera.ease || ease.linear;
+    return {
+      x: Math.round(tween(f.x || 0, t.x || 0, p, e)),
+      y: Math.round(tween(f.y || 0, t.y || 0, p, e)),
+      // zoom other than 1 is only for layered shots
+      zoom: tween(f.zoom || 1, t.zoom || 1, p, e)
+    };
+  }
+
+  // The OS "reduce motion" preference, read once and kept current by the query's change event: enabled() runs every frame.
+  // Without matchMedia (Node, old browsers) it stays false: motion allowed.
+  let osReduced = false;
+  try {
+    if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
+      const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+      osReduced = !!mq.matches;
+      const onChange = (e) => { osReduced = !!e.matches; };
+      if (typeof mq.addEventListener === 'function') mq.addEventListener('change', onChange);
+      else if (typeof mq.addListener === 'function') mq.addListener(onChange);
+    }
+  } catch (e) { /* no media query support: treat as allowed */ }
+
+  // True only when the Screen effects setting is full and the OS does not ask for reduced motion.
+  function enabled() {
+    if (!B.Settings || typeof B.Settings.motion !== 'function' || !B.Settings.motion()) return false;
+    return !osReduced;
+  }
+
+  const isHold = (beat) => /:hold(:|$)/.test(beat.id);
+
+  function transitionFor(beat, index) {
+    if (beat.transition) return beat.transition;
+    if (index === 0) return 'fade';
+    return isHold(beat) ? 'cut' : 'cross';
+  }
+
+  const TRANSITION_DUR = { cut: 0, fade: 0.28, cross: 0.3, wipe: 0.35, push: 0.35 };
+  // Blend two shot pictures (canvases the size of view) onto ctx. k: 0 = all from, 1 = all to.
+  // Every output pixel is a pixel of `from` or of `to`; nothing is alpha-mixed. cross, wipe and push only; the player draws fade as an ink overlay.
+  let scratch = null;
+  const tiles = [];
+  function tile(step) {
+    if (tiles[step]) return tiles[step];
+    // 8x8 mask: each Bayer cell is 2x2 virtual pixels so the dither reads chunky.
+    const c = document.createElement('canvas'); c.width = 8; c.height = 8;
+    const g = c.getContext('2d'), bayer = B.Pixel.BAYER;
+    g.fillStyle = '#000';
+    for (let y = 0; y < 8; y++) for (let x = 0; x < 8; x++) if (bayer[(y >> 1) & 3][(x >> 1) & 3] < step) g.fillRect(x, y, 1, 1);
+    return (tiles[step] = g.createPattern(c, 'repeat'));
+  }
+  function drawTransition(ctx, view, name, k, from, to) {
+    k = clamp01(k);
+    const w = view.w, h = view.h;
+    if (!from || name === 'cut' || k >= 1) { ctx.drawImage(to, 0, 0, w, h); return; }
+    if (name === 'cross') {
+      const step = Math.round(k * 16);
+      ctx.drawImage(from, 0, 0, w, h);
+      if (step <= 0) return;
+      if (step >= 16) { ctx.drawImage(to, 0, 0, w, h); return; }
+      if (!scratch || scratch.width !== w || scratch.height !== h) {
+        scratch = document.createElement('canvas'); scratch.width = w; scratch.height = h;
+      }
+      const g = scratch.getContext('2d');
+      g.globalCompositeOperation = 'copy';
+      g.drawImage(to, 0, 0, w, h);
+      g.globalCompositeOperation = 'destination-in';
+      g.fillStyle = tile(step);
+      g.fillRect(0, 0, w, h);
+      g.globalCompositeOperation = 'source-over';
+      ctx.drawImage(scratch, 0, 0, w, h);
+    } else if (name === 'wipe') {
+      const x = Math.round(k * w);
+      ctx.drawImage(from, 0, 0, w, h);
+      if (x > 0) ctx.drawImage(to, 0, 0, x, h, 0, 0, x, h);
+    } else if (name === 'push') {
+      const x = Math.round(k * w);
+      ctx.drawImage(from, -x, 0, w, h);
+      ctx.drawImage(to, w - x, 0, w, h);
+    }
+  }
+  function releaseScratch() { scratch = null; }
+
+
+  // ---- Layered shots -------------------------------------------------------
+  const layerView = (view, layer) => {
+    const w = layer.w || view.w, h = layer.h || view.h;
+    return w === view.w && h === view.h ? view : Object.assign({}, view, { w, h });
+  };
+  const layerOrigin = (view, lv) => [Math.round((view.w - lv.w) / 2), Math.round((view.h - lv.h) / 2)];
+  const warn = (what, beat, layer, e) => {
+    if (typeof console !== 'undefined') console.warn(`motion: ${what} threw in beat ${beat.id}${layer ? ' layer ' + layer.id : ''}: ${e && e.message}`);
+  };
+
+  // Layer shape: { id, depth = 1, w, h, draw(ctx, view, opts), animate?(ctx, view, t, p, opts) }.
+  // `draw` and `animate` receive a view sized to the layer ({ w, h } of the layer canvas, not of the shot);
+  // w and h default to the shot view and must be positive when given.
+  // Layers must paint source-over only (no clearRect, destination-out or copy): the live path blits a
+  // transparent canvas per layer while the still path paints straight into the shot, and an eraser
+  // would give different pictures. Each layer runs inside save/restore with source-over and alpha 1.
+  //
+  // Gives a beat with `layers` a complete draw(ctx, view, p, opts): every layer, then its animate, back to front.
+  // Paints straight into ctx in layer coordinates, so it needs no canvas, document or settings.
+  function layered(beat) {
+    const seen = new Set();
+    for (const layer of beat.layers) {
+      if ((layer.w != null && !(layer.w > 0)) || (layer.h != null && !(layer.h > 0))) throw new Error(`layered beat ${beat.id}: layer ${layer.id} needs a positive w and h`);
+      if (seen.has(layer.id)) throw new Error(`layered beat ${beat.id}: duplicate layer id ${layer.id}`);
+      seen.add(layer.id);
+    }
+    return Object.assign(beat, {
+      cache: false,
+      draw(ctx, view, p, opts) {
+        for (const layer of beat.layers) {
+          const lv = layerView(view, layer), o = layerOrigin(view, lv);
+          ctx.save();
+          ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1;
+          ctx.translate(o[0], o[1]);
+          try {
+            layer.draw(ctx, lv, opts);
+            if (layer.animate) layer.animate(ctx, lv, p * beat.dur, p, opts);
+          } catch (e) { warn('layer draw', beat, layer, e); }
+          ctx.restore();
+        }
+      }
+    });
+  }
+
+  // Per-frame path: blit each layer's cached canvas with its parallax offset, then its animate.
+  // Zoom is about the view centre, after the offset, equally for every layer.
+  // onError(layer, e), when given, receives a throwing animate (the player dedupes it per play).
+  function composite(ctx, view, beat, t, p, opts, cam, getLayer, onError) {
+    ctx.save();
+    const cx = view.w / 2, cy = view.h / 2;
+    ctx.translate(cx, cy);
+    ctx.scale(cam.zoom, cam.zoom);
+    ctx.translate(-cx, -cy);
+    for (const layer of beat.layers) {
+      const lv = layerView(view, layer), o = layerOrigin(view, lv), d = layer.depth == null ? 1 : layer.depth;
+      const ox = o[0] - Math.round(cam.x * d), oy = o[1] - Math.round(cam.y * d);
+      ctx.save();
+      ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1;
+      ctx.drawImage(getLayer(layer), ox, oy);
+      if (layer.animate) {
+        ctx.translate(ox, oy);
+        try { layer.animate(ctx, lv, t, p, opts); }
+        catch (e) { if (onError) onError(layer, e); else warn('layer animate', beat, layer, e); }
+      }
+      ctx.restore();
+    }
+    ctx.restore();
+  }
+
+  const CACHE_BYTES = 36 * 1024 * 1024;
+
+  B.Motion = { enabled, ease, flicker, particles, cameraAt, transitionFor, TRANSITION_DUR, drawTransition, releaseScratch, layered, composite, CACHE_BYTES };
+})(window.BTB);

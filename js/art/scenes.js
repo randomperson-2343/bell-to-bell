@@ -31,6 +31,8 @@
   // A seated or standing figure seen from behind, in outline.
   const BACK = ['..1111..', '.122221.', '.122221.', '..1221..', '.111111.', '12222221', '12222221', '12222221', '12222221'];
   const WALKER = ['.111.', '1dD11', '1DD1.', '.11..', '1221.', '12211', '12211', '1221.', '1.1..', '1.1..'];
+  // Second walking pose: the back leg steps in (last two rows differ from WALKER).
+  const WALKER_B = WALKER.map((r, i) => (i >= WALKER.length - 2 ? '.11..' : r));
   const tint = (rows, map) => rows.map((r) => r.replace(/[2dD]/g, (ch) => map[ch] || ch));
   function stepGlow(ctx, cx, cy, radii, col, a) {
     for (const rad of radii) {
@@ -41,7 +43,8 @@
   }
 
   // Pre-dawn apartment: one window, a TV throwing light on the far wall.
-  function apartment(ctx, glow) {
+  // o.noScreen leaves the phone's lit screen out (the voicemail establish lights it in an animate).
+  function apartment(ctx, glow, o) {
     X.rect(ctx, 0, 0, V.w, V.h, P.ink);
     X.gradient(ctx, 0, 0, V.w, 140, P.ink2, P.ink, 6);
     for (let x = 6; x < V.w; x += 24) X.rect(ctx, x, 0, 1, 138, P.ink);
@@ -75,7 +78,7 @@
     // The alarm and the phone on the couch arm, both awake.
     k1(ctx, 157, 106, 26, 11, P.ink2, P.slate, P.ink);
     X.text(ctx, '5:58', 170, 108, P.crimson, { align: 'center' });
-    k1(ctx, 190, 110, 12, 20, P.ink2, P.slate2, P.ink); X.rect(ctx, 192, 113, 8, 13, P.screenGlow); X.rect(ctx, 194, 115, 2, 2, P.sky);
+    k1(ctx, 190, 110, 12, 20, P.ink2, P.slate2, P.ink); if (!(o && o.noScreen)) { X.rect(ctx, 192, 113, 8, 13, P.screenGlow); X.rect(ctx, 194, 115, 2, 2, P.sky); }
     // The player, anonymous: a shoulder and the back of a head in the foreground.
     ctx.save(); ctx.translate(-4, 96); ctx.scale(4, 4); X.drawSprite(ctx, X.sprite(tint(BACK, { 2: 'c' })), 0, 0); ctx.restore();
   }
@@ -109,43 +112,88 @@
   }
 
   // Lobby elevator. `open` 0..1 slides the doors apart.
-  function elevator(ctx, open, floor) {
-    X.rect(ctx, 0, 0, V.w, V.h, P.ink2);
-    X.gradient(ctx, 0, 0, V.w, 132, P.slate, P.ink2, 7);
-    // Stone panels either side.
-    for (const px of [6, 40, 234, 268]) { k1(ctx, px, 14, 32, 114, P.slate, P.slate2, P.ink2); X.dither(ctx, px + 2, 16, 28, 110, P.slate, P.slate2, 0.12); }
-    X.rect(ctx, 0, 132, V.w, V.h - 132, P.carpetD);
-    X.dither(ctx, 0, 133, V.w, V.h - 133, P.carpetD, P.carpet, 0.12); X.rect(ctx, 0, 132, V.w, 1, P.ink);
-    // The car behind the doors: lit ceiling, back wall, handrail, floor.
-    X.rect(ctx, 96, 24, 128, 108, P.slate);
-    X.gradient(ctx, 96, 24, 128, 108, P.slate2, P.ink2, 6);
-    X.rect(ctx, 96, 24, 128, 4, P.bone); stepGlow(ctx, 160, 30, [60, 36], P.white, 0.05);
-    k1(ctx, 100, 72, 120, 4, P.plastic, P.plastic2, P.plasticD);
-    X.rect(ctx, 96, 124, 128, 8, P.carpet);
-    // Floor indicator and the call button.
-    k1(ctx, 132, 6, 56, 16, P.plastic, P.plastic2, P.plasticD);
-    k1(ctx, 136, 9, 48, 10, P.ink, P.screenD, P.ink, P.ink2);
-    X.text(ctx, String(floor || 41), 160, 11, P.amber, { align: 'center' });
-    k1(ctx, 232, 66, 10, 18, P.plastic, P.plastic2, P.plasticD); X.rect(ctx, 235, 70, 4, 4, P.amber); X.rect(ctx, 235, 77, 4, 4, P.slate2);
-    // Doors: brushed steel, a seam, outlined.
-    const slide = Math.round(open * 62);
-    const door = (x) => {
-      k1(ctx, x, 24, 62, 108, P.plastic, P.plastic2, P.plasticD);
-      for (let i = 6; i < 58; i += 6) X.rect(ctx, x + i, 27, 1, 102, P.plastic2);
-    };
-    door(96 - slide);
-    door(162 + slide);
-    // The frame.
-    k1(ctx, 90, 18, 8, 118, P.plasticD, P.plastic, P.slate2); k1(ctx, 222, 18, 8, 118, P.plasticD, P.plastic, P.slate2); k1(ctx, 90, 18, 140, 8, P.plasticD, P.plastic, P.slate2);
+  // `part` draws one layer of it for the layered opening shot; undefined draws the whole picture, as ever.
+  // Parts: 'car' (the lit car), 'lobby' (wall, panels, carpet with the doorway left unpainted, indicator housing, call button),
+  // 'number' (the indicator well and its floor number), 'arrow' (the up glyph), 'doors', 'frame'; and, for a single cached layer in the flat
+  // picture's own order (the car's glow reaches past the doorway), 'wall' (the lobby without the housing and button) and 'top' (housing, well,
+  // number and call button: the part of the flat picture drawn after the car).
+  function elevator(ctx, open, floor, part) {
+    const all = part == null, has = (n) => all || part === n;
+    if (has('lobby') || part === 'wall') {
+      ctx.save();
+      if (!all) { ctx.beginPath(); ctx.rect(0, 0, 320, 180); ctx.rect(98, 26, 124, 105); ctx.clip('evenodd'); }
+      X.rect(ctx, 0, 0, V.w, V.h, P.ink2);
+      X.gradient(ctx, 0, 0, V.w, 132, P.slate, P.ink2, 7);
+      // Stone panels either side.
+      for (const px of [6, 40, 234, 268]) { k1(ctx, px, 14, 32, 114, P.slate, P.slate2, P.ink2); X.dither(ctx, px + 2, 16, 28, 110, P.slate, P.slate2, 0.12); }
+      X.rect(ctx, 0, 132, V.w, V.h - 132, P.carpetD);
+      X.dither(ctx, 0, 133, V.w, V.h - 133, P.carpetD, P.carpet, 0.12); X.rect(ctx, 0, 132, V.w, 1, P.ink);
+      ctx.restore();
+    }
+    if (has('car')) {
+      // The car behind the doors: lit ceiling, back wall, handrail, floor.
+      X.rect(ctx, 96, 24, 128, 108, P.slate);
+      X.gradient(ctx, 96, 24, 128, 108, P.slate2, P.ink2, 6);
+      X.rect(ctx, 96, 24, 128, 4, P.bone); stepGlow(ctx, 160, 30, [60, 36], P.white, 0.05);
+      k1(ctx, 100, 72, 120, 4, P.plastic, P.plastic2, P.plasticD);
+      X.rect(ctx, 96, 124, 128, 8, P.carpet);
+    }
+    if (has('lobby') || has('number') || part === 'top') {
+      // Floor indicator and the call button.
+      if (has('lobby') || part === 'top') k1(ctx, 132, 6, 56, 16, P.plastic, P.plastic2, P.plasticD);
+      k1(ctx, 136, 9, 48, 10, P.ink, P.screenD, P.ink, P.ink2);
+      if (!part || part === 'number' || part === 'top') X.text(ctx, String(floor || 41), 160, 11, P.amber, { align: 'center' });
+      if (has('lobby') || part === 'top') { k1(ctx, 232, 66, 10, 18, P.plastic, P.plastic2, P.plasticD); X.rect(ctx, 235, 70, 4, 4, P.amber); X.rect(ctx, 235, 77, 4, 4, P.slate2); }
+    }
+    if (part === 'arrow') X.text(ctx, '\u2191', 140, 11, P.amberD);
+    if (has('doors')) {
+      // Doors: brushed steel, a seam, outlined.
+      const slide = Math.round(open * 62);
+      const door = (x) => {
+        k1(ctx, x, 24, 62, 108, P.plastic, P.plastic2, P.plasticD);
+        for (let i = 6; i < 58; i += 6) X.rect(ctx, x + i, 27, 1, 102, P.plastic2);
+      };
+      // Clipped to the frame opening: the doors slide away behind the posts, never over the wall panels or the call button.
+      ctx.save(); ctx.beginPath(); ctx.rect(90, 18, 140, 118); ctx.clip();
+      door(96 - slide);
+      door(162 + slide);
+      ctx.restore();
+    }
+    if (has('frame')) {
+      // The frame.
+      k1(ctx, 90, 18, 8, 118, P.plasticD, P.plastic, P.slate2); k1(ctx, 222, 18, 8, 118, P.plasticD, P.plastic, P.slate2); k1(ctx, 90, 18, 140, 8, P.plasticD, P.plastic, P.slate2);
+    }
   }
 
   // Wide shot of the trading floor. `zoom` 0..1 pushes toward your desk.
+  // The floor's one piece of arithmetic: the zoom's mapping (sx, sy, sw), the desk rows and, per desk, its slab, monitor and glass. tradingFloor
+  // draws from it and floorGeom reports the glass of the two near rows, so a shot that animates a screen lands on the screen the art drew.
+  const FLOOR_ROWS = [[56, 12], [74, 18], [96, 26], [126, 38]];
+  function floorMath(zoom) {
+    const z = 1 + zoom * 2.4, cx = 160, cy = 104;
+    return { z, sx: (v) => Math.round(cx + (v - cx) * z), sy: (v) => Math.round(cy + (v - cy) * z), sw: (v) => Math.max(1, Math.round(v * z)) };
+  }
+  // Desk i of row r, or null when it is off the canvas.
+  function floorDesk(m, r, i) {
+    const { sx, sy, sw } = m, [baseY, deskH] = FLOOR_ROWS[r];
+    const y = sy(baseY), dh = sw(deskH), per = sw(34 + r * 10), x = sx(-10 + i * (34 + r * 10));
+    if (x + per < -10 || x > V.w + 10) return null;
+    const mh = Math.max(2, dh - sw(6)), mw = per - sw(8);
+    return { x, y, dh, per, mh, mw, gx: x + sw(3) + (mh > 4 ? 2 : 1), gy: y - mh + (mh > 4 ? 2 : 1), gw: Math.max(1, mw - (mh > 4 ? 4 : 2)), gh: Math.max(1, mh - (mh > 4 ? 5 : 2)) };
+  }
+  // Whether the near-row screen of row r, desk i shows the day (the late floor, session 45 on, leaves most dark).
+  const floorOn = (r, i, seed) => ((seed || 0) >= 45 ? ((i * 7 + r * 3 + seed) % 5) < 2 : ((i * 7 + r * 3) % 5) !== 0);
+  // The glass rects (320x180 art units) of the two near rows' desks, row by row, left to right: { r, i, x, y, w, h, on }.
+  function floorGeom(zoom, seed) {
+    const m = floorMath(zoom), out = [];
+    for (let r = 2; r < 4; r++) for (let i = -1; i < 12; i++) {
+      const d = floorDesk(m, r, i);
+      if (d) out.push({ r, i, x: d.gx, y: d.gy, w: d.gw, h: d.gh, on: floorOn(r, i, seed) });
+    }
+    return out;
+  }
   function tradingFloor(ctx, zoom, lit, seed) {
-    const z = 1 + zoom * 2.4;
-    const cx = 160, cy = 104;
-    const sx = (v) => Math.round(cx + (v - cx) * z);
-    const sy = (v) => Math.round(cy + (v - cy) * z);
-    const sw = (v) => Math.max(1, Math.round(v * z));
+    const M = floorMath(zoom), sx = M.sx, sy = M.sy, sw = M.sw;
     // Outline only when the piece is big enough to carry one.
     const kk = (x, y, w, h, base, hi, sh) => (w > 4 && h > 4 ? k1(ctx, x, y, w, h, base, hi, sh, P.ink2) : X.rect(ctx, x, y, w, h, base));
 
@@ -177,22 +225,16 @@
     X.rect(ctx, 0, sy(70) - sw(2), V.w, sw(2), P.plasticD); X.rect(ctx, 0, sy(70), V.w, 1, P.ink2);
 
     // Rows of desks receding, nearest row last.
-    const rows = [[56, 12], [74, 18], [96, 26], [126, 38]];
-    for (let r = 0; r < rows.length; r++) {
-      const [baseY, deskH] = rows[r];
-      const y = sy(baseY), dh = sw(deskH);
-      const per = sw(34 + r * 10);
+    for (let r = 0; r < FLOOR_ROWS.length; r++) {
       for (let i = -1; i < 12; i++) {
-        const x = sx(-10 + i * (34 + r * 10));
-        if (x + per < -10 || x > V.w + 10) continue;
+        const D = floorDesk(M, r, i);
+        if (!D) continue;
+        const { x, y, per, mh, mw, gx, gy, gw, gh } = D;
         // The monitor: outlined bezel, a glass with the day on it, a stand.
-        const mh = Math.max(2, dh - sw(6)), mw = per - sw(8);
         kk(x + sw(3), y - mh, mw, mh, P.plastic, P.plastic2, P.plasticD);
-        const gx = x + sw(3) + (mh > 4 ? 2 : 1), gy = y - mh + (mh > 4 ? 2 : 1), gw = Math.max(1, mw - (mh > 4 ? 4 : 2)), gh = Math.max(1, mh - (mh > 4 ? 5 : 2));
         X.rect(ctx, gx, gy, gw, gh, P.screen);
         if (r >= 2) {
-          const late = (seed || 0) >= 45;
-          const on = late ? ((i * 7 + r * 3 + seed) % 5) < 2 : ((i * 7 + r * 3) % 5) !== 0;
+          const late = (seed || 0) >= 45, on = floorOn(r, i, seed);
           X.dither(ctx, gx, gy, gw, gh, P.screen, on ? P.jadeD : P.crimsonD, 0.4);
           if (late && !on) X.rect(ctx, gx, gy, gw, gh, P.screenD);
         }
@@ -276,7 +318,12 @@
   }
 
   // Closing bell on the wall, with the floor emptying out below it.
-  function bellScene(ctx, swing, empty) {
+  // `part` draws one layer of it for the layered closing shot; undefined draws the whole picture, as ever.
+  // Parts: 'wall' (wall, floor, clock, window), 'bell' (bracket, bell, sound waves), 'desks', 'walkers' (only when `empty`).
+  // 'walkers' alternates two leg poses with the shuffle step; the whole picture keeps the single pose.
+  function bellScene(ctx, swing, empty, part) {
+    const all = part == null, has = (n) => all || part === n;
+    if (has('wall')) {
     X.rect(ctx, 0, 0, V.w, V.h, P.putty);
     X.gradient(ctx, 0, 0, V.w, 132, P.putty2, P.putty, 7);
     k1(ctx, -1, 124, V.w + 2, 8, P.plastic, P.plastic2, P.plasticD, P.ink2);
@@ -304,8 +351,10 @@
       windowWeather(ctx, 233, 15, 62, 42, 9);
       X.rect(ctx, 263, 15, 2, 42, P.plasticD);
     }
+    }
 
     // The bell: bracket, yoke, flared body with an ink outline, rim, clapper.
+    if (has('bell')) {
     const a = Math.round(Math.sin(swing * Math.PI * 7) * (1 - swing) * 6);
     const bx = 160 + a;
     k1(ctx, 144, 12, 32, 6, P.plasticD, P.plastic, P.slate2, P.ink2);
@@ -327,9 +376,10 @@
       X.rect(ctx, bx - r, 42 - i * 3, 5, 2, P.bone); X.rect(ctx, bx - r - 2, 44 - i * 3, 3, 2, P.bone);
       X.rect(ctx, bx + r - 5, 42 - i * 3, 5, 2, P.bone); X.rect(ctx, bx + r - 1, 44 - i * 3, 3, 2, P.bone);
     }
+    }
 
     // Desks, high enough to stay clear of the caption box.
-    for (let i = 0; i < 5; i++) {
+    if (has('desks')) for (let i = 0; i < 5; i++) {
       const x = 10 + i * 62;
       k1(ctx, x, 82, 50, 28, P.plastic, P.plastic2, P.plasticD, P.ink2);
       X.rect(ctx, x + 4, 86, 42, 18, empty ? P.screenD : P.screen);
@@ -339,10 +389,11 @@
     }
 
     // People walking out between the desk rows once the floor empties.
-    if (empty) {
+    if (empty && (all || part === 'walkers')) {
+      const shuffle = Math.round(swing * 14), pose = part === 'walkers' && shuffle % 2 ? WALKER_B : WALKER;
       for (let i = 0; i < 4; i++) {
-        const px = 58 + i * 62 + Math.round(swing * 14);
-        ctx.save(); ctx.translate(px, 96); ctx.scale(2, 2); X.drawSprite(ctx, X.sprite(tint(WALKER, { 2: i % 2 ? '1' : '2', d: 'e', D: 'D' })), 0, 0); ctx.restore();
+        const px = 58 + i * 62 + shuffle;
+        ctx.save(); ctx.translate(px, 96); ctx.scale(2, 2); X.drawSprite(ctx, X.sprite(tint(pose, { 2: i % 2 ? '1' : '2', d: 'e', D: 'D' })), 0, 0); ctx.restore();
       }
     }
   }
@@ -350,8 +401,53 @@
   // A single establishing shot behind the ending card.
   // Story-specific broadcast tableaux. These use contemporary systems imagery
   // without naming a calendar year: fibre maps, server racks, hearings, queues.
-  function briefingTableau(ctx, day, p) {
+  // The static rects the layer builders cover or light, in art units (320x180, before the 7 px drop of tableau()). briefingTableau draws from these.
+  function tableauGeom(n) {
+    const g = {};
+    if (n === 5) g.bars = [0, 1, 2, 3, 4].map((i) => ({ x: 182 + (i % 3) * 34 + 4, y: 77 + Math.floor(i / 3) * 21 + 4, w: 20, h: 5, red: i > 2 }));
+    else if (n === 8) {
+      g.slots = [0, 1, 2, 3, 4].map((i) => ({ x: 28 + 55 * i + 5, y: 40, w: 28, h: 56 }));
+      g.links = [0, 1, 2, 3].map((i) => [{ x: 28 + 55 * i + 38, y: 70, w: 16, h: 2 }, { x: 28 + 55 * i + 49, y: 67, w: 5, h: 8 }]);
+      g.col = (i) => (i > 1 ? P.crimson : P.sky);
+    } else if (n === 11) g.marks = [0, 1, 2, 3, 4, 5].map((i) => ({ x: 16 + 50 * i + 6, y: 85, w: 30, h: 16 }));
+    else if (n === 12 || n === 13) { g.witness = { x: 154, y: 85, w: 12, h: 12 }; g.badge = { x: 265, y: 3, w: 46, h: 7 }; }
+    else if (n === 14) g.nodes = [0, 1, 2, 3, 4, 5, 6].map((i) => ({ x: 24 + 45 * i, y: 35 + (i % 3) * 18, w: 5, h: 5, lit: i < 3 }));
+    return g;
+  }
+  // The tableau's mover: the three ships (3), the nine queue figures (9), the witness at the table (12, 13). The flat picture draws it in its place in the
+  // order of the art. A layer builder passes o.shift(i) -> [dx, dy] (whole art units added to item i).
+  function tableauMover(ctx, n, p, o) {
+    const sh = (i) => (o && o.shift ? o.shift(i) : [0, 0]);
+    const rc = (x, y, w, h, c) => { if (h > 0) X.rect(ctx, x, y, w, h, c); };
+    if (n === 3) {
+      for (let i = 0; i < 3; i++) {
+        const d = sh(i), x = 123 + i * 35 + Math.round(p * 9) + d[0];
+        rc(x, 66 + i * 12 + d[1], 19, 4, i === 1 ? P.crimson : P.bone);
+        rc(x + 5, 62 + i * 12 + d[1], 8, 4, P.slate2);
+      }
+    } else if (n === 9) {
+      for (let i = 0; i < 9; i++) {
+        const d = sh(i), x = 52 + i * 27 + Math.round((i % 2) * p * 3) + d[0];
+        rc(x, 91 + d[1], 9, 24, i % 3 ? P.ink2 : P.crimsonD);
+        rc(x + 2, 84 + d[1], 5, 7, i % 2 ? P.desk2 : P.deskD);
+      }
+    } else if (n === 12 || n === 13) {
+      const d = sh(0);
+      rc(154 + d[0], 85 + d[1], 12, 12, P.desk2);
+    }
+  }
+  // The bank queue's lower band and its caption: drawn after the figures stand in the flat picture.
+  function tableau9Strip(ctx) {
+    X.rect(ctx, 0, 113, V.w, 25, P.ink2);
+    X.text(ctx, 'WITHDRAWAL QUEUE · THIRD STREET', 160, 120, P.white, { align: 'center' });
+  }
+  // o (optional): part 'art' draws everything but the scanlines, 'scan' only the scanlines; noMover leaves out the tableau's mover (tableauMover).
+  // over (tableau 9): the band under the queue and its caption are left out of 'art' and drawn first in 'scan', so they sit over the figures (which a layer
+  // builder draws between the two, whole: under the 1.3 zoom a figure cut at the band's edge would differ from the flat picture in the edge row).
+  function briefingTableau(ctx, day, p, o) {
     if ([3, 5, 8, 9, 11, 12, 13, 14].indexOf(day) < 0) return false;
+    const part = o && o.part, mover = !(o && o.noMover);
+    if (part === 'scan') { if (day === 9 && o.over) tableau9Strip(ctx); X.scanlines(ctx, 0, 13, V.w, 125, P.ink, 0.1); return true; }
     X.rect(ctx, 0, 0, V.w, V.h, P.ink);
     X.gradient(ctx, 0, 0, V.w, 138, P.ink2, P.screenD, 7);
     X.rect(ctx, 0, 0, V.w, 13, P.slate);
@@ -366,15 +462,12 @@
       X.dither(ctx, 250, 13, 70, 125, P.slate, P.carpet, 0.5);
       ctx.strokeStyle = P.sky; ctx.setLineDash([3, 3]);
       ctx.beginPath(); ctx.moveTo(48, 109); ctx.bezierCurveTo(112, 64, 195, 102, 279, 41); ctx.stroke(); ctx.setLineDash([]);
-      for (let i = 0; i < 3; i++) {
-        const x = 123 + i * 35 + Math.round(p * 9);
-        X.rect(ctx, x, 66 + i * 12, 19, 4, i === 1 ? P.crimson : P.bone);
-        X.rect(ctx, x + 5, 62 + i * 12, 8, 4, P.slate2);
-      }
+      if (mover) tableauMover(ctx, 3, p);
       X.box(ctx, 87, 21, 146, 21);
       X.text(ctx, 'KAVRO STRAIT', 160, 28, P.amber, { align: 'center', spacing: 2 });
     } else if (day === 5) {
       // Grid capacity and datacenter demand on the same schematic.
+      const G = tableauGeom(5);
       X.rect(ctx, 0, 104, V.w, 34, P.carpetD);
       for (let i = 0; i < 4; i++) {
         const x = 24 + i * 73;
@@ -384,25 +477,23 @@
         ctx.beginPath(); ctx.moveTo(x - 12, 57); ctx.lineTo(x + 61, 57); ctx.stroke(); ctx.setLineDash([]);
       }
       for (let i = 0; i < 5; i++) {
-        const x = 182 + (i % 3) * 34, y = 77 + Math.floor(i / 3) * 21;
+        const x = 182 + (i % 3) * 34, y = 77 + Math.floor(i / 3) * 21, b = G.bars[i];
         X.plate(ctx, x, y, 28, 17, P.plastic, P.plastic2, P.plasticD);
-        X.rect(ctx, x + 4, y + 4, 20, 5, i > 2 ? P.crimsonD : P.screenGlow);
+        X.rect(ctx, b.x, b.y, b.w, b.h, b.red ? P.crimsonD : P.screenGlow);
       }
       X.text(ctx, 'GRID REQUESTS: DELAYED', 12, 23, P.crimson);
       X.text(ctx, 'COMPUTE LOAD: +38%', 12, 34, P.amber);
     } else if (day === 8) {
       // The automated feedback loop, shown as racks feeding one another.
+      const G = tableauGeom(8);
       for (let i = 0; i < 5; i++) {
         const x = 28 + i * 55;
         X.plate(ctx, x, 34, 38, 76, P.slate, P.slate2, P.ink);
         for (let r = 0; r < 6; r++) {
-          X.rect(ctx, x + 5, 40 + r * 10, 28, 6, P.screen);
+          X.rect(ctx, G.slots[i].x, 40 + r * 10, G.slots[i].w, 6, P.screen);
           X.rect(ctx, x + 7 + ((r + i) % 4) * 5, 42 + r * 10, 2, 2, r > 3 ? P.crimson : P.phosphor);
         }
-        if (i < 4) {
-          X.rect(ctx, x + 38, 70, 16, 2, i > 1 ? P.crimson : P.sky);
-          X.rect(ctx, x + 49, 67, 5, 8, i > 1 ? P.crimson : P.sky);
-        }
+        if (i < 4) G.links[i].forEach((l) => X.rect(ctx, l.x, l.y, l.w, l.h, G.col(i)));
       }
       X.text(ctx, 'CORRELATED MODEL FLOW', 160, 19, P.violet, { align: 'center', spacing: 2 });
     } else if (day === 9) {
@@ -413,19 +504,15 @@
       X.rect(ctx, 199, 48, 72, 38, P.screenD);
       X.rect(ctx, 126, 48, 68, 38, P.sky);
       X.text(ctx, 'RIDGEWAY TRUST', 160, 34, P.ink, { align: 'center' });
-      for (let i = 0; i < 9; i++) {
-        const x = 52 + i * 27 + Math.round((i % 2) * p * 3);
-        X.rect(ctx, x, 91, 9, 24, i % 3 ? P.ink2 : P.crimsonD);
-        X.rect(ctx, x + 2, 84, 5, 7, i % 2 ? P.desk2 : P.deskD);
-      }
-      X.rect(ctx, 0, 113, V.w, 25, P.ink2);
-      X.text(ctx, 'WITHDRAWAL QUEUE · THIRD STREET', 160, 120, P.white, { align: 'center' });
+      if (mover) tableauMover(ctx, 9, p);
+      if (!(o && o.over)) tableau9Strip(ctx);
     } else if (day === 11) {
       // Regulatory preservation sweep: cartons, badges and locked terminals.
+      const G = tableauGeom(11);
       for (let i = 0; i < 6; i++) {
-        const x = 16 + i * 50;
+        const x = 16 + i * 50, m = G.marks[i];
         X.plate(ctx, x, 76, 42, 31, P.desk2, P.putty2, P.deskD);
-        X.rect(ctx, x + 6, 85, 30, 4, P.crimsonD);
+        X.rect(ctx, m.x, m.y, m.w, 4, P.crimsonD);
         X.text(ctx, 'HOLD', x + 21, 94, P.ink, { align: 'center' });
       }
       for (let i = 0; i < 3; i++) {
@@ -446,7 +533,7 @@
         X.rect(ctx, x + 3, 49, 6, 7, i === 3 ? P.desk2 : P.grey2);
       }
       X.rect(ctx, 86, 96, 148, 11, P.plasticD);
-      X.rect(ctx, 154, 85, 12, 12, P.desk2);
+      if (mover) tableauMover(ctx, day, p);
       X.text(ctx, day === 12 ? 'MARKETS COMMITTEE · LIVE' : 'STABILIZATION VOTE · LIVE', 160, 20, day === 12 ? P.sky : P.amber, { align: 'center' });
       if (day === 13) {
         X.box(ctx, 111, 112, 98, 20);
@@ -454,10 +541,11 @@
       }
     } else {
       // Final day: the city and network remain, but half the nodes have gone dark.
+      const G = tableauGeom(14);
       endingShot(ctx, 'dark');
       for (let i = 0; i < 7; i++) {
-        const x = 24 + i * 45, y = 35 + (i % 3) * 18;
-        X.rect(ctx, x, y, 5, 5, i < 3 ? P.sky : P.crimsonD);
+        const nd = G.nodes[i], x = nd.x, y = nd.y;
+        X.rect(ctx, x, y, nd.w, nd.h, nd.lit ? P.sky : P.crimsonD);
         if (i < 6) {
           ctx.strokeStyle = i < 3 ? P.sky : P.slate2;
           ctx.beginPath(); ctx.moveTo(x + 5, y + 2); ctx.lineTo(x + 45, 37 + ((i + 1) % 3) * 18); ctx.stroke();
@@ -465,7 +553,7 @@
       }
       X.text(ctx, 'SYSTEM STATUS: UNRESOLVED', 160, 18, P.bone, { align: 'center' });
     }
-    X.scanlines(ctx, 0, 13, V.w, 125, P.ink, 0.1);
+    if (part !== 'art') X.scanlines(ctx, 0, 13, V.w, 125, P.ink, 0.1);
     return true;
   }
 
@@ -529,10 +617,46 @@
   const FIG = ['.11.', '1221', '1221', '.11.', '1221', '1221', '1221', '1..1'];
   const COIN = ['.111.', '1aaa1', '1aAa1', '1aaa1', '.111.'];
 
-  function endingDetail(ctx, id, p) {
+  // The static rectangles of an ending's prop that the motion layers cover or reveal (art units, before the 8-unit drop).
+  // endingDetail draws from these, so a cover and the art can never drift apart.
+  const GEOM = {};
+  function endingGeom(id) {
+    if (GEOM[id]) return GEOM[id];
+    let g = {};
+    if (id === 'soft') {
+      g.wins = [];
+      for (let i = 0; i < 7; i++) for (let r = 0; r < 2; r++) for (let w = 0; w < 2; w++) {
+        const h = 34 + (i % 2) * 9;
+        g.wins[4 * i + 2 * r + w] = { x: 66 + 28 * i + 4 + 9 * w, y: 74 - h + 6 + 12 * r, w: 6, h: 6 };
+      }
+      g.leaves = [84, 176, 232].map((x) => ({ x, y: 60, w: 8, h: 6 })); // drawn over windows 3, 18 and 26
+    } else if (id === 'quiet') {
+      g.cells = [];
+      for (let y = 0; y < 5; y++) for (let x = 0; x < 7; x++) if (!(x === 4 && y === 2)) g.cells.push({ x: 116 + 13 * x, y: 20 + 11 * y, w: 7, h: 6 });
+      g.lit = { x: 116 + 13 * 4, y: 20 + 11 * 2, w: 7, h: 6 };
+    } else if (id === 'fired') g.label = { x: 136, y: 51, w: 47, h: 7 }; // 'PERSONAL' centred on 160 starts at x 136 (the sheet said 137)
+    else if (id === 'nobody') g.screens = [0, 1, 2, 3, 4].map((i) => ({ x: 93 + 28 * i, y: 25, w: 18, h: 30 }));
+    else if (id === 'replaced') g.strips = [0, 1, 2, 3].map((i) => [0, 1, 2, 3, 4].map((r) => ({ x: 102 + 34 * i, y: 26 + 9 * r, w: 20, h: 5 })));
+    else if (id === 'whistle') g.stamp = { x: 126, y: 50, w: 44, h: 11 };
+    else if (id === 'fall-guy') g.stamp = { x: 136, y: 50, w: 47, h: 7 }; // 'NOT MINE' centred on 160 starts at x 136 (the sheet said 137)
+    else if (id === 'exit') g.door = { x: 142, y: 22, w: 36, h: 56 };
+    else if (id === 'revolving') { g.glass = { x: 145, y: 44, w: 28, h: 26 }; g.bar = { x: 159, w: 2 }; g.rail = { y: 56 }; }
+    else if (!MOVER[id]) g.screen = { x: 145, y: 27, w: 30, h: 16 }; // grind, and every id with no prop of its own
+    return (GEOM[id] = g);
+  }
+
+  // o (optional): { part: 'base' | 'mover', n, dx, dy }. With no o every function draws what it always drew.
+  // part 'base' leaves out the prop's mover, part 'mover' draws only the mover (nothing for the ids without one). n is how many of the mover's
+  // repeated items are drawn (default all), dx / dy an offset added to the mover. Where the two parts overlap, the mover is drawn after the base.
+  const MOVER = { soft: 1, wiped: 1, perp: 1, master: 1, cassandra: 1, acquirer: 1, ward: 1, clawback: 1, fund: 1, 'right-early': 1, 'everything-rally': 1, 'lost-decade': 1, depression: 1 };
+  function endingDetail(ctx, id, p, o) {
     const cx = 160;
+    o = o || {};
+    if (o.part === 'mover' && !MOVER[id]) return;
+    const base = o.part !== 'mover', mov = o.part !== 'base', n = o.n == null ? Infinity : o.n, dx = o.dx || 0, dy = o.dy || 0;
+    const G = endingGeom(id);
     if (id === 'wiped') { // the book's charts, falling off the desk
-      for (let i = 0; i < 6; i++) {
+      if (mov) for (let i = 0; i < 6; i++) {
         const drop = Math.round(p * i * 2), x = 112 + i * 7, y = 20 + i * 8 + drop;
         c1(ctx, x, y, 70 - i * 4, 11, P.bone, P.white, P.putty2);
         for (let k = 0; k < 6; k++) R(ctx, x + 4 + k * 5, y + 3 + (i > 2 ? k : 5 - k), 3, 1, i > 2 ? P.crimson : P.sky);
@@ -541,18 +665,26 @@
       spr(ctx, LEAF, 130, 24); R(ctx, 133, 30, 2, 8, P.deskD);
       c1(ctx, 170, 28, 12, 11, P.bone, P.white, P.putty2); R(ctx, 182, 31, 2, 5, P.ink2);
       c1(ctx, 120, 38, 80, 34, P.desk2, P.putty2, P.desk); c1(ctx, 116, 34, 88, 7, P.desk, P.desk2, P.deskD);
-      c1(ctx, 136, 48, 48, 13, P.bone, P.white, P.putty2); X.text(ctx, 'PERSONAL', cx, 51, P.ink, { align: 'center' });
+      c1(ctx, 136, 48, 48, 13, P.bone, P.white, P.putty2); X.text(ctx, 'PERSONAL', cx, G.label.y, P.ink, { align: 'center' });
     } else if (id === 'perp') { // the car at the curb, the flashes
-      c1(ctx, 108, 46, 104, 20, P.bone, P.white, P.grey2, P.ink); R(ctx, 111, 54, 98, 4, P.ink2); c1(ctx, 128, 34, 62, 14, P.bone, P.white, P.grey2, P.ink);
-      R(ctx, 132, 37, 24, 8, P.sky); R(ctx, 160, 37, 26, 8, P.sky); R(ctx, 158, 37, 2, 8, P.ink2); c1(ctx, 140, 29, 28, 6, P.ink2, null, null, P.ink); R(ctx, 142, 30, 11, 4, P.crimson); R(ctx, 155, 30, 11, 4, P.sky);
-      c1(ctx, 116, 60, 16, 14, P.ink2, P.slate2, P.ink, P.ink); c1(ctx, 188, 60, 16, 14, P.ink2, P.slate2, P.ink, P.ink); R(ctx, 122, 66, 4, 2, P.grey); R(ctx, 194, 66, 4, 2, P.grey);
-      if (p > 0.3) { spr(ctx, FLASH, 88, 18); spr(ctx, FLASH, 222, 26); }
-      if (p > 0.6) { ctx.save(); ctx.globalAlpha = 0.25; R(ctx, 70, 10, 180, 66, P.white); ctx.restore(); }
+      if (base) {
+        c1(ctx, 108, 46, 104, 20, P.bone, P.white, P.grey2, P.ink); R(ctx, 111, 54, 98, 4, P.ink2); c1(ctx, 128, 34, 62, 14, P.bone, P.white, P.grey2, P.ink);
+        R(ctx, 132, 37, 24, 8, P.sky); R(ctx, 160, 37, 26, 8, P.sky); R(ctx, 158, 37, 2, 8, P.ink2); c1(ctx, 140, 29, 28, 6, P.ink2, null, null, P.ink); R(ctx, 142, 30, 11, 4, P.crimson); R(ctx, 155, 30, 11, 4, P.sky);
+        c1(ctx, 116, 60, 16, 14, P.ink2, P.slate2, P.ink, P.ink); c1(ctx, 188, 60, 16, 14, P.ink2, P.slate2, P.ink, P.ink); R(ctx, 122, 66, 4, 2, P.grey); R(ctx, 194, 66, 4, 2, P.grey);
+      }
+      if (mov) {
+        if (p > 0.3) { spr(ctx, FLASH, 88, 18); spr(ctx, FLASH, 222, 26); }
+        if (p > 0.6) { ctx.save(); ctx.globalAlpha = 0.25; R(ctx, 70, 10, 180, 66, P.white); ctx.restore(); }
+      }
     } else if (id === 'master') { // the yacht, off somewhere warm
-      c1(ctx, 86, 56, 150, 10, P.white, P.white, P.putty2); R(ctx, 92, 66, 138, 4, P.bone);
-      c1(ctx, 122, 40, 70, 18, P.white, P.white, P.putty2); for (let i = 0; i < 5; i++) R(ctx, 128 + i * 12, 45, 8, 4, P.slate);
-      R(ctx, 158, 16, 2, 26, P.slate2); R(ctx, 160, 18, 20, 7, P.amber); R(ctx, 160, 18, 20, 1, P.white);
-      X.dither(ctx, 0, 72, 320, 18, P.screen, P.sky, 0.35); for (let i = 0; i < 8; i++) R(ctx, 96 + i * 18, 74 + (i % 2) * 3, 10, 1, P.white);
+      if (mov) {
+        ctx.save(); ctx.translate(dx, 0);
+        c1(ctx, 86, 56, 150, 10, P.white, P.white, P.putty2); R(ctx, 92, 66, 138, 4, P.bone);
+        c1(ctx, 122, 40, 70, 18, P.white, P.white, P.putty2); for (let i = 0; i < 5; i++) R(ctx, 128 + i * 12, 45, 8, 4, P.slate);
+        R(ctx, 158, 16, 2, 26, P.slate2); R(ctx, 160, 18, 20, 7, P.amber); R(ctx, 160, 18, 20, 1, P.white);
+        ctx.restore();
+      }
+      if (base) { X.dither(ctx, 0, 72, 320, 18, P.screen, P.sky, 0.35); for (let i = 0; i < 8; i++) R(ctx, 96 + i * 18, 74 + (i % 2) * 3, 10, 1, P.white); }
     } else if (id === 'whistle') { // the file and the front page
       for (let i = 0; i < 4; i++) c1(ctx, 100 + i * 5, 22 + i * 7, 96, 20, P.bone, P.white, P.putty2);
       c1(ctx, 126, 50, 44, 11, P.bone, null, null, P.crimsonD); X.text(ctx, 'LEAKED', 148, 53, P.crimsonD, { align: 'center' });
@@ -563,70 +695,91 @@
       c1(ctx, 144, 42, 32, 30, P.sky, P.white, P.slate2); R(ctx, 159, 42, 2, 30, P.slate2); R(ctx, 146, 56, 28, 1, P.slate2);
       R(ctx, 86, 72, 148, 4, P.slate2); X.text(ctx, 'PRIVATE / PUBLIC', cx, 12, P.amber, { align: 'center' });
     } else if (id === 'depression') { // shuttered fronts and a queue
-      for (let i = 0; i < 6; i++) { const x = 70 + i * 32; c1(ctx, x, 26, 28, 46, P.ink2, P.slate, P.ink, P.ink); for (let k = 0; k < 6; k++) R(ctx, x + 2, 34 + k * 6, 24, 1, P.slate2); if (i % 2) { c1(ctx, x + 4, 28, 20, 6, P.crimsonD, P.crimson, P.ink2, P.ink); } }
-      for (let i = 0; i < 9; i++) spr(ctx, FIG, 78 + i * 18, 66);
-      R(ctx, 54, 74, 212, 3, P.crimsonD);
+      if (base) for (let i = 0; i < 6; i++) { const x = 70 + i * 32; c1(ctx, x, 26, 28, 46, P.ink2, P.slate, P.ink, P.ink); for (let k = 0; k < 6; k++) R(ctx, x + 2, 34 + k * 6, 24, 1, P.slate2); if (i % 2) { c1(ctx, x + 4, 28, 20, 6, P.crimsonD, P.crimson, P.ink2, P.ink); } }
+      if (mov) for (let i = 0; i < 9 && i < n; i++) spr(ctx, FIG, 78 + i * 18, 66);
+      if (base) R(ctx, 54, 74, 212, 3, P.crimsonD);
     } else if (id === 'soft') { // a street with its lights back on
-      for (let i = 0; i < 7; i++) { const x = 66 + i * 28, h = 34 + (i % 2) * 9; c1(ctx, x, 74 - h, 24, h, P.slate, P.slate2, P.ink2); for (let w = 0; w < 2; w++) for (let r = 0; r < 2; r++) c1(ctx, x + 4 + w * 9, 74 - h + 6 + r * 12, 6, 6, P.amber, P.white, P.amberD); }
-      for (const tx of [84, 176, 232]) spr(ctx, LEAF, tx, 60);
-      R(ctx, 52, 74, 216, 3, P.jade);
+      if (base) for (let i = 0; i < 7; i++) {
+        const x = 66 + i * 28, h = 34 + (i % 2) * 9; c1(ctx, x, 74 - h, 24, h, P.slate, P.slate2, P.ink2);
+        for (let w = 0; w < 2; w++) for (let r = 0; r < 2; r++) { const W = G.wins[4 * i + 2 * r + w]; c1(ctx, W.x, W.y, W.w, W.h, P.amber, P.white, P.amberD); }
+      }
+      for (const L of G.leaves) spr(ctx, LEAF, L.x, L.y);
+      if (base) R(ctx, 52, 74, 216, 3, P.jade);
     } else if (id === 'quiet') { // one window lit on a dark tower
       c1(ctx, 108, 14, 104, 64, P.ink2, P.slate, P.ink, P.ink);
       for (let y = 0; y < 5; y++) for (let x = 0; x < 7; x++) { const on = x === 4 && y === 2; R(ctx, 116 + x * 13, 20 + y * 11, 7, 6, on ? P.amber : P.screenD); if (on) rings(ctx, 171, 45, [12], P.amber, 0.15); }
     } else if (id === 'replaced') { // the racks that took the desk
-      for (let i = 0; i < 4; i++) { const x = 98 + i * 34; c1(ctx, x, 20, 28, 56, P.ink2, P.slate, P.ink); for (let r = 0; r < 5; r++) { R(ctx, x + 4, 26 + r * 9, 20, 5, P.screenD); R(ctx, x + 6 + (i * 3 + r) % 12, 27 + r * 9, 2, 2, (i + r) % 3 ? P.phosphor : P.sky); } }
+      for (let i = 0; i < 4; i++) { const x = 98 + i * 34; c1(ctx, x, 20, 28, 56, P.ink2, P.slate, P.ink); for (let r = 0; r < 5; r++) { const S = G.strips[i][r]; R(ctx, S.x, S.y, S.w, S.h, P.screenD); R(ctx, x + 6 + (i * 3 + r) % 12, 27 + r * 9, 2, 2, (i + r) % 3 ? P.phosphor : P.sky); } }
     } else if (id === 'exit') { // an open door, the light beyond it, a bag
-      c1(ctx, 136, 16, 48, 62, P.deskD, P.desk, P.ink2); R(ctx, 142, 22, 36, 56, P.bone); X.dither(ctx, 142, 22, 36, 56, P.bone, P.amber, 0.3);
+      const D = G.door;
+      c1(ctx, 136, 16, 48, 62, P.deskD, P.desk, P.ink2); R(ctx, D.x, D.y, D.w, D.h, P.bone); X.dither(ctx, D.x, D.y, D.w, D.h, P.bone, P.amber, 0.3);
       rings(ctx, 160, 60, [36, 22], P.amber, 0.1);
       c1(ctx, 190, 60, 34, 16, P.deskD, P.desk, P.ink2); R(ctx, 196, 55, 2, 6, P.ink2); R(ctx, 214, 55, 2, 6, P.ink2); R(ctx, 196, 55, 20, 2, P.ink2); R(ctx, 192, 66, 30, 1, P.desk2);
     } else if (id === 'nobody') { // every screen says the same thing
-      for (let i = 0; i < 5; i++) { const x = 90 + i * 28; c1(ctx, x, 22, 24, 40, P.slate, P.slate2, P.ink); R(ctx, x + 3, 25, 18, 30, P.screenD); R(ctx, x + 11, 29, 3, 16, P.crimson); R(ctx, x + 7, 43, 11, 3, P.crimson); R(ctx, x + 9, 46, 7, 3, P.crimson); R(ctx, x + 10, 62, 4, 8, P.slate); }
+      for (let i = 0; i < 5; i++) { const x = 90 + i * 28, S = G.screens[i]; c1(ctx, x, 22, 24, 40, P.slate, P.slate2, P.ink); R(ctx, S.x, S.y, S.w, S.h, P.screenD); R(ctx, x + 11, 29, 3, 16, P.crimson); R(ctx, x + 7, 43, 11, 3, P.crimson); R(ctx, x + 9, 46, 7, 3, P.crimson); R(ctx, x + 10, 62, 4, 8, P.slate); }
       X.text(ctx, 'SELL SELL SELL SELL SELL', cx, 12, P.crimson, { align: 'center' });
     } else if (id === 'fall-guy') { // a signature that was never yours
       c1(ctx, 116, 26, 88, 48, P.bone, P.white, P.putty2);
       R(ctx, 124, 34, 52, 2, P.grey); R(ctx, 124, 40, 62, 2, P.grey); R(ctx, 124, 64, 70, 1, P.ink);
-      X.text(ctx, 'NOT MINE', cx, 50, P.crimsonD, { align: 'center' });
+      X.text(ctx, 'NOT MINE', cx, G.stamp.y, P.crimsonD, { align: 'center' });
       for (let k = 0; k < 8; k++) R(ctx, 170 + k * 3, 60 - (k % 3), 3, 1, P.slate);
       spr(ctx, GAVEL, 210, 60);
     } else if (id === 'cassandra') { // the warnings nobody opened
-      for (let i = 0; i < 6; i++) c1(ctx, 94 + i * 3, 50 - i * 4, 62, 24, P.bone, P.white, P.putty2);
-      R(ctx, 102, 32, 34, 5, P.crimsonD); X.text(ctx, 'UNREAD', 126, 41, P.ink, { align: 'center' });
-      c1(ctx, 176, 24, 52, 50, P.amberD, P.amber, P.deskD); R(ctx, 176, 22, 22, 4, P.amberD);
-      c1(ctx, 182, 30, 40, 22, P.bone, P.white, P.putty2); X.text(ctx, 'FILED', 202, 33, P.ink, { align: 'center' }); X.text(ctx, 'WEEK 3', 202, 43, P.crimson, { align: 'center' });
+      if (mov) {
+        for (let i = 0; i < 6 && i < n; i++) c1(ctx, 94 + i * 3, 50 - i * 4, 62, 24, P.bone, P.white, P.putty2);
+        if (n >= 6) { R(ctx, 102, 32, 34, 5, P.crimsonD); X.text(ctx, 'UNREAD', 126, 41, P.ink, { align: 'center' }); }
+      }
+      if (base) {
+        c1(ctx, 176, 24, 52, 50, P.amberD, P.amber, P.deskD); R(ctx, 176, 22, 22, 4, P.amberD);
+        c1(ctx, 182, 30, 40, 22, P.bone, P.white, P.putty2); X.text(ctx, 'FILED', 202, 33, P.ink, { align: 'center' }); X.text(ctx, 'WEEK 3', 202, 43, P.crimson, { align: 'center' });
+      }
     } else if (id === 'acquirer') { // two banks, one sign going up
-      c1(ctx, 86, 34, 50, 40, P.slate, P.slate2, P.ink); for (let i = 0; i < 4; i++) R(ctx, 91 + i * 12, 42, 4, 32, P.slate2);
-      c1(ctx, 184, 34, 50, 40, P.crimsonD, P.crimson, P.ink); for (let i = 0; i < 4; i++) R(ctx, 189 + i * 12, 42, 4, 32, P.crimson);
-      R(ctx, 158, 6, 2, 26, P.amberD); R(ctx, 130, 6, 60, 2, P.amberD); R(ctx, 170, 8, 1, 14, P.grey);
-      c1(ctx, 140, 22, 60, 14, P.amber, P.white, P.amberD); X.text(ctx, 'HLST', 170, 26, P.ink, { align: 'center' });
+      if (base) {
+        c1(ctx, 86, 34, 50, 40, P.slate, P.slate2, P.ink); for (let i = 0; i < 4; i++) R(ctx, 91 + i * 12, 42, 4, 32, P.slate2);
+        c1(ctx, 184, 34, 50, 40, P.crimsonD, P.crimson, P.ink); for (let i = 0; i < 4; i++) R(ctx, 189 + i * 12, 42, 4, 32, P.crimson);
+        R(ctx, 158, 6, 2, 26, P.amberD); R(ctx, 130, 6, 60, 2, P.amberD);
+      }
+      if (mov) {
+        R(ctx, 170, 8, 1, 14 + dy, P.grey);
+        c1(ctx, 140, 22 + dy, 60, 14, P.amber, P.white, P.amberD); X.text(ctx, 'HLST', 170, 26 + dy, P.ink, { align: 'center' });
+      }
     } else if (id === 'ward') { // a public building and its flag
-      c1(ctx, 112, 30, 96, 8, P.bone, P.white, P.putty2); c1(ctx, 118, 38, 84, 36, P.slate2, P.grey2, P.slate);
-      for (let i = 0; i < 5; i++) c1(ctx, 124 + i * 16, 40, 8, 34, P.bone, P.white, P.putty2);
-      R(ctx, 158, 8, 2, 22, P.grey2); c1(ctx, 160, 8, 24, 12, P.sky, P.bone, P.slate2); R(ctx, 161, 13, 22, 2, P.bone);
+      if (base) {
+        c1(ctx, 112, 30, 96, 8, P.bone, P.white, P.putty2); c1(ctx, 118, 38, 84, 36, P.slate2, P.grey2, P.slate);
+        for (let i = 0; i < 5; i++) c1(ctx, 124 + i * 16, 40, 8, 34, P.bone, P.white, P.putty2);
+        R(ctx, 158, 8, 2, 22, P.grey2);
+      }
+      if (mov) { c1(ctx, 160, 8 + dy, 24, 12, P.sky, P.bone, P.slate2); R(ctx, 161, 13 + dy, 22, 2, P.bone); }
     } else if (id === 'clawback') { // forty cents on the dollar
-      for (let i = 0; i < 10; i++) { const kept = i < 4, h = kept ? 6 : 3; for (let k = 0; k < h; k++) spr(ctx, COIN, 100 + i * 12, 68 - k * 4); if (!kept) R(ctx, 98 + i * 12, 54, 11, 2, P.crimson); }
-      X.text(ctx, '40 CENTS', cx, 16, P.amber, { align: 'center' });
+      for (let i = 0; i < 10; i++) {
+        const kept = i < 4, h = kept ? 6 : 3;
+        if (base) for (let k = 0; k < h; k++) spr(ctx, COIN, 100 + i * 12, 68 - k * 4);
+        if (mov && !kept) { if (i - 4 < n) R(ctx, 98 + i * 12, 54, 11, 2, P.crimson); else for (let k = 3; k < 6; k++) spr(ctx, COIN, 100 + i * 12, 68 - k * 4); }
+      }
+      if (base) X.text(ctx, '40 CENTS', cx, 16, P.amber, { align: 'center' });
     } else if (id === 'fund') { // your name on a glass tower
-      c1(ctx, 132, 12, 56, 66, P.slate2, P.sky, P.ink2); for (let y = 0; y < 5; y++) for (let x = 0; x < 3; x++) c1(ctx, 138 + x * 16, 18 + y * 12, 10, 8, P.amber, P.white, P.amberD);
-      for (let i = 0; i < 9; i++) R(ctx, 196 + i * 6, 70 - i * 5, 5, 3, P.jade); R(ctx, 244, 26, 6, 6, P.jade);
+      if (base) { c1(ctx, 132, 12, 56, 66, P.slate2, P.sky, P.ink2); for (let y = 0; y < 5; y++) for (let x = 0; x < 3; x++) c1(ctx, 138 + x * 16, 18 + y * 12, 10, 8, P.amber, P.white, P.amberD); }
+      if (mov) { for (let i = 0; i < 9 && i < n; i++) R(ctx, 196 + i * 6, 70 - i * 5, 5, 3, P.jade); if (n >= 10) R(ctx, 244, 26, 6, 6, P.jade); }
     } else if (id === 'right-early') { // correct, eventually
       const ys = [30, 34, 40, 48, 44, 36, 28, 22, 20, 30, 46, 58, 66];
-      ys.forEach((y, i) => { const up = i < 4 || i > 8; c1(ctx, 94 + i * 10, y + 2, 10, 5, up ? P.crimson : P.jade, P.white, up ? P.crimsonD : P.jadeD); });
-      spr(ctx, FIG, 228, 64);
+      if (mov) ys.forEach((y, i) => { if (i >= n) return; const up = i < 4 || i > 8; c1(ctx, 94 + i * 10, y + 2, 10, 5, up ? P.crimson : P.jade, P.white, up ? P.crimsonD : P.jadeD); });
+      if (base) spr(ctx, FIG, 228, 64);
     } else if (id === 'everything-rally') { // the portfolio and the grocery bill
-      for (let i = 0; i < 7; i++) c1(ctx, 90 + i * 16, 74 - (20 + i * 6), 13, 20 + i * 6, P.jade, P.phosphor, P.jadeD);
-      c1(ctx, 210, 16, 32, 60, P.bone, P.white, P.putty2); for (let i = 0; i < 6; i++) R(ctx, 214, 22 + i * 7, 22 - (i % 3) * 4, 1, P.grey);
-      R(ctx, 214, 66, 24, 2, P.crimson); for (let k = 0; k < 8; k++) R(ctx, 210 + k * 4, 75 + (k % 2), 3, 1, P.bone);
+      if (mov) for (let i = 0; i < 7 && i < n; i++) c1(ctx, 90 + i * 16, 74 - (20 + i * 6), 13, 20 + i * 6, P.jade, P.phosphor, P.jadeD);
+      if (base) {
+        c1(ctx, 210, 16, 32, 60, P.bone, P.white, P.putty2); for (let i = 0; i < 6; i++) R(ctx, 214, 22 + i * 7, 22 - (i % 3) * 4, 1, P.grey);
+        R(ctx, 214, 66, 24, 2, P.crimson); for (let k = 0; k < 8; k++) R(ctx, 210 + k * 4, 75 + (k % 2), 3, 1, P.bone);
+      }
     } else if (id === 'lost-decade') { // ten calendars on a line
-      R(ctx, 78, 20, 164, 1, P.grey2);
-      for (let i = 0; i < 10; i++) { const x = 84 + i * 15, y = 22 + (i % 2) * 2; c1(ctx, x, y, 13, 18, P.bone, P.white, P.putty2); R(ctx, x + 1, y + 1, 11, 4, P.crimsonD); R(ctx, x + 5, y - 2, 2, 3, P.grey); }
-      R(ctx, 78, 74, 164, 2, P.slate2);
+      if (base) R(ctx, 78, 20, 164, 1, P.grey2);
+      if (mov) for (let i = 0; i < 10 && i < n; i++) { const x = 84 + i * 15, y = 22 + (i % 2) * 2; c1(ctx, x, y, 13, 18, P.bone, P.white, P.putty2); R(ctx, x + 1, y + 1, 11, 4, P.crimsonD); R(ctx, x + 5, y - 2, 2, 3, P.grey); }
+      if (base) R(ctx, 78, 74, 164, 2, P.slate2);
     } else { // still standing: the desk, the monitor, the coffee
       c1(ctx, 104, 46, 112, 12, P.desk, P.desk2, P.deskD); R(ctx, 110, 58, 4, 16, P.deskD); R(ctx, 206, 58, 4, 16, P.deskD);
-      c1(ctx, 140, 22, 40, 26, P.plasticD, P.plastic2, P.ink2); R(ctx, 145, 27, 30, 16, P.screenGlow); R(ctx, 148, 31, 18, 1, P.phosphor); R(ctx, 148, 35, 12, 1, P.sky);
+      c1(ctx, 140, 22, 40, 26, P.plasticD, P.plastic2, P.ink2); R(ctx, G.screen.x, G.screen.y, G.screen.w, G.screen.h, P.screenGlow); R(ctx, 148, 31, 18, 1, P.phosphor); R(ctx, 148, 35, 12, 1, P.sky);
       c1(ctx, 118, 34, 12, 13, P.bone, P.white, P.putty2); R(ctx, 120, 36, 8, 2, P.deskD); R(ctx, 130, 38, 2, 5, P.ink2);
     }
   }
-
 
   // ---------- scene scripts ----------
 
@@ -777,5 +930,5 @@
 
   B.Scenes = Scenes;
   // The hand-drawn 320x180 set pieces, for the storyboard layer to reuse at 2x.
-  B.Shots = { V, setSeason, apartment, tvSet, elevator, tradingFloor, deskCloseup, bellScene, endingShot, briefingTableau, endingDetail };
+  B.Shots = { V, WALKER, WALKER_B, setSeason, apartment, tvSet, elevator, tradingFloor, floorGeom, deskCloseup, bellScene, endingShot, briefingTableau, tableauMover, tableauGeom, endingDetail, endingGeom };
 })(window.BTB);

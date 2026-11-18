@@ -53,6 +53,7 @@ The visual tone is colourful but washed out. Every hue should feel filtered thro
 - Silkscreen for display moments and controls, Tiny5 for interface and story copy and VT323 for tables and financial data, all normalised to one cap height with font-size-adjust.
 - Pixel-styled scrollbars that keep every scrollable surface inside the game's visual language.
 - Trading music that fades between score and office ambience in stress-responsive phrases.
+- A cutscene motion engine (`js/art/motion.js`): shots dissolve into each other in an ordered-dither pattern, flat shots tilt by whole pixels, and layered shots move in depth with small animated elements. The session 1 elevator, the closing bell and the Saturday apartment are layered. Motion follows the Screen effects setting and the browser's reduced-motion preference.
 
 ## Guardrails
 

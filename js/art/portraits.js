@@ -47,7 +47,7 @@
   };
 
   // ---- rasteriser ----
-  function raster(c) {
+  function raster(c, closed) {
     const g = new Array(N * N).fill(null);
     const R = (x, y, w, h, col) => { for (let j = y; j < y + h; j++) for (let i = x; i < x + w; i++) if (i >= 0 && i < N && j >= 0 && j < N) g[j * N + i] = col && col.a ? ((i + j) % 2 ? col.a : col.b) : col; };
     const px = (x, y, col) => R(x, y, 1, 1, col);
@@ -59,7 +59,8 @@
     R(38, 40, 5, 8, shade(suit)); R(36, 37, 3, 4, shade(suit));
     if (c.screen) { // the building's avatar: a monitor on a stand, a smiling line
       R(12, 8, 24, 22, P.plasticD); R(13, 9, 22, 20, P.plastic); R(15, 11, 18, 15, P.screen);
-      R(18, 15, 3, 3, c.accent); R(27, 15, 3, 3, c.accent); R(19, 21, 10, 1, c.accent); R(18, 20, 1, 1, c.accent); R(29, 20, 1, 1, c.accent);
+      if (closed) { R(18, 17, 3, 1, c.accent); R(27, 17, 3, 1, c.accent); } else { R(18, 15, 3, 3, c.accent); R(27, 15, 3, 3, c.accent); }
+      R(19, 21, 10, 1, c.accent); R(18, 20, 1, 1, c.accent); R(29, 20, 1, 1, c.accent);
       R(13, 9, 22, 1, P.plastic2); R(22, 30, 4, 6, P.plasticD); R(17, 34, 14, 2, P.plasticD);
       return g;
     }
@@ -91,7 +92,8 @@
     R(12, 17, 2, 7, sk); R(12, 18, 1, 5, skS); R(34, 17, 2, 7, skS); R(35, 18, 1, 5, deeper(skS));
     if (c.jaw) { R(17, 30, 12, 1, line); }
     // Eyes: whites, pupils looking in, a lid line.
-    const eye = (x) => { R(x, 19, 4, 2, P.bone); R(x + (x < 24 ? 2 : 0), 19, 2, 2, P.ink); R(x, 18, 4, 1, line); };
+    // closed (a blink): one line where the whites and the pupil were, the head colour above and below it
+    const eye = (x) => { if (closed) { R(x, 19, 4, 1, line); return; } R(x, 19, 4, 2, P.bone); R(x + (x < 24 ? 2 : 0), 19, 2, 2, P.ink); R(x, 18, 4, 1, line); };
     eye(17); eye(27);
     // Brows set the mood.
     const hb = shade(c.hair === P.ink ? P.ink2 : c.hair);
@@ -146,13 +148,26 @@
 
   const KEY = {}; Object.keys(B.PalKeys).forEach((k) => { if (B.PalKeys[k]) KEY[B.PalKeys[k]] = k; });
   const cache = {};
-  function sprite(name) {
-    if (cache[name]) return cache[name];
+  // sprite(name, { closed: true }) is the same face with its eyes shut, cached apart.
+  function sprite(name, o) {
+    const closed = !!(o && o.closed), key = closed ? name + ':closed' : name;
+    if (cache[key]) return cache[key];
     const c = CAST[name] || { skin: P.desk2, hair: P.ink2, suit: P.slate, accent: P.grey2, cut: 'crop', brow: 'level', mouth: 'flat' };
-    const g = outline(raster(c));
+    const g = outline(raster(c, closed));
     const rows = [];
     for (let y = 0; y < N; y++) { let r = ''; for (let x = 0; x < N; x++) r += g[y * N + x] ? (KEY[g[y * N + x]] || '.') : '.'; rows.push(r); }
-    return (cache[name] = X.sprite(rows));
+    return (cache[key] = X.sprite(rows));
+  }
+
+  // The eye band of the closed face, painted over the open one: a blink. Cells x 16..32, y 18..20 of a person (the glasses frames and glints at 16, 22, 26,
+  // 32 and row 18 come from the same raster), x 18..29, y 15..17 of the screen avatar. One fillRect per opaque cell (51 at most).
+  function paintEyes(ctx, name) {
+    const c = CAST[name], band = c && c.screen ? [18, 29, 15, 17] : [16, 32, 18, 20], sp = sprite(name, { closed: true });
+    for (let y = band[2]; y <= band[3]; y++) for (let x = band[0]; x <= band[1]; x++) {
+      const col = B.PalKeys[sp.rows[y][x]];
+      if (!col) continue;
+      ctx.fillStyle = col; ctx.fillRect(x, y, 1, 1);
+    }
   }
 
   function draw(canvas, name) {
@@ -186,6 +201,7 @@
     paint,
     has: (name) => !!CAST[name],
     sprite,
+    paintEyes,
     drawAll(root) {
       (root || document).querySelectorAll('canvas[data-portrait]').forEach((canvas) => draw(canvas, canvas.dataset.portrait));
     }

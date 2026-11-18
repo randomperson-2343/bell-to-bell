@@ -474,6 +474,27 @@
     assert(phone.length === 2 && phone.every((beat) => beat.view.w === 640), 'phone handoff is missing');
     assert(B.Scenes.weekend({ day: 29 }).length === 3, 'ordinary weekends are sat, sun, hold');
     assert(B.Scenes.weekend({ day: 24 }).length === 3 && B.Scenes.weekend({ day: 39 }).length === 4, 'only the whip weekend gets a second room');
+    // short mode shows Saturday when the weekend has no story line, and Sunday when it has one
+    const sat = (day, game) => B.Scenes.weekend({ day, game })[0];
+    assert(/:sat$/.test(sat(9).id) && sat(9).informative === true && sat(19).informative === true, 'a weekend with no story line should show Saturday in short mode');
+    assert(sat(4).informative === false && sat(44).informative === false && B.Scenes.weekend({ day: 4 })[1].informative === true, 'a weekend with a story line should show Sunday in short mode');
+  });
+
+  test('Nobody rings the closing bell from session 45: no bell sound on those days', () => {
+    assert(!B.Storyboard.bellSilent(43) && B.Storyboard.bellSilent(44) && B.Storyboard.bellSilent(45), 'bellSilent must start at session index 44');
+    const rung = [];
+    const real = B.SFX.marketClose;
+    B.SFX.marketClose = () => rung.push(1);
+    try {
+      for (const day of [43, 44]) {
+        const g = mkGame('bell-' + day);
+        g.day = day;
+        g.startDay();
+        const before = rung.length;
+        g.endDay();
+        assert((rung.length - before) === (day < 44 ? 1 : 0), `session index ${day}: closing bell rang ${rung.length - before} times`);
+      }
+    } finally { B.SFX.marketClose = real; }
   });
 
   test('Storyboard: four mornings follow the choice made the night before', () => {
@@ -1383,6 +1404,28 @@
     for (const id of Object.keys(A.ROOMS)) for (const S of [null, { f: {}, wallet: { pet: { kind: 'cat', sex: 'boy', name: 'Rosco' } } }]) A.room(ctx, id, 20, true, S);
   });
 
+  test('Decision rooms: the layered options draw on the plain stub context, and the blink needs no more', () => {
+    const A = B.DecisionArt;
+    const ctx = { save() {}, restore() {}, translate() {}, scale() {}, beginPath() {}, rect() {}, clip() {}, fillRect() {}, fillText() {}, set fillStyle(v) {}, set globalAlpha(v) {}, set font(v) {}, set textAlign(v) {}, set textBaseline(v) {}, measureText: () => ({ width: 6 }) };
+    for (const id of Object.keys(A.ROOMS)) {
+      for (const o of [{ noGrain: true }, { part: 'back', noGrain: true }, { part: 'front', noGrain: true }, { skip: 'chair' }, { skip: 'count' }, { skip: 'envelope' }, { skip: 'cells' }]) A.room(ctx, id, 20, false, null, o);
+      assert(typeof A.roomLayers === 'function', 'roomLayers is exported');
+    }
+    // the face of every cast member shuts its eyes with at most 51 cells, inside the band, and the closed sprite is the open one except for the eyes
+    let cells = 0, outside = 0;
+    const rec = { fillRect(x, y) { cells++; if (!(x >= 16 && x <= 32 && y >= 18 && y <= 20) && !(x >= 18 && x <= 29 && y >= 15 && y <= 17)) outside++; }, set fillStyle(v) {} };
+    for (const name of Object.keys(B.Portraits.CAST)) {
+      const open = B.Portraits.sprite(name), shut = B.Portraits.sprite(name, { closed: true }), screen = !!B.Portraits.CAST[name].screen;
+      assert(shut !== open && shut.h === 48 && shut.rows.every((r) => r.length === 48), name + ' has no closed sprite');
+      const rows = screen ? [15, 16, 17] : [18, 19, 20];
+      for (let y = 0; y < 48; y++) if (!rows.includes(y)) assert(open.rows[y] === shut.rows[y], `${name}: row ${y} differs between the open and the closed face`);
+      assert(rows.some((y) => open.rows[y] !== shut.rows[y]), name + ': the eyes do not close');
+      assert(B.Portraits.sprite(name, { closed: true }) === shut, name + ': the closed sprite is not cached');
+      cells = 0; outside = 0; B.Portraits.paintEyes(rec, name);
+      assert(cells > 0 && cells <= (screen ? 36 : 51) && outside === 0, `${name}: paintEyes drew ${cells} cells, ${outside} outside the band`);
+    }
+  });
+
   test('Pet food is billed weekly and the pet shows up in the weekend art', () => {
     const E = B.Economy, W = Object.assign(E.fresh(), { cash: 5000, peakEq: 250000 });
     const t = E.tier(W);
@@ -1897,6 +1940,503 @@
     g2.resumeDay();
     for (const tk of g.market.tickers) near(g2.market.bySym[tk.sym].last, tk.last, 1e-8, tk.sym + ' price');
     assert(g2.mode.S.crashK === 1 && g2.mode.S.crashDay === 20, 'old save is pinned to the base depth');
+  });
+
+  test('Motion: easing', () => {
+    const M = B.Motion;
+    assert(M.ease.inOut(0) === 0 && M.ease.inOut(1) === 1 && M.ease.out(2) === 1 && M.ease.in(-1) === 0, 'easing is not clamped to 0..1');
+  });
+  test('Motion: particles and flicker repeat exactly and stay in their box', () => {
+    const M = B.Motion, o = { kind: 'snow', seed: 'a', t: 1.3, x: 10, y: 20, w: 100, h: 50, count: 30 };
+    const a = M.particles(o), b = M.particles(o);
+    assert(a.length === 30 && JSON.stringify(a) === JSON.stringify(b), 'particles are not deterministic');
+    assert(a.every((q) => Number.isInteger(q.x) && Number.isInteger(q.y) && q.x >= 10 && q.x < 110 && q.y >= 20 && q.y < 70), 'particle outside its box or off the pixel grid');
+    assert(JSON.stringify(M.particles(Object.assign({}, o, { t: 2 }))) !== JSON.stringify(a), 'particles do not move');
+    assert(M.particles(Object.assign({}, o, { x: 10.4, y: 20.6 })).every((q) => Number.isInteger(q.x) && Number.isInteger(q.y)), 'fractional box origin gives off-grid particles');
+    assert(M.flicker('s', 0.01, 10) === M.flicker('s', 0.09, 10), 'flicker changes inside one step');
+  });
+  test('Motion: camera maths', () => {
+    const M = B.Motion;
+    const c = M.cameraAt({ from: { x: 0 }, to: { x: 5, zoom: 1.08 } }, 0.5);
+    assert(Number.isInteger(c.x) && c.y === 0 && c.zoom > 1 && c.zoom < 1.08, 'camera midpoint');
+    assert(M.cameraAt(null, 0.3).zoom === 1, 'null camera is identity');
+    assert(!('presetFor' in M) && !('PRESETS' in M), 'no beat gets a default camera: a beat moves only by its own camera');
+  });
+  test('Motion: office hold beats are holds', () => {
+    const M = B.Motion, bs = B.Scenes.office({ day: 3 }), last = bs[bs.length - 1];
+    assert(/^office:3:hold:/.test(last.id), 'office last beat id is ' + last.id);
+    assert(M.transitionFor(last, bs.length - 1) === 'cut', 'office hold must cut');
+  });
+  test('Motion: default transitions', () => {
+    const M = B.Motion;
+    assert(M.transitionFor({ id: 'a:b' }, 0) === 'fade' && M.transitionFor({ id: 'a:b' }, 2) === 'cross', 'defaults');
+    assert(M.transitionFor({ id: 'a:hold' }, 2) === 'cut' && M.transitionFor({ id: 'a:b', transition: 'cut' }, 2) === 'cut', 'hold and explicit cut');
+  });
+
+  test('Motion: a layered beat supplies a full draw in layer order', () => {
+    const fakeCtx = () => new Proxy({}, { get: () => () => {} });
+    const log = [];
+    const beat = B.Motion.layered({ id: 't:x', dur: 2, layers: [
+      { id: 'bg', depth: 0, draw: () => log.push('bg') },
+      { id: 'fg', depth: 1.5, draw: () => log.push('fg'), animate: (c, v, t, p) => log.push('fg@' + t + '/' + p) }
+    ] });
+    beat.draw(fakeCtx(), { w: 640, h: 360 }, 1, {});
+    assert(log.join() === 'bg,fg,fg@2/1' && beat.cache === false, 'layer order, animate time or cache flag');
+    let threw = false; try { B.Motion.layered({ id: 't:y', dur: 1, layers: [{ id: 'a', draw() {} }, { id: 'a', draw() {} }] }); } catch (e) { threw = true; }
+    assert(threw, 'duplicate layer ids must be rejected');
+  });
+
+  test('Storyboard: beats no longer hard-code a cut', () => {
+    const bs = B.Scenes.news({ day: 7, brief: { title: 'x', feed: [] } });
+    assert(bs[0].transition === 'fade', 'a scene must open on a fade');
+    assert(bs.slice(1).every((b, i) => B.Motion.transitionFor(b, i + 1) === (/:hold(:|$)/.test(b.id) ? 'cut' : 'cross')), 'later beats should dissolve, holds should cut');
+  });
+
+
+  // ---------- Motion kit (js/art/motion-kit.js) ----------
+  // A recording stand-in for a canvas context. Every fillRect lands in `rects` with the fill and alpha in force
+  // and its device-space box; clip, translate, scale and save/restore are tracked so tests can see what was clipped.
+  function recCtx() {
+    const stack = [];
+    const c = {
+      rects: [], fillStyle: null, globalAlpha: 1, tx: 0, ty: 0, sx: 1, sy: 1, clipRect: null, path: null,
+      save() { stack.push({ fillStyle: c.fillStyle, globalAlpha: c.globalAlpha, tx: c.tx, ty: c.ty, sx: c.sx, sy: c.sy, clipRect: c.clipRect }); },
+      restore() { if (!stack.length) throw new Error('restore without save'); Object.assign(c, stack.pop()); },
+      beginPath() { c.path = null; },
+      rect(x, y, w, h) { c.path = { x: c.tx + c.sx * x, y: c.ty + c.sy * y, w: c.sx * w, h: c.sy * h }; },
+      clip() {
+        const p = c.path, q = c.clipRect;
+        if (!p) return;
+        if (!q) { c.clipRect = p; return; }
+        const x0 = Math.max(p.x, q.x), y0 = Math.max(p.y, q.y), x1 = Math.min(p.x + p.w, q.x + q.w), y1 = Math.min(p.y + p.h, q.y + q.h);
+        c.clipRect = { x: x0, y: y0, w: Math.max(0, x1 - x0), h: Math.max(0, y1 - y0) };
+      },
+      translate(x, y) { c.tx += x * c.sx; c.ty += y * c.sy; },
+      scale(x, y) { c.sx *= x; c.sy *= y; },
+      depth: () => stack.length,
+      fillRect(x, y, w, h) {
+        c.rects.push({ x, y, w, h, fillStyle: c.fillStyle, globalAlpha: c.globalAlpha, dx: c.tx + c.sx * x, dy: c.ty + c.sy * y, dw: c.sx * w, dh: c.sy * h, clip: c.clipRect });
+      }
+    };
+    return c;
+  }
+  const recOf = (fn) => { const c = recCtx(); fn(c); return c; };
+  const recKey = (c) => JSON.stringify(c.rects);
+  // True when every recorded rectangle, after any clip, lies inside r = { x, y, w, h }.
+  function recInside(c, r) {
+    return c.rects.every((q) => {
+      let x0 = q.dx, y0 = q.dy, x1 = q.dx + q.dw, y1 = q.dy + q.dh;
+      if (q.clip) { x0 = Math.max(x0, q.clip.x); y0 = Math.max(y0, q.clip.y); x1 = Math.min(x1, q.clip.x + q.clip.w); y1 = Math.min(y1, q.clip.y + q.clip.h); }
+      return x1 <= x0 || y1 <= y0 || (x0 >= r.x && y0 >= r.y && x1 <= r.x + r.w && y1 <= r.y + r.h);
+    });
+  }
+  // device-space boxes with colour and alpha: two recordings with the same string are the same picture
+  const KIT_PX = (c) => c.rects.map((q) => `${q.dx},${q.dy},${q.dw},${q.dh},${q.fillStyle},${q.globalAlpha}`).join('|');
+
+  test('Pixel.dither: merged runs cover exactly the pixels of the per-pixel algorithm, with fewer rectangles', () => {
+    const X = B.Pixel;
+    // the algorithm before run merging, as the reference
+    const old = (ctx, x, y, w, h, colA, colB, f) => {
+      const lvl = Math.round(B.clamp(f, 0, 1) * 16);
+      X.rect(ctx, x, y, w, h, colA);
+      if (lvl <= 0) return;
+      if (lvl >= 16) { X.rect(ctx, x, y, w, h, colB); return; }
+      ctx.fillStyle = colB;
+      for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) if (X.BAYER[j & 3][i & 3] < lvl) ctx.fillRect((x + i) | 0, (y + j) | 0, 1, 1);
+    };
+    const covered = (c) => { const set = new Map(); c.rects.forEach((q) => { for (let j = 0; j < q.h; j++) for (let i = 0; i < q.w; i++) set.set((q.x + i) + ',' + (q.y + j), q.fillStyle); }); return set; };
+    let fewer = 0;
+    [[0, 0, 40, 20, 0.5], [3, 5, 37, 19, 0.3], [7, 2, 13, 9, 0.9], [0, 0, 8, 8, 0], [1, 1, 9, 7, 1], [5, 6, 31, 5, 0.06], [2, 3, 1, 1, 0.5], [0, 0, 64, 36, 0.47], [13, 11, 21, 17, 0.75],
+      // fractional widths and heights: the last partial cell is covered as the per-pixel loop covers it
+      [0, 0, 5.5, 4, 0.5], [2, 1, 10.3, 4.6, 0.6], [0, 0, 0.5, 2, 0.9], [3, 2, 7.9, 3.2, 0.3], [1, 0, 8.01, 8.5, 0.8]].forEach(([x, y, w, h, f]) => {
+      const a = recOf((c) => old(c, x, y, w, h, B.Pal.ink, B.Pal.amber, f)), b = recOf((c) => X.dither(c, x, y, w, h, B.Pal.ink, B.Pal.amber, f));
+      const sa = covered(a), sb = covered(b);
+      assert(sa.size === sb.size && [...sa].every(([k, v]) => sb.get(k) === v), `dither pixels differ for ${[x, y, w, h, f]}`);
+      assert(b.rects.length <= a.rects.length, `dither records more rects for ${[x, y, w, h, f]}`);
+      if (b.rects.length < a.rects.length) fewer++;
+    });
+    assert(fewer >= 2, 'run merging saved no rectangles (dark-to-light cells above half merge into runs): ' + fewer);
+  });
+
+  test('MotionKit: loads headless and exposes the helpers and twelve elements', () => {
+    const K = B.MotionKit;
+    assert(K, 'B.MotionKit missing');
+    ['span', 'camSpan', 'rise', 'blink', 'crt', 'flicker', 'trace', 'tally', 'typeOn', 'stamp', 'marker', 'lamps', 'weather', 'passing', 'ping']
+      .forEach((n) => assert(typeof K[n] === 'function', 'missing ' + n));
+    assert(B.Shots.WALKER && B.Shots.WALKER_B && B.Shots.WALKER.length === 10 && B.Shots.WALKER_B.length === 10, 'B.Shots must expose WALKER and WALKER_B');
+  });
+
+  test('MotionKit helpers: span, camSpan, rise', () => {
+    const K = B.MotionKit, E = B.Motion.ease;
+    assert(K.span(1, 1, 2) === 0 && K.span(1.5, 1, 2) === 0.5 && K.span(3, 1, 2) === 1 && K.span(0, 1, 2) === 0, 'span clamps to 0..1');
+    assert(K.span(0.9, 1, 1) === 0 && K.span(1, 1, 1) === 1, 'a zero-length span is a step');
+    const e = K.camSpan(2, 0.5, 1.5, E.linear);
+    assert(e(0) === 0 && e(0.25) === 0 && e(0.5) === 0.5 && e(0.75) === 1 && e(1) === 1, 'camSpan moves only between a and b');
+    const r = K.rise(12, 2, 0.25, 1.25);
+    assert(r.from.y === -12 && r.from.x === 0 && r.from.zoom === 1 && r.to.y === 0 && r.to.zoom === 1, 'rise from/to');
+    const cam = (p) => B.Motion.cameraAt(r, p).y;
+    assert(cam(0) === -12 && cam(0.1) === -12 && cam(1) === 0 && cam(0.375) === -3, 'rise lifts between a and b and ends at 0');
+    assert(r.ease(0.125) === 0 && r.ease(0.375) === E.out(0.5) && r.ease(0.625) === 1, 'rise uses ease.out');
+  });
+
+  test('MotionKit.blink: on at T = end, cover colour, phase and t0', () => {
+    const K = B.MotionKit, P = B.Pal;
+    const one = (t, o) => recOf((c) => K.blink(c, 10, 20, 8, 6, t, o)).rects;
+    const o = { on: P.amber, off: P.ink, end: 2.3 };
+    let r = one(2.3, o);
+    assert(r.length === 1 && r[0].fillStyle === P.amber && r[0].x === 10 && r[0].y === 20 && r[0].w === 8 && r[0].h === 6, 'on at the end');
+    assert(one(2.3 - 0.3, o)[0].fillStyle === P.amber, 'still inside the on part');
+    assert(one(2.3 - 0.7, o)[0].fillStyle === P.ink, 'off draws the cover colour');
+    assert(one(2.3 - 0.7, { on: P.amber, end: 2.3 }).length === 0, 'off with no cover draws nothing');
+    const q = { on: P.amber, off: P.ink, period: 0.5, duty: 0.6 };
+    assert(one(0.29, q)[0].fillStyle === P.amber && one(0.31, q)[0].fillStyle === P.ink && one(0.5, q)[0].fillStyle === P.amber, 'period and duty');
+    assert(one(0.1, { on: P.amber, off: P.ink, phase: 0.5 })[0].fillStyle === P.ink, 'phase shifts the blink');
+    assert(one(0.1, { on: P.amber, off: P.ink, t0: 0.5 })[0].fillStyle === P.ink && one(0.6, { on: P.amber, off: P.ink })[0].fillStyle === P.ink, 't0 shifts time');
+  });
+
+  test('MotionKit.crt: roll band travels once, clipped to the screen', () => {
+    const K = B.MotionKit, P = B.Pal, R = { x: 20, y: 30, w: 60, h: 40 };
+    const at = (t, o) => recOf((c) => K.crt(c, R.x, R.y, R.w, R.h, t, Object.assign({ mode: 'roll', at: 1 }, o)));
+    assert(at(0.99).rects.length === 0 && at(1.36).rects.length === 0 && at(2).rects.length === 0, 'nothing outside [at, at + 0.36)');
+    const mid = at(1.1875);
+    assert(mid.rects.length === 2, 'band plus edge');
+    assert(mid.rects[0].fillStyle === P.phosphorD && mid.rects[0].globalAlpha === 0.22 && mid.rects[1].fillStyle === P.phosphor && mid.rects[1].globalAlpha === 0.4, 'band colours and alphas');
+    // q = 0.52: band top = y - 6 + floor(0.52 * 46) = 47, bottom row 52
+    assert(mid.rects[0].y === 47 && mid.rects[0].h === 6 && mid.rects[1].y === 52 && mid.rects[1].h === 1, 'band position ' + JSON.stringify(mid.rects[0]));
+    assert(mid.depth() === 0 && mid.globalAlpha === 1, 'alpha stays inside save/restore');
+    for (let t = 1; t < 1.36; t += 0.01) assert(recInside(at(t), R), 'band left the screen at ' + t);
+    assert(at(1.0).rects.length === 0, 'the band starts wholly above the screen');
+    const enter = at(1.02).rects;
+    assert(enter.length === 2 && enter[0].y === 30 && enter[0].h === 2 && enter[1].y === 31, 'entering from above is clipped to the screen: ' + JSON.stringify(enter));
+    assert(KIT_PX(at(0.1875, { t0: 1 })) === KIT_PX(mid), 't0 shifts time');
+  });
+
+  test('MotionKit.crt: off is fill, line and dot, then dot, then fill only; dim follows every off frame', () => {
+    const K = B.MotionKit, P = B.Pal;
+    const at = (t, o) => recOf((c) => K.crt(c, 20, 30, 60, 40, t, Object.assign({ mode: 'off', at: 1 }, o)));
+    assert(at(0.99).rects.length === 0, 'nothing before at');
+    const a = at(1.0).rects;
+    assert(a.length === 3 && a[0].fillStyle === P.screenD && a[0].w === 60 && a[0].h === 40, 'fill first');
+    assert(a[1].fillStyle === P.phosphor && a[1].x === 20 && a[1].y === 30 + 20 - 1 && a[1].w === 60 && a[1].h === 2, 'phosphor line');
+    assert(a[2].fillStyle === P.white && a[2].w === 4 && a[2].h === 2 && a[2].x === 20 + 30 - 2 && a[2].y === 30 + 20 - 1, 'centre dot');
+    const b = at(1.05).rects;
+    assert(b.length === 2 && b[0].fillStyle === P.screenD && b[1].fillStyle === P.white, 'fill and dot from at + 0.05');
+    assert(at(1.1).rects.length === 1 && at(5).rects.length === 1 && at(5).rects[0].fillStyle === P.screenD, 'fill only from at + 0.10');
+    const d = at(5, { dim: 0.3 }).rects;
+    assert(d.length === 2 && d[1].fillStyle === P.ink && d[1].globalAlpha === 0.3 && d[1].x === 20 && d[1].w === 60 && d[1].h === 40, 'dim rect');
+    assert(at(1.0, { dim: 0.3 }).rects.length === 4 && at(0.5, { dim: 0.3 }).rects.length === 0, 'dim only with off frames');
+    assert(at(1, { bg: P.ink2 }).rects[0].fillStyle === P.ink2, 'bg option');
+    assert(at(0.5, { t0: 0.5 }).rects.length === 3, 't0 shifts time');
+    [0.5, 1.0, 1.03, 1.07, 1.2, 4].forEach((t) => [undefined, 0.3].forEach((dim) => assert(recInside(at(t, { dim }), { x: 20, y: 30, w: 60, h: 40 }), 'crt off stays in its rect at ' + t)));
+  });
+
+  test('MotionKit.crt: on covers until at, then line, then a faint flare, then nothing', () => {
+    const K = B.MotionKit, P = B.Pal;
+    const at = (t, o) => recOf((c) => K.crt(c, 20, 30, 60, 40, t, Object.assign({ mode: 'on', at: 1, bg: P.screenD }, o)));
+    const pre = at(0.2).rects;
+    assert(pre.length === 1 && pre[0].fillStyle === P.screenD && pre[0].w === 60 && pre[0].h === 40, 'cover before at');
+    const a = at(1.0).rects;
+    assert(a.length === 2 && a[0].fillStyle === P.screenD && a[1].fillStyle === P.phosphor && a[1].h === 2 && a[1].y === 49, 'fill and line');
+    const b = at(1.05).rects;
+    assert(b.length === 1 && b[0].fillStyle === P.bone && b[0].globalAlpha === 0.12 && b[0].x === 20 && b[0].y === 30 && b[0].w === 60 && b[0].h === 40, 'flare only');
+    assert(at(1.1).rects.length === 0 && at(9).rects.length === 0, 'nothing from at + 0.10');
+    assert(at(0.5, { t0: 0.5 }).rects.length === 2, 't0 shifts time');
+    [0.5, 1.0, 1.03, 1.07, 1.2, 4].forEach((t) => assert(recInside(at(t), { x: 20, y: 30, w: 60, h: 40 }), 'crt on stays in its rect at ' + t));
+  });
+
+  test('MotionKit.flicker: hard dark steps from spans, or from the seeded lamp', () => {
+    const K = B.MotionKit, P = B.Pal;
+    const at = (t, o) => recOf((c) => K.flicker(c, 5, 6, 30, 20, 'seed-a', t, o));
+    const sp = { spans: [[0.2, 0.3], [0.5, 0.6]] };
+    assert(at(0.1, sp).rects.length === 0 && at(0.45, sp).rects.length === 0 && at(0.7, sp).rects.length === 0, 'light outside the spans');
+    const d = at(0.2, sp).rects;
+    assert(d.length === 1 && d[0].fillStyle === P.ink && d[0].globalAlpha === 0.3 && d[0].x === 5 && d[0].w === 30 && d[0].h === 20, 'dark inside a span');
+    assert(at(0.3, sp).rects.length === 0 && at(0.55, sp).rects.length === 1, 'spans are half open');
+    assert(at(0.05, { spans: [[0.2, 0.3]] }).rects.length === 0 && at(0.05, { spans: [[0.2, 0.3]], t0: 0.2 }).rects.length === 1, 't0 shifts time');
+    const rnd = { from: 1, to: 5, chance: 0.5 };
+    let dark = 0, light = 0;
+    for (let t = 0; t < 7; t += 0.05) {
+      const r = at(t, rnd).rects.length, want = t >= 1 && t < 5 && B.Motion.flicker('seed-a', t, 12) < 0.5 ? 1 : 0;
+      assert(r === want, 'random mode follows Motion.flicker at ' + t);
+      if (t >= 1 && t < 5) (r ? dark++ : light++);
+    }
+    assert(dark > 0 && light > 0, 'both states occur');
+    let dd = 0, n = 0;
+    for (let t = 1; t < 41; t += 1 / 12) { const r = at(t, { from: 1, to: 41 }).rects.length; assert(r === (B.Motion.flicker('seed-a', t, 12) < 0.07 ? 1 : 0), 'default chance is 0.07 at ' + t); dd += r; n++; }
+    assert(dd > 0 && dd < n * 0.2, 'default chance darkens a few steps only: ' + dd + ' of ' + n);
+    assert(at(2, { from: 1, to: 5, chance: 0.5, col: P.crimsonD, a: 0.5 }).rects.every((q) => q.globalAlpha === 0.5 && q.fillStyle === P.crimsonD) , 'col and a');
+  });
+
+  test('MotionKit.trace: draws n points from `from`, head coloured, whole steps', () => {
+    const K = B.MotionKit, P = B.Pal;
+    const ys = [10.4, 12.6, 9.5, 20, 21.2, 8];
+    const at = (o) => recOf((c) => K.trace(c, ys, 0, o));
+    const r = at({ x0: 100, step: 4, n: 4, col: P.jade, head: P.white }).rects;
+    assert(r.length === 4, 'exactly n points');
+    assert(r.every((q, k) => q.x === 100 + 4 * k && q.w === 3 && q.h === 2 && q.y === Math.round(ys[k])), 'positions go through Math.round');
+    assert(r[0].fillStyle === P.jade && r[3].fillStyle === P.white, 'head colours the last point');
+    const t = at({ x0: 100, step: 4, from: 2, n: 3, col: P.jade, w: 2, h: 2 }).rects;
+    assert(t.length === 3 && t[0].y === Math.round(ys[2]) && t[0].x === 100 && t[0].w === 2 && t[2].y === Math.round(ys[4]), 'ticking: from shifts the window, x stays put');
+    assert(at({ x0: 0, step: 3, n: 0, col: P.jade }).rects.length === 0, 'n = 0 draws nothing');
+  });
+
+  test('MotionKit.tally: counts to the true value, 15 steps a second, draws exactly `to` at the end', () => {
+    const K = B.MotionKit, P = B.Pal;
+    const o = { from: 0, to: 1234.6, at: 1, dur: 1, fmt: (v) => '$' + v, col: P.jade };
+    const at = (t, oo) => { let v; const c = recOf((cc) => { v = K.tally(cc, 10, 20, t, Object.assign({}, o, oo)); }); return { c, v }; };
+    const direct = (str, extra) => recOf((c) => B.Pixel.textShadow(c, str, 10, 20, P.jade, P.ink, extra));
+    assert(at(0.5).c.rects.length === 0, 'nothing before at');
+    assert(KIT_PX(at(0.5, { before: 'from' }).c) === KIT_PX(direct('$0')), 'before "from" draws fmt(from)');
+    const end = at(2);
+    assert(end.v === 1234.6 && KIT_PX(end.c) === KIT_PX(direct('$1234.6')), 'the end value is `to` itself');
+    assert(at(3).v === 1234.6 && KIT_PX(at(3).c) === KIT_PX(end.c), 'and stays');
+    const mid = at(1.5);
+    assert(mid.v === Math.round(1234.6 * (Math.floor(1.5 * 15) / 15 - 1)) && KIT_PX(mid.c) === KIT_PX(direct('$' + mid.v)), 'mid value at the 15 fps step');
+    assert(at(1.5).v === at(1.5 + 0.02).v && at(1.5).v !== at(1.5 + 0.5).v, 'holds between steps');
+    assert(at(1.5, { ease: B.Motion.ease.in }).v < mid.v, 'ease option');
+    const sc = at(2, { scale: 2 }).c;
+    assert(sc.depth() === 0 && sc.rects.length === end.c.rects.length && sc.rects.every((q) => q.dw === 2 && q.dh === 2), 'scale is a transform inside save/restore');
+    assert(KIT_PX(at(0.5, { t0: 1 }).c) === KIT_PX(mid.c) && at(0.5, { t0: 1 }).v === mid.v, 't0 shifts time');
+    const rt = recOf((c) => K.tally(c, 100, 20, 9, Object.assign({}, o, { align: 'right' })));
+    assert(KIT_PX(rt) === KIT_PX(recOf((c) => B.Pixel.textShadow(c, '$1234.6', 100, 20, P.jade, P.ink, { align: 'right' }))), 'align right');
+    // anchor 'final': the end is exactly the unanchored end; shorter values keep the final string's right edge; the default is unchanged
+    ['left', 'center', 'right'].forEach((al) => {
+      const a = (t) => recOf((c) => K.tally(c, 100, 20, t, Object.assign({}, o, { align: al, anchor: 'final' })));
+      assert(KIT_PX(a(2)) === KIT_PX(recOf((c) => K.tally(c, 100, 20, 2, Object.assign({}, o, { align: al })))), 'anchor final: the end equals the plain end (' + al + ')');
+      const edge = (r) => Math.max(...r.rects.map((q) => q.x + q.w));
+      assert(edge(a(1.3)) === edge(a(1.7)) && edge(a(1.7)) === edge(a(2)), 'anchor final: the right edge moves (' + al + ')');
+      assert(Math.min(...a(1.3).rects.map((q) => q.x)) > Math.min(...a(2).rects.map((q) => q.x)), 'anchor final: digits do not appear at the left (' + al + ')');
+    });
+    assert(KIT_PX(at(1.5).c) === KIT_PX(recOf((c) => K.tally(c, 10, 20, 1.5, Object.assign({}, o, { anchor: undefined })))), 'anchor off by default');
+  });
+
+  test('MotionKit: the end state holds even when the end falls between two steps', () => {
+    const K = B.MotionKit, P = B.Pal;
+    // tally ticks at 15 and marker at 20 steps a second; 0.1 + 0.8 = 0.9 is on neither grid
+    let v; const c = recOf((cc) => { v = K.tally(cc, 0, 0, 0.9, { from: 0, to: 77, at: 0.1, dur: 0.8, col: P.bone }); });
+    assert(v === 77 && KIT_PX(c) === KIT_PX(recOf((cc) => B.Pixel.textShadow(cc, '77', 0, 0, P.bone, P.ink))), 'tally is `to` at T = at + dur');
+    const segs = [{ x: 0, y: 0, w: 7, h: 1 }, { x: 0, y: 2, w: 1, h: 9, dir: -1 }];
+    const m = recOf((cc) => K.marker(cc, segs, 0.9, { at: 0.1, dur: 0.8 }));
+    assert(m.rects.map((q) => [q.x, q.y, q.w, q.h].join()).join('|') === '0,0,7,1|0,2,1,9', 'marker is the art at T = at + dur');
+  });
+
+  test('MotionKit.typeOn: letters at 16 a second, alignment from the full string, cursor blinks then goes', () => {
+    const K = B.MotionKit, P = B.Pal, S = 'HELLO WORLD';
+    const at = (t, o, str) => recOf((c) => K.typeOn(c, str || S, 10, 20, t, Object.assign({ at: 1, col: P.bone }, o)));
+    const full = recOf((c) => B.Pixel.textShadow(c, S, 10, 20, P.bone, P.ink));
+    assert(at(0.9).rects.length === 0 && at(1).rects.length === 0, 'nothing typed before the first letter');
+    assert(KIT_PX(at(1 + S.length / 16)) === KIT_PX(full) && KIT_PX(at(5)) === KIT_PX(full), 'the full string after at + len / cps');
+    const three = at(1 + 3 / 16), want3 = recOf((c) => B.Pixel.textShadow(c, 'HEL', 10, 20, P.bone, P.ink));
+    assert(KIT_PX(three) === KIT_PX(want3), 'three letters at 3 / 16 s');
+    assert(KIT_PX(at(1 + 3 / 16 - 0.001)) === KIT_PX(recOf((c) => B.Pixel.textShadow(c, 'HE', 10, 20, P.bone, P.ink))), 'letter count is a floor');
+    const cen = (t) => recOf((c) => K.typeOn(c, S, 100, 20, t, { at: 1, col: P.bone, align: 'center' }));
+    const part = cen(1 + 4 / 16), all = cen(9), set = new Set(all.rects.map((q) => `${q.x},${q.y},${q.w},${q.h},${q.fillStyle}`));
+    assert(part.rects.length > 0 && part.rects.every((q) => set.has(`${q.x},${q.y},${q.w},${q.h},${q.fillStyle}`)), 'centred letters never slide');
+    const rt = recOf((c) => K.typeOn(c, S, 100, 20, 9, { at: 1, col: P.bone, align: 'right' }));
+    assert(KIT_PX(rt) === KIT_PX(recOf((c) => B.Pixel.textShadow(c, S, 100, 20, P.bone, P.ink, { align: 'right' }))), 'right alignment');
+    // cursor
+    const cur = { cursor: { col: P.phosphor } }, endT = 1 + S.length / 16;
+    const cr = (t) => at(t, cur).rects.filter((q) => q.fillStyle === P.phosphor);
+    assert(cr(1 + 3 / 16).length === 1 && cr(1 + 3 / 16)[0].x === 10 + 3 * 6 && cr(1 + 3 / 16)[0].w === 5 && cr(1 + 3 / 16)[0].h === 7 && cr(1 + 3 / 16)[0].y === 20, 'solid block after the last letter while typing');
+    assert(cr(endT + 0.1).length === 1 && cr(endT + 0.3).length === 0 && cr(endT + 0.55).length === 1 && cr(endT + 0.8).length === 0, 'blinks at the cursor rate for a second');
+    assert(cr(endT + 1.0).length === 0 && cr(endT + 5).length === 0, 'then it is gone');
+    assert(at(0.5, cur).rects.length === 0, 'no cursor before at');
+    const c2 = recOf((c) => K.typeOn(c, 'AB', 10, 20, 1.05, { at: 1, col: P.bone, scale: 2, cursor: { col: P.phosphor } }));
+    assert(c2.depth() === 0 && c2.rects.some((q) => q.fillStyle === P.phosphor && q.dw === 10 && q.dh === 14), 'cursor scales');
+    assert(KIT_PX(at(0.5, { t0: 0.5 + 3 / 16 })) === KIT_PX(three), 't0 shifts time');
+  });
+
+  test('MotionKit.stamp: three hard frames, returns the phase', () => {
+    const K = B.MotionKit, P = B.Pal;
+    const at = (t, o) => { let ph; const c = recOf((cc) => { ph = K.stamp(cc, 100, 50, 40, 20, t, Object.assign({ at: 1, col: P.crimson }, o)); }); return { c, ph }; };
+    const px = (c) => c.rects.map((q) => [q.x, q.y, q.w, q.h].join());
+    assert(at(0.99).ph === 0 && at(0.99).c.rects.length === 0, 'phase 0 draws nothing');
+    const p1 = at(1.0);
+    assert(p1.ph === 1 && p1.c.rects.length === 4, 'phase 1 outline');
+    const bb = (c) => { let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9; c.rects.forEach((q) => { x0 = Math.min(x0, q.x); y0 = Math.min(y0, q.y); x1 = Math.max(x1, q.x + q.w); y1 = Math.max(y1, q.y + q.h); }); return [x0, y0, x1 - x0, y1 - y0]; };
+    assert(bb(p1.c).join() === [100 - 8, 50 - 4, 56, 28].join() && p1.c.rects.every((q) => q.w === 1 || q.h === 1), 'phase 1 is a 1 px outline of (w + 16) x (h + 8), centred');
+    const p2 = at(1.04);
+    assert(p2.ph === 2 && bb(p2.c).join() === [100 - 3, 50 - 1, 46, 23].join() && p2.c.rects.every((q) => q.w === 2 || q.h === 2), 'phase 2 is a 2 px outline of (w + 6) x (h + 3)');
+    const f = 0.04, p3 = at(1 + 2 * f);
+    assert(p3.ph === 3 && p3.c.rects.length === 8 && bb(p3.c).join() === [100, 50, 40, 20].join(), 'phase 3: two 1 px outlines');
+    assert(p3.c.rects.slice(4).every((q) => q.x >= 102 && q.y >= 52 && q.x + q.w <= 138 && q.y + q.h <= 68), 'the second outline is inset 2 px');
+    assert(at(9).ph === 3 && at(1 + 2 * 0.1, { frame: 0.1 }).ph === 3 && at(1 + 0.1, { frame: 0.1 }).ph === 2, 'frame option');
+    assert(at(9, { style: 'none' }).c.rects.length === 0 && at(9, { style: 'none' }).ph === 3, "'none' draws nothing in phase 3");
+    assert(at(0.5, { t0: 0.5 }).ph === 1, 't0 shifts time');
+    assert(p1.c.depth() === 0 && p1.c.rects.every((q) => q.fillStyle === P.crimson), 'colour');
+  });
+
+  test('MotionKit.marker: draws on in pen order and ends on exactly the art rects', () => {
+    const K = B.MotionKit, P = B.Pal;
+    const segs = [{ x: 10, y: 10, w: 30, h: 2 }, { x: 10, y: 14, w: 2, h: 10 }, { x: 50, y: 30, w: 20, h: 3, dir: -1 }, { x: 80, y: 30, w: 3, h: 12, dir: -1 }];
+    const at = (t, o) => recOf((c) => K.marker(c, segs, t, Object.assign({ at: 1, dur: 2, col: P.crimson }, o)));
+    assert(at(0.9).rects.length === 0, 'nothing before at');
+    const end = at(3).rects.map((q) => [q.x, q.y, q.w, q.h].join()), art = segs.map((q) => [q.x, q.y, q.w, q.h].join());
+    assert(end.join('|') === art.join('|') && at(9).rects.length === 4, 'at the end it is exactly the input segments');
+    // total 30 + 10 + 20 + 12 = 72; at q = 0.5 (T = 2) at fps 20 -> 36 long: seg0 full, seg1 full, seg2 loses 4 of 20 -> 6 of 20 drawn
+    const mid = at(2).rects;
+    assert(mid.length === 2 && mid[0].w === 30 && mid[1].h === 6 && mid[1].y === 14, 'mid-stroke: first segment done, second part drawn from the top');
+    const q = at(2.31).rects;
+    assert(q.length === 3 && q[2].w === 7 && q[2].x === 50 + 20 - 7, 'dir -1 reveals right to left');
+    const v = recOf((c) => K.marker(c, [{ x: 5, y: 5, w: 3, h: 12, dir: -1 }], 1.5, { at: 1, dur: 1, col: P.crimson })).rects[0];
+    assert(v.h === 6 && v.y === 5 + 12 - 6 && v.w === 3, 'dir -1 on a vertical reveals bottom to top');
+    const a = at(1.5).rects, b = at(1.5 + 0.02).rects;
+    assert(JSON.stringify(a) === JSON.stringify(b), 'steps at 20 fps');
+    assert(JSON.stringify(at(0.5, { t0: 1 }).rects) === JSON.stringify(at(1.5).rects), 't0 shifts time');
+  });
+
+  test('MotionKit.lamps: cells switch in order, before is off, after is on', () => {
+    const K = B.MotionKit, P = B.Pal;
+    const cells = []; for (let i = 0; i < 6; i++) cells.push({ x: 10 + i * 6, y: 4, w: 4, h: 3 });
+    const at = (t, o) => recOf((c) => K.lamps(c, cells, t, Object.assign({ at: 1, step: 0.1, on: P.amber, off: P.ink }, o)));
+    const cols = (c) => c.rects.map((q) => q.fillStyle).join();
+    assert(cols(at(0.5)) === Array(6).fill(P.ink).join() && at(0.5).rects.length === 6, 'before: every cell off');
+    assert(cols(at(1.25)) === [P.amber, P.amber, P.amber, P.ink, P.ink, P.ink].join(), 'cells light in index order, cell k at at + k * step');
+    const end = at(1 + 5 * 0.1);
+    assert(cols(end) === Array(6).fill(P.amber).join() && end.rects.every((q, i) => q.x === cells[i].x && q.w === 4), 'every cell on after at + (n - 1) * step');
+    assert(cols(at(1.25, { order: 'reverse' })) === [P.ink, P.ink, P.ink, P.amber, P.amber, P.amber].join(), 'reverse order');
+    const order = []; for (let i = 0; i <= 6; i++) { const c = at(1 + i * 0.1 + 0.001, { order: 'seed', seed: 'lamp-x' }); order.push(c.rects.filter((q) => q.fillStyle === P.amber).length); }
+    assert(order.join() === '1,2,3,4,5,6,6', 'seed order lights one more cell per step: ' + order);
+    const seedCols = (seed) => { const r = []; for (let t = 1.001; t < 1.6; t += 0.1) r.push(at(t, { order: 'seed', seed }).rects.map((q) => q.fillStyle === P.amber ? 1 : 0).join('')); return r.join('/'); };
+    assert(seedCols('lamp-x') === seedCols('lamp-x') && seedCols('lamp-x') !== seedCols('lamp-y') && seedCols('lamp-x') !== seedCols('lamp-z'), 'the seed picks the order');
+    assert(at(0.5, { off: null }).rects.length === 0 && at(1.25, { off: null }).rects.length === 3, 'off null draws nothing before');
+    assert(at(0.5, { a: 0.4 }).rects.every((q) => q.globalAlpha === 0.4) && at(0.5, { a: 0.4 }).depth() === 0, 'alpha');
+    // on null with an off colour switches lights out: lit art until a cell's time, then the off colour
+    const out = (t) => at(t, { on: null, off: P.ink });
+    assert(out(0.5).rects.length === 0 && out(1.25).rects.length === 3 && out(1.25).rects.every((q) => q.fillStyle === P.ink) && out(2).rects.length === 6, 'on null switches lights out');
+    assert(KIT_PX(at(0.25, { t0: 1 })) === KIT_PX(at(1.25)), 't0 shifts time');
+  });
+
+  const kitDay = (id) => { for (let d = 0; d < 90; d++) if (B.Rhythm.season(d).id === id) return d; return -1; };
+
+  test('MotionKit.weather: autumn paper, grey rain, winter snow, clipped to the rect', () => {
+    const K = B.MotionKit, P = B.Pal, R = { x: 40, y: 20, w: 90, h: 60 };
+    const run = (day, t, o) => recOf((c) => K.weather(c, R.x, R.y, R.w, R.h, day, 'office:0:wx0', t, o || {}));
+    const aut = kitDay('autumn'), gry = kitDay('grey'), win = kitDay('winter');
+    assert(aut >= 0 && gry >= 0 && win >= 0, 'seasons found');
+    const a = run(aut, 1.0);
+    assert(a.rects.length === Math.min(14, Math.max(3, Math.round(90 / 30))) && a.rects.every((q, i) => q.w === 3 && q.h === 2 && q.fillStyle === (i % 2 ? P.amber : P.crimsonD)), 'autumn: paper');
+    const g = run(gry, 1.0);
+    assert(g.rects.length === Math.min(40, Math.round(90 * 60 / 1500)) && g.rects.every((q) => q.w === 1 && q.h === 6 && q.fillStyle === P.grey2), 'grey: rain');
+    assert(run(gry, 1.0, { rainLen: 4 }).rects.every((q) => q.h === 4), 'rainLen');
+    const s = run(win, 1.0), sn = B.Rhythm.season(win).snow;
+    assert(s.rects.length === Math.min(40, Math.max(3, Math.round(90 * 60 / 1000 * (0.4 + 0.6 * sn)))) && s.rects.every((q) => q.fillStyle === P.white && ((q.w === 2 && q.h === 2) || (q.w === 3 && q.h === 3))), 'winter: snow');
+    [aut, gry, win].forEach((d) => {
+      for (let t = 0; t < 4; t += 0.13) assert(recInside(run(d, t), R), 'weather escaped its rect, day ' + d + ' t ' + t);
+      assert(run(d, 1).depth() === 0 && run(d, 1).rects.every((q) => q.clip), 'drawn inside a clip');
+      assert(KIT_PX(run(d, 1.3)) === KIT_PX(run(d, 1.3)), 'deterministic');
+      assert(KIT_PX(run(d, 0.3, { t0: 1 })) === KIT_PX(run(d, 1.3)), 't0 shifts time');
+    });
+    assert(run(aut, 1.0, { count: 2 }).rects.length === 2 && run(gry, 1.0, { count: 7 }).rects.length === 7 && run(win, 1.0, { count: 5 }).rects.length === 5, 'count replaces the formula');
+    assert(run(win, 1.0, { count: 5, max: 3 }).rects.length === 3 && run(aut, 1.0, { count: 1, min: 9 }).rects.length === 1, 'max still caps a count');
+    assert(run(aut, 1.0, { min: 9 }).rects.length === 9 && run(aut, 1.0, { min: 9, max: 5 }).rects.length === 5, 'min and max');
+    assert(KIT_PX(run(aut, 1.0)) === KIT_PX(run(aut, 1.0 + 0.04)) && KIT_PX(run(aut, 1.0)) !== KIT_PX(run(aut, 1.5)), 'paper and snow move at 12 poses a second');
+    assert(KIT_PX(run(gry, 1.0)) !== KIT_PX(run(gry, 1.01)), 'rain at full rate');
+    assert(KIT_PX(run(aut, 1, {})) !== KIT_PX(recOf((c) => K.weather(c, R.x, R.y, R.w, R.h, aut, 'office:0:wx1', 1, {}))), 'the seed matters');
+  });
+
+
+  test('MotionKit.passing: cars and a train, clipped to the band', () => {
+    const K = B.MotionKit, P = B.Pal, R = { x: 30, y: 60, w: 200, h: 14 };
+    const run = (t, o) => recOf((c) => K.passing(c, R.x, R.y, R.w, R.h, 'night', t, Object.assign({ kind: 'car', at: 1, every: 0.6 }, o)));
+    assert(run(0.5).rects.length === 0, 'nothing before at');
+    let sawLights = false, sawTail = false;
+    for (let t = 1; t < 6; t += 0.05) {
+      const c = run(t);
+      assert(recInside(c, R) && c.depth() === 0, 'a car escaped the band at ' + t);
+      assert(c.rects.length <= 40, 'at most 40 rects');
+      c.rects.forEach((q) => { if (q.fillStyle === P.bone) { sawLights = true; assert(q.w === 4 && q.h === 2, 'headlight 4x2'); } if (q.fillStyle === P.crimson) { sawTail = true; assert(q.w === 2 && q.h === 2, 'tail 2x2'); } });
+    }
+    assert(sawLights && sawTail, 'headlights and tails appear');
+    assert(KIT_PX(run(2.3)) === KIT_PX(run(2.3)) && KIT_PX(run(0.3, { t0: 2 })) === KIT_PX(run(2.3)), 'deterministic, t0');
+    // whole-pixel travel at 220 px/s: two lights 6 px apart move together
+    const a = run(1.6).rects, b = run(1.7).rects;
+    assert(a.length > 0 && b.length > 0 && a.concat(b).every((q) => q.x === Math.round(q.x)), 'whole pixel x');
+    const left = run(1.7, { dir: -1 }), right = run(1.7);
+    assert(left.rects.length === right.rects.length && KIT_PX(left) !== KIT_PX(right), 'dir -1 mirrors');
+    const RT = { x: 30, y: 60, w: 400, h: 14 };
+    const tr = (t, o) => recOf((c) => K.passing(c, RT.x, RT.y, RT.w, RT.h, 'night', t, Object.assign({ kind: 'train', at: 1 }, o)));
+    assert(tr(0.9).rects.length === 0 && tr(1.0).rects.length === 0, 'train not yet in the band');
+    let maxW = 0;
+    for (let t = 1; t < 3; t += 0.02) { const c = tr(t); maxW = Math.max(maxW, c.rects.length); assert(recInside(c, RT) && c.rects.every((q) => q.fillStyle === P.bone && q.globalAlpha === 0.55 && q.w === 10 && q.h === 6), 'train window at ' + t); }
+    assert(maxW === 14, 'all 14 windows are seen at once: ' + maxW);
+    const t2 = tr(1.3).rects;
+    assert(t2.length > 2 && t2.every((q, i) => i === 0 || Math.abs(q.x - t2[i - 1].x) === 18), 'windows 18 px apart');
+    assert(tr(1.3, { speed: 100 }).rects.length < tr(1.3).rects.length && tr(30).rects.length === 0, 'speed option, train leaves');
+    const t3 = tr(1.3, { gap: 28 }).rects;
+    assert(t3.length > 2 && t3.every((q, i) => i === 0 || Math.abs(q.x - t3[i - 1].x) === 28), 'the gap option spaces the windows');
+    assert(JSON.stringify(tr(1.3, { gap: 18 }).rects) === JSON.stringify(t2) && JSON.stringify(tr(1.3, { gap: 28 }).rects) !== JSON.stringify(t2), 'gap 18 is the default');
+  });
+
+  test('MotionKit.ping: off covers before at, on after, flare once, gaps go dark', () => {
+    const K = B.MotionKit, P = B.Pal;
+    const cover = { x: 5, y: 6, w: 20, h: 10, col: P.screen }, lit = { x: 7, y: 8, w: 12, h: 2, col: P.white }, glow = { x: 3, y: 18, w: 24, h: 3, col: P.sky, a: 0.3 };
+    const o = { at: 1, off: [cover], on: [lit, glow], flare: { x: 0, y: 0, w: 40, h: 30, dur: 0.08 }, gaps: [[1.6, 1.7]] };
+    const at = (t, oo) => recOf((c) => K.ping(c, t, Object.assign({}, o, oo)));
+    const pre = at(0.5).rects;
+    assert(pre.length === 1 && pre[0].fillStyle === P.screen && pre[0].w === 20, 'before at: the off covers');
+    const f = at(1.0).rects;
+    assert(f.length === 3 && f[0].fillStyle === P.white && f[1].fillStyle === P.sky && f[1].globalAlpha === 0.3 && f[2].fillStyle === P.bone && f[2].globalAlpha === 0.15 && f[2].w === 40, 'at: on, then flare ' + JSON.stringify(f.map((q) => q.fillStyle)));
+    const after = at(1 + 0.08);
+    assert(after.rects.length === 2 && after.rects[0].fillStyle === P.white && after.depth() === 0, 'after the flare: on only');
+    assert(at(5).rects.length === 2, 'and it stays');
+    const gap = at(1.65).rects;
+    assert(gap.length === 1 && gap[0].fillStyle === P.screen, 'a gap shows the dark (off) state');
+    assert(at(1.7).rects.length === 2, 'gaps are half open');
+    assert(at(0.2, { t0: 0.8 }).rects.length === 3, 't0 shifts time');
+  });
+  test('MotionKit.ping: a flare with no dur, col or a defaults to 0.08 s, bone, 0.15', () => {
+    const K = B.MotionKit, P = B.Pal;
+    const at = (t) => recOf((c) => K.ping(c, t, { at: 1, off: [], on: [], flare: { x: 0, y: 0, w: 40, h: 30 } })).rects;
+    const a = at(1.02), b = at(1.1);
+    assert(a.length === 1 && a[0].fillStyle === P.bone && a[0].globalAlpha === 0.15, 'flare drawn at at + 0.02 in bone at 0.15');
+    assert(b.length === 0, 'no flare at at + 0.1');
+  });
+
+  test('MotionKit: every element is deterministic, whole-pixel, within its cost and balanced', () => {
+    const K = B.MotionKit, P = B.Pal;
+    const seg = [{ x: 10, y: 10, w: 30, h: 2 }, { x: 10, y: 14, w: 2, h: 10 }];
+    const cells = []; for (let i = 0; i < 8; i++) cells.push({ x: 10 + i * 5, y: 4, w: 3, h: 3 });
+    const ys = []; for (let i = 0; i < 40; i++) ys.push(30 + 9.37 * Math.sin(i / 3));
+    const aut = kitDay('autumn'), gry = kitDay('grey'), win = kitDay('winter');
+    const T0 = [0, 0.1, 0.33, 0.7, 1.05, 1.4, 1.9, 2.6, 4];
+    const ping = { at: 1, off: [{ x: 5, y: 6, w: 20, h: 10, col: P.screen }], on: [{ x: 7, y: 8, w: 12, h: 2, col: P.white }], flare: { x: 0, y: 0, w: 40, h: 30, dur: 0.08 }, gaps: [[1.6, 1.7]] };
+    const CASES = [
+      ['blink', 1, (c, t, o) => K.blink(c, 10.4, 20.6, 8, 6, t, Object.assign({ on: P.amber, off: P.ink, end: 2 }, o))],
+      ['crt roll', 2, (c, t, o) => K.crt(c, 20, 30, 60, 40, t, Object.assign({ mode: 'roll', at: 1 }, o))],
+      ['crt off', 4, (c, t, o) => K.crt(c, 20, 30, 61, 41, t, Object.assign({ mode: 'off', at: 1, dim: 0.3 }, o))],
+      ['crt on', 2, (c, t, o) => K.crt(c, 20, 30, 61, 41, t, Object.assign({ mode: 'on', at: 1 }, o))],
+      ['flicker', 1, (c, t, o) => K.flicker(c, 5, 6, 30, 20, 'sd', t, Object.assign({ from: 0.5, to: 3, chance: 0.4 }, o))],
+      ['trace', 12, (c, t, o) => K.trace(c, ys, t, Object.assign({ x0: 10, step: 3, from: Math.floor((t + ((o && o.t0) || 0)) * 4), n: 12, col: P.jade, head: P.white }, o))],
+      ['tally', 7 * 36, (c, t, o) => K.tally(c, 10, 20, t, Object.assign({ from: 0, to: 12345.5, at: 1, dur: 1.2, fmt: (v) => '$' + Math.round(v), col: P.jade, before: 'from' }, o))],
+      ['typeOn', 11 * 36 + 1, (c, t, o) => K.typeOn(c, 'HELLO WORLD', 10, 20, t, Object.assign({ at: 1, col: P.bone, cursor: { col: P.phosphor } }, o))],
+      ['stamp', 8, (c, t, o) => K.stamp(c, 100, 50, 40, 20, t, Object.assign({ at: 1, col: P.crimson }, o))],
+      ['marker', seg.length, (c, t, o) => K.marker(c, seg, t, Object.assign({ at: 1, dur: 2, col: P.crimson }, o))],
+      ['lamps', cells.length, (c, t, o) => K.lamps(c, cells, t, Object.assign({ at: 1, step: 0.2, order: 'seed', seed: 's', on: P.amber, off: P.ink }, o))],
+      ['weather autumn', 40, (c, t, o) => K.weather(c, 40, 20, 90, 60, aut, 'wx', t, o)],
+      ['weather grey', 40, (c, t, o) => K.weather(c, 40, 20, 90, 60, gry, 'wx', t, o)],
+      ['weather winter', 40, (c, t, o) => K.weather(c, 40, 20, 90, 60, win, 'wx', t, o)],
+      ['passing car', 40, (c, t, o) => K.passing(c, 30, 60, 200, 14, 'n', t, Object.assign({ kind: 'car', at: 1, every: 0.3 }, o))],
+      ['passing train', 40, (c, t, o) => K.passing(c, 30, 60, 200, 14, 'n', t, Object.assign({ kind: 'train', at: 1 }, o))],
+      ['ping', 4, (c, t, o) => K.ping(c, t, Object.assign({}, ping, o))]
+    ];
+    const savedRandom = Math.random;
+    Math.random = () => { throw new Error('Math.random called'); };
+    try {
+      CASES.forEach(([name, cap, call]) => {
+        T0.forEach((t) => {
+          const a = recOf((c) => call(c, t, {})), b = recOf((c) => call(c, t, {}));
+          assert(recKey(a) === recKey(b), name + ' is not deterministic at ' + t);
+          assert(a.rects.length <= cap, `${name} drew ${a.rects.length} rects at ${t}, cap ${cap}`);
+          assert(a.rects.every((q) => [q.x, q.y, q.w, q.h, q.dx, q.dy, q.dw, q.dh].every(Number.isInteger)), name + ' drew a fractional rect at ' + t);
+          assert(a.depth() === 0 && a.globalAlpha === 1, name + ' left save/restore unbalanced at ' + t);
+          // trace is time-free: the caller derives from and n from time, so there is no t0 to shift
+          if (name === 'trace') return;
+          const d = 0.37, shifted = recOf((c) => call(c, t - d, { t0: d }));
+          assert(recKey(shifted) === recKey(a), name + ': t0 does not shift time at ' + t);
+        });
+      });
+    } finally { Math.random = savedRandom; }
   });
 
   B.Tests = { results, run: () => results };
