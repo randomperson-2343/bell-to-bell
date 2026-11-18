@@ -58,7 +58,7 @@ async function run() {
 
   // ---- stage 3 batch 7: reference pictures of the decision rooms and their beats, recorded before the code changed ----
   // room() flat for every id, after false and true, with and without story state, on four days; the final frame of both beats of B.Scenes.decision for every id;
-  // the news and weekend beats that draw the vote, hearing and rack rooms; the aftermath popup's still. P8_CHANGED holds the ruled changes (none).
+  // the news and weekend beats that draw the vote, hearing and rack rooms; the aftermath popup's still.
   const collectP8 = () => page.evaluate(() => {
     const fnvS = (s) => { let x = 2166136261; for (let i = 0; i < s.length; i++) { x ^= s.charCodeAt(i); x = Math.imul(x, 16777619); } return (x >>> 0).toString(16); };
     const hashOf = (fn) => { const cv = document.createElement('canvas'); cv.width = 640; cv.height = 360; const g = cv.getContext('2d'); g.imageSmoothingEnabled = false; fn(g, cv);
@@ -92,7 +92,7 @@ async function run() {
   });
   // ---- stage 3 batch 8: reference pictures of the weekend beats and the flat Sunday and night room, recorded before the code changed ----
   // The final frame of every beat (sat, sun, hold, whip, 317) of many weekends: three housing tiers, late rent 0 and 2, no pet / cat / neglected dog, an autumn, a grey and a
-  // winter weekend, the story days, day 44 with and without the pulled plug; and the flat sundayShot and apartmentShot(night). P9_CHANGED holds the ruled changes.
+  // winter weekend, the story days, day 44 with and without the pulled plug; and the flat sundayShot and apartmentShot(night).
   const collectP9 = () => page.evaluate(() => {
     const hashOf = (fn) => { const cv = document.createElement('canvas'); cv.width = 640; cv.height = 360; const g = cv.getContext('2d', { willReadFrequently: true }); g.imageSmoothingEnabled = false; fn(g);
       const d = g.getImageData(0, 0, 640, 360).data; let x = 2166136261; for (let i = 0; i < d.length; i += 1) { x ^= d[i]; x = Math.imul(x, 16777619); } return (x >>> 0).toString(16); };
@@ -117,7 +117,7 @@ async function run() {
   });
   // ---- stage 3 batch 9: reference pictures of the endings, recorded before the code changed ----
   // endingDetail at the progress values the old beats used (0.3 world, 1 card) and endingShot for every id (dark and light), both as the shots draw them (the 8-unit drop); the final frame
-  // of the three beats of every id, dark and light, with an ordinary, an empty and a very long title; the pulled-plug after. P10_CHANGED holds the ruled changes (wiped and perp world finals).
+  // of the three beats of every id, dark and light, with an ordinary, an empty and a very long title; the pulled-plug after.
   const collectP10 = () => page.evaluate(() => {
     const hashOf = (fn, w, h) => { w = w || 640; h = h || 360; const cv = document.createElement('canvas'); cv.width = w; cv.height = h; const g = cv.getContext('2d', { willReadFrequently: true }); g.imageSmoothingEnabled = false; fn(g);
       const d = g.getImageData(0, 0, w, h).data; let x = 2166136261; for (let i = 0; i < d.length; i += 1) { x ^= d[i]; x = Math.imul(x, 16777619); } return (x >>> 0).toString(16); };
@@ -136,335 +136,40 @@ async function run() {
     for (const dark of [false, true]) BTB.Scenes.ending({ id: 'fund', title: 'T', deck: 'D', dark, pulled: true }).forEach((b, k) => { if (k === 2) out[`eb:pulled:${dark ? 'd' : 'l'}:${k}`] = hashOf((g) => b.draw(g, view, 1, {})); });
     return out;
   });
+  // ---- the pinned pictures: js/tests/motion-golden.json, one entry per picture, keyed "<group>/<name>" ----
+  // node js/tests/motion-run.js --update-golden rewrites the file from what this run draws and prints which entries changed.
+  const GOLDEN_PATH = path.join(__dirname, 'motion-golden.json');
+  const UPDATE_GOLDEN = process.argv.includes('--update-golden');
+  const golden = UPDATE_GOLDEN || !fs.existsSync(GOLDEN_PATH) ? {} : JSON.parse(fs.readFileSync(GOLDEN_PATH, 'utf8'));
+  const goldenNow = {};
+  const pins = (group, now) => {
+    for (const k of Object.keys(now)) goldenNow[`${group}/${k}`] = now[k];
+    if (UPDATE_GOLDEN) return;
+    const pinned = Object.keys(golden).filter((k) => k.startsWith(group + '/'));
+    for (const k of pinned) { const name = k.slice(group.length + 1); assert(now[name] === golden[k], `${k}: the picture changed (${now[name]}, was ${golden[k]})`); }
+    assert(pinned.length === Object.keys(now).length, `${group}: the set of pinned pictures changed (${Object.keys(now).length} drawn, ${pinned.length} pinned)`);
+  };
+  const writeGolden = () => {
+    const old = fs.existsSync(GOLDEN_PATH) ? JSON.parse(fs.readFileSync(GOLDEN_PATH, 'utf8')) : {};
+    const keys = Object.keys(goldenNow).sort();
+    const changed = keys.filter((k) => k in old && old[k] !== goldenNow[k]), added = keys.filter((k) => !(k in old)), removed = Object.keys(old).filter((k) => !(k in goldenNow));
+    fs.writeFileSync(GOLDEN_PATH, '{\n' + keys.map((k) => `  ${JSON.stringify(k)}: ${JSON.stringify(goldenNow[k])}`).join(',\n') + '\n}\n');
+    console.log(`motion-golden.json: ${keys.length} pictures; ${changed.length} changed, ${added.length} added, ${removed.length} removed`);
+    changed.forEach((k) => console.log(`  changed ${k}: ${old[k]} -> ${goldenNow[k]}`));
+    added.forEach((k) => console.log(`  added   ${k}: ${goldenNow[k]}`));
+    removed.forEach((k) => console.log(`  removed ${k}: ${old[k]}`));
+  };
   if (process.env.DUMP_P10) { console.log(JSON.stringify(await collectP10())); return; }
   if (process.env.DUMP_P9) { console.log(JSON.stringify(await collectP9())); return; }
   if (process.env.DUMP_P8) { console.log(JSON.stringify(await collectP8())); return; }
-  const P8_REF = {
-    'rm:rentHike:bn': 'a161a97d', 'rm:rentHike:bf': 'a161a97d', 'rm:rentHike:an': 'a161a97d', 'rm:rentHike:af': 'a161a97d',
-    'rm:advance:bn': '8aeadbed', 'rm:advance:bf': '8aeadbed', 'rm:advance:an': '8aeadbed', 'rm:advance:af': '8aeadbed', 'rm:dadBill:bn': '74f9b1e5',
-    'rm:dadBill:bf': '74f9b1e5', 'rm:dadBill:an': '74f9b1e5', 'rm:dadBill:af': '74f9b1e5', 'rm:perry:bn': '52c7eee0', 'rm:perry:bf': '52c7eee0',
-    'rm:perry:an': '52c7eee0', 'rm:perry:af': '52c7eee0', 'rm:pension:bn': '6b59759d', 'rm:pension:bf': '6b59759d', 'rm:pension:an': '6b59759d',
-    'rm:pension:af': '6b59759d', 'rm:adopt:bn': 'efb2c75c', 'rm:adopt:bf': 'efb2c75c', 'rm:adopt:an': 'efb2c75c', 'rm:adopt:af': 'efb2c75c',
-    'rm:dentist:bn': '8709599e', 'rm:dentist:bf': '8709599e', 'rm:dentist:an': '8709599e', 'rm:dentist:af': '8709599e', 'rm:vetCheck:bn': '3cec6504',
-    'rm:vetCheck:bf': '569dd968', 'rm:vetCheck:an': '3cec6504', 'rm:vetCheck:af': '569dd968', 'rm:toothache:bn': '9a42ede7',
-    'rm:toothache:bf': '9a42ede7', 'rm:toothache:an': '9a42ede7', 'rm:toothache:af': '9a42ede7', 'rm:vetER:bn': 'df03daf1',
-    'rm:vetER:bf': 'df03daf1', 'rm:vetER:an': 'df03daf1', 'rm:vetER:af': 'df03daf1', 'rm:c1:bn': '4d3c2a57', 'rm:c1:bf': '4d3c2a57',
-    'rm:c1:an': '4d3c2a57', 'rm:c1:af': '4d3c2a57', 'rm:c3:bn': '4c010a54', 'rm:c3:bf': '4c010a54', 'rm:c3:an': '4c010a54', 'rm:c3:af': '4c010a54',
-    'rm:c5:bn': '322f06fc', 'rm:c5:bf': '322f06fc', 'rm:c5:an': '322f06fc', 'rm:c5:af': '322f06fc', 'rm:c6:bn': 'd6bcd9c7', 'rm:c6:bf': 'd6bcd9c7',
-    'rm:c6:an': 'd6bcd9c7', 'rm:c6:af': 'd6bcd9c7', 'rm:c7:bn': 'd33e1cb3', 'rm:c7:bf': 'd33e1cb3', 'rm:c7:an': 'd33e1cb3', 'rm:c7:af': 'd33e1cb3',
-    'rm:c8:bn': '372c9ae8', 'rm:c8:bf': '372c9ae8', 'rm:c8:an': '372c9ae8', 'rm:c8:af': 'ea8b62f2', 'rm:c9:bn': '53f1b924', 'rm:c9:bf': '53f1b924',
-    'rm:c9:an': '53f1b924', 'rm:c9:af': '53f1b924', 'rm:c10:bn': '18e9eb34', 'rm:c10:bf': '18e9eb34', 'rm:c10:an': '18e9eb34',
-    'rm:c10:af': '59e6016d', 'dc:rentHike:fresh:room': 'efd72282', 'dc:rentHike:fresh:face': '49cb131', 'dc:rentHike:none:room': 'efd72282',
-    'dc:rentHike:none:face': '49cb131', 'dc:rentHike:nobody:room': 'efd72282', 'dc:rentHike:nobody:face': '8bef5c6f',
-    'dc:rentHike:empty:room': 'efd72282', 'dc:rentHike:empty:face': '8bef5c6f', 'dc:advance:fresh:room': '12b66ab0',
-    'dc:advance:fresh:face': 'a4bcb34e', 'dc:advance:none:room': '12b66ab0', 'dc:advance:none:face': 'a4bcb34e',
-    'dc:advance:nobody:room': '12b66ab0', 'dc:advance:nobody:face': '3dce8581', 'dc:advance:empty:room': '12b66ab0',
-    'dc:advance:empty:face': '3dce8581', 'dc:dadBill:fresh:room': '127aaa26', 'dc:dadBill:fresh:face': '3b3899bc',
-    'dc:dadBill:none:room': '127aaa26', 'dc:dadBill:none:face': '3b3899bc', 'dc:dadBill:nobody:room': '127aaa26',
-    'dc:dadBill:nobody:face': 'dc89d1d3', 'dc:dadBill:empty:room': '127aaa26', 'dc:dadBill:empty:face': 'dc89d1d3',
-    'dc:perry:fresh:room': 'ae61059d', 'dc:perry:fresh:face': '79e24a79', 'dc:perry:none:room': 'ae61059d', 'dc:perry:none:face': '79e24a79',
-    'dc:perry:nobody:room': 'ae61059d', 'dc:perry:nobody:face': '7dc0d2c5', 'dc:perry:empty:room': 'ae61059d', 'dc:perry:empty:face': '7dc0d2c5',
-    'dc:pension:fresh:room': 'bf279567', 'dc:pension:fresh:face': '7dfdaf01', 'dc:pension:none:room': 'bf279567', 'dc:pension:none:face': '7dfdaf01',
-    'dc:pension:nobody:room': 'bf279567', 'dc:pension:nobody:face': '877f00a6', 'dc:pension:empty:room': 'bf279567',
-    'dc:pension:empty:face': '877f00a6', 'dc:adopt:fresh:room': '7a3fe68e', 'dc:adopt:fresh:face': 'f2a840d0', 'dc:adopt:none:room': '7a3fe68e',
-    'dc:adopt:none:face': 'f2a840d0', 'dc:adopt:nobody:room': '7a3fe68e', 'dc:adopt:nobody:face': '172400e1', 'dc:adopt:empty:room': '7a3fe68e',
-    'dc:adopt:empty:face': '172400e1', 'dc:dentist:fresh:room': '582685ad', 'dc:dentist:fresh:face': 'dd18b4ae', 'dc:dentist:none:room': '582685ad',
-    'dc:dentist:none:face': 'dd18b4ae', 'dc:dentist:nobody:room': '582685ad', 'dc:dentist:nobody:face': '347414bd',
-    'dc:dentist:empty:room': '582685ad', 'dc:dentist:empty:face': '347414bd', 'dc:vetCheck:fresh:room': '34391d17',
-    'dc:vetCheck:fresh:face': '933f4598', 'dc:vetCheck:none:room': '34391d17', 'dc:vetCheck:none:face': '933f4598',
-    'dc:vetCheck:nobody:room': '8a534ba5', 'dc:vetCheck:nobody:face': '6e92be7c', 'dc:vetCheck:empty:room': '34391d17',
-    'dc:vetCheck:empty:face': '449524d1', 'dc:toothache:fresh:room': '8fce00d4', 'dc:toothache:fresh:face': 'b1ebc973',
-    'dc:toothache:none:room': '8fce00d4', 'dc:toothache:none:face': 'b1ebc973', 'dc:toothache:nobody:room': '8fce00d4',
-    'dc:toothache:nobody:face': '3665513b', 'dc:toothache:empty:room': '8fce00d4', 'dc:toothache:empty:face': '3665513b',
-    'dc:vetER:fresh:room': '21c4b3c', 'dc:vetER:fresh:face': 'ba830aa4', 'dc:vetER:none:room': '21c4b3c', 'dc:vetER:none:face': 'ba830aa4',
-    'dc:vetER:nobody:room': '21c4b3c', 'dc:vetER:nobody:face': '64c0d14d', 'dc:vetER:empty:room': '21c4b3c', 'dc:vetER:empty:face': '64c0d14d',
-    'dc:c1:fresh:room': 'e330fd3', 'dc:c1:fresh:face': 'c41283cd', 'dc:c1:none:room': 'e330fd3', 'dc:c1:none:face': 'c41283cd',
-    'dc:c1:nobody:room': 'e330fd3', 'dc:c1:nobody:face': '30da3d84', 'dc:c1:empty:room': 'e330fd3', 'dc:c1:empty:face': '30da3d84',
-    'dc:c3:fresh:room': '66d0ce29', 'dc:c3:fresh:face': '79aeebda', 'dc:c3:none:room': '66d0ce29', 'dc:c3:none:face': '79aeebda',
-    'dc:c3:nobody:room': '66d0ce29', 'dc:c3:nobody:face': '166fe59f', 'dc:c3:empty:room': '66d0ce29', 'dc:c3:empty:face': '166fe59f',
-    'dc:c5:fresh:room': 'a062e52d', 'dc:c5:fresh:face': '2ceb0ae6', 'dc:c5:none:room': 'a062e52d', 'dc:c5:none:face': '2ceb0ae6',
-    'dc:c5:nobody:room': 'a062e52d', 'dc:c5:nobody:face': 'b7ee595', 'dc:c5:empty:room': 'a062e52d', 'dc:c5:empty:face': 'b7ee595',
-    'dc:c6:fresh:room': 'e1933fb7', 'dc:c6:fresh:face': '670f4aa3', 'dc:c6:none:room': 'e1933fb7', 'dc:c6:none:face': '670f4aa3',
-    'dc:c6:nobody:room': 'e1933fb7', 'dc:c6:nobody:face': 'b639d8ff', 'dc:c6:empty:room': 'e1933fb7', 'dc:c6:empty:face': 'b639d8ff',
-    'dc:c7:fresh:room': 'c94e9bee', 'dc:c7:fresh:face': '21d6969', 'dc:c7:none:room': 'c94e9bee', 'dc:c7:none:face': '21d6969',
-    'dc:c7:nobody:room': 'c94e9bee', 'dc:c7:nobody:face': '4ff0908a', 'dc:c7:empty:room': 'c94e9bee', 'dc:c7:empty:face': '4ff0908a',
-    'dc:c8:fresh:room': 'ed33bf24', 'dc:c8:fresh:face': '46724ba4', 'dc:c8:none:room': 'ed33bf24', 'dc:c8:none:face': '46724ba4',
-    'dc:c8:nobody:room': 'ed33bf24', 'dc:c8:nobody:face': '3c129475', 'dc:c8:empty:room': 'ed33bf24', 'dc:c8:empty:face': '3c129475',
-    'dc:c9:fresh:room': 'eea86758', 'dc:c9:fresh:face': '25342649', 'dc:c9:none:room': 'eea86758', 'dc:c9:none:face': '25342649',
-    'dc:c9:nobody:room': 'eea86758', 'dc:c9:nobody:face': 'a142a57f', 'dc:c9:empty:room': 'eea86758', 'dc:c9:empty:face': 'a142a57f',
-    'dc:c10:fresh:room': '1b8567b', 'dc:c10:fresh:face': '6dcbf188', 'dc:c10:none:room': '1b8567b', 'dc:c10:none:face': '6dcbf188',
-    'dc:c10:nobody:room': '1b8567b', 'dc:c10:nobody:face': '7c0a89b6', 'dc:c10:empty:room': '1b8567b', 'dc:c10:empty:face': '7c0a89b6',
-    'bw:news11:establish': '110cf4d2', 'bw:news11:detail': '2b9c42fd', 'bw:news38:establish': 'c6fb2c3', 'bw:news38:detail': 'af5be3db',
-    'bw:news38:hold': 'dfd1f71a', 'bw:news41:establish': 'f65c71ae', 'bw:news41:detail': '212ffc84', 'bw:news41:hold': '3435cd15',
-    'bw:news41p:establish': 'eecf53', 'bw:news41p:detail': '4edd49f9', 'bw:news41p:hold': 'a3c2e72f', 'bw:news45p:establish': '65ddd720',
-    'bw:news45p:detail': 'c5845d35', 'bw:news45p:hold': 'fb86be25', 'bw:wk39:sat': 'c35fdaf', 'bw:wk39:sun': '1a3fb7d3', 'bw:wk39:whip': 'ed33bf24',
-    'bw:wk39:hold': 'a5fb555f', 'bw:wk44:sat': 'dadf9daa', 'bw:wk44:sun': 'dc56d92b', 'bw:wk44:hold': '3753fcd3', 'bw:wk44:317': 'ffecf1f5',
-    'bw:wk44p:sat': '14b498c5', 'bw:wk44p:sun': 'dc56d92b', 'bw:wk44p:hold': '3753fcd3', 'bw:wk44p:317': 'f8a99c80', 'en:wiped:0': '3c21d529',
-    'en:wiped:1': 'fccc4df7', 'en:wiped:2': '90d5e1c5', 'en:fired:0': '7d134b80', 'en:fired:1': 'b7ecf876', 'en:fired:2': '90d5e1c5',
-    'en:exit:0': 'e745aeaa', 'en:exit:1': 'e9855378', 'en:exit:2': '90d5e1c5', 'en:nobody:0': '3c550175', 'en:nobody:1': '89ab932d',
-    'en:nobody:2': '90d5e1c5', 'en:master:0': 'a0e5af85', 'en:master:1': '913e45c3', 'en:master:2': '90d5e1c5', 'en:whistle:0': 'ba25f19',
-    'en:whistle:1': 'a98033c8', 'en:whistle:2': '90d5e1c5', 'en:revolving:0': '8a781c89', 'en:revolving:1': '6af4b0c0', 'en:revolving:2': '90d5e1c5',
-    'en:perp:0': '41b6be90', 'en:perp:1': '8fde03d6', 'en:perp:2': '90d5e1c5', 'en:fall-guy:0': 'f98d3c00', 'en:fall-guy:1': '18db3953',
-    'en:fall-guy:2': '90d5e1c5', 'en:cassandra:0': 'e1616c7b', 'en:cassandra:1': '50cca0ec', 'en:cassandra:2': '90d5e1c5',
-    'en:acquirer:0': 'ec5ac43d', 'en:acquirer:1': 'd1b3f2c3', 'en:acquirer:2': '90d5e1c5', 'en:ward:0': '514baa8f', 'en:ward:1': '887fe114',
-    'en:ward:2': '90d5e1c5', 'en:clawback:0': 'd66082a1', 'en:clawback:1': 'c30704b8', 'en:clawback:2': '90d5e1c5', 'en:right-early:0': '2aee2d23',
-    'en:right-early:1': '70585d6e', 'en:right-early:2': '90d5e1c5', 'en:fund:0': 'a6b9606a', 'en:fund:1': '735d0490', 'en:fund:2': '90d5e1c5',
-    'en:everything-rally:0': '71c3b524', 'en:everything-rally:1': 'cdbd1763', 'en:everything-rally:2': '90d5e1c5', 'en:lost-decade:0': '22b1d074',
-    'en:lost-decade:1': 'e2e44797', 'en:lost-decade:2': '90d5e1c5', 'en:soft:0': '4f92a3aa', 'en:soft:1': '5d3177ad', 'en:soft:2': '90d5e1c5',
-    'en:quiet:0': '1db26c4a', 'en:quiet:1': 'af5ce437', 'en:quiet:2': '90d5e1c5', 'en:replaced:0': '5a858a68', 'en:replaced:1': '6d9df26e',
-    'en:replaced:2': '90d5e1c5', 'en:depression:0': '1fa21238', 'en:depression:1': 'f1bf77bb', 'en:depression:2': '90d5e1c5',
-    'en:grind:0': '6130e464', 'en:grind:1': 'adc43623', 'en:grind:2': '90d5e1c5', 'still:c1': 'cce31cad', 'still:c8': '555127f',
-    'still:c8p': '253beda9', 'still:c10p': 'a7b1ee59', 'still:vetER': '5c769bd7', 'still:adopt': 'cfc09921', 'still:pet': 'cc7ee552'
-  };
-  // batch 8 (ruled, the sheet's final-frame sections): the weekend's sun and hold beats show the weather's pose at chain time and the lit floor phone (or the dead laptop on day 44 with the plug pulled); only these six
-  const P8_CHANGED = {
-    'bw:wk39:sun': 'ac0b679a', 'bw:wk39:hold': '65ad87fa', 'bw:wk44:sun': '89481e60', 'bw:wk44:hold': '23753157', 'bw:wk44p:sun': 'fa6106a0',
-    'bw:wk44p:hold': '54a7eea9',
-    // batch 9 (ruled, the sheet's final-frame sections): the wiped and perp world beats end on the card's state; the after beat ends with the city's windows out and no still snow speckle (it is the same picture for every id)
-    'en:wiped:0': '6652cc9', 'en:wiped:2': 'cdb224eb', 'en:fired:2': 'cdb224eb', 'en:exit:2': 'cdb224eb', 'en:nobody:2': 'cdb224eb', 'en:master:2': 'cdb224eb', 'en:whistle:2': 'cdb224eb', 'en:revolving:2': 'cdb224eb', 'en:perp:0': '330f8d20', 'en:perp:2': 'cdb224eb', 'en:fall-guy:2': 'cdb224eb', 'en:cassandra:2': 'cdb224eb', 'en:acquirer:2': 'cdb224eb', 'en:ward:2': 'cdb224eb', 'en:clawback:2': 'cdb224eb', 'en:right-early:2': 'cdb224eb', 'en:fund:2': 'cdb224eb', 'en:everything-rally:2': 'cdb224eb', 'en:lost-decade:2': 'cdb224eb', 'en:soft:2': 'cdb224eb', 'en:quiet:2': 'cdb224eb', 'en:replaced:2': 'cdb224eb', 'en:depression:2': 'cdb224eb', 'en:grind:2': 'cdb224eb'
-  };
   const p8now = await collectP8();
-  for (const k of Object.keys(P8_REF)) assert(p8now[k] === (P8_CHANGED[k] || P8_REF[k]), `batch 7 ${k}: the picture changed (${p8now[k]}, was ${P8_CHANGED[k] || P8_REF[k]})`);
-  assert(Object.keys(p8now).length === Object.keys(P8_REF).length, 'batch 7: the set of reference pictures changed');
-  for (const k of Object.keys(P8_CHANGED)) assert(P8_CHANGED[k] !== P8_REF[k], `batch 7 ${k}: the ruled change is not a change`);
+  pins('batch7', p8now);
 
-  const P9_REF = {
-    'wk:9:t0:l0:n:sat': '881d3835', 'wk:9:t0:l0:n:sun': 'c053280f', 'wk:9:t0:l0:n:hold': '6c062919', 'wk:9:t0:l0:cat:sat': '2567d786',
-    'wk:9:t0:l0:cat:sun': '359e97a8', 'wk:9:t0:l0:cat:hold': '205d707', 'wk:9:t0:l0:dog:sat': 'c5019d13', 'wk:9:t0:l0:dog:sun': '4ae8d479',
-    'wk:9:t0:l0:dog:hold': '5d4804d3', 'wk:9:t0:l2:n:sat': 'a25f2cd4', 'wk:9:t0:l2:n:sun': 'f9e32dac', 'wk:9:t0:l2:n:hold': '8b8ae7f1',
-    'wk:9:t0:l2:cat:sat': '522d4666', 'wk:9:t0:l2:cat:sun': '29ec398b', 'wk:9:t0:l2:cat:hold': 'a187becb', 'wk:9:t0:l2:dog:sat': 'e06f9a45',
-    'wk:9:t0:l2:dog:sun': 'c9e16082', 'wk:9:t0:l2:dog:hold': '9e5dde47', 'wk:9:t2:l0:n:sat': 'c4223587', 'wk:9:t2:l0:n:sun': 'fb989ec6',
-    'wk:9:t2:l0:n:hold': '2d2d8f60', 'wk:9:t2:l0:cat:sat': 'a870faf', 'wk:9:t2:l0:cat:sun': '7bcf59e1', 'wk:9:t2:l0:cat:hold': '602cb7ab',
-    'wk:9:t2:l0:dog:sat': '288407a6', 'wk:9:t2:l0:dog:sun': '2b2e6ac0', 'wk:9:t2:l0:dog:hold': '467bf451', 'wk:9:t2:l2:n:sat': '1878893d',
-    'wk:9:t2:l2:n:sun': '944741a2', 'wk:9:t2:l2:n:hold': '11f2f737', 'wk:9:t2:l2:cat:sat': '36c0ab40', 'wk:9:t2:l2:cat:sun': '96c39f25',
-    'wk:9:t2:l2:cat:hold': '2e2f94c', 'wk:9:t2:l2:dog:sat': '87be7e21', 'wk:9:t2:l2:dog:sun': '673f023c', 'wk:9:t2:l2:dog:hold': 'e1338bfe',
-    'wk:9:t5:l0:n:sat': '6e5ad161', 'wk:9:t5:l0:n:sun': '772840c8', 'wk:9:t5:l0:n:hold': '840f072a', 'wk:9:t5:l0:cat:sat': 'bfd3023',
-    'wk:9:t5:l0:cat:sun': 'cad2a403', 'wk:9:t5:l0:cat:hold': '971057f', 'wk:9:t5:l0:dog:sat': '69998194', 'wk:9:t5:l0:dog:sun': '2d50621b',
-    'wk:9:t5:l0:dog:hold': 'f7770e0a', 'wk:9:t5:l2:n:sat': 'b82016fb', 'wk:9:t5:l2:n:sun': 'fa3f44a3', 'wk:9:t5:l2:n:hold': '546c9a7',
-    'wk:9:t5:l2:cat:sat': '1167c418', 'wk:9:t5:l2:cat:sun': '54657188', 'wk:9:t5:l2:cat:hold': '83ae9fb2', 'wk:9:t5:l2:dog:sat': 'c171795c',
-    'wk:9:t5:l2:dog:sun': '1cb64a58', 'wk:9:t5:l2:dog:hold': '2d88928b', 'wk:19:t2:l0:n:sat': '75f93f13', 'wk:19:t2:l0:n:sun': '55e17b63',
-    'wk:19:t2:l0:n:hold': '564721e2', 'wk:19:t0:l2:cat:sat': '8cc77b48', 'wk:19:t0:l2:cat:sun': 'bb182b90', 'wk:19:t0:l2:cat:hold': '58abeae',
-    'wk:19:t4:l0:dog:sat': '53b7c025', 'wk:19:t4:l0:dog:sun': '7a3d61f5', 'wk:19:t4:l0:dog:hold': '6e23faa4', 'wk:19:t1:l2:n:sat': '6d76237f',
-    'wk:19:t1:l2:n:sun': 'c3aa2b2f', 'wk:19:t1:l2:n:hold': 'e6cf6d03', 'wk:49:t2:l0:n:sat': '47c9ceea', 'wk:49:t2:l0:n:sun': '572cc3e2',
-    'wk:49:t2:l0:n:hold': 'e6f03aef', 'wk:49:t0:l2:cat:sat': 'e53e740f', 'wk:49:t0:l2:cat:sun': 'f55c86af', 'wk:49:t0:l2:cat:hold': 'a6d524b4',
-    'wk:49:t4:l0:dog:sat': '4248b546', 'wk:49:t4:l0:dog:sun': '779fd0ef', 'wk:49:t4:l0:dog:hold': '693e7139', 'wk:49:t1:l2:n:sat': 'b6948b2c',
-    'wk:49:t1:l2:n:sun': '3584e462', 'wk:49:t1:l2:n:hold': '8f23bb83', 'wk:4:t2:l0:n:sat': '4ce801eb', 'wk:4:t2:l0:n:sun': 'c6cea1a0',
-    'wk:4:t2:l0:n:hold': '25c3c435', 'wk:4:t0:l2:cat:sat': 'c7e85975', 'wk:4:t0:l2:cat:sun': '3f3522e4', 'wk:4:t0:l2:cat:hold': '1619085b',
-    'wk:4:t3:l0:dog:sat': '950fce04', 'wk:4:t3:l0:dog:sun': '836288cd', 'wk:4:t3:l0:dog:hold': '4e61c04b', 'wk:4:t1:l2:n:sat': 'f2d389d6',
-    'wk:4:t1:l2:n:sun': 'b4a74155', 'wk:4:t1:l2:n:hold': '1d11f79', 'wk:14:t2:l0:n:sat': '64a714df', 'wk:14:t2:l0:n:sun': 'e4954ca4',
-    'wk:14:t2:l0:n:hold': 'e6e4ef17', 'wk:14:t0:l2:cat:sat': 'ad3c77eb', 'wk:14:t0:l2:cat:sun': '99e09afb', 'wk:14:t0:l2:cat:hold': '97b86147',
-    'wk:14:t3:l0:dog:sat': '625b456b', 'wk:14:t3:l0:dog:sun': '348a302', 'wk:14:t3:l0:dog:hold': 'ac7fcbcb', 'wk:14:t1:l2:n:sat': '3883920c',
-    'wk:14:t1:l2:n:sun': '8ee20bde', 'wk:14:t1:l2:n:hold': '1d47e9ec', 'wk:24:t2:l0:n:sat': '9c6ab1a0', 'wk:24:t2:l0:n:sun': '4b151f6f',
-    'wk:24:t2:l0:n:hold': '97091cda', 'wk:24:t0:l2:cat:sat': '501267e2', 'wk:24:t0:l2:cat:sun': 'd031f825', 'wk:24:t0:l2:cat:hold': 'dffddaed',
-    'wk:24:t3:l0:dog:sat': '77872e0c', 'wk:24:t3:l0:dog:sun': '24a58b3b', 'wk:24:t3:l0:dog:hold': '61b3200b', 'wk:24:t1:l2:n:sat': '8f9d7a1d',
-    'wk:24:t1:l2:n:sun': 'edaaa84b', 'wk:24:t1:l2:n:hold': '2a8f88f9', 'wk:34:t2:l0:n:sat': 'b02f36bf', 'wk:34:t2:l0:n:sun': '7f28cc82',
-    'wk:34:t2:l0:n:hold': '5dccfe47', 'wk:34:t0:l2:cat:sat': 'd30b746a', 'wk:34:t0:l2:cat:sun': '3701b33e', 'wk:34:t0:l2:cat:hold': 'ba27893a',
-    'wk:34:t3:l0:dog:sat': '72f7d52b', 'wk:34:t3:l0:dog:sun': '88d983a8', 'wk:34:t3:l0:dog:hold': '8a8028a1', 'wk:34:t1:l2:n:sat': 'e735215f',
-    'wk:34:t1:l2:n:sun': 'ac5c40e', 'wk:34:t1:l2:n:hold': 'f6f4991', 'wk:39:t2:l0:n:sat': 'c35fdaf', 'wk:39:t2:l0:n:sun': '1a3fb7d3',
-    'wk:39:t2:l0:n:whip': 'ed33bf24', 'wk:39:t2:l0:n:hold': 'a5fb555f', 'wk:39:t0:l2:cat:sat': '9bbece87', 'wk:39:t0:l2:cat:sun': '3303f0d8',
-    'wk:39:t0:l2:cat:whip': 'ed33bf24', 'wk:39:t0:l2:cat:hold': 'd29d3177', 'wk:39:t3:l0:dog:sat': 'd90ed43b', 'wk:39:t3:l0:dog:sun': '50b122fe',
-    'wk:39:t3:l0:dog:whip': 'ed33bf24', 'wk:39:t3:l0:dog:hold': 'a208cd25', 'wk:39:t1:l2:n:sat': '367495d8', 'wk:39:t1:l2:n:sun': 'e234e2b9',
-    'wk:39:t1:l2:n:whip': 'ed33bf24', 'wk:39:t1:l2:n:hold': 'f8056ad5', 'wk:44:t0:l0:n:o:sat': '2b5e96da', 'wk:44:t0:l0:n:o:sun': '965b3d44',
-    'wk:44:t0:l0:n:o:hold': 'b38c0c1d', 'wk:44:t0:l0:n:o:317': 'ffecf1f5', 'wk:44:t0:l0:cat:o:sat': 'f37ee992', 'wk:44:t0:l0:cat:o:sun': '463e93bb',
-    'wk:44:t0:l0:cat:o:hold': '94ce437b', 'wk:44:t0:l0:cat:o:317': 'ffecf1f5', 'wk:44:t0:l2:n:o:sat': '58e2a35c', 'wk:44:t0:l2:n:o:sun': 'd30e468f',
-    'wk:44:t0:l2:n:o:hold': 'f632e675', 'wk:44:t0:l2:n:o:317': 'ffecf1f5', 'wk:44:t0:l2:cat:o:sat': 'f5b73a1c', 'wk:44:t0:l2:cat:o:sun': 'bb9a9fb8',
-    'wk:44:t0:l2:cat:o:hold': '93bb34af', 'wk:44:t0:l2:cat:o:317': 'ffecf1f5', 'wk:44:t2:l0:n:o:sat': 'dadf9daa', 'wk:44:t2:l0:n:o:sun': 'dc56d92b',
-    'wk:44:t2:l0:n:o:hold': '3753fcd3', 'wk:44:t2:l0:n:o:317': 'ffecf1f5', 'wk:44:t2:l0:cat:o:sat': '930ba70a', 'wk:44:t2:l0:cat:o:sun': '1200bb4c',
-    'wk:44:t2:l0:cat:o:hold': 'c6e5de80', 'wk:44:t2:l0:cat:o:317': 'ffecf1f5', 'wk:44:t2:l2:n:o:sat': 'af4bb53', 'wk:44:t2:l2:n:o:sun': '28a41581',
-    'wk:44:t2:l2:n:o:hold': '1034b3ef', 'wk:44:t2:l2:n:o:317': 'ffecf1f5', 'wk:44:t2:l2:cat:o:sat': 'c842c21c', 'wk:44:t2:l2:cat:o:sun': '16bdb3be',
-    'wk:44:t2:l2:cat:o:hold': 'f0f349e4', 'wk:44:t2:l2:cat:o:317': 'ffecf1f5', 'wk:44:t5:l0:n:o:sat': 'bdbd2401', 'wk:44:t5:l0:n:o:sun': 'a1d9326b',
-    'wk:44:t5:l0:n:o:hold': '398607d9', 'wk:44:t5:l0:n:o:317': 'ffecf1f5', 'wk:44:t5:l0:cat:o:sat': '4064edc6', 'wk:44:t5:l0:cat:o:sun': 'e2afe34f',
-    'wk:44:t5:l0:cat:o:hold': 'a953a320', 'wk:44:t5:l0:cat:o:317': 'ffecf1f5', 'wk:44:t5:l2:n:o:sat': '396ed9e', 'wk:44:t5:l2:n:o:sun': '2a0316bd',
-    'wk:44:t5:l2:n:o:hold': '9edc0731', 'wk:44:t5:l2:n:o:317': 'ffecf1f5', 'wk:44:t5:l2:cat:o:sat': 'af2b3acf', 'wk:44:t5:l2:cat:o:sun': '3e3edfcd',
-    'wk:44:t5:l2:cat:o:hold': '917300e8', 'wk:44:t5:l2:cat:o:317': 'ffecf1f5', 'wk:44:t0:l0:n:p:sat': '8ca06136', 'wk:44:t0:l0:n:p:sun': '965b3d44',
-    'wk:44:t0:l0:n:p:hold': 'b38c0c1d', 'wk:44:t0:l0:n:p:317': 'f8a99c80', 'wk:44:t0:l0:cat:p:sat': '2d752ad3', 'wk:44:t0:l0:cat:p:sun': '463e93bb',
-    'wk:44:t0:l0:cat:p:hold': '94ce437b', 'wk:44:t0:l0:cat:p:317': 'f8a99c80', 'wk:44:t0:l2:n:p:sat': '6d6d5478', 'wk:44:t0:l2:n:p:sun': 'd30e468f',
-    'wk:44:t0:l2:n:p:hold': 'f632e675', 'wk:44:t0:l2:n:p:317': 'f8a99c80', 'wk:44:t0:l2:cat:p:sat': '1829c382', 'wk:44:t0:l2:cat:p:sun': 'bb9a9fb8',
-    'wk:44:t0:l2:cat:p:hold': '93bb34af', 'wk:44:t0:l2:cat:p:317': 'f8a99c80', 'wk:44:t2:l0:n:p:sat': '14b498c5', 'wk:44:t2:l0:n:p:sun': 'dc56d92b',
-    'wk:44:t2:l0:n:p:hold': '3753fcd3', 'wk:44:t2:l0:n:p:317': 'f8a99c80', 'wk:44:t2:l0:cat:p:sat': '5e334286', 'wk:44:t2:l0:cat:p:sun': '1200bb4c',
-    'wk:44:t2:l0:cat:p:hold': 'c6e5de80', 'wk:44:t2:l0:cat:p:317': 'f8a99c80', 'wk:44:t2:l2:n:p:sat': '6a2f002a', 'wk:44:t2:l2:n:p:sun': '28a41581',
-    'wk:44:t2:l2:n:p:hold': '1034b3ef', 'wk:44:t2:l2:n:p:317': 'f8a99c80', 'wk:44:t2:l2:cat:p:sat': '5ba4d08', 'wk:44:t2:l2:cat:p:sun': '16bdb3be',
-    'wk:44:t2:l2:cat:p:hold': 'f0f349e4', 'wk:44:t2:l2:cat:p:317': 'f8a99c80', 'wk:44:t5:l0:n:p:sat': 'c6f2dc13', 'wk:44:t5:l0:n:p:sun': 'a1d9326b',
-    'wk:44:t5:l0:n:p:hold': '398607d9', 'wk:44:t5:l0:n:p:317': 'f8a99c80', 'wk:44:t5:l0:cat:p:sat': '4ad17908', 'wk:44:t5:l0:cat:p:sun': 'e2afe34f',
-    'wk:44:t5:l0:cat:p:hold': 'a953a320', 'wk:44:t5:l0:cat:p:317': 'f8a99c80', 'wk:44:t5:l2:n:p:sat': '21d65731', 'wk:44:t5:l2:n:p:sun': '2a0316bd',
-    'wk:44:t5:l2:n:p:hold': '9edc0731', 'wk:44:t5:l2:n:p:317': 'f8a99c80', 'wk:44:t5:l2:cat:p:sat': 'dfc7a9ce', 'wk:44:t5:l2:cat:p:sun': '3e3edfcd',
-    'wk:44:t5:l2:cat:p:hold': '917300e8', 'wk:44:t5:l2:cat:p:317': 'f8a99c80', 'wk:nogame:9:sat': 'c4223587', 'wk:nogame:9:sun': 'fb989ec6',
-    'wk:nogame:9:hold': '2d2d8f60', 'wk:nogame:39:sat': 'c35fdaf', 'wk:nogame:39:sun': '1a3fb7d3', 'wk:nogame:39:whip': 'ed33bf24',
-    'wk:nogame:39:hold': 'a5fb555f', 'wk:nogame:44:sat': 'dadf9daa', 'wk:nogame:44:sun': 'dc56d92b', 'wk:nogame:44:hold': '3753fcd3',
-    'wk:nogame:44:317': 'ffecf1f5', 'flat:sun:9:t0:l0:n': 'c053280f', 'flat:night:9:t0:l0:n': '6910a1c4', 'flat:sun:9:t0:l0:cat': '359e97a8',
-    'flat:night:9:t0:l0:cat': '92c072bb', 'flat:sun:9:t0:l0:dog': '4ae8d479', 'flat:night:9:t0:l0:dog': '57b2dd43', 'flat:sun:9:t0:l2:n': 'f9e32dac',
-    'flat:night:9:t0:l2:n': 'f930a9df', 'flat:sun:9:t0:l2:cat': '29ec398b', 'flat:night:9:t0:l2:cat': '1ce94360', 'flat:sun:9:t0:l2:dog': 'c9e16082',
-    'flat:night:9:t0:l2:dog': '1a9c98cc', 'flat:sun:9:t1:l0:n': 'd85a8447', 'flat:night:9:t1:l0:n': 'a361ae2d', 'flat:sun:9:t1:l0:cat': 'e1b8324f',
-    'flat:night:9:t1:l0:cat': '727947fd', 'flat:sun:9:t1:l0:dog': '8cdffdf7', 'flat:night:9:t1:l0:dog': 'd368d2be', 'flat:sun:9:t1:l2:n': '194a81fd',
-    'flat:night:9:t1:l2:n': 'a3a194e9', 'flat:sun:9:t1:l2:cat': 'ce8177a1', 'flat:night:9:t1:l2:cat': '26bdfc1d', 'flat:sun:9:t1:l2:dog': 'bc5fa89',
-    'flat:night:9:t1:l2:dog': '9762fe4e', 'flat:sun:9:t2:l0:n': 'fb989ec6', 'flat:night:9:t2:l0:n': '42dd8757', 'flat:sun:9:t2:l0:cat': '7bcf59e1',
-    'flat:night:9:t2:l0:cat': '4d613aaa', 'flat:sun:9:t2:l0:dog': '2b2e6ac0', 'flat:night:9:t2:l0:dog': 'f19891bc', 'flat:sun:9:t2:l2:n': '944741a2',
-    'flat:night:9:t2:l2:n': 'c9dda7ab', 'flat:sun:9:t2:l2:cat': '96c39f25', 'flat:night:9:t2:l2:cat': '8c40fc3e', 'flat:sun:9:t2:l2:dog': '673f023c',
-    'flat:night:9:t2:l2:dog': 'd2b5e4a4', 'flat:sun:9:t3:l0:n': '8e8be37b', 'flat:night:9:t3:l0:n': '8648b046', 'flat:sun:9:t3:l0:cat': 'd1fffb06',
-    'flat:night:9:t3:l0:cat': '84f69781', 'flat:sun:9:t3:l0:dog': '4dcb606b', 'flat:night:9:t3:l0:dog': 'bc008bce', 'flat:sun:9:t3:l2:n': 'bb8098bd',
-    'flat:night:9:t3:l2:n': 'd24b78b3', 'flat:sun:9:t3:l2:cat': '4d693588', 'flat:night:9:t3:l2:cat': '700a8ff0', 'flat:sun:9:t3:l2:dog': '1679562d',
-    'flat:night:9:t3:l2:dog': 'a106f3ef', 'flat:sun:9:t4:l0:n': '193c048a', 'flat:night:9:t4:l0:n': '2f58e042', 'flat:sun:9:t4:l0:cat': 'd6ddeb0d',
-    'flat:night:9:t4:l0:cat': 'cd429c86', 'flat:sun:9:t4:l0:dog': '36b67dd0', 'flat:night:9:t4:l0:dog': 'e3397ef5', 'flat:sun:9:t4:l2:n': 'f7c99c4a',
-    'flat:night:9:t4:l2:n': '4e1deaf6', 'flat:sun:9:t4:l2:cat': '95e460c1', 'flat:night:9:t4:l2:cat': '1d673fe6', 'flat:sun:9:t4:l2:dog': 'e61a8544',
-    'flat:night:9:t4:l2:dog': 'a7fadb1', 'flat:sun:9:t5:l0:n': '772840c8', 'flat:night:9:t5:l0:n': 'aa91e68c', 'flat:sun:9:t5:l0:cat': 'cad2a403',
-    'flat:night:9:t5:l0:cat': '1f30db3c', 'flat:sun:9:t5:l0:dog': '2d50621b', 'flat:night:9:t5:l0:dog': '3fdffaec', 'flat:sun:9:t5:l2:n': 'fa3f44a3',
-    'flat:night:9:t5:l2:n': '46a5f402', 'flat:sun:9:t5:l2:cat': '54657188', 'flat:night:9:t5:l2:cat': '1c4c432e', 'flat:sun:9:t5:l2:dog': '1cb64a58',
-    'flat:night:9:t5:l2:dog': '5a224eee', 'flat:sun:39:t0:l0:n': '5ae48100', 'flat:night:39:t0:l0:n': 'c9cd8702', 'flat:sun:39:t0:l0:cat': '20d7538f',
-    'flat:night:39:t0:l0:cat': '4354fe09', 'flat:sun:39:t0:l0:dog': '9fe72156', 'flat:night:39:t0:l0:dog': '3976269d',
-    'flat:sun:39:t0:l2:n': 'a93446f', 'flat:night:39:t0:l2:n': 'fa229a01', 'flat:sun:39:t0:l2:cat': '3303f0d8', 'flat:night:39:t0:l2:cat': 'f54d92ba',
-    'flat:sun:39:t0:l2:dog': 'd58f61f1', 'flat:night:39:t0:l2:dog': 'c2ef2872', 'flat:sun:39:t1:l0:n': 'bd65d988',
-    'flat:night:39:t1:l0:n': 'f0a3891a', 'flat:sun:39:t1:l0:cat': 'a57e9560', 'flat:night:39:t1:l0:cat': '79f6a42a',
-    'flat:sun:39:t1:l0:dog': '3d20e768', 'flat:night:39:t1:l0:dog': '5170c55d', 'flat:sun:39:t1:l2:n': 'e234e2b9',
-    'flat:night:39:t1:l2:n': '44899164', 'flat:sun:39:t1:l2:cat': 'ed448259', 'flat:night:39:t1:l2:cat': '5fec7310',
-    'flat:sun:39:t1:l2:dog': '202ab141', 'flat:night:39:t1:l2:dog': '2de99ed7', 'flat:sun:39:t2:l0:n': '1a3fb7d3',
-    'flat:night:39:t2:l0:n': '8c174ff9', 'flat:sun:39:t2:l0:cat': 'ea64de4', 'flat:night:39:t2:l0:cat': '3f80c65c',
-    'flat:sun:39:t2:l0:dog': '14d6bf8d', 'flat:night:39:t2:l0:dog': '1c6e4aa2', 'flat:sun:39:t2:l2:n': 'd96ca3dc',
-    'flat:night:39:t2:l2:n': '83b6a51f', 'flat:sun:39:t2:l2:cat': '2fbcc04b', 'flat:night:39:t2:l2:cat': '7a2e587a',
-    'flat:sun:39:t2:l2:dog': 'c50b2266', 'flat:night:39:t2:l2:dog': 'ba41da0', 'flat:sun:39:t3:l0:n': 'e6ed75b6', 'flat:night:39:t3:l0:n': 'fa42c92a',
-    'flat:sun:39:t3:l0:cat': '3be8a017', 'flat:night:39:t3:l0:cat': 'c1a646d', 'flat:sun:39:t3:l0:dog': '50b122fe',
-    'flat:night:39:t3:l0:dog': '65bf7c72', 'flat:sun:39:t3:l2:n': 'd8ac1a48', 'flat:night:39:t3:l2:n': '150aec47',
-    'flat:sun:39:t3:l2:cat': 'a75b6d19', 'flat:night:39:t3:l2:cat': 'd9170fcc', 'flat:sun:39:t3:l2:dog': 'da9ec918',
-    'flat:night:39:t3:l2:dog': '8f577103', 'flat:sun:39:t4:l0:n': 'b45bf25c', 'flat:night:39:t4:l0:n': '370f920d',
-    'flat:sun:39:t4:l0:cat': 'eca64f7b', 'flat:night:39:t4:l0:cat': '93962c99', 'flat:sun:39:t4:l0:dog': 'a479a026',
-    'flat:night:39:t4:l0:dog': '78e4de7a', 'flat:sun:39:t4:l2:n': 'b28c2117', 'flat:night:39:t4:l2:n': '35520a42',
-    'flat:sun:39:t4:l2:cat': 'd54e7c64', 'flat:night:39:t4:l2:cat': '4e4500fa', 'flat:sun:39:t4:l2:dog': '76ba6845',
-    'flat:night:39:t4:l2:dog': 'd4b841f5', 'flat:sun:39:t5:l0:n': '30e27f8', 'flat:night:39:t5:l0:n': '49c8a9f2', 'flat:sun:39:t5:l0:cat': 'b0b0184b',
-    'flat:night:39:t5:l0:cat': '4c0ef0f1', 'flat:sun:39:t5:l0:dog': 'c822e89f', 'flat:night:39:t5:l0:dog': '99e85ad8',
-    'flat:sun:39:t5:l2:n': '1038974d', 'flat:night:39:t5:l2:n': '1977bed0', 'flat:sun:39:t5:l2:cat': 'eeedaf06',
-    'flat:night:39:t5:l2:cat': 'fbc04f1f', 'flat:sun:39:t5:l2:dog': '87e1bdc6', 'flat:night:39:t5:l2:dog': 'd3af91e',
-    'flat:sun:44:t0:l0:n': '965b3d44', 'flat:night:44:t0:l0:n': 'b6bff38a', 'flat:sun:44:t0:l0:cat': '463e93bb',
-    'flat:night:44:t0:l0:cat': '23f2b161', 'flat:sun:44:t0:l0:dog': 'e39cfdda', 'flat:night:44:t0:l0:dog': '9375e535',
-    'flat:sun:44:t0:l2:n': 'd30e468f', 'flat:night:44:t0:l2:n': '23270e01', 'flat:sun:44:t0:l2:cat': 'bb9a9fb8',
-    'flat:night:44:t0:l2:cat': '1e5206ba', 'flat:sun:44:t0:l2:dog': 'c2f135d1', 'flat:night:44:t0:l2:dog': 'ebf39c72',
-    'flat:sun:44:t1:l0:n': '501803f', 'flat:night:44:t1:l0:n': 'f8baaa08', 'flat:sun:44:t1:l0:cat': 'ffd110ef', 'flat:night:44:t1:l0:cat': '716bc4a0',
-    'flat:sun:44:t1:l0:dog': '2c18513', 'flat:night:44:t1:l0:dog': '880d6e07', 'flat:sun:44:t1:l2:n': '256801af', 'flat:night:44:t1:l2:n': '137312ac',
-    'flat:sun:44:t1:l2:cat': '4d5eb437', 'flat:night:44:t1:l2:cat': 'c35fc5d8', 'flat:sun:44:t1:l2:dog': 'd6f24ff7',
-    'flat:night:44:t1:l2:dog': '40d12767', 'flat:sun:44:t2:l0:n': 'dc56d92b', 'flat:night:44:t2:l0:n': '68c2ef94',
-    'flat:sun:44:t2:l0:cat': '1200bb4c', 'flat:night:44:t2:l0:cat': '5fa8ab69', 'flat:sun:44:t2:l0:dog': 'b203ac85',
-    'flat:night:44:t2:l0:dog': 'ee994207', 'flat:sun:44:t2:l2:n': '28a41581', 'flat:night:44:t2:l2:n': 'bda8bf23',
-    'flat:sun:44:t2:l2:cat': '16bdb3be', 'flat:night:44:t2:l2:cat': 'e09c3a46', 'flat:sun:44:t2:l2:dog': '3fead663',
-    'flat:night:44:t2:l2:dog': '9072593c', 'flat:sun:44:t3:l0:n': 'eceef0b6', 'flat:night:44:t3:l0:n': '6a645f9d',
-    'flat:sun:44:t3:l0:cat': '41ea1b17', 'flat:night:44:t3:l0:cat': '2e37efc6', 'flat:sun:44:t3:l0:dog': '56b29dfe',
-    'flat:night:44:t3:l0:dog': '417d50b1', 'flat:sun:44:t3:l2:n': '3f514625', 'flat:night:44:t3:l2:n': '6ff4fa79',
-    'flat:sun:44:t3:l2:cat': 'a50040d0', 'flat:night:44:t3:l2:cat': 'fcacab6a', 'flat:sun:44:t3:l2:dog': '4bbf50b5',
-    'flat:night:44:t3:l2:dog': '967aff59', 'flat:sun:44:t4:l0:n': '3c816c98', 'flat:night:44:t4:l0:n': '8a5e796a',
-    'flat:sun:44:t4:l0:cat': '73e14fbf', 'flat:night:44:t4:l0:cat': 'aa53098e', 'flat:sun:44:t4:l0:dog': '6d0641a',
-    'flat:night:44:t4:l0:dog': '9c8e0b5d', 'flat:sun:44:t4:l2:n': '96c1d798', 'flat:night:44:t4:l2:n': 'b2c65e25',
-    'flat:sun:44:t4:l2:cat': '8b24958b', 'flat:night:44:t4:l2:cat': '9cb6b375', 'flat:sun:44:t4:l2:dog': '1a40f5b6',
-    'flat:night:44:t4:l2:dog': 'ad658602', 'flat:sun:44:t5:l0:n': 'a1d9326b', 'flat:night:44:t5:l0:n': '149d79ca',
-    'flat:sun:44:t5:l0:cat': 'e2afe34f', 'flat:night:44:t5:l0:cat': '3639e780', 'flat:sun:44:t5:l0:dog': 'd986d2c4',
-    'flat:night:44:t5:l0:dog': '79d0913', 'flat:sun:44:t5:l2:n': '2a0316bd', 'flat:night:44:t5:l2:n': '46fea011', 'flat:sun:44:t5:l2:cat': '3e3edfcd',
-    'flat:night:44:t5:l2:cat': 'ac05a65b', 'flat:sun:44:t5:l2:dog': 'ec01ba0e', 'flat:night:44:t5:l2:dog': '2a9dedcc', 'flat:sun:nogame': 'fb989ec6',
-    'flat:night:nogame': '42dd8757'
-  };
-  // batch 8 (ruled): every sun and hold final frame changes in the window (weather particles at their chain-time pose) and, without a figure, the floor phone is lit
-  // (pulled day 44: the laptop screen is dark); sat, whip, 317 and the flat sundayShot / apartmentShot(night) pictures are unchanged. The asserts below prove the changes are confined to those regions.
-  const P9_CHANGED = {
-    'wk:9:t0:l0:n:sun': 'e82ff5f7', 'wk:9:t0:l0:n:hold': '69dfe4c3', 'wk:9:t0:l0:cat:sun': '192f3aae', 'wk:9:t0:l0:cat:hold': '8755200',
-    'wk:9:t0:l0:dog:sun': 'fc5096ca', 'wk:9:t0:l0:dog:hold': '84bce7cc', 'wk:9:t0:l2:n:sun': '20006339', 'wk:9:t0:l2:n:hold': 'f4575977',
-    'wk:9:t0:l2:cat:sun': '2425229b', 'wk:9:t0:l2:cat:hold': 'b15d4bc1', 'wk:9:t0:l2:dog:sun': '58a89dcb', 'wk:9:t0:l2:dog:hold': '207edc71',
-    'wk:9:t2:l0:n:sun': '13c72db8', 'wk:9:t2:l0:n:hold': 'ca4067fa', 'wk:9:t2:l0:cat:sun': '38508299', 'wk:9:t2:l0:cat:hold': 'db844aa7',
-    'wk:9:t2:l0:dog:sun': 'f3cde8b', 'wk:9:t2:l0:dog:hold': 'dd8a5fbc', 'wk:9:t2:l2:n:sun': 'c6e867f2', 'wk:9:t2:l2:n:hold': '6cc0e102',
-    'wk:9:t2:l2:cat:sun': '9819f7f2', 'wk:9:t2:l2:cat:hold': '90f87747', 'wk:9:t2:l2:dog:sun': 'e7e521e5', 'wk:9:t2:l2:dog:hold': '37a65a7c',
-    'wk:9:t5:l0:n:sun': '8edf8b87', 'wk:9:t5:l0:n:hold': 'e21cc39d', 'wk:9:t5:l0:cat:sun': '40148416', 'wk:9:t5:l0:cat:hold': '46ad461d',
-    'wk:9:t5:l0:dog:sun': '3764a524', 'wk:9:t5:l0:dog:hold': 'c9a7ff5d', 'wk:9:t5:l2:n:sun': '9dac5c9', 'wk:9:t5:l2:n:hold': 'ebb54d4d',
-    'wk:9:t5:l2:cat:sun': 'cfc16289', 'wk:9:t5:l2:cat:hold': '6448c3d3', 'wk:9:t5:l2:dog:sun': '3a413a44', 'wk:9:t5:l2:dog:hold': 'd1d4b799',
-    'wk:19:t2:l0:n:sun': '40e000de', 'wk:19:t2:l0:n:hold': 'b6dfe616', 'wk:19:t0:l2:cat:sun': 'b0e38ae9', 'wk:19:t0:l2:cat:hold': '76ed9021',
-    'wk:19:t4:l0:dog:sun': 'c1a6e841', 'wk:19:t4:l0:dog:hold': 'b2734915', 'wk:19:t1:l2:n:sun': 'e5099c70', 'wk:19:t1:l2:n:hold': 'ec3b2d9b',
-    'wk:49:t2:l0:n:sun': '939b500a', 'wk:49:t2:l0:n:hold': 'd5c24053', 'wk:49:t0:l2:cat:sun': 'eccb4298', 'wk:49:t0:l2:cat:hold': '9145bf9c',
-    'wk:49:t4:l0:dog:sun': 'bcf22146', 'wk:49:t4:l0:dog:hold': '1a6b8cb9', 'wk:49:t1:l2:n:sun': 'e85dc7d4', 'wk:49:t1:l2:n:hold': '9899d55e',
-    'wk:4:t2:l0:n:sun': '50dae219', 'wk:4:t2:l0:n:hold': '87ad46', 'wk:4:t0:l2:cat:sun': '3d0fab38', 'wk:4:t0:l2:cat:hold': '28c2607d',
-    'wk:4:t3:l0:dog:sun': '5716a88c', 'wk:4:t3:l0:dog:hold': '1bce48ad', 'wk:4:t1:l2:n:sun': 'e4989b7', 'wk:4:t1:l2:n:hold': '9c9ad3fc',
-    'wk:14:t2:l0:n:sun': 'c6e3d135', 'wk:14:t2:l0:n:hold': 'a834450e', 'wk:14:t0:l2:cat:sun': '9968b6d0', 'wk:14:t0:l2:cat:hold': '5d4641fb',
-    'wk:14:t3:l0:dog:sun': 'ae2d3311', 'wk:14:t3:l0:dog:hold': '8633b5a3', 'wk:14:t1:l2:n:sun': '349658f7', 'wk:14:t1:l2:n:hold': 'e7b6ab26',
-    'wk:24:t2:l0:n:sun': 'fce4414e', 'wk:24:t2:l0:n:hold': '18f2568d', 'wk:24:t0:l2:cat:sun': '817e486', 'wk:24:t0:l2:cat:hold': 'd030cdb1',
-    'wk:24:t3:l0:dog:sun': '84764d4a', 'wk:24:t3:l0:dog:hold': 'c35166e9', 'wk:24:t1:l2:n:sun': 'd85a3345', 'wk:24:t1:l2:n:hold': '6ae137b7',
-    'wk:34:t2:l0:n:sun': 'a45437fc', 'wk:34:t2:l0:n:hold': '65de93f8', 'wk:34:t0:l2:cat:sun': 'b4114ba4', 'wk:34:t0:l2:cat:hold': '73c741a6',
-    'wk:34:t3:l0:dog:sun': 'd4ac06dd', 'wk:34:t3:l0:dog:hold': 'ddbc1c9e', 'wk:34:t1:l2:n:sun': 'e07e269e', 'wk:34:t1:l2:n:hold': '25d3d84f',
-    'wk:39:t2:l0:n:sun': 'ac0b679a', 'wk:39:t2:l0:n:hold': '65ad87fa', 'wk:39:t0:l2:cat:sun': '714553fb', 'wk:39:t0:l2:cat:hold': '5c3b6262',
-    'wk:39:t3:l0:dog:sun': '75399c36', 'wk:39:t3:l0:dog:hold': '3ac63fbb', 'wk:39:t1:l2:n:sun': '461296fc', 'wk:39:t1:l2:n:hold': '1169e9f4',
-    'wk:44:t0:l0:n:o:sun': 'fec08cb9', 'wk:44:t0:l0:n:o:hold': '55e703ac', 'wk:44:t0:l0:cat:o:sun': '4b224082', 'wk:44:t0:l0:cat:o:hold': '3cc02b3a',
-    'wk:44:t0:l2:n:o:sun': '141de675', 'wk:44:t0:l2:n:o:hold': '103a189b', 'wk:44:t0:l2:cat:o:sun': '9e03aec', 'wk:44:t0:l2:cat:o:hold': 'c032db71',
-    'wk:44:t2:l0:n:o:sun': '89481e60', 'wk:44:t2:l0:n:o:hold': '23753157', 'wk:44:t2:l0:cat:o:sun': '7fefb5ce', 'wk:44:t2:l0:cat:o:hold': '1d3d06f3',
-    'wk:44:t2:l2:n:o:sun': '2aa80011', 'wk:44:t2:l2:n:o:hold': '8d86263d', 'wk:44:t2:l2:cat:o:sun': '6d0ef604', 'wk:44:t2:l2:cat:o:hold': '37f94583',
-    'wk:44:t5:l0:n:o:sun': '1a5ec5e7', 'wk:44:t5:l0:n:o:hold': 'e92aebe5', 'wk:44:t5:l0:cat:o:sun': '1152f1f', 'wk:44:t5:l0:cat:o:hold': 'e5d04250',
-    'wk:44:t5:l2:n:o:sun': 'e2f1c3d5', 'wk:44:t5:l2:n:o:hold': 'a1627c9b', 'wk:44:t5:l2:cat:o:sun': '91d089dc', 'wk:44:t5:l2:cat:o:hold': 'c0e2a8d9',
-    'wk:44:t0:l0:n:p:sun': 'abc866f6', 'wk:44:t0:l0:n:p:hold': '24b91302', 'wk:44:t0:l0:cat:p:sun': '9e048688', 'wk:44:t0:l0:cat:p:hold': 'c41df4e1',
-    'wk:44:t0:l2:n:p:sun': 'bf9550da', 'wk:44:t0:l2:n:p:hold': 'e7d21bc5', 'wk:44:t0:l2:cat:p:sun': 'b68365f8', 'wk:44:t0:l2:cat:p:hold': '7d6dfcb2',
-    'wk:44:t2:l0:n:p:sun': 'fa6106a0', 'wk:44:t2:l0:n:p:hold': '54a7eea9', 'wk:44:t2:l0:cat:p:sun': '6f0afb9b', 'wk:44:t2:l0:cat:p:hold': '45b48a10',
-    'wk:44:t2:l2:n:p:sun': 'e042aac1', 'wk:44:t2:l2:n:p:hold': 'e1e1964c', 'wk:44:t2:l2:cat:p:sun': '4a305fb9', 'wk:44:t2:l2:cat:p:hold': '9eab2d3f',
-    'wk:44:t5:l0:n:p:sun': '13dd524', 'wk:44:t5:l0:n:p:hold': '6039f560', 'wk:44:t5:l0:cat:p:sun': '91d074a9', 'wk:44:t5:l0:cat:p:hold': '112c6725',
-    'wk:44:t5:l2:n:p:sun': '8dd9b067', 'wk:44:t5:l2:n:p:hold': 'cff2d2ac', 'wk:44:t5:l2:cat:p:sun': '3c92f40c', 'wk:44:t5:l2:cat:p:hold': '89db83e',
-    'wk:nogame:9:sun': '13c72db8', 'wk:nogame:9:hold': 'ca4067fa', 'wk:nogame:39:sun': 'ac0b679a', 'wk:nogame:39:hold': '65ad87fa',
-    'wk:nogame:44:sun': '89481e60', 'wk:nogame:44:hold': '23753157'
-  };
   const p9now = await collectP9();
-  for (const k of Object.keys(P9_REF)) assert(p9now[k] === (P9_CHANGED[k] || P9_REF[k]), `batch 8 ${k}: the picture changed (${p9now[k]}, was ${P9_CHANGED[k] || P9_REF[k]})`);
-  assert(Object.keys(p9now).length === Object.keys(P9_REF).length, 'batch 8: the set of reference pictures changed');
-  for (const k of Object.keys(P9_CHANGED)) assert(P9_CHANGED[k] !== P9_REF[k], `batch 8 ${k}: the ruled change is not a change`);
+  pins('batch8', p9now);
 
-  const P10_REF = {
-    'es:wiped:dark': '6c1b7bb0', 'es:wiped:light': 'f1573e9a', 'ed:wiped:0.3': 'd627ac60', 'ed:wiped:1': '2405a84b', 'eb:wiped:l:n:0': '3c21d529', 'eb:wiped:l:n:1': '2a298fc7',
-    'eb:wiped:l:n:2': '90d5e1c5', 'eb:wiped:l:e:1': '8fa884c7', 'eb:wiped:l:l:1': '1cf5db07', 'eb:wiped:d:n:0': '4df9a815', 'eb:wiped:d:n:1': 'bd13aa9d',
-    'eb:wiped:d:n:2': '90d5e1c5', 'eb:wiped:d:e:1': 'cef9b6d5', 'eb:wiped:d:l:1': 'dad1feb5', 'es:fired:dark': '6c1b7bb0', 'es:fired:light': 'f1573e9a', 'ed:fired:0.3': 'd4ae35e7',
-    'ed:fired:1': 'd4ae35e7', 'eb:fired:l:n:0': '7d134b80', 'eb:fired:l:n:1': '47ffbfd6', 'eb:fired:l:e:1': 'e8d97136', 'eb:fired:l:l:1': 'e92ae5c6', 'eb:fired:d:n:0': 'c8c31b29',
-    'eb:fired:d:n:1': '8829400e', 'eb:fired:d:e:1': 'be2cae16', 'eb:fired:d:l:1': 'c82e8946', 'es:exit:dark': '646c0a7e', 'es:exit:light': 'df02c8de', 'ed:exit:0.3': '3d9b6644',
-    'ed:exit:1': '3d9b6644', 'eb:exit:l:n:0': 'e745aeaa', 'eb:exit:l:n:1': '665edf8', 'eb:exit:l:e:1': '7e67abd8', 'eb:exit:l:l:1': '27857a30', 'eb:exit:d:n:0': 'd259d5be',
-    'eb:exit:d:n:1': '96f84384', 'eb:exit:d:e:1': '2ce48d5c', 'eb:exit:d:l:1': '91528d2c', 'es:nobody:dark': '6c1b7bb0', 'es:nobody:light': 'f1573e9a', 'ed:nobody:0.3': '2844ba11',
-    'ed:nobody:1': '2844ba11', 'eb:nobody:l:n:0': '3c550175', 'eb:nobody:l:n:1': '3ac07ed', 'eb:nobody:l:e:1': '4621090d', 'eb:nobody:l:l:1': 'a34d6e1d',
-    'eb:nobody:d:n:0': '68320d61', 'eb:nobody:d:n:1': '492d6f37', 'eb:nobody:d:e:1': '6160b94f', 'eb:nobody:d:l:1': 'c0e8f9df', 'es:master:dark': '646c0a7e',
-    'es:master:light': 'df02c8de', 'ed:master:0.3': 'be991225', 'ed:master:1': 'be991225', 'eb:master:l:n:0': 'a0e5af85', 'eb:master:l:n:1': 'ca9a3103',
-    'eb:master:l:e:1': '309f6363', 'eb:master:l:l:1': '90f008bb', 'eb:master:d:n:0': 'e1efc592', 'eb:master:d:n:1': '7d9dc046', 'eb:master:d:e:1': '33615fee',
-    'eb:master:d:l:1': '83d68dfe', 'es:whistle:dark': 'ba6d8493', 'es:whistle:light': '1be234ac', 'ed:whistle:0.3': '4d43c60', 'ed:whistle:1': '4d43c60',
-    'eb:whistle:l:n:0': 'ba25f19', 'eb:whistle:l:n:1': '7081168', 'eb:whistle:l:e:1': 'c3db1ea8', 'eb:whistle:l:l:1': '946b1380', 'eb:whistle:d:n:0': '112abdb0',
-    'eb:whistle:d:n:1': 'b41c7a26', 'eb:whistle:d:e:1': '2ad4709e', 'eb:whistle:d:l:1': '41096a8e', 'es:revolving:dark': 'ba6d8493', 'es:revolving:light': '1be234ac',
-    'ed:revolving:0.3': 'bfff3a0d', 'ed:revolving:1': 'bfff3a0d', 'eb:revolving:l:n:0': '8a781c89', 'eb:revolving:l:n:1': '92d9ab40', 'eb:revolving:l:e:1': 'c5f10800',
-    'eb:revolving:l:l:1': '9cef1388', 'eb:revolving:d:n:0': 'f06795d5', 'eb:revolving:d:n:1': '46830f3', 'eb:revolving:d:e:1': '55d5133b', 'eb:revolving:d:l:1': 'f380c24b',
-    'es:perp:dark': '6c1b7bb0', 'es:perp:light': 'f1573e9a', 'ed:perp:0.3': '600b72b1', 'ed:perp:1': 'e16850c9', 'eb:perp:l:n:0': '41b6be90', 'eb:perp:l:n:1': '9b08d36',
-    'eb:perp:l:e:1': '63e3296', 'eb:perp:l:l:1': '7cba16a6', 'eb:perp:d:n:0': '28354319', 'eb:perp:d:n:1': 'aab5cdb6', 'eb:perp:d:e:1': 'b56677de', 'eb:perp:d:l:1': 'a5abbd8e',
-    'es:fall-guy:dark': '6c1b7bb0', 'es:fall-guy:light': 'f1573e9a', 'ed:fall-guy:0.3': 'ca8658b5', 'ed:fall-guy:1': 'ca8658b5', 'eb:fall-guy:l:n:0': 'f98d3c00',
-    'eb:fall-guy:l:n:1': 'e63349f3', 'eb:fall-guy:l:e:1': '96dec893', 'eb:fall-guy:l:l:1': '333027e3', 'eb:fall-guy:d:n:0': 'a098ffba', 'eb:fall-guy:d:n:1': '1dd7b77',
-    'eb:fall-guy:d:e:1': '7530a3ef', 'eb:fall-guy:d:l:1': '93afcddf', 'es:cassandra:dark': 'ba6d8493', 'es:cassandra:light': '1be234ac', 'ed:cassandra:0.3': 'cf976bee',
-    'ed:cassandra:1': 'cf976bee', 'eb:cassandra:l:n:0': 'e1616c7b', 'eb:cassandra:l:n:1': '32a54a2c', 'eb:cassandra:l:e:1': '9e2ce5ac', 'eb:cassandra:l:l:1': 'b9c9a2c4',
-    'eb:cassandra:d:n:0': 'f42e0860', 'eb:cassandra:d:n:1': '49690838', 'eb:cassandra:d:e:1': '39fb6b60', 'eb:cassandra:d:l:1': 'f41d3450', 'es:acquirer:dark': '646c0a7e',
-    'es:acquirer:light': 'df02c8de', 'ed:acquirer:0.3': 'b82f2c1b', 'ed:acquirer:1': 'b82f2c1b', 'eb:acquirer:l:n:0': 'ec5ac43d', 'eb:acquirer:l:n:1': '80edb783',
-    'eb:acquirer:l:e:1': '147fd5e3', 'eb:acquirer:l:l:1': 'c3ec1d3b', 'eb:acquirer:d:n:0': '4a5a9146', 'eb:acquirer:d:n:1': '3b18bf2a', 'eb:acquirer:d:e:1': '314a1e32',
-    'eb:acquirer:d:l:1': 'aad6a062', 'es:ward:dark': '6c1b7bb0', 'es:ward:light': 'f1573e9a', 'ed:ward:0.3': '69c4dc81', 'ed:ward:1': '69c4dc81', 'eb:ward:l:n:0': '514baa8f',
-    'eb:ward:l:n:1': 'd2b6b6d4', 'eb:ward:l:e:1': '5861d2f4', 'eb:ward:l:l:1': '22edee04', 'eb:ward:d:n:0': 'ce47e9d3', 'eb:ward:d:n:1': '6a1dec6a', 'eb:ward:d:e:1': '28f2de82',
-    'eb:ward:d:l:1': '829fa732', 'es:clawback:dark': 'ba6d8493', 'es:clawback:light': '1be234ac', 'ed:clawback:0.3': '7eff89b6', 'ed:clawback:1': '7eff89b6',
-    'eb:clawback:l:n:0': 'd66082a1', 'eb:clawback:l:n:1': '85295598', 'eb:clawback:l:e:1': '703c40d8', 'eb:clawback:l:l:1': 'f0fdb300', 'eb:clawback:d:n:0': '459ac0a9',
-    'eb:clawback:d:n:1': '25605977', 'eb:clawback:d:e:1': 'b5d2eebf', 'eb:clawback:d:l:1': '4743e68f', 'es:right-early:dark': '646c0a7e', 'es:right-early:light': 'df02c8de',
-    'ed:right-early:0.3': '22d8d830', 'ed:right-early:1': '22d8d830', 'eb:right-early:l:n:0': '2aee2d23', 'eb:right-early:l:n:1': 'f3aaf6ee', 'eb:right-early:l:e:1': 'd265a50e',
-    'eb:right-early:l:l:1': '38eb00c6', 'eb:right-early:d:n:0': 'ddcdf08e', 'eb:right-early:d:n:1': 'f36f833d', 'eb:right-early:d:e:1': 'b39461b5',
-    'eb:right-early:d:l:1': 'ae749ba5', 'es:fund:dark': '646c0a7e', 'es:fund:light': 'df02c8de', 'ed:fund:0.3': '868cffc9', 'ed:fund:1': '868cffc9', 'eb:fund:l:n:0': 'a6b9606a',
-    'eb:fund:l:n:1': 'c82c23b0', 'eb:fund:l:e:1': '3e7228d0', 'eb:fund:l:l:1': '5fb99ac8', 'eb:fund:d:n:0': 'bddbccbe', 'eb:fund:d:n:1': '4005ebf4', 'eb:fund:d:e:1': 'c131244c',
-    'eb:fund:d:l:1': 'd3dd499c', 'es:everything-rally:dark': '646c0a7e', 'es:everything-rally:light': 'df02c8de', 'ed:everything-rally:0.3': 'aed5cbae',
-    'ed:everything-rally:1': 'aed5cbae', 'eb:everything-rally:l:n:0': '71c3b524', 'eb:everything-rally:l:n:1': '99436243', 'eb:everything-rally:l:e:1': '26c7e823',
-    'eb:everything-rally:l:l:1': '8e481cfb', 'eb:everything-rally:d:n:0': '24d7188a', 'eb:everything-rally:d:n:1': 'da1924e2', 'eb:everything-rally:d:e:1': '6abc81ea',
-    'eb:everything-rally:d:l:1': 'e5f2e93a', 'es:lost-decade:dark': 'ba6d8493', 'es:lost-decade:light': '1be234ac', 'ed:lost-decade:0.3': '3aad9f29',
-    'ed:lost-decade:1': '3aad9f29', 'eb:lost-decade:l:n:0': '22b1d074', 'eb:lost-decade:l:n:1': '2611d97', 'eb:lost-decade:l:e:1': '5ea35617', 'eb:lost-decade:l:l:1': 'eed6f6ef',
-    'eb:lost-decade:d:n:0': '5ca51d7d', 'eb:lost-decade:d:n:1': '7da1815f', 'eb:lost-decade:d:e:1': '12a374c7', 'eb:lost-decade:d:l:1': 'c3fb4ef7', 'es:soft:dark': '646c0a7e',
-    'es:soft:light': 'df02c8de', 'ed:soft:0.3': 'ea337140', 'ed:soft:1': 'ea337140', 'eb:soft:l:n:0': '4f92a3aa', 'eb:soft:l:n:1': 'fc7940ed', 'eb:soft:l:e:1': '6e59960d',
-    'eb:soft:l:l:1': '9ff81235', 'eb:soft:d:n:0': '56aad930', 'eb:soft:d:n:1': '6f56d345', 'eb:soft:d:e:1': 'abde3e9d', 'eb:soft:d:l:1': 'c547282d', 'es:quiet:dark': '646c0a7e',
-    'es:quiet:light': 'df02c8de', 'ed:quiet:0.3': 'bfd9ca75', 'ed:quiet:1': 'bfd9ca75', 'eb:quiet:l:n:0': '1db26c4a', 'eb:quiet:l:n:1': '314010f7', 'eb:quiet:l:e:1': 'd1a6b357',
-    'eb:quiet:l:l:1': 'de9cebff', 'eb:quiet:d:n:0': '6a16c9c', 'eb:quiet:d:n:1': '3c9c4458', 'eb:quiet:d:e:1': '93351bd0', 'eb:quiet:d:l:1': 'ffb07480',
-    'es:replaced:dark': '6c1b7bb0', 'es:replaced:light': 'f1573e9a', 'ed:replaced:0.3': '56f61225', 'ed:replaced:1': '56f61225', 'eb:replaced:l:n:0': '5a858a68',
-    'eb:replaced:l:n:1': '3077cce', 'eb:replaced:l:e:1': '51f20ee', 'eb:replaced:l:l:1': '30d0cf3e', 'eb:replaced:d:n:0': '919d3e91', 'eb:replaced:d:n:1': '44f302d6',
-    'eb:replaced:d:e:1': 'afb4acfe', 'eb:replaced:d:l:1': '15bec2ae', 'es:depression:dark': '6c1b7bb0', 'es:depression:light': 'f1573e9a', 'ed:depression:0.3': '3fba356d',
-    'ed:depression:1': '3fba356d', 'eb:depression:l:n:0': '1fa21238', 'eb:depression:l:n:1': '2c45be3b', 'eb:depression:l:e:1': '7da349b', 'eb:depression:l:l:1': '41afab2b',
-    'eb:depression:d:n:0': 'a68d443e', 'eb:depression:d:n:1': 'c3b86f73', 'eb:depression:d:e:1': 'c9d2102b', 'eb:depression:d:l:1': 'a52e26db', 'es:grind:dark': '646c0a7e',
-    'es:grind:light': 'df02c8de', 'ed:grind:0.3': '3ddd54c6', 'ed:grind:1': '3ddd54c6', 'eb:grind:l:n:0': '6130e464', 'eb:grind:l:n:1': '6efe0d03', 'eb:grind:l:e:1': 'a469eee3',
-    'eb:grind:l:l:1': 'ac5a3dbb', 'eb:grind:d:n:0': 'a739e72a', 'eb:grind:d:n:1': 'f2386742', 'eb:grind:d:e:1': '9e350f4a', 'eb:grind:d:l:1': 'c304da1a',
-    'eb:pulled:l:2': 'f8a99c80', 'eb:pulled:d:2': 'f8a99c80'
-  };
-  // batch 9: the wiped and perp world finals (sheets fallen; flash stars and the burst) and the after finals (windows out, no still speckle; the pulled room's standby light on)
-  const P10_CHANGED = {
-    'eb:wiped:l:n:0': '6652cc9', 'eb:wiped:l:n:2': 'cdb224eb', 'eb:wiped:d:n:0': 'a51e9d65', 'eb:wiped:d:n:2': 'cdb224eb', 'eb:perp:l:n:0': '330f8d20', 'eb:perp:d:n:0': 'eb745eb1', 'eb:pulled:l:2': '65acaf38', 'eb:pulled:d:2': '65acaf38'
-  };
   const p10now = await collectP10();
-  for (const k of Object.keys(P10_REF)) assert(p10now[k] === (P10_CHANGED[k] || P10_REF[k]), `batch 9 ${k}: the picture changed (${p10now[k]}, was ${P10_CHANGED[k] || P10_REF[k]})`);
-  assert(Object.keys(p10now).length === Object.keys(P10_REF).length, 'batch 9: the set of reference pictures changed');
-  for (const k of Object.keys(P10_CHANGED)) assert(P10_CHANGED[k] !== P10_REF[k], `batch 9 ${k}: the ruled change is not a change`);
+  pins('batch9', p10now);
 
   // ---- stage 3 batch 9 asserts ----
   // ---- stage 3 batch 9: the endings ----
@@ -2305,47 +2010,6 @@ async function run() {
 
   // ---- stage 3 batch 2: the morning (phone handoff and read, office wide, desk and hold) ----
   // Flat reference hashes of phoneFrame, officeFrame and chart, recorded from the code before the batch (no options passed).
-  const FLAT_REF = {
-    'phone:3:0:false': 'eee16bbf',
-    'phone:3:1:false': '10849baf',
-    'phone:3:2:true': 'abdaf654',
-    'phone:3:4:false': '7423760f',
-    'phone:3:4:true': '49a711ff',
-    'phone:3:5:true': '49a711ff',
-    'phone:3:nofeed': 'e3ecb386',
-    'office:3:wide': '9fe8dfe1',
-    'office:3:wideDown': '211f6389',
-    'office:3:desk': '4b4ab536',
-    'office:3:deskDown': '5dacdeb0',
-    'office:3:deskNoS': '7a410ff0',
-    'chart:3': '43de43c2',
-    'phone:20:0:false': '487e3260',
-    'phone:20:1:false': '574391d6',
-    'phone:20:2:true': 'd9c5b647',
-    'phone:20:4:false': 'c8c9f674',
-    'phone:20:4:true': 'f46a23b4',
-    'phone:20:5:true': 'f46a23b4',
-    'phone:20:nofeed': 'c9f0f8d',
-    'office:20:wide': 'd1905a0e',
-    'office:20:wideDown': '876629a1',
-    'office:20:desk': '6407dd25',
-    'office:20:deskDown': 'e47b55bb',
-    'office:20:deskNoS': '2b62e17f',
-    'chart:20': '7dec358a',
-    'phone:40:0:false': '7af4fc0a',
-    'phone:40:1:false': '3c834902',
-    'phone:40:2:true': '24bfb8d',
-    'phone:40:4:false': '8f84f82',
-    'phone:40:4:true': 'a8811f02',
-    'phone:40:5:true': 'a8811f02',
-    'phone:40:nofeed': '28014c63',
-    'office:40:wide': '8e47dba',
-    'office:40:wideDown': '566314e9',
-    'office:40:desk': '35ccb039',
-    'office:40:deskDown': '17988d37',
-    'office:40:deskNoS': '559eee3f',
-    'chart:40': '179ce022'
-  };
   const flatNow = await page.evaluate(() => {
     const R = BTB.Rhythm, res = {};
     const hashOf = (fn) => {
@@ -2379,7 +2043,7 @@ async function run() {
     return bad;
   });
   assert(areaBad === 0, `phoneFrame area: the room differs from the full room in ${areaBad} bytes`);
-  for (const k of Object.keys(FLAT_REF)) assert(flatNow[k] === FLAT_REF[k], `flat ${k}: the picture changed (${flatNow[k]}, was ${FLAT_REF[k]})`);
+  pins('flat', flatNow);
 
   await page.evaluate(() => {
     const view = { w: 640, h: 360 };
@@ -2632,15 +2296,6 @@ async function run() {
   // ---- stage 3 batch 3: the close (report, hold, Sqwak insert and read) ----
   // Flat references recorded from the code before the batch (the close:* ones re-recorded when the ninth dash was clipped to the card's inner edge): closeFrame and sqwakFrame with no options, and the final pictures of the
   // Sqwak read (the insert's final picture now shows the read's starting counts, checked below) (a day with the failed-vote alternate included: 41 and 44 have none of the passed story state here).
-  const CLOSE_REF = {
-    'close:A:false': '9d73ead7', 'close:A:true': 'af695dc5', 'close:B:false': '56bc08b1', 'close:B:true': '6547c3fc',
-    'close:C:false': '480a0d9a', 'close:C:true': '8060211c', 'close:D:false': '83cce2f3', 'close:D:true': '928bdba6',
-    'close:E:false': '1705a017', 'close:E:true': '6ab5af7c', 'close:F:false': '855a3097', 'close:F:true': '5dcf22f2',
-    'sqwak:6:L:false': 'e75db5dc', 'sqwak:6:L:true': '121603b8', 'sqwak:6:N:false': 'dd0e28d2', 'sqwak:6:N:true': 'f6faad7a',
-    'sqwak:20:L:false': 'f5e7a355', 'sqwak:20:L:true': 'a1976a89', 'sqwak:20:N:false': '6c13736f', 'sqwak:20:N:true': '9eb47c33',
-    'sqwak:40:L:false': '718afa0a', 'sqwak:40:L:true': 'ba61ab98', 'sqwak:40:N:false': '295cfe0e', 'sqwak:40:N:true': '1cb614f6',
-    'beat:6:sqwak-read': 'fb9de501', 'beat:20:sqwak-read': '879743aa', 'beat:41:sqwak-read': '90b91f06', 'beat:44:sqwak-read': 'b4daa27d'
-  };
   const closeNow = await page.evaluate(() => {
     const R = BTB.Rhythm, out = {};
     const hashOf = (fn) => {
@@ -2657,7 +2312,7 @@ async function run() {
     for (const day of [6, 20, 41, 44]) BTB.Scenes.close({ report: { day, pnl: 1200, quotaMet: true, quota: 900, date: 'D' } }).forEach((b) => { if (/sqwak-read$/.test(b.id)) out[`beat:${day}:${b.id.split(':').pop()}`] = hashOf((g) => b.draw(g, { w: 640, h: 360 }, 1, {})); });
     return out;
   });
-  for (const k of Object.keys(CLOSE_REF)) assert(closeNow[k] === CLOSE_REF[k], `close ${k}: the picture changed (${closeNow[k]}, was ${CLOSE_REF[k]})`);
+  pins('close', closeNow);
 
   const mkRep = (day, pnl, quota, met, extra) => ({ report: Object.assign({ day, pnl, quota, quotaMet: met, date: 'FRI NOV 14', indexPct: pnl }, extra) });
   const tagOf = (o) => { const r = o.report; return `${r.day}:${r.pnl >= 0 ? 'u' : 'd'}${r.quotaMet ? 'm' : ''}${Math.round(r.pnl)}`; };
@@ -2846,28 +2501,6 @@ async function run() {
   // Reference hashes recorded from the code before the batch: every document drawn flat (insertShot, no options) and the final picture of every
   // news beat of the sessions that show them (act, establish, detail, hold), including the story variants and a very long and an empty title.
   // None of these changes in this batch: each reworked beat ends on exactly today's picture.
-  const DOCS_REF = {
-    'flat:memo:15': '83b8c823', 'flat:memo:19': '55499c0b', 'flat:memo:32': 'b65c76cf', 'flat:footnote:1': '1d9c8737', 'flat:footnote:8': 'd1663b07', 'flat:footnote:24': 'fb753f33',
-    'flat:rating:4': '963db331', 'flat:rating:14': '690e32e2', 'flat:post:2': 'bbffaf4d', 'flat:post:33': '246016e1', 'flat:chart:3': '7dbff839', 'flat:chart:30': '287ff4ed',
-    'flat:chart:43': '5f78684d', 'flat:ticket:5': 'fcd27c42', 'flat:ticket:12': 'fcd27c42', 'flat:ticket:23': 'fcd27c42', 'flat:ticket:39': 'fcd27c42', 'flat:vote:11': '489f9175',
-    'flat:vote:38': '489f9175', 'flat:voicemail:36': 'afe31083', 'flatShort:memo': '8d1dbeb', 'flatShort:footnote': '60818e57', 'flatShort:rating': 'ddbbe1f2', 'flatShort:post': 'f92e5a0e',
-    'flatShort:chart': 'c215bb45', 'flatShort:ticket': '5956baf2', 'flatShort:vote': '436b6cb5', 'flatShort:voicemail': 'dafcfb4b', 'beat:1:establish': 'bdea65c3', 'beat:1:detail': 'a945bd0f',
-    'beat:2:establish': '6ff30c70', 'beat:2:detail': '69d2cd65', 'beat:3:establish': '912e7f19', 'beat:3:detail': '4b57b15', 'beat:3:hold': '79bdf03a', 'beat:4:establish': '3da39fbd',
-    'beat:4:detail': '206f7bff', 'beat:5:establish': '5c91dd4', 'beat:5:detail': '2711c25', 'beat:5:hold': 'c425c27d', 'beat:8:act': 'aa8dde35', 'beat:8:establish': '37bcef1a',
-    'beat:8:detail': '4a7f62ef', 'beat:8:hold': '2d5bc42a', 'beat:10:establish': '63a084f', 'beat:10:detail': 'eb92a21e', 'beat:10:hold': 'b374c0fd', 'beat:11:establish': '110cf4d2',
-    'beat:11:detail': '2b9c42fd', 'beat:12:establish': '96b6197', 'beat:12:detail': 'b3d5a8c7', 'beat:12:hold': 'bfa36295', 'beat:14:establish': '2e21a492', 'beat:14:detail': 'fbf240d8',
-    'beat:15:establish': '15257b55', 'beat:15:detail': '213055bb', 'beat:17:act': '3671fe7d', 'beat:17:establish': '341e8251', 'beat:17:detail': 'eac160e0', 'beat:17:hold': '4f7947d5',
-    'beat:19:establish': 'a358b384', 'beat:19:detail': 'ac70cebb', 'beat:23:establish': '22936121', 'beat:23:detail': '3d2e50fd', 'beat:23:hold': '94a6570d', 'beat:24:establish': '9ea3e3ec',
-    'beat:24:detail': 'c32fcdab', 'beat:24:hold': '81cf4381', 'beat:30:establish': '2766162b', 'beat:30:detail': 'b0acb899', 'beat:32:act': '278249a5', 'beat:32:establish': 'f5af82dc',
-    'beat:32:detail': '53ff82e7', 'beat:32:hold': '78835b2f', 'beat:33:establish': 'c95eebad', 'beat:33:detail': 'ffab389d', 'beat:36:establish': '13c61f8b', 'beat:36:detail': 'f7b90cbb',
-    'beat:36:hold': '8b4860b5', 'beat:38:establish': 'c6fb2c3', 'beat:38:detail': 'af5be3db', 'beat:38:hold': 'dfd1f71a', 'beat:39:establish': '89b8ca2f', 'beat:39:detail': 'a4e952fa',
-    'beat:43:establish': '43648e23', 'beat:43:detail': 'e9651e51', 'beat:43:hold': '620463ff', 'beat:22bail:establish': '636a6ce', 'beat:22bail:detail': '7ab3040b', 'beat:22bail:hold': '3288ad05',
-    'beat:22fail:establish': '52c43877', 'beat:22fail:detail': '1e840719', 'beat:22fail:hold': '403c2d55', 'beat:22ban:establish': '47bcf1a6', 'beat:22ban:detail': '8b8ecee7',
-    'beat:22ban:hold': '88ca252d', 'beat:4dump:establish': '9bc8ac8', 'beat:4dump:detail': 'e0685e7d', 'beat:4leak:establish': '7c3a469a', 'beat:4leak:detail': '255e5fd0',
-    'beat:41pass:establish': 'eecf53', 'beat:41pass:detail': '4edd49f9', 'beat:41pass:hold': 'a3c2e72f', 'beat:45plug:establish': '65ddd720', 'beat:45plug:detail': 'c5845d35',
-    'beat:45plug:hold': 'fb86be25', 'beat:32long:act': '278249a5', 'beat:32long:establish': 'f5af82dc', 'beat:32long:detail': '53ff82e7', 'beat:32long:hold': '78835b2f',
-    'beat:4empty:establish': '3da39fbd', 'beat:4empty:detail': '206f7bff'
-  };
   const docsNow = await page.evaluate(() => {
     const hashOf = (fn) => { const cv = document.createElement('canvas'); cv.width = 640; cv.height = 360; const g = cv.getContext('2d'); fn(g);
       const d = g.getImageData(0, 0, 640, 360).data; let x = 2166136261; for (let i = 0; i < d.length; i++) { x ^= d[i]; x = Math.imul(x, 16777619); } return (x >>> 0).toString(16); };
@@ -2883,8 +2516,7 @@ async function run() {
     for (const [k, op] of list) BTB.Scenes.news(op).forEach((b) => { out[`beat:${k}:${b.id.split(':').pop()}`] = hashOf((g) => b.draw(g, view, 1, {})); });
     return out;
   });
-  for (const k of Object.keys(DOCS_REF)) assert(docsNow[k] === DOCS_REF[k], `batch 4 ${k}: the picture changed (${docsNow[k]}, was ${DOCS_REF[k]})`);
-  assert(Object.keys(docsNow).length === Object.keys(DOCS_REF).length, 'batch 4: the set of reference pictures changed');
+  pins('batch4', docsNow);
 
   await page.evaluate(() => {
     const view = { w: 640, h: 360 };
@@ -3081,11 +2713,6 @@ async function run() {
   }
   // ---- stage 3 batch 4, part 2: the desk with the day's paper (shot 10), the voicemail apartment (11), the post and chart establishes (12) ----
   // Flat pictures the part touches, recorded from the code before the change: the desk at each zoom (memo 0, footnote 1.5, desk place 1.3), the apartment at each glow.
-  const FLAT2_REF = {
-    'desk:0:1': '45988316', 'desk:0:8': 'bfcbee37', 'desk:0:19': '439a3f38', 'desk:0:32': '8d158aac', 'desk:1.5:1': '1682f3f8', 'desk:1.5:8': '5ed999b6', 'desk:1.5:19': 'bf1398c0', 'desk:1.5:32': 'c2104d44',
-    'desk:1.3:1': '7fb57686', 'desk:1.3:8': '902cb85', 'desk:1.3:19': 'ec1c417a', 'desk:1.3:32': '9c5765ea', 'apt:0.15': 'cf4377e5', 'apt:0.5': '4a1e4845', 'apt:0.6': '8f55367d', 'apt:0.7': '34cc030d',
-    'aptWinter:0.15': '84c412cd', 'aptWinter:0.5': '51a7706d', aptNoSeason: '2e863285'
-  };
   const flat2 = await page.evaluate(() => {
     const hashOf = (fn) => { const cv = document.createElement('canvas'); cv.width = 640; cv.height = 360; const g = cv.getContext('2d'); fn(g);
       const d = g.getImageData(0, 0, 640, 360).data; let x = 2166136261; for (let i = 0; i < d.length; i++) { x ^= d[i]; x = Math.imul(x, 16777619); } return (x >>> 0).toString(16); };
@@ -3096,7 +2723,7 @@ async function run() {
     out.aptNoSeason = hashOf((g) => { g.save(); g.scale(2, 2); SH.apartment(g, 0.15); g.restore(); });
     return out;
   });
-  for (const k of Object.keys(FLAT2_REF)) assert(flat2[k] === FLAT2_REF[k], `batch 4b ${k}: the flat picture changed (${flat2[k]}, was ${FLAT2_REF[k]})`);
+  pins('batch4b', flat2);
 
   // which sessions these shots apply to: no S-weight document establish and no desk place exists in the sheet, so neither is wired
   assert(await page.evaluate(() => { const SB = BTB.Storyboard; for (let d = 0; d < 46; d++) { const r = SB.row(d, null), sb = BTB.Rhythm.storyboard(d); if ((r.shot === 'insert' && r.weight === 'S') || (r.shot === 'place' && sb.place === 'desk')) return false; } return true; }), 'batch 4b: a session reaches the S-weight document establish or the desk place, which the sheet says none does');
@@ -3196,37 +2823,7 @@ async function run() {
   // ---- stage 3 batch 5, part 1: subway and platform (shot 1), street (2), wire monitor (3), apartment and TV (4), lobby elevator (5) ----
   // Reference hashes recorded from the code before the batch: every placeFrame composition flat (per place, establish and detail), the skyline, the
   // apartment with the TV, the elevator at the openings these beats use, and the final picture of every beat of the sessions that show them.
-  // The final pictures stay exactly today's, except the street (shot 2, session 34), where a ruling replaces the static snow speckle: P5_CHANGED.
-  const P5_REF = {
-    'pf:platform:7:e': 'a0907815', 'pf:platform:7:d': '693f1e15', 'pf:subway:21:e': '7fd72f2f', 'pf:subway:21:d': 'e738ba13', 'pf:subway2:31:e': '267c45bf', 'pf:subway2:31:d': 'e738ba13',
-    'pf:street:34:e': 'e02d6efe', 'pf:street:34:d': '2526bce4', 'pf:kitchen:13:e': '7cb01101', 'pf:kitchen:13:d': '5aa86181', 'pf:breakroom:8:e': 'a56bd491', 'pf:breakroom:8:d': '5aa86181',
-    'pf:rideshare:5:e': '898bdd3b', 'pf:rideshare:5:d': '130f5e81', 'pf:desk:9:e': '1e173e5d', 'pf:desk:9:d': '21bc5144', 'pf:apartment:0:e': 'b75aaa23', 'pf:apartment:0:d': '46e37490',
-    'pf:elevator:16:e': 'a1a3db40', 'pf:elevator:16:d': '4eeb67c9', 'pf:lobby:22:e': 'c3518bbd', 'pf:lobby:22:d': '13d653ec', 'pf:lobby2:42:e': 'c8485a3d', 'pf:lobby2:42:d': '13d653ec',
-    'pf:elevator2:26:e': '6d655569', 'pf:elevator2:26:d': '62c44d14', 'pf:st47:47:e': 'a0c1f43f', 'pf:st47:47:d': '3d243e5f', 'pf:st48:48:e': 'e75246a4', 'pf:st48:48:d': '87fcd7fc',
-    'pf:st50:50:e': 'e4763f2f', 'pf:st50:50:d': 'aed3c97b', 'pf:st54:54:e': 'ba797987', 'pf:st54:54:d': '19ac3098', 'pf:st55:55:e': '68ee202', 'pf:st55:55:d': '73628f93', 'pf:st53:53:e': 'f9bffd04',
-    'pf:st53:53:d': '87fcd7fc', 'pf:street34:long': '9e21a4ea', 'pf:kitchen13:empty': '91b01c10', 'sky:3': '21a01d84', 'sky:20': 'da17b7f1', 'sky:34': '17ff6883', 'sky:40': 'd45a054f',
-    'sky:noday': '8b8e9d89', 'tv:tv18': 'c1bb01d5', 'tv:rating4': '846c4fd5', 'tv:rating14': '40933e15', 'tv:aptplace': 'a669819d', 'tv:aptplace50': '3ac29075', 'tv:tvlong': '7f2aa08d',
-    'tv:tvempty': '7a0a459d', 'tv:detail18': 'da73d8be', 'el:0.6:0': '1220ff45', 'el:1:0': '927b0095', 'el:0.27:16': 'b9b8aedd', 'el:0.39:22': 'f151ea6d', 'el:0.15:50': '79b99185',
-    'el:0:0': '5f928c7d', 'el:0.27:26': 'b9b8aedd', 'el:0.39:42': 'f151ea6d', 'p5:0:establish': 'dca9b56d', 'p5:0:detail': '8c3741f4', 'p5:0:hold': '3bba895', 'p5:4:establish': '3da39fbd',
-    'p5:4:detail': '206f7bff', 'p5:7:establish': 'b96937e2', 'p5:7:detail': 'af77583a', 'p5:7:hold': '29dd7600', 'p5:13:establish': '4b9839d0', 'p5:14:establish': '2e21a492',
-    'p5:14:detail': 'fbf240d8', 'p5:16:establish': 'e65fe8a9', 'p5:16:detail': 'e991799d', 'p5:16:hold': 'b7a33195', 'p5:18:establish': 'fe72eec7', 'p5:21:establish': '399a3a8c',
-    'p5:21:detail': 'c1f3d4db', 'p5:21:hold': 'fdd05056', 'p5:22:establish': 'ae543774', 'p5:22:detail': 'c534cd05', 'p5:22:hold': 'af312f25', 'p5:26:establish': 'c97ef2a9',
-    'p5:26:detail': 'a5b3fa57', 'p5:31:establish': 'cbd128e3', 'p5:31:detail': 'b83a9142', 'p5:34:establish': '3e794643', 'p5:34:detail': '7841eaa4', 'p5:42:establish': 'afe283c0',
-    'p5:42:detail': '29e09a55', 'p5:42:hold': 'af312f25', 'p5:47:establish': '1393e183', 'p5:47:detail': '9468616f', 'p5:48:establish': '4c9f8ff4', 'p5:48:detail': '472c6c25',
-    'p5:49:establish': 'c99f2f67', 'p5:49:detail': 'd1b8761f', 'p5:50:establish': 'd0d52f06', 'p5:50:detail': 'a4802688', 'p5:51:establish': '2ba9ea95', 'p5:51:detail': 'a9d72f85',
-    'p5:52:establish': 'a4312f7d', 'p5:52:detail': 'fb066380', 'p5:53:establish': '87b2d539', 'p5:53:detail': '2d1a4223', 'p5:54:establish': '53eee5b6', 'p5:54:detail': 'b69d5dcb',
-    'p5:55:establish': 'b7d129a2', 'p5:55:detail': 'eedc7b60', 'p5:7long:establish': '176e830d', 'p5:7long:detail': 'c6ea0d6d', 'p5:7long:hold': 'b2fa2419', 'p5:34long:establish': 'c817e727',
-    'p5:34long:detail': '50fcc587', 'p5:13empty:establish': '38dfd984', 'p5:16long:establish': 'e65fe8a9', 'p5:16long:detail': '67e56f58', 'p5:16long:hold': 'b7a33195',
-    'p5:18long:establish': '5a67a8c0', 'p5:22empty:establish': 'ae543774', 'p5:22empty:detail': '71a3a122', 'p5:22empty:hold': 'af312f25', 'p5:34empty:establish': '698152e8',
-    'p5:34empty:detail': '3692ff5b'
-  };
-  const P5_CHANGED = {
-    // batch 5c, item 5 (session 1's opening): news:0:establish is rebuilt on the elevBase parts (wall, car, top) like the detail and hold, so its last frame is
-    // the flat picture's own pixels (the pilot's car and lobby layers differed from it by about 8,600 px around the car's edges and glow); the spill stays
-    'p5:0:establish': '59210645',
-    // shot 2 (ruling): the street's static snow speckle is replaced by the snowflakes' pose at the end and two to four car-light groups, drawn at twice the size from batch 5c (session 34; 54 is the same street past the story); batch 8 A2 moved the cars onto the road (y 256 to 259) and the final frames changed again (ruling: the cars are background life)
-    'p5:34:establish': '433eafd4', 'p5:34:detail': '1851890b', 'p5:54:establish': '6a0cbcdc', 'p5:54:detail': '453578b0', 'p5:34long:establish': '7e6d4470', 'p5:34long:detail': '12f15abc', 'p5:34empty:establish': 'a3f85297', 'p5:34empty:detail': '134c4d08'
-  };
+  // The final pictures stay exactly today's.
   const p5now = await page.evaluate(() => {
     const hashOf = (fn) => { const cv = document.createElement('canvas'); cv.width = 640; cv.height = 360; const g = cv.getContext('2d'); fn(g);
       const d = g.getImageData(0, 0, 640, 360).data; let x = 2166136261; for (let i = 0; i < d.length; i++) { x ^= d[i]; x = Math.imul(x, 16777619); } return (x >>> 0).toString(16); };
@@ -3248,46 +2845,11 @@ async function run() {
     return out;
   });
   if (process.env.DUMP_P5) { console.log(JSON.stringify(p5now)); return; }
-  for (const k of Object.keys(P5_REF)) assert(p5now[k] === (P5_CHANGED[k] || P5_REF[k]), `batch 5 ${k}: the picture changed (${p5now[k]}, was ${P5_CHANGED[k] || P5_REF[k]})`);
-  assert(Object.keys(p5now).length === Object.keys(P5_REF).length, 'batch 5: the set of reference pictures changed');
-  for (const k of Object.keys(P5_CHANGED)) assert(P5_CHANGED[k] !== P5_REF[k], `batch 5 ${k}: the ruled change is not a change`);
+  pins('batch5', p5now);
 
   // ---- stage 3 batch 5, part 2: the trading floor lit (shot 6) and dark (7), the skyline (8), the racks (9), the holds (10) ----
   // Reference hashes recorded from the code before the batch: the flat floor at the zooms these beats use, the flat skylineShot and racksShot,
   // the final picture of every beat of the sessions these shots rework (and of long and empty titles), and the final frame of every hold.
-  const P6_REF = {
-    'fl:1:0.15:41': '4be9771d', 'fl:1:0.7:41': '472d778d', 'fl:1:0.53:5': '4f0296a5', 'fl:1:0.45:12': '64e644c5', 'fl:1:0.69:23': '8cdeee1d', 'fl:1:0.69:39': '25c71635',
-    'fl:1:0.45:4': '65dfcc55', 'fl:1:0.61:22': 'f58dfa6d', 'fl:0:0.15:10': 'de8d51cd', 'fl:0:0.7:44': 'f2802205', 'fl:0:0.15:44': '5cec3add', 'fl:0:0.15:22': '7b288025',
-    'fl:0:0.4:60': 'ffecf1f5', 'fl:1:0.15:3': '6aa3a95', 'fl:0:0.7:10': 'ecdd00b5', 'fl:1:0.05:7': '67ad1645', 'fl:1:1:50': '90182f65', 'fl:0:0.15:50': '3660ab5',
-    'sk:3:': 'e60e36e0', 'sk:3:t': '54163b23', 'sk:20:': 'ad25fcd0', 'sk:20:t': '96c495d3', 'sk:27:': 'ad25fcd0', 'sk:27:t': '96c495d3', 'sk:28:': '91793135',
-    'sk:28:t': 'e29cb2d', 'sk:29:': '3c55fc34', 'sk:29:t': '5d791130', 'sk:35:': 'b87369b9', 'sk:35:t': '11ef3099', 'sk:36:': 'a08b5541', 'sk:36:t': '3a60098',
-    'sk:40:': '126496b1', 'sk:40:t': 'a6ff470a', 'rk:45': '650e7745', 'rk:10': '650e7745', 'p6:5:establish': '5c91dd4', 'p6:5:detail': '2711c25', 'p6:5:hold': 'c425c27d',
-    'p6:12:establish': '96b6197', 'p6:12:detail': 'b3d5a8c7', 'p6:12:hold': 'bfa36295', 'p6:23:establish': '22936121', 'p6:23:detail': '3d2e50fd',
-    'p6:23:hold': '94a6570d', 'p6:39:establish': '89b8ca2f', 'p6:39:detail': 'a4e952fa', 'p6:41:establish': 'f65c71ae', 'p6:41:detail': '212ffc84',
-    'p6:41:hold': '3435cd15', 'p6:10:establish': '63a084f', 'p6:10:detail': 'eb92a21e', 'p6:10:hold': 'b374c0fd', 'p6:44:establish': '522f6601',
-    'p6:44:detail': 'cfc9bd74', 'p6:44:hold': '270c0645', 'p6:27:establish': '219ead10', 'p6:28:establish': '840fadd6', 'p6:29:establish': 'a3d75705',
-    'p6:35:establish': 'fe6850a9', 'p6:2:establish': '6ff30c70', 'p6:2:detail': '69d2cd65', 'p6:3:establish': '912e7f19', 'p6:3:detail': '4b57b15',
-    'p6:3:hold': '79bdf03a', 'p6:6:establish': '615f36bb', 'p6:6:detail': '7c533970', 'p6:6:hold': '522ca846', 'p6:7:establish': 'b96937e2', 'p6:7:detail': 'af77583a',
-    'p6:7:hold': '29dd7600', 'p6:21:establish': '399a3a8c', 'p6:21:detail': 'c1f3d4db', 'p6:21:hold': 'fdd05056', 'p6:36:establish': '13c61f8b',
-    'p6:36:detail': 'f7b90cbb', 'p6:36:hold': '8b4860b5', 'p6:43:establish': '43648e23', 'p6:43:detail': 'e9651e51', 'p6:43:hold': '620463ff',
-    'p6:45:establish': 'bcffe302', 'p6:45:detail': '465ca4d7', 'p6:45:hold': 'cc7fad03', 'p6:10long:establish': '63a084f', 'p6:10long:detail': 'eb92a21e',
-    'p6:10long:hold': 'b374c0fd', 'p6:10empty:establish': '63a084f', 'p6:10empty:detail': 'eb92a21e', 'p6:10empty:hold': 'b374c0fd', 'p6:44long:establish': '522f6601',
-    'p6:44long:detail': 'cfc9bd74', 'p6:44long:hold': '270c0645', 'p6:44empty:establish': '522f6601', 'p6:44empty:detail': 'cfc9bd74', 'p6:44empty:hold': '270c0645',
-    'p6:27long:establish': '219ead10', 'p6:27empty:establish': '219ead10', 'p6:41long:establish': 'f65c71ae', 'p6:41long:detail': '212ffc84', 'p6:41long:hold': '3435cd15',
-    'p6:41empty:establish': 'f65c71ae', 'p6:41empty:detail': '212ffc84', 'p6:41empty:hold': '3435cd15', 'p6:5long:establish': '5c91dd4', 'p6:5long:detail': '2711c25',
-    'p6:5long:hold': 'c425c27d', 'p6:5empty:establish': '5c91dd4', 'p6:5empty:detail': '2711c25', 'p6:5empty:hold': 'c425c27d', 'p6:35long:establish': 'fe6850a9',
-    'p6:35empty:establish': 'fe6850a9', 'p6:4dump:establish': '9bc8ac8', 'p6:4dump:detail': 'e0685e7d', 'p6:4leak:establish': '7c3a469a', 'p6:4leak:detail': '255e5fd0',
-    'p6:22fail:establish': '52c43877', 'p6:22fail:detail': '1e840719', 'p6:22fail:hold': '403c2d55', 'p6:22ban:establish': '47bcf1a6', 'p6:22ban:detail': '8b8ecee7',
-    'p6:22ban:hold': '88ca252d', 'p6:22bail:establish': '636a6ce', 'p6:22bail:detail': '7ab3040b', 'p6:22bail:hold': '3288ad05', 'p6:41bill:establish': 'eecf53',
-    'p6:41bill:detail': '4edd49f9', 'p6:41bill:hold': 'a3c2e72f', 'p6:45plug:establish': '65ddd720', 'p6:45plug:detail': 'c5845d35', 'p6:45plug:hold': 'fb86be25',
-    'hold:0': '3bba895', 'hold:3': '79bdf03a', 'hold:5': 'c425c27d', 'hold:6': '522ca846', 'hold:7': '29dd7600', 'hold:8': '2d5bc42a', 'hold:9': 'b791b655',
-    'hold:10': 'b374c0fd', 'hold:12': 'bfa36295', 'hold:16': 'b7a33195', 'hold:17': '4f7947d5', 'hold:20': 'dd6a1c5', 'hold:21': 'fdd05056', 'hold:22': 'af312f25',
-    'hold:23': '94a6570d', 'hold:24': '81cf4381', 'hold:32': '78835b2f', 'hold:36': '8b4860b5', 'hold:37': 'dafb8ead', 'hold:38': 'dfd1f71a', 'hold:40': 'f3126f5d',
-    'hold:41': '3435cd15', 'hold:42': 'af312f25', 'hold:43': '620463ff', 'hold:44': '270c0645', 'hold:45': 'cc7fad03', 'hold:22fail': '403c2d55', 'hold:22ban': '88ca252d',
-    'hold:22bail': '3288ad05', 'hold:41bill': 'a3c2e72f', 'hold:45plug': 'fb86be25'
-  };
-  // batch 6 (ruling): Kavro Strait's detail and hold end with the ships 4 art units further east (p = 1)
-  const P6_CHANGED = { 'p6:6:detail': 'b9409bed', 'p6:6:hold': 'f8499ddd', 'hold:6': 'f8499ddd' };
   const p6now = await page.evaluate(() => {
     const hashOf = (fn) => { const cv = document.createElement('canvas'); cv.width = 640; cv.height = 360; const g = cv.getContext('2d'); fn(g);
       const d = g.getImageData(0, 0, 640, 360).data; let x = 2166136261; for (let i = 0; i < d.length; i++) { x ^= d[i]; x = Math.imul(x, 16777619); } return (x >>> 0).toString(16); };
@@ -3310,42 +2872,11 @@ async function run() {
     return out;
   });
   if (process.env.DUMP_P6) { console.log(JSON.stringify(p6now)); return; }
-  for (const k of Object.keys(P6_REF)) assert(p6now[k] === (P6_CHANGED[k] || P6_REF[k]), `batch 5b ${k}: the picture changed (${p6now[k]}, was ${P6_CHANGED[k] || P6_REF[k]})`);
-  assert(Object.keys(p6now).length === Object.keys(P6_REF).length, 'batch 5b: the set of reference pictures changed');
-  for (const k of Object.keys(P6_CHANGED)) assert(P6_CHANGED[k] !== P6_REF[k], `batch 5b ${k}: the ruled change is not a change`);
+  pins('batch5b', p6now);
 
   // ---- stage 3 batch 6: the story tableaux ----
   // Reference hashes recorded from the code before the batch: briefingTableau flat at the p values the beats use (and 0 and 1), `tableau()` with and without the 1.3 zoom,
-  // and the final picture of every beat of the eight sessions (also with a long and an empty title, and 45 with the plug pulled). P7_CHANGED holds the ruled changes.
-  const P7_REF = {
-    'bt:3:0': 'dc36ca', 'bt:3:0.6': '5d08980f', 'bt:3:1': '7168f1b3', 'tb:3:0': 'd73e420f', 'tb:3:1.3': 'b3269bf1', 'bt:5:0': '2108678d',
-    'bt:5:0.6': '2108678d', 'bt:5:1': '2108678d', 'tb:5:0': '3b11ad8d', 'tb:5:1.3': '15c28d43', 'bt:8:0': '4a0e06fd', 'bt:8:0.6': '4a0e06fd',
-    'bt:8:1': '4a0e06fd', 'tb:8:0': 'b4184cfd', 'tb:8:1.3': '729ab3cf', 'bt:9:0': 'f5ec295', 'bt:9:0.6': '33f41135', 'bt:9:1': '6190b395',
-    'tb:9:0': '8adad735', 'tb:9:1.3': '6663a6e4', 'bt:11:0': '813721ed', 'bt:11:0.6': '813721ed', 'bt:11:1': '813721ed', 'tb:11:0': 'ca0667ed',
-    'tb:11:1.3': 'd561d863', 'bt:12:0': '3af5b515', 'bt:12:0.6': '3af5b515', 'bt:12:1': '3af5b515', 'tb:12:0': 'a5227b15', 'tb:12:1.3': '9a58bf1',
-    'bt:13:0': '1bd88235', 'bt:13:0.6': '1bd88235', 'bt:13:1': '1bd88235', 'tb:13:0': 'a80f4835', 'tb:13:1.3': 'b45338ae', 'bt:14:0': '126d8bce',
-    'bt:14:0.6': '126d8bce', 'bt:14:1': '126d8bce', 'tb:14:0': '97fa31ce', 'tb:14:1.3': '752abe1', 'p7:6:establish': '615f36bb',
-    'p7:6:detail': '7c533970', 'p7:6:hold': '522ca846', 'p7:6long:establish': '615f36bb', 'p7:6long:detail': '7c533970', 'p7:6long:hold': '522ca846',
-    'p7:6empty:establish': '615f36bb', 'p7:6empty:detail': '7c533970', 'p7:6empty:hold': '522ca846', 'p7:9:establish': '99a5a531',
-    'p7:9:detail': 'e3bbd444', 'p7:9:hold': 'b791b655', 'p7:9long:establish': '99a5a531', 'p7:9long:detail': 'e3bbd444', 'p7:9long:hold': 'b791b655',
-    'p7:9empty:establish': '99a5a531', 'p7:9empty:detail': 'e3bbd444', 'p7:9empty:hold': 'b791b655', 'p7:17:act': '3671fe7d',
-    'p7:17:establish': '341e8251', 'p7:17:detail': 'eac160e0', 'p7:17:hold': '4f7947d5', 'p7:17long:act': '3671fe7d',
-    'p7:17long:establish': '341e8251', 'p7:17long:detail': 'eac160e0', 'p7:17long:hold': '4f7947d5', 'p7:17empty:act': '3671fe7d',
-    'p7:17empty:establish': '341e8251', 'p7:17empty:detail': 'eac160e0', 'p7:17empty:hold': '4f7947d5', 'p7:20:establish': '330b1f2d',
-    'p7:20:detail': '43a91039', 'p7:20:hold': 'dd6a1c5', 'p7:20long:establish': '330b1f2d', 'p7:20long:detail': '43a91039',
-    'p7:20long:hold': 'dd6a1c5', 'p7:20empty:establish': '330b1f2d', 'p7:20empty:detail': '43a91039', 'p7:20empty:hold': 'dd6a1c5',
-    'p7:25:establish': '29734ed5', 'p7:25:detail': '7ed41d97', 'p7:25long:establish': '29734ed5', 'p7:25long:detail': '7ed41d97',
-    'p7:25empty:establish': '29734ed5', 'p7:25empty:detail': '7ed41d97', 'p7:37:establish': 'c1d38379', 'p7:37:detail': '5c6e4bdb',
-    'p7:37:hold': 'dafb8ead', 'p7:37long:establish': 'c1d38379', 'p7:37long:detail': '5c6e4bdb', 'p7:37long:hold': 'dafb8ead',
-    'p7:37empty:establish': 'c1d38379', 'p7:37empty:detail': '5c6e4bdb', 'p7:37empty:hold': 'dafb8ead', 'p7:40:establish': '6f556c79',
-    'p7:40:detail': '2cd267ac', 'p7:40:hold': 'f3126f5d', 'p7:40long:establish': '6f556c79', 'p7:40long:detail': '2cd267ac',
-    'p7:40long:hold': 'f3126f5d', 'p7:40empty:establish': '6f556c79', 'p7:40empty:detail': '2cd267ac', 'p7:40empty:hold': 'f3126f5d',
-    'p7:45:establish': 'bcffe302', 'p7:45:detail': '465ca4d7', 'p7:45:hold': 'cc7fad03', 'p7:45long:establish': 'bcffe302',
-    'p7:45long:detail': '465ca4d7', 'p7:45long:hold': 'cc7fad03', 'p7:45empty:establish': 'bcffe302', 'p7:45empty:detail': '465ca4d7',
-    'p7:45empty:hold': 'cc7fad03', 'p7:45plug:establish': '65ddd720', 'p7:45plug:detail': 'c5845d35', 'p7:45plug:hold': 'fb86be25'
-  };
-  // ruling: Kavro Strait's detail and hold (session 6) end at p = 1
-  const P7_CHANGED = { 'p7:6:detail': 'b9409bed', 'p7:6:hold': 'f8499ddd', 'p7:6long:detail': 'b9409bed', 'p7:6long:hold': 'f8499ddd', 'p7:6empty:detail': 'b9409bed', 'p7:6empty:hold': 'f8499ddd' };
+  // and the final picture of every beat of the eight sessions (also with a long and an empty title, and 45 with the plug pulled).
   const p7now = await page.evaluate(() => {
     const hashOf = (fn) => { const cv = document.createElement('canvas'); cv.width = 640; cv.height = 360; const g = cv.getContext('2d'); fn(g);
       const d = g.getImageData(0, 0, 640, 360).data; let x = 2166136261; for (let i = 0; i < d.length; i++) { x ^= d[i]; x = Math.imul(x, 16777619); } return (x >>> 0).toString(16); };
@@ -3381,9 +2912,7 @@ async function run() {
   });
   for (const k in p7split) assert(p7split[k], `batch 6: tableau ${k}: art, mover and scanlines drawn apart differ from the flat picture`);
   if (process.env.DUMP_P7) { console.log(JSON.stringify(p7now)); return; }
-  for (const k of Object.keys(P7_REF)) assert(p7now[k] === (P7_CHANGED[k] || P7_REF[k]), `batch 6 ${k}: the picture changed (${p7now[k]}, was ${P7_CHANGED[k] || P7_REF[k]})`);
-  assert(Object.keys(p7now).length === Object.keys(P7_REF).length, 'batch 6: the set of reference pictures changed');
-  for (const k of Object.keys(P7_CHANGED)) assert(P7_CHANGED[k] !== P7_REF[k], `batch 6 ${k}: the ruled change is not a change`);
+  pins('batch6', p7now);
 
   // which sessions these shots apply to, from the sheet and the framing rule
   const P5 = { subway: [7, 21, 31], street: [34], kitchen: [13], lobby: [16, 22, 26, 42], tv: [18], rating: [4, 14] };
@@ -3694,7 +3223,7 @@ async function run() {
     reduced6.push(o);
   }
 
-  // shot 10: every news hold. The final frame of each is pinned above (P6_REF hold:*). Holds with life are layered with the dim last and no camera;
+  // shot 10: every news hold. The final frame of each is pinned above (batch5b/hold:*). Holds with life are layered with the dim last and no camera;
   // the rest stay flat (a layered beat whose picture never changes adds cost and fails the "picture changes" assert)
   {
     const LIVE = new Set(['0', '8', '24', '32', '10', '44', '22bail', '22fail']);
@@ -3950,6 +3479,7 @@ async function run() {
   assert(warnings.length === 0, `unexpected console output: ${JSON.stringify(warnings)}`);
   console.log('motion-run: all asserts passed');
 
+  if (UPDATE_GOLDEN) { writeGolden(); return; }
   // ---- Performance (phone, CPU throttled 4x). SKIP_PERF=1 skips it. ----
   // Scenes measured; later tasks add their shots here.
   const FEED5 = Array.from({ length: 5 }, (_, i) => ({ source: 'WIRE ' + i, title: 'Overnight headline ' + i + ' moves the whole index lower again', kind: ['chirp', 'mail', 'wire'][i % 3] }));
