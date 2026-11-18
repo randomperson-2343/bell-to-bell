@@ -1002,7 +1002,7 @@
     return beats;
   };
 
-  B.Storyboard = { PET, petRows, SHEET, DOCS, ANOMALY_DAYS, row, variant, lit, actTurns, HOMES, WEEKENDS, insertShot, actCard, DOC_DRAW, deskWithDoc, shotFrame, skylineShot, racksShot, at2x, tableau, tableauSpace, finePass, bellSwing, apartmentShot, windowRect, homeOf, SAT_DUR, sundayShot, sundaySpace, SUN_EDGE, phoneSpill, faceGlow, laptopRect, saturdayLayers };
+  B.Storyboard = { bellSilent, PET, petRows, SHEET, DOCS, ANOMALY_DAYS, row, variant, lit, actTurns, HOMES, WEEKENDS, insertShot, actCard, DOC_DRAW, deskWithDoc, shotFrame, skylineShot, racksShot, at2x, tableau, tableauSpace, finePass, bellSwing, apartmentShot, windowRect, homeOf, SAT_DUR, sundayShot, sundaySpace, SUN_EDGE, phoneSpill, faceGlow, laptopRect, saturdayLayers };
 
   // Session 1 opens in the lobby: the counter climbs to 41, the car arrives, the doors part.
   // Built on the same cached parts as news:0:detail and :hold (`elevBase`: wall, car, top in the flat picture's own order), so at the cut the two
@@ -1625,6 +1625,8 @@
   // days ring differently: one long slow swing the day of the offer, and not
   // at all at the end.
   const close = B.Scenes.close;
+  // From session index 44 nobody rings the closing bell: the close shot is still and game.js plays no bell.
+  function bellSilent(day) { return (day | 0) >= 44; }
   function bellSwing(day, p) { return day === 42 ? p * 0.45 : p; }
   // The sound is B.SFX.marketClose(), which the game fires in the same tick the close scene starts (the bell beat's own `sfx` plays
   // nothing: the game's B.SFX has no closeBell). Its strikes are 0.55 s apart (0, 0.55, 1.10, 1.65, 2.20, then a low one at 2.75).
@@ -1729,7 +1731,7 @@
   }
   B.Scenes.close = function (o) {
     const beats = close(o);
-    const r = o.report || {}, day = r.day || 0, silent = day >= 44;
+    const r = o.report || {}, day = r.day || 0, silent = bellSilent(day);
     if (beats[0] && silent) {
       // Nobody rings it: one still picture for the whole beat, no layers, no camera.
       beats[0] = Object.assign({}, beats[0], {

@@ -132,6 +132,8 @@
   // The committee room, or the chamber on the night of the vote.
   const SENATOR = ['..1111..', '.155551.', '.155551.', '..1551..', '.111111.', '1ssssss1', '1ssssss1'];
   const senatorRows = (i) => SENATOR.map((r) => r.replace(/s/g, ['2', '3', 'R', '2', 'J', '3', '2'][i]).replace(/5/g, i === 3 ? 'e' : ['e', 'D', '7', 'e', 'd', '7', 'D'][i]));
+  // The whip has 214 votes; the bill passes with 218, so the board reads 218 then.
+  function voteYeas(passed) { return passed ? 218 : 214; }
   function hearing(ctx, day, vote, passed, o) {
     const skip = o && o.skip;
     X.gradient(ctx, 0, 0, V.w, 240, P.desk, P.deskD, 8);
@@ -155,7 +157,7 @@
       cel(ctx, tx, ty, 198, 105, P.ink, P.slate2, P.ink2);
       R.text(ctx, 'STABILIZATION ACT', tx + 99, ty + 12, P.amber, 'center');
       X.rect(ctx, tx + 15, ty + 27, 168, U, P.slate);
-      R.text(ctx, 'YEAS', tx + 21, ty + 39, P.jade); if (skip !== 'count') R.text(ctx, '214', tx + 177, ty + 39, P.jade, 'right');
+      R.text(ctx, 'YEAS', tx + 21, ty + 39, P.jade); if (skip !== 'count') R.text(ctx, String(voteYeas(passed)), tx + 177, ty + 39, P.jade, 'right');
       if (passed) { R.text(ctx, 'NEEDED', tx + 21, ty + 55, P.bone); R.text(ctx, '218', tx + 177, ty + 55, P.bone, 'right'); R.text(ctx, 'PASSED', tx + 99, ty + 78, P.jade, 'center'); }
       else { R.text(ctx, 'SHORT', tx + 21, ty + 55, P.crimson); R.text(ctx, '4', tx + 177, ty + 55, P.crimson, 'right'); R.text(ctx, 'NEEDED 218', tx + 99, ty + 78, P.bone, 'center'); }
     } else {
@@ -501,7 +503,7 @@
       }, grain]
     };
   };
-  // ---- shot 4: the vote (the tally board fills line by line while YEAS counts up to 214) ----
+  // ---- shot 4: the vote (the tally board fills line by line while YEAS counts up to 214, or 218 when the bill passed) ----
   LAYER.vote = (e, flat, grain) => {
     const K = e.K;
     return {
@@ -511,7 +513,7 @@
           if (t < 0.40) X.rect(g, 441, 66, 168, 12, P.ink);
           if (t < 1.00) X.rect(g, 441, 82, 168, 12, P.ink);
           if (t < 1.10) X.rect(g, 441, 105, 168, 12, P.ink);
-          K.tally(g, 603, 69, t, { from: 180, to: 214, at: 0.40, dur: 0.55, fps: 15, fmt: String, col: P.jade, shadow: P.ink, align: 'right' });
+          K.tally(g, 603, 69, t, { from: 180, to: voteYeas(e.after && e.S && e.S.f && e.S.f.billPassed), at: 0.40, dur: 0.55, fps: 15, fmt: String, col: P.jade, shadow: P.ink, align: 'right' });
         }
       }, grain]
     };

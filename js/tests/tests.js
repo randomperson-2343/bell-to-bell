@@ -480,6 +480,23 @@
     assert(sat(4).informative === false && sat(44).informative === false && B.Scenes.weekend({ day: 4 })[1].informative === true, 'a weekend with a story line should show Sunday in short mode');
   });
 
+  test('Nobody rings the closing bell from session 45: no bell sound on those days', () => {
+    assert(!B.Storyboard.bellSilent(43) && B.Storyboard.bellSilent(44) && B.Storyboard.bellSilent(45), 'bellSilent must start at session index 44');
+    const rung = [];
+    const real = B.SFX.marketClose;
+    B.SFX.marketClose = () => rung.push(1);
+    try {
+      for (const day of [43, 44]) {
+        const g = mkGame('bell-' + day);
+        g.day = day;
+        g.startDay();
+        const before = rung.length;
+        g.endDay();
+        assert((rung.length - before) === (day < 44 ? 1 : 0), `session index ${day}: closing bell rang ${rung.length - before} times`);
+      }
+    } finally { B.SFX.marketClose = real; }
+  });
+
   test('Storyboard: four mornings follow the choice made the night before', () => {
     const SB = B.Storyboard;
     const S = (choices, f) => ({ choices: choices || {}, f: f || {} });
