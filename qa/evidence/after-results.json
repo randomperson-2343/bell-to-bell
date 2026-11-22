@@ -1,8 +1,8 @@
 {
   "results": {
-    "newsUnique": 61,
+    "newsUnique": 46,
     "endingUnique": 22,
-    "weekendUnique": 12,
+    "weekendUnique": 9,
     "emptyPhoneDiffers": true,
     "closeOpts": {
       "pnl": 12345,
@@ -18,7 +18,7 @@
     },
     "shortInformative": true,
     "skipChain": true,
-    "cacheMs": 1835.3000000000466,
+    "cacheMs": 757.8000000000466,
     "cacheEntries": 40
   },
   "layouts": [
