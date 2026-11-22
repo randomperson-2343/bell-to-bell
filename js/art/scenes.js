@@ -571,7 +571,10 @@
   // top-left, shade bottom-right, light as stepped rings) ----
   const COLD = ['wiped', 'fired', 'perp', 'fall-guy', 'ward', 'replaced', 'depression', 'nobody'];
   const PAPER = ['whistle', 'cassandra', 'revolving', 'clawback', 'lost-decade'];
+  // Each ending has its own place (js/art/ending-places-*.js register B.EndingPlaces[id]); the shared city is the fallback.
   function endingShot(ctx, kind, id) {
+    const place = B.EndingPlaces && B.EndingPlaces[id];
+    if (place) { place(ctx, kind); return; }
     const light = kind === 'light', cold = COLD.indexOf(id) >= 0, paper = PAPER.indexOf(id) >= 0;
     const skyA = cold ? P.slate2 : paper ? P.putty2 : light ? P.amber : P.slate2;
     const skyB = cold ? P.ink2 : paper ? P.crimsonD : light ? P.crimsonD : P.ink2;
