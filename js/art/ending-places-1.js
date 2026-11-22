@@ -119,48 +119,56 @@
   }
 
   // ---------------------------------------------------------------------------
-  // wiped: your own desk on the trading floor at night, every screen red.
+  // wiped: your own desk at night, low camera: the desk edge high on the left, the cascade of
+  // papers spilling past its corner toward the floor, red screens the only light.
   PL.wiped = function (ctx) {
     R(ctx, 0, 0, W, H, P.ink);
-    R(ctx, 0, 4, W, 56, P.ink2);
-    bands(ctx, 0, 6, W, 52, [P.ink, P.ink, P.ink2, P.slate]);
-    alpha(ctx, 0.3, () => R(ctx, 0, 46, W, 12, P.crimsonD));
-    for (let i = 0; i < 14; i++) {
-      const bx = i * 24 - 6, bw = 20 + (i * 7) % 8, bh = 14 + (i * 37) % 24;
-      R(ctx, bx, 58 - bh, bw, bh, P.ink);
-      for (let wy = 4; wy < bh - 3; wy += 6) for (let wx = 3; wx < bw - 4; wx += 6) if (((i * 5 + wy + wx) % 11) === 0) R(ctx, bx + wx, 58 - bh + wy, 2, 2, P.crimsonD);
+    // night window on the right, calm behind the papers
+    bands(ctx, 112, 0, 208, 60, [P.ink, P.ink, P.ink2, P.slate]);
+    alpha(ctx, 0.3, () => R(ctx, 112, 46, 208, 14, P.crimsonD));
+    for (let i = 0; i < 9; i++) {
+      const bx = 112 + i * 26 - 6, bw = 20 + (i * 7) % 8, bh = 10 + (i * 37) % 20;
+      R(ctx, bx, 60 - bh, bw, bh, P.ink);
+      for (let wy = 4; wy < bh - 3; wy += 6) for (let wx = 3; wx < bw - 4; wx += 6) if (((i * 5 + wy + wx) % 11) === 0) R(ctx, bx + wx, 60 - bh + wy, 2, 2, P.crimsonD);
     }
-    for (let x = 0; x < W; x += 64) R(ctx, x, 4, 4, 56, P.ink);
-    R(ctx, 0, 58, W, 4, P.slate); R(ctx, 0, 58, W, 1, P.slate2);
-    bands(ctx, 0, 62, W, 24, [P.ink2, P.carpetD]);
-    fan(ctx, 160, 60, 66, 100, [-200, -80, 40, 160, 280, 400, 520], P.ink);
-    const dim = { body: P.ink2, knee: P.ink, top: P.slate, topHi: P.slate2, frame: P.ink2, frameHi: P.slate, chair: P.ink2, chairHi: P.slate, chairs: false, scr: () => [P.crimsonD, P.ink2, P.crimson] };
-    for (const x of [18, 54, 92, 232, 268, 304]) deskUnit(ctx, x, 78, 0.42, dim, x);
-    glow(ctx, 41, 58, [60, 40], P.crimson, 0.05); glow(ctx, 279, 58, [60, 40], P.crimson, 0.05);
-    // your desk, foreground: a deep top running toward you, red light pooled on it
-    bands(ctx, 0, 84, W, 62, [P.deskD, P.deskD, P.deskD, P.desk]);
-    R(ctx, 0, 84, W, 2, P.desk);
-    alpha(ctx, 0.45, () => R(ctx, 0, 86, W, 60, P.ink));
-    alpha(ctx, 0.35, () => fan(ctx, 160, 60, 86, 146, [-300, -120, 40, 160, 280, 440, 620], P.ink));
-    R(ctx, 0, 146, W, 4, P.desk2); R(ctx, 0, 150, W, 1, P.ink);
-    R(ctx, 0, 151, W, 29, P.ink2);
-    pool(ctx, 41, 104, 80, 14, P.crimson, 0.13); pool(ctx, 279, 104, 80, 14, P.crimson, 0.13);
-    const mon = (x, y, w, h, seed) => {
-      R(ctx, x + (w >> 1) - 5, y + h, 10, 84 - y - h, P.ink2); R(ctx, x + (w >> 1) - 14, 82, 28, 3, P.ink);
-      c1(ctx, x, y, w, h, P.ink2, P.slate, P.ink);
-      R(ctx, x + 3, y + 3, w - 6, h - 6, P.ink);
-      bands(ctx, x + 3, y + 3, w - 6, h - 6, [P.crimsonD, P.crimsonD, P.ink2, P.ink2]);
-      for (let i = 0; i < ((w - 8) >> 1); i++) { const yy = y + 8 + Math.floor(i * (h - 20) / ((w - 8) >> 1)) + ((i * 7 + seed) % 4); R(ctx, x + 4 + i * 2, Math.min(y + h - 6, yy), 2, 2, P.crimson); }
-      R(ctx, x + 3, y + h - 8, w - 6, 1, P.crimsonD);
-    };
-    mon(6, 32, 70, 46, 1); mon(244, 40, 70, 40, 3);
-    // keyboards, a cold mug, a dead phone, sheets already on the desk
-    c1(ctx, 18, 108, 50, 12, P.slate, P.slate2, P.ink2); c1(ctx, 250, 104, 44, 11, P.slate, P.slate2, P.ink2);
-    c1(ctx, 84, 118, 12, 13, P.bone, P.white, P.putty2); R(ctx, 96, 122, 3, 6, P.putty2);
-    c1(ctx, 226, 124, 20, 11, P.ink2, P.slate, P.ink); R(ctx, 230, 127, 6, 3, P.screenGlow);
-    c1(ctx, 100, 96, 14, 4, P.bone, P.white, P.putty2); c1(ctx, 206, 96, 12, 4, P.putty2, P.white, P.putty);
-    c1(ctx, 22, 130, 28, 9, P.bone, P.white, P.putty2);
-    alpha(ctx, 0.3, () => R(ctx, 126, 100, 66, 6, P.ink));
+    for (const x of [140, 232, 300]) R(ctx, x, 0, 4, 60, P.ink);
+    R(ctx, 112, 60, 208, 4, P.slate); R(ctx, 112, 60, 208, 1, P.slate2);
+    // wall and the dark floor beyond
+    bands(ctx, 112, 64, 208, 40, [P.ink2, P.ink2, P.ink]);
+    bands(ctx, 0, 104, W, 76, [P.carpetD, P.ink2, P.ink]);
+    fan(ctx, 215, 100, 106, H, [-100, 60, 200, 340, 480, 620], P.ink);
+    rows(ctx, 106, H, 6, P.ink);
+    const dim = { body: P.ink2, knee: P.ink, top: P.slate, topHi: P.slate2, frame: P.ink2, frameHi: P.slate, chairs: false, scr: () => [P.crimsonD, P.ink2, P.crimson] };
+    for (const x of [248, 290]) deskUnit(ctx, x, 96, 0.4, dim, x);
+    // the empty chair, pushed back from the desk
+    c1(ctx, 226, 58, 36, 30, P.ink2, P.slate, P.ink);
+    R(ctx, 240, 88, 8, 20, P.ink); R(ctx, 228, 106, 32, 3, P.ink); R(ctx, 226, 108, 6, 2, P.ink); R(ctx, 256, 108, 6, 2, P.ink);
+    c1(ctx, 222, 84, 44, 6, P.slate, P.slate2, P.ink2);
+    alpha(ctx, 0.35, () => R(ctx, 222, 110, 48, 4, P.ink));
+    // papers already on the floor
+    c1(ctx, 128, 112, 28, 5, P.bone, P.white, P.putty2); c1(ctx, 150, 118, 24, 5, P.putty2, P.white, P.putty);
+    c1(ctx, 176, 110, 20, 5, P.bone, P.white, P.putty2); c1(ctx, 118, 122, 22, 4, P.putty2, P.white, P.putty); c1(ctx, 196, 120, 26, 5, P.bone, P.white, P.putty2);
+    for (let k = 0; k < 4; k++) R(ctx, 132 + k * 5, 114, 3, 1, k > 1 ? P.crimson : P.sky);
+    // red light pooled on the floor from the monitor
+    pool(ctx, 56, 122, 86, 14, P.crimson, 0.12);
+    // your desk: top seen above its front edge, panel and drawers below, a corner at x 110
+    bands(ctx, 0, 0, 110, 33, [P.deskD, P.deskD, P.desk]);
+    R(ctx, 0, 32, 110, 4, P.desk2); R(ctx, 0, 32, 110, 1, P.putty2);
+    R(ctx, 0, 36, 108, 74, P.ink2);
+    R(ctx, 0, 36, 108, 2, P.ink);
+    c1(ctx, 4, 42, 100, 28, P.ink2, P.slate, P.ink); R(ctx, 44, 54, 20, 3, P.slate2);
+    c1(ctx, 4, 74, 100, 30, P.ink2, P.slate, P.ink); R(ctx, 44, 87, 20, 3, P.slate2);
+    R(ctx, 0, 108, 110, 4, P.ink);
+    R(ctx, 108, 0, 2, 36, P.desk2); R(ctx, 110, 0, 2, 112, P.ink); R(ctx, 108, 36, 2, 74, P.slate);
+    alpha(ctx, 0.35, () => R(ctx, 0, 112, 128, 5, P.ink));
+    // the big red monitor, a keyboard and a dead phone on the desk top
+    c1(ctx, 12, 1, 86, 25, P.ink2, P.slate, P.ink);
+    R(ctx, 15, 4, 80, 19, P.ink); bands(ctx, 15, 4, 80, 19, [P.crimsonD, P.crimsonD, P.ink2]);
+    for (let i = 0; i < 38; i++) R(ctx, 17 + i * 2, 7 + Math.floor(i * 11 / 38) + ((i * 7) % 3), 2, 2, P.crimson);
+    R(ctx, 42, 26, 28, 3, P.ink);
+    c1(ctx, 16, 28, 44, 4, P.slate, P.slate2, P.ink2); c1(ctx, 80, 27, 16, 5, P.ink2, P.slate, P.ink); R(ctx, 83, 28, 8, 2, P.crimsonD);
+    glow(ctx, 55, 14, [50, 32], P.crimson, 0.07);
+    alpha(ctx, 0.12, () => R(ctx, 0, 36, 108, 40, P.crimson));
   };
 
   // ---------------------------------------------------------------------------
@@ -175,7 +183,7 @@
     X.text(ctx, 'HOLLOWAY STERN', 160, 17, P.putty, { align: 'center' });
     glow(ctx, 70, 12, [34, 22], P.amber, 0.05); glow(ctx, 160, 12, [40, 24], P.amber, 0.05);
     R(ctx, 0, 90, W, 90, P.ink);
-    checker(ctx, 160, 90, 90, 7, [-500, -430, -360, -290, -220, -150, -80, -10, 60, 130, 200, 270, 340, 410, 480, 550, 620, 690, 760, 830], P.ink2, P.ink);
+    R(ctx, 0, 90, W, 90, P.ink2); rows(ctx, 90, H, 6, P.ink); fan(ctx, 160, 90, 92, H, [-300, -160, -20, 120, 260, 400, 540, 680], P.ink);
     // revolving doors with the dusk street beyond
     c1(ctx, 222, 16, 82, 80, P.grey, P.grey2, P.slate2);
     R(ctx, 228, 22, 70, 70, P.ink);
@@ -316,7 +324,11 @@
     banner(18); banner(278);
     R(ctx, 0, 88, W, 92, P.slate);
     checker(ctx, 160, 88, 88, 8, [-480, -340, -200, -60, 80, 220, 360, 500, 640, 780], P.slate2, P.slate);
-    for (const f of [1, 0.7, 0.4]) alpha(ctx, 0.11, () => trap(ctx, 90, H, Math.round(160 - 90 * f), Math.round(160 + 90 * f), Math.round(160 - 190 * f), Math.round(160 + 190 * f), P.white));
+    // grey window light, one stepped band per pane, thrown across the marble
+    for (const pane of [[72, 98], [102, 214], [218, 250]]) for (const pad of [0, 5, 10]) {
+      if (pane[1] - pane[0] <= pad * 2 + 4) continue;
+      alpha(ctx, 0.2, () => { for (let y = 90; y < H; y++) { const f = 1 + (y - 90) / 45; R(ctx, Math.round(160 + (pane[0] + pad - 160) * f), y, Math.round((pane[1] - pane[0] - pad * 2) * f), 1, P.white); } });
+    }
     c1(ctx, 20, 96, 70, 26, P.slate2, P.grey, P.slate); R(ctx, 18, 94, 74, 4, P.putty2); R(ctx, 18, 94, 74, 1, P.white);
     for (const sx of [120, 150, 180, 210]) { R(ctx, sx, 92, 2, 12, P.amberD); R(ctx, sx - 1, 104, 4, 2, P.ink); }
     R(ctx, 120, 94, 90, 1, P.crimsonD);
