@@ -1913,6 +1913,8 @@
       : ['whistle','cassandra','revolving','clawback','lost-decade'].includes(o.id) ? P.bone : P.amber;
     // Native 640-pixel street detail and a quiet signature for each ending.
     // The large prop remains unobstructed in the middle of the composition.
+    // An ending with a place of its own (B.EndingPlaces) has no street, so it gets no street signature.
+    if (B.EndingPlaces && B.EndingPlaces[o.id]) return;
     ctx.save(); ctx.globalAlpha = 0.68;
     for (let i = 0; i < 14; i++) {
       const xx = 18 + i * 47;

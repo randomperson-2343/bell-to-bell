@@ -571,7 +571,10 @@
   // top-left, shade bottom-right, light as stepped rings) ----
   const COLD = ['wiped', 'fired', 'perp', 'fall-guy', 'ward', 'replaced', 'depression', 'nobody'];
   const PAPER = ['whistle', 'cassandra', 'revolving', 'clawback', 'lost-decade'];
+  // Each ending has its own place (js/art/ending-places-*.js register B.EndingPlaces[id]); the shared city is the fallback.
   function endingShot(ctx, kind, id) {
+    const place = B.EndingPlaces && B.EndingPlaces[id];
+    if (place) { place(ctx, kind); return; }
     const light = kind === 'light', cold = COLD.indexOf(id) >= 0, paper = PAPER.indexOf(id) >= 0;
     const skyA = cold ? P.slate2 : paper ? P.putty2 : light ? P.amber : P.slate2;
     const skyB = cold ? P.ink2 : paper ? P.crimsonD : light ? P.crimsonD : P.ink2;
@@ -696,8 +699,9 @@
       R(ctx, 86, 72, 148, 4, P.slate2); X.text(ctx, 'PRIVATE / PUBLIC', cx, 12, P.amber, { align: 'center' });
     } else if (id === 'depression') { // shuttered fronts and a queue
       if (base) for (let i = 0; i < 6; i++) { const x = 70 + i * 32; c1(ctx, x, 26, 28, 46, P.ink2, P.slate, P.ink, P.ink); for (let k = 0; k < 6; k++) R(ctx, x + 2, 34 + k * 6, 24, 1, P.slate2); if (i % 2) { c1(ctx, x + 4, 28, 20, 6, P.crimsonD, P.crimson, P.ink2, P.ink); } }
-      if (mov) for (let i = 0; i < 9 && i < n; i++) spr(ctx, FIG, 78 + i * 18, 66);
       if (base) R(ctx, 54, 74, 212, 3, P.crimsonD);
+      // the queue stands on the pavement in front of the shutters: ink outlines and coats of different colours so it reads against them
+      if (mov) for (let i = 0; i < 9 && i < n; i++) spr(ctx, FIG.map((r, k) => r.replace(/1/g, '0').replace(/2/g, k < 4 ? '6' : '5b4mR'[i % 5])), 78 + i * 18, 74);
     } else if (id === 'soft') { // a street with its lights back on
       if (base) for (let i = 0; i < 7; i++) {
         const x = 66 + i * 28, h = 34 + (i % 2) * 9; c1(ctx, x, 74 - h, 24, h, P.slate, P.slate2, P.ink2);
