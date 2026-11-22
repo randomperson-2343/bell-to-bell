@@ -44,11 +44,23 @@
     R(ctx, x, y - h, 3, hh, col); R(ctx, x - 1, y - h + hh, 5, h - hh - 3, col); R(ctx, x, y - 3, 1, 3, col); R(ctx, x + 2, y - 3, 1, 3, col);
   }
   function palm(ctx, x, y, h, lean, col, col2) {
-    for (let i = 0; i < h; i++) { const t = i / h; R(ctx, x + Math.round(lean * t * t), y - i, 4 - (i > h * 0.6 ? 1 : 0), 1, i % 5 === 0 ? col2 : col); }
-    const tx = x + lean + 1, ty = y - h;
-    const fr = [[-16, 8], [-13, -1], [-6, -7], [4, -8], [13, -2], [17, 7], [-9, 12], [10, 12]];
-    for (const f of fr) { line(ctx, tx, ty, tx + f[0], ty + f[1], col, 2); line(ctx, tx, ty + 2, tx + f[0], ty + f[1] + 3, col, 1); }
-    ell(ctx, tx, ty + 1, 3, 3, col2);
+    // a curved, stepped trunk, 5px at the foot narrowing to 3, with ring marks
+    let tx = x, ty = y;
+    for (let i = 0; i < h; i++) {
+      const t = i / h; tx = x + Math.round(lean * t * t);
+      R(ctx, tx, y - i, i < h * 0.3 ? 7 : i < h * 0.7 ? 6 : 5, 1, col); R(ctx, tx, y - i, 1, 1, P.amberD); if (i % 6 === 0) R(ctx, tx + 2, y - i, 2, 1, col2);
+    }
+    ty = y - h; tx += 1;
+    // fronds: arched leaves 3px thick that droop at the tips
+    const fr = [[-28, 6], [-24, -4], [-14, -13], [0, -16], [14, -13], [25, -4], [29, 6], [-16, 12], [18, 12], [0, 8]];
+    for (const f of fr) {
+      const n = 12;
+      for (let i = 0; i <= n; i++) {
+        const t = i / n, px = tx + Math.round(f[0] * t), py = ty + Math.round(f[1] * t * (2 - t) - (f[1] > -9 ? 0 : 0) + 7 * t * t);
+        R(ctx, px, py, 4, i < n * 0.7 ? 4 : 3, col); if (i % 3 === 1) R(ctx, px - 1, py + 4, 3, 2, col2);
+      }
+    }
+    ell(ctx, tx, ty + 1, 4, 4, col2); R(ctx, tx - 2, ty + 3, 2, 3, col); R(ctx, tx + 1, ty + 3, 2, 3, col);
   }
 
   // ---- 1. master: Port Solace harbour at sunset ----
@@ -59,11 +71,11 @@
     // low clouds
     for (let i = 0; i < 6; i++) { const x = 20 + i * 52 + (i % 2) * 14, y = 18 + (i * 13) % 30; R(ctx, x, y, 34 - (i % 3) * 6, 3, P.crimsonD); R(ctx, x + 4, y - 2, 20, 2, P.crimson); R(ctx, x + 8, y + 3, 24, 1, P.amber); }
     // sun, low, with stepped glow
-    glow(ctx, 262, 76, 62, 30, P.amber, 0.14, 4);
-    ctx.save(); ctx.beginPath(); ctx.rect(0, 0, 320, 79); ctx.clip(); ell(ctx, 262, 76, 13, 13, P.amber); ell(ctx, 262, 77, 9, 9, P.white); ctx.restore();
+    glow(ctx, 274, 76, 62, 30, P.amber, 0.14, 4);
+    ctx.save(); ctx.beginPath(); ctx.rect(0, 0, 320, 79); ctx.clip(); ell(ctx, 274, 76, 14, 14, P.amber); ell(ctx, 274, 77, 10, 10, P.white); ctx.restore();
     // far headland, right, and the green hills, left
-    trap(ctx, 62, 78, 282, 296, 258, 320, P.violet);
-    trap(ctx, 70, 78, 300, 316, 292, 320, P.slate2);
+    trap(ctx, 64, 78, 226, 238, 204, 252, P.violet);
+    trap(ctx, 71, 78, 236, 244, 224, 256, P.slate2);
     R(ctx, 0, 78, 320, 1, P.slate2);
     const hill = [[0, 44, 70], [30, 36, 64], [64, 50, 44]];
     for (const h of hill) { for (let x = 0; x < h[2]; x++) { const t = (x / h[2]) * 2 - 1; const hh = Math.round(h[1] * (1 - t * t) * 0.55); R(ctx, h[0] + x, 78 - hh, 1, hh, P.jadeD); if (x < h[2] / 2) R(ctx, h[0] + x, 78 - hh, 1, 1, P.jade); } }
@@ -82,7 +94,7 @@
     G(ctx, 0, 97, 320, 48, P.screen, P.slate, 8);
     D(ctx, 0, 97, 320, 14, P.screen, P.sky, 0.3);
     // sun's road on the water: widening amber bars
-    for (let i = 0; i < 12; i++) { const y = 98 + i * 4, w = 20 + i * 4 - ((i * 7) % 5); R(ctx, 262 - (w >> 1) + ((i * 3) % 5) - 2, y, w, 2, i < 4 ? P.amber : P.amberD); if (i % 2) R(ctx, 262 - (w >> 2), y, w >> 1, 1, P.white); }
+    for (let i = 0; i < 12; i++) { const y = 98 + i * 4, w = 20 + i * 4 - ((i * 7) % 5); R(ctx, 274 - (w >> 1) + ((i * 3) % 5) - 2, y, w, 2, i < 4 ? P.amber : P.amberD); if (i % 2) R(ctx, 274 - (w >> 2), y, w >> 1, 1, P.white); }
     // ripple glints
     for (let i = 0; i < 18; i++) R(ctx, (i * 53) % 300 + 6, 100 + ((i * 29) % 40), 6 + (i % 3) * 2, 1, i % 3 ? P.sky : P.slate2);
     // small boats off the moorings
@@ -97,8 +109,8 @@
     // sun light warm on the quay lip
     D(ctx, 150, 146, 150, 3, P.putty, P.amber, 0.6);
     // palm silhouettes in front, left
-    palm(ctx, 14, 150, 64, -6, P.ink, P.ink2);
-    palm(ctx, 296, 150, 52, 8, P.ink, P.ink2);
+    palm(ctx, 30, 150, 112, 14, P.ink, P.ink2);
+    palm(ctx, 300, 150, 100, -16, P.ink, P.ink2);
     person(ctx, 160, 146, P.ink, 12); person(ctx, 168, 146, P.ink, 11);
   };
 
@@ -165,15 +177,21 @@
   };
 
   // A photographer seen from behind or side: head, shoulders, long lens up at the target.
-  function shooter(ctx, x, yb, sc, flash) {
-    const h = 30 * sc | 0, w = 12 * sc | 0;
-    R(ctx, x, yb - h, 8 * sc | 0, 8 * sc | 0, P.ink); // head
-    R(ctx, x - 2, yb - h + 8 * sc, w + 4, h - 8 * sc, P.ink); // coat
-    R(ctx, x - 2, yb - h + 8 * sc, 2, h - 8 * sc, P.ink2); // rim light from the lamp on one shoulder
-    // camera and lens raised in front of the face
-    C(ctx, x + 1, yb - h - 3, 9, 6, P.ink2, P.slate, P.ink, P.ink); R(ctx, x + 9, yb - h - 1, 6, 3, P.slate2);
-    R(ctx, x + 3, yb - h - 5, 3, 2, P.grey);
-    if (flash) { R(ctx, x + 13, yb - h - 7, 3, 9, P.white); R(ctx, x + 10, yb - h - 4, 9, 3, P.white); glow(ctx, x + 14, yb - h - 3, 16, 12, P.white, 0.22, 3); }
+  function shooter(ctx, x, yb, sc, flash, lens) {
+    const u = (n) => Math.round(n * sc);
+    const top = yb - u(34);
+    ell(ctx, x + u(6), top + u(4), u(5), u(5), P.slate2); ell(ctx, x + u(7), top + u(5), u(5), u(5), P.ink); // head, rim-lit from the lamp
+    R(ctx, x + u(5), top + u(9), u(5), u(3), P.ink); // neck
+    trap(ctx, top + u(11), yb, x - u(2), x + u(16), x - u(6), x + u(20), P.ink); // coat, shoulders to hem
+    line(ctx, x - u(2), top + u(11), x - u(6), yb - u(2), P.slate2, 1); R(ctx, x - u(2), top + u(11), u(2), u(10), P.slate); // lamp rim
+    // arms bent up to the camera
+    line(ctx, x + u(15), top + u(14), x + u(18), top + u(6), P.ink, u(3)); line(ctx, x, top + u(14), x - u(2), top + u(8), P.ink, u(3));
+    // camera at the face; a long lens pointing up and to the right on one
+    C(ctx, x + u(3), top + u(1), u(13), u(8), P.ink2, P.slate, P.ink, P.ink);
+    R(ctx, x + u(13), top + u(3), u(5), u(4), P.slate2); R(ctx, x + u(15), top + u(2), u(2), u(1), P.grey);
+    if (lens) { line(ctx, x + u(16), top + u(4), x + u(31), top - u(2), P.ink2, u(4)); line(ctx, x + u(17), top + u(3), x + u(30), top - u(3), P.slate2, 1); R(ctx, x + u(30), top - u(5), u(3), u(6), P.ink); }
+    R(ctx, x + u(5), top - u(3), u(5), u(2), P.grey); // flash gun
+    if (flash) { const fx = x + u(lens ? 34 : 18), fy = top - u(2); R(ctx, fx, fy - 4, 3, 11, P.white); R(ctx, fx - 4, fy, 11, 3, P.white); glow(ctx, fx + 1, fy + 1, 18, 13, P.white, 0.22, 3); }
   }
 
   // ---- 3. perp: the courthouse steps at night ----
@@ -206,8 +224,8 @@
       for (let k = 0; k < 6; k++) R(ctx, lx - 1, 114 + k * 7, 5 - (k % 3), 3, k < 3 ? P.amber : P.amberD);
     }
     // photographers in front, big and dark, one flashing
-    shooter(ctx, 40, 172, 1.15, false); shooter(ctx, 86, 178, 1.3, true);
-    shooter(ctx, 232, 176, 1.25, true); shooter(ctx, 272, 172, 1.1, false); shooter(ctx, 150, 186, 1.4, false);
+    shooter(ctx, 36, 172, 1.1, false, false); shooter(ctx, 80, 180, 1.3, true, false);
+    shooter(ctx, 222, 178, 1.3, true, true); shooter(ctx, 272, 172, 1.1, false, false); shooter(ctx, 148, 188, 1.4, false, false);
     // a few extra flash sparks in the dark
     for (const f of [[60, 90], [262, 96], [112, 70]]) { R(ctx, f[0], f[1], 1, 5, P.white); R(ctx, f[0] - 2, f[1] + 2, 5, 1, P.white); }
   };
@@ -215,9 +233,9 @@
   // ---- 4. fall-guy: inside a courtroom, cold light from the window ----
   PL['fall-guy'] = function (ctx) {
     // back wall: dark panelling with a chair rail
-    R(ctx, 0, 0, 320, 90, P.deskD); G(ctx, 0, 0, 320, 90, P.ink2, P.deskD, 9);
+    R(ctx, 0, 0, 320, 90, P.deskD); R(ctx, 0, 0, 320, 30, P.ink2);
     R(ctx, 0, 0, 320, 5, P.ink); R(ctx, 0, 5, 320, 2, P.deskD);
-    for (let i = 0; i < 12; i++) { const x = 4 + i * 27; R(ctx, x, 10, 23, 62, P.deskD); R(ctx, x + 2, 12, 19, 58, P.desk); R(ctx, x + 2, 12, 19, 2, P.desk2); R(ctx, x + 2, 12, 2, 58, P.desk2); R(ctx, x + 19, 14, 2, 56, P.deskD); R(ctx, x + 4, 14, 15, 54, P.deskD); D(ctx, x + 4, 14, 15, 54, P.deskD, P.desk, 0.18); }
+    for (let i = 0; i < 12; i++) { const x = 4 + i * 27; R(ctx, x, 10, 23, 62, P.deskD); R(ctx, x + 2, 12, 19, 58, P.desk); R(ctx, x + 2, 12, 19, 2, P.desk2); R(ctx, x + 2, 12, 2, 58, P.desk2); R(ctx, x + 19, 14, 2, 56, P.deskD); R(ctx, x + 4, 14, 15, 54, P.deskD);  }
     R(ctx, 0, 72, 320, 3, P.desk2); R(ctx, 0, 75, 320, 2, P.ink2); R(ctx, 0, 77, 320, 12, P.deskD);
     for (let i = 0; i < 16; i++) R(ctx, i * 21 + 3, 79, 15, 8, P.desk);
     // the seal on the wall above the bench
@@ -234,10 +252,9 @@
     R(ctx, 266, 11, 3, 50, P.desk); R(ctx, 235, 34, 66, 3, P.desk); R(ctx, 232, 61, 72, 4, P.desk2);
     for (let i = 0; i < 5; i++) R(ctx, 240 + i * 12, 14, 2, 18, P.white);
     // floor: planks converging on a vanishing point behind the table
-    R(ctx, 0, 90, 320, 90, P.deskD);
-    G(ctx, 0, 90, 320, 90, P.deskD, P.ink2, 9);
-    for (let i = -12; i <= 12; i++) line(ctx, 160 + i * 8, 90, 160 + i * 34, 180, P.ink2, 1);
-    for (let k = 1; k < 7; k++) R(ctx, 0, 90 + Math.round(Math.pow(k / 7, 1.7) * 90), 320, 1, P.ink2);
+    R(ctx, 0, 90, 320, 90, P.deskD); R(ctx, 0, 130, 320, 50, P.ink2); R(ctx, 0, 115, 320, 15, P.deskD);
+    for (let i = -6; i <= 6; i++) line(ctx, 160 + i * 16, 90, 160 + i * 68, 180, P.ink, 1);
+    for (let k = 1; k < 5; k++) R(ctx, 0, 90 + Math.round(Math.pow(k / 5, 1.7) * 90), 320, 1, P.ink);
     // light falling from the window across the floor and table, toward the viewer's left
     alpha(ctx, 0.13, () => { trap(ctx, 62, 100, 236, 298, 150, 250, P.white); trap(ctx, 100, 160, 150, 250, 30, 140, P.white); });
     alpha(ctx, 0.2, () => { trap(ctx, 118, 150, 160, 210, 100, 190, P.sky); trap(ctx, 150, 178, 100, 190, 20, 130, P.sky); });
@@ -421,8 +438,7 @@
     for (let k = 0; k < 4; k++) { const f = (k + 1) / 5, y = Math.round(T * f * f); const w = Math.round(60 - 40 * f * f); R(ctx, 160 - w, y, w * 2, 1, P.grey); }
     // the floor, a cold grey, with tile seams converging on the door
     trap(ctx, Bt, 180, L, Rr, 0, 320, P.slate2);
-    G(ctx, 0, Bt, 320, 90, P.slate2, P.ink2, 9);
-    // redraw floor shape over the wall edges
+    for (let y = Bt; y < 180; y++) { const l = Math.round(L * (180 - y) / 90); R(ctx, l, y, 320 - 2 * l, 1, y < 118 ? P.slate2 : y < 148 ? P.slate : P.ink2); }
     for (let i = -8; i <= 8; i++) line(ctx, 160 + i * 5, Bt, 160 + i * 36, 180, P.slate, 1);
     for (let k = 0; k < 6; k++) R(ctx, 0, Bt + Math.round(Math.pow((k + 1) / 7, 1.8) * 90), 320, 1, P.slate);
     // the wall/floor joints and skirting
