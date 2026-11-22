@@ -58,7 +58,9 @@
   }
   function syncNode(a, b) {
     if (a.nodeType !== 1) { if (a.nodeValue !== b.nodeValue) a.nodeValue = b.nodeValue; return; }
-    if (a.className !== b.className) a.className = b.className;
+    // getAttribute, not className: an SVG element's className is read-only.
+    const cls = b.getAttribute('class');
+    if (a.getAttribute('class') !== cls) { if (cls == null) a.removeAttribute('class'); else a.setAttribute('class', cls); }
     for (let i = 0; i < a.childNodes.length; i++) syncNode(a.childNodes[i], b.childNodes[i]);
   }
   function patchHtml(el, html) {
@@ -85,12 +87,14 @@
     lastPosCount: -1,
     lastRender: 0,
     lastPx: {},
+    sparkCache: {},
     shakeAmt: 0,
     beatAcc: 0,
     tickAcc: 0,
 
     init() {
       B.Chart.init($('chart'));
+      B.Tape.init();
       B.Ticket.init();
       window.addEventListener('resize', () => this.placeNote());
       document.body.dataset.ptab = 'trade';
@@ -296,6 +300,8 @@
       this.unread = 0;
       this.updateBadge();
       this.lastPx = {};
+      this.sparkCache = {};
+      B.Tape.reset();
       $('wall-date').textContent = g.mode.kind === 'story' ? B.Calendar.storyLabel(g.day) : B.Calendar.dayInfo(g.day).label;
       this.applyNarrativeSkin(g);
       this.renderMute();
@@ -324,6 +330,8 @@
     },
 
     dayStart(g) {
+      B.Tape.reset();
+      this.sparkCache = {};
       const d = B.Calendar.dayInfo(g.day);
       const label = g.mode.kind === 'story' ? B.Calendar.storyLabel(g.day) : d.label;
       $('wall-date').textContent = label;
@@ -781,6 +789,7 @@
 
       const jitter = motion && g.running && s > 0.78 ? (s - 0.78) * 7 * fx : 0;
       B.Chart.draw(g, this.sel, jitter);
+      B.Tape.frame(dt);
 
       const now = performance.now();
       if (now - this.lastRender > 125) {
@@ -810,14 +819,15 @@
 
       // terminal stats
       const ip = m.indexDayPct();
-      $('tb-indx').innerHTML = `${F.price(m.bySym.INDX.last)} <span class="${F.cls(ip)}">${F.pct(ip)}</span>`;
+      B.Tape.scan(g);
+      $('tb-indx').innerHTML = `${B.Tape.tick('indx', m.bySym.INDX.last, F.price(m.bySym.INDX.last))} <span class="${F.cls(ip)}">${F.pct(ip)}</span>`;
       const fear = m.bySym.FEAR.last;
       $('tb-fear').innerHTML = `<span class="${fear > 30 ? 'down' : fear > 20 ? 'amber' : 'up'}">${fear.toFixed(1)}</span>`;
       const eq = b.equity(), pnl = g.dayPnl();
       const pe = $('tb-pnl');
-      pe.textContent = F.money(pnl, true);
+      B.Tape.count('pnl', pe, pnl, (v) => F.money(v, true));
       pe.className = 'v ' + F.cls(pnl);
-      $('tb-equity').textContent = F.money(eq);
+      B.Tape.count('eq', $('tb-equity'), eq, (v) => F.money(v));
       $('tb-bp').textContent = F.compact(b.buyingPower());
       if (g.quota > 0) {
         $('tb-quota-amt').textContent = F.money(g.quota);
@@ -890,7 +900,7 @@
       if (!lagging) this.renderWatch();
       // chart header
       const tk = m.bySym[this.sel];
-      $('ch-price').textContent = F.price(tk.last);
+      $('ch-price').innerHTML = B.Tape.tick('ch:' + this.sel, tk.last, F.price(tk.last));
       const cp = tk.last / tk.prevClose - 1;
       $('ch-chg').innerHTML = `<span class="${F.cls(cp)}">${F.money2(tk.last - tk.prevClose, true)} (${F.pct(cp)})</span> <span class="muted">H ${F.price(tk.high)} L ${F.price(tk.low)}</span>`;
       const p = b.pos[this.sel];
@@ -902,6 +912,34 @@
 
       B.Ticket.render(g);
       this.renderBottom(force);
+    },
+
+    // The watchlist row of a ticker that just swung strobes for a second (sw-u0..7 / sw-d0..7).
+    swingClass(sym) {
+      const w = B.Tape.swings[sym];
+      return w ? B.Tape.stepClass('sw', w.at, w.dir, 8) + (w.level > 1 ? ' sw-huge' : '') : '';
+    },
+
+    // A small trail of the last two hours in 5-minute closes, as an inline SVG.
+    // It only changes when a 5-minute bar completes, so the in-place patch rarely rebuilds the list.
+    spark(tk) {
+      const done = (tk.prevCandles || []).concat((tk.candles || []).slice(0, -1));
+      const key = done.length - (done.length % 5);
+      const c = this.sparkCache[tk.sym];
+      if (c && c.key === key) return c.svg;
+      const pts = [];
+      for (let i = key - 1; i >= 0 && pts.length < 24; i -= 5) pts.unshift(done[i].c);
+      let svg = '<svg class="wl-spark" viewBox="0 0 36 16" aria-hidden="true"></svg>';
+      if (pts.length > 1) {
+        let hi = -Infinity, lo = Infinity;
+        for (const v of pts) { if (v > hi) hi = v; if (v < lo) lo = v; }
+        const span = hi - lo || 1, step = 35 / (pts.length - 1);
+        const d = pts.map((v, i) => `${Math.round(i * step) + 0.5},${Math.round(14 - (v - lo) / span * 12) + 0.5}`).join(' ');
+        const up = pts[pts.length - 1] >= pts[0];
+        svg = `<svg class="wl-spark ${up ? 'up' : 'down'}" viewBox="0 0 36 16" aria-hidden="true"><polyline points="${d}"/></svg>`;
+      }
+      this.sparkCache[tk.sym] = { key, svg };
+      return svg;
     },
 
     renderWatch() {
@@ -917,9 +955,10 @@
         const ban = b.rules.shortBan.includes(tk.sector) ? '<span class="ban-tag">NO SHORT</span>' : '';
         const halted = m.status === 'open' && tk.haltUntil > m.t ? ' halted' : '';
         const arrow = ch > 0.00005 ? '▲' : ch < -0.00005 ? '▼' : '•';
-        return `<div class="wl-row${tk.sym === this.sel ? ' sel' : ''}${fl}${halted}" data-sym="${tk.sym}">
-          <div class="wl-sym">${tk.sym}${dot}${ban}</div><div class="wl-px">${F.price(tk.last)}</div>
-          <div class="wl-name">${B.esc(tk.name)}</div><div class="wl-chg ${F.cls(ch)}"><b>${arrow}</b> ${F.pct(ch)}</div></div>`;
+        const sw = this.swingClass(tk.sym);
+        return `<div class="wl-row${tk.sym === this.sel ? ' sel' : ''}${fl}${halted}${sw}" data-sym="${tk.sym}">
+          <div class="wl-sym">${tk.sym}${dot}${ban}</div><div class="wl-px">${B.Tape.tick('wl:' + tk.sym, tk.last, F.price(tk.last))}</div>
+          <div class="wl-name">${B.esc(tk.name)}</div><div class="wl-chg ${F.cls(ch)}"><b>${arrow}</b> ${F.pct(ch)}</div>${this.spark(tk)}</div>`;
       }).join('');
       patchHtml($('watch-list'), html);
     },
@@ -945,7 +984,7 @@
               const p = b.pos[s], last = m.bySym[s].last;
               const u = (last - p.avg) * p.qty;
               const pc = (last / p.avg - 1) * Math.sign(p.qty);
-              return `<tr data-sym="${s}"><td>${s} <span class="${p.qty > 0 ? 'up' : 'down'}">${p.qty > 0 ? 'LONG' : 'SHORT'}</span></td><td>${F.qty(p.qty)}</td><td>${F.price(p.avg)}</td><td>${F.price(last)}</td><td>${F.money(p.qty * last)}</td><td class="${F.cls(u)}">${F.money(u, true)}</td><td class="${F.cls(pc)}">${F.pct(pc)}</td><td class="act"><button data-act="half" data-id="${s}">&frac12;</button><button data-act="close" data-id="${s}">Close</button></td></tr>`;
+              return `<tr data-sym="${s}" class="${B.Tape.stepClass('land', B.Tape.landed[s], p.qty, 6).trim()}"><td>${s} <span class="${p.qty > 0 ? 'up' : 'down'}">${p.qty > 0 ? 'LONG' : 'SHORT'}</span></td><td>${F.qty(p.qty)}</td><td>${F.price(p.avg)}</td><td>${F.price(last)}</td><td>${F.money(p.qty * last)}</td><td class="${F.cls(u)}">${F.money(u, true)}</td><td class="${F.cls(pc)}">${F.pct(pc)}</td><td class="act"><button data-act="half" data-id="${s}">&frac12;</button><button data-act="close" data-id="${s}">Close</button></td></tr>`;
             }).join('') + '</tbody></table>';
         }
       } else if (this.btTab === 'orders') {
@@ -970,6 +1009,9 @@
           tr.slice(0, 60).map((x) => `<tr><td>${B.Calendar.fmtTime(x.t)}</td><td>${B.esc(x.sym)}</td><td class="${x.qty > 0 ? 'up' : 'down'}">${F.qty(x.qty)}</td><td>${F.price(x.price)}</td><td class="${F.cls(x.realized)}">${F.money(x.realized, true)}</td><td class="muted">${B.esc(x.tag || '')}</td></tr>`).join('') + '</tbody></table>';
       }
       patchHtml($('bt-content'), html);
+      // An empty tab folds the drawer down so the chart gets the room (css: .bt-empty).
+      const scr = $('bt-content').closest('.screen');
+      if (scr) scr.classList.toggle('bt-empty', html.startsWith('<div class="empty">'));
     }
   };
 

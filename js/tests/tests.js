@@ -2439,5 +2439,56 @@
     } finally { Math.random = savedRandom; }
   });
 
+  // ---------- Swing detector (js/market/swing.js) ----------
+  // A market stand-in: one stock, one index and the fear gauge, each with a flat 1-minute history.
+  function swingMarket(t) {
+    const flat = (px) => Array.from({ length: 60 }, () => ({ o: px, h: px, l: px, c: px }));
+    const mk = (sym, sector, px) => ({ sym, sector, last: px, candles: flat(px) });
+    const tickers = [mk('AAA', 'tech', 100), mk('INDX', 'index', 500), mk('FEAR', 'fear', 20)];
+    return { status: 'open', t, tickers, bySym: Object.fromEntries(tickers.map((x) => [x.sym, x])) };
+  }
+  test('Swing: a move under the threshold is quiet, over it is big, double is huge', () => {
+    const S = B.Swing, st = S.create();
+    const m = swingMarket(20);
+    m.bySym.AAA.last = 101;                       // +1%: under 1.5%
+    assert(S.scan(st, m).length === 0, 'a 1% stock move fired');
+    m.bySym.AAA.last = 98.4;                      // -1.6%
+    const e = S.scan(st, m);
+    assert(e.length === 1 && e[0].sym === 'AAA' && e[0].level === 1 && e[0].dir === -1, 'a -1.6% stock move should be one big down swing');
+    assert(S.levelOf('tech', 0.031) === 2 && S.levelOf('index', 0.007) === 1 && S.levelOf('index', 0.005) === 0, 'levels by sector');
+  });
+  test('Swing: a ticker stays quiet through its cool-down unless the move grows or turns', () => {
+    const S = B.Swing, st = S.create();
+    const m = swingMarket(20);
+    m.bySym.AAA.last = 98.4;
+    assert(S.scan(st, m).length === 1, 'first swing');
+    m.t = 21; assert(S.scan(st, m).length === 0, 'same move fired again inside the cool-down');
+    m.bySym.AAA.last = 96.9;                      // -3.1%: grows to huge
+    const grew = S.scan(st, m);
+    assert(grew.length === 1 && grew[0].level === 2, 'growing to huge should fire');
+    m.t = 22; m.bySym.AAA.last = 101.6;           // turns: +1.6%
+    assert(S.scan(st, m).length === 1, 'a turn the other way should fire');
+    m.t = 22 + S.COOL; m.bySym.AAA.last = 101.6;
+    assert(S.scan(st, m).length === 1, 'after the cool-down the same move fires again');
+  });
+  test('Swing: the fear gauge, a closed market and the first minute never fire', () => {
+    const S = B.Swing;
+    const m = swingMarket(20);
+    m.bySym.FEAR.last = 40;
+    assert(S.scan(S.create(), m).length === 0, 'the fear gauge fired');
+    m.bySym.AAA.last = 90; m.status = 'closed';
+    assert(S.scan(S.create(), m).length === 0, 'a closed market fired');
+    m.status = 'open'; m.t = 0.5;
+    assert(S.scan(S.create(), m).length === 0, 'the opening minute fired');
+  });
+  test('Swing: scanning a whole day changes nothing in the market', () => {
+    const run = (scan) => { const m = mkMarket({ regime: 'panic' }, 'swing-ro'); const st = B.Swing.create(); let n = 0;
+      while (m.status === 'open' && m.t < B.DAY_MIN) { m.step(0.5); if (scan) n += B.Swing.scan(st, m).length; }
+      return { px: m.tickers.map((t) => t.last.toFixed(6)).join(','), n }; };
+    const a = run(false), b = run(true);
+    assert(a.px === b.px, 'scanning moved prices');
+    assert(b.n > 0, 'a panic day should produce at least one swing');
+  });
+
   B.Tests = { results, run: () => results };
 })(window.BTB);

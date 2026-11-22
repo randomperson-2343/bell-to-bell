@@ -78,6 +78,19 @@
   --ui: "Tiny5", "Arial Narrow", sans-serif;
   --narrative: "Tiny5", "Arial Narrow", sans-serif;
   --mono-canvas-scale: 1.25;
+  /* Pixel-true sizes. Silkscreen and Tiny5 are drawn on an 8-unit em with
+     5-unit caps, so with the cap height pinned at .7 a declared 50/7 px puts
+     one font pixel on one screen pixel (5 px caps); twice that is 2 px per
+     font pixel. VT323 lands on its own grid at 10, 20 and 30 px. Anything
+     in between smears on a 1x screen, so the game screen uses only these.
+     The body sizes take a half step on 2x screens, where it is still sharp. */
+  --t1: 7.142857px;
+  --t2: 14.285714px;
+  --m1: 10px;
+  --m2: 20px;
+  --m3: 30px;
+  --t-body: var(--t1);
+  --m-body: var(--m1);
   --sans: var(--ui);
 
   /* --- pixel grid: everything snaps to 4px --- */
@@ -90,6 +103,10 @@
   /* --- live state (set from JS) --- */
   --stress: 0;
   --fx: 1;          /* screen-effects multiplier: 1 full, 0.45 reduced, 0 off */
+}
+
+@media (min-resolution: 2dppx) {
+  :root { --t-body: 10.714286px; --m-body: 15px; }
 }
 
 /* Crisp edges everywhere. No blurry upscaling, ever. */
