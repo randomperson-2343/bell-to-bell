@@ -42,7 +42,7 @@ The visual tone is colourful but washed out. Every hue should feel filtered thro
 - Persistent story objects on the desk driven by player decisions and regulatory heat.
 - Procedural pixel portraits for the seven principal characters.
 - Story-specific broadcast tableaux for the geopolitical incident, grid crisis, algorithmic feedback loop, bank run, examinations, hearing, vote and final day.
-- A distinct procedural visual signature for every story ending.
+- A distinct procedural visual signature for every story ending, each in a place of its own (js/art/ending-places-1.js to -3.js): a lobby, a courtroom, a harbour, a vault, a checkout, a waiting room and so on, with depth and a light source that lands somewhere. The shared city remains only as the fallback.
 - Hollow rising candles, filled falling candles, arrows and position shapes for colour-independent market direction.
 - Clear feed-channel labels and lighter CRT treatment over dense information.
 - Cinematic letterboxing, foreground silhouettes, practical desk detail and environmental sound-only beats before music enters.
