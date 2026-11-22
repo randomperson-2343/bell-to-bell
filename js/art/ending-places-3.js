@@ -42,6 +42,8 @@
   function seams(ctx, y0, y1, col, n) {
     for (let i = 1; i <= n; i++) { const t = i / n; R(ctx, 0, Math.round(y0 + (y1 - y0) * t * t), W, 1, col); }
   }
+  // Flat horizontal bands, top to bottom, instead of a dithered field.
+  function bands(ctx, y, h, cols) { const bh = Math.ceil(h / cols.length); cols.forEach((c, i) => R(ctx, 0, y + i * bh, W, Math.min(bh, y + h - (y + i * bh)), c)); }
   const alpha = (ctx, a, fn) => { ctx.save(); ctx.globalAlpha = a; fn(); ctx.restore(); };
   function ellipse(ctx, cx, cy, rx, ry, col) {
     ctx.fillStyle = col;
@@ -113,9 +115,9 @@
   // ---------------------------------------------------------------- right-early: a rooftop at dusk
   PL['right-early'] = function (ctx) {
     // dusk sky: slate/violet above, amber at the horizon
-    X.gradient(ctx, 0, 0, W, 40, P.ink2, P.slate, 5);
-    X.gradient(ctx, 0, 40, W, 24, P.slate, P.violet, 5);
-    X.gradient(ctx, 0, 64, W, 18, P.violet, P.amber, 5);
+    bands(ctx, 0, 82, [P.ink2, P.ink2, P.slate, P.slate, P.slate2, P.violet, P.violet]);
+    R(ctx, 0, 66, W, 16, P.putty2); R(ctx, 0, 66, W, 2, P.violet); R(ctx, 0, 72, W, 10, P.amber);
+    X.dither(ctx, 0, 62, W, 4, P.violet, P.putty2, 0.5);
     // the sun, half down behind the far towers, right
     pool(ctx, 270, 80, 64, 22, P.amber, 0.10, 4);
     ellipse(ctx, 270, 82, 11, 9, P.amber); ellipse(ctx, 270, 82, 7, 6, P.white);
@@ -132,14 +134,14 @@
     for (let i = 0; i < 9; i++) R(ctx, 12 + i * 37, 81, 2, 2, P.amber);
     // the roof: tar surface, receding seams
     R(ctx, 0, 84, W, 96, P.slate);
-    X.gradient(ctx, 0, 84, W, 96, P.slate2, P.ink2, 4);
+    bands(ctx, 84, 96, [P.slate2, P.slate2, P.slate, P.slate]);
     converge(ctx, 160, 78, 84, 180, [-140, -40, 60, 160, 260, 360, 460], P.slate);
     seams(ctx, 84, 180, P.slate, 4);
     // far parapet: coping lit by the sunset on top
     R(ctx, 0, 81, W, 5, P.ink2); R(ctx, 0, 80, W, 1, P.amberD); R(ctx, 0, 81, W, 1, P.grey);
     R(ctx, 0, 86, W, 1, P.ink);
     // sun-warmed pool on the roof, and long shadows streaming left
-    pool(ctx, 240, 104, 110, 14, P.amber, 0.08, 4);
+    pool(ctx, 240, 104, 110, 14, P.amber, 0.10, 3);
     // water tank on legs, left, lit from the right
     for (const lx of [12, 28, 48]) R(ctx, lx, 62, 3, 40, P.ink2);
     R(ctx, 10, 78, 44, 2, P.ink2);
@@ -218,13 +220,13 @@
     R(ctx, 0, 120, 232, 3, P.ink);
     alpha(ctx, 0.35, () => { R(ctx, 0, 123, 236, 6, P.ink); });
     // till and card reader, right
-    cel(ctx, 236, 56, 54, 36, P.plastic, P.plastic2, P.plasticD);
-    cel(ctx, 242, 62, 30, 18, P.screenD, P.screen, P.screenD);
-    X.text(ctx, '12.40', 247, 67, P.phosphor, {});
-    cel(ctx, 276, 66, 10, 14, P.slate, P.slate2, P.ink2);
-    cel(ctx, 232, 90, 82, 34, P.slate, P.slate2, P.ink2);
-    R(ctx, 232, 90, 82, 3, P.white); R(ctx, 232, 93, 82, 1, P.ink);
-    R(ctx, 240, 100, 66, 1, P.slate2);
+    cel(ctx, 250, 56, 54, 36, P.plastic, P.plastic2, P.plasticD);
+    cel(ctx, 256, 62, 30, 18, P.screenD, P.screen, P.screenD);
+    X.text(ctx, '12.40', 261, 67, P.phosphor, {});
+    cel(ctx, 290, 66, 10, 14, P.slate, P.slate2, P.ink2);
+    cel(ctx, 246, 90, 74, 34, P.slate, P.slate2, P.ink2);
+    R(ctx, 246, 90, 74, 3, P.white); R(ctx, 246, 93, 74, 1, P.ink);
+    R(ctx, 254, 100, 58, 1, P.slate2);
     // a checkout number lamp over the lane
     R(ctx, 300, 0, 2, 18, P.ink2); cel(ctx, 292, 18, 18, 12, P.crimson, P.crimson, P.crimsonD); X.text(ctx, '3', 298, 20, P.white, {});
     // basket on the floor
@@ -291,8 +293,7 @@
   // ---------------------------------------------------------------- soft: a spring main street
   PL.soft = function (ctx) {
     // clear mid-morning sky, sun high left
-    X.gradient(ctx, 0, 0, W, 50, P.sky, P.putty2, 6);
-    R(ctx, 0, 36, W, 20, P.putty2); X.gradient(ctx, 0, 30, W, 24, P.putty2, P.bone, 4);
+    bands(ctx, 0, 56, [P.sky, P.sky, P.sky, P.putty2, P.putty2, P.bone, P.bone]);
     pool(ctx, 30, 14, 50, 24, P.white, 0.14, 4); ellipse(ctx, 30, 12, 9, 9, P.white);
     // far side of the street: the prop row carries the middle; low buildings continue the row to each edge
     for (const [x, w, h, col] of [[0, 30, 30, P.slate2], [28, 26, 22, P.grey], [266, 28, 24, P.grey], [292, 30, 34, P.slate2]]) {
@@ -302,8 +303,8 @@
     // the far pavement and shop ground floor line
     R(ctx, 0, 80, W, 8, P.putty2); R(ctx, 0, 80, W, 1, P.white); R(ctx, 0, 87, W, 1, P.putty);
     // road, receding to a vanishing point mid-street
-    R(ctx, 0, 88, W, 92, P.slate2);
-    X.gradient(ctx, 0, 88, W, 92, P.slate2, P.slate, 5);
+    R(ctx, 0, 88, W, 52, P.slate2);
+    R(ctx, 0, 88, W, 52, P.slate2); R(ctx, 0, 88, W, 12, P.slate);
     converge(ctx, 160, 80, 88, 150, [20, 90, 230, 300], P.grey);
     for (let i = 0; i < 5; i++) { const y = 94 + i * i * 3 + i * 3; R(ctx, 158 - i, y, 4 + i * 2, 1 + (i >> 1), P.putty2); }
     // zebra crossing, middle distance
@@ -401,12 +402,12 @@
     R(ctx, 0, 84, W, 96, P.putty2);
     R(ctx, 0, 84, W, 20, P.bone); R(ctx, 0, 84, W, 4, P.white);
     R(ctx, 0, 84, W, 1, P.ink2);
-    X.gradient(ctx, 0, 104, W, 76, P.putty, P.slate2, 5);
+    bands(ctx, 104, 50, [P.putty, P.putty, P.grey2, P.grey2]);
     converge(ctx, 160, 80, 104, 180, [-40, 60, 130, 190, 260, 360], P.grey);
     // slush tracks
     for (let k = 0; k < 6; k++) { R(ctx, 100 + k * 6 - k, 112 + k * 10, 8 + k * 2, 2, P.grey); R(ctx, 200 - k * 2, 112 + k * 10, 8 + k * 2, 2, P.grey); }
     // kerb: snow bank along the near edge
-    R(ctx, 0, 154, W, 26, P.bone); R(ctx, 0, 154, W, 3, P.white); R(ctx, 0, 157, W, 1, P.putty); X.dither(ctx, 0, 160, W, 20, P.bone, P.putty2, 0.3);
+    R(ctx, 0, 154, W, 26, P.bone); R(ctx, 0, 154, W, 3, P.white); R(ctx, 0, 157, W, 1, P.putty);
     for (let k = 0; k < 7; k++) { ellipse(ctx, 20 + k * 52, 156, 20, 4, P.white); }
     // bare trees: trunks and forked branches, snow on the forks
     for (const [tx, ty] of [[18, 146], [300, 146]]) {
