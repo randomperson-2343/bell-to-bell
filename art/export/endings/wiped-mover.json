@@ -1,0 +1,97 @@
+{
+ "frames": [
+  {
+   "filename": "sheet:0",
+   "frame": {
+    "x": 0,
+    "y": 0,
+    "w": 70,
+    "h": 11
+   }
+  },
+  {
+   "filename": "sheet:1",
+   "frame": {
+    "x": 70,
+    "y": 0,
+    "w": 70,
+    "h": 11
+   }
+  },
+  {
+   "filename": "sheet:2",
+   "frame": {
+    "x": 140,
+    "y": 0,
+    "w": 70,
+    "h": 11
+   }
+  },
+  {
+   "filename": "sheet:3",
+   "frame": {
+    "x": 210,
+    "y": 0,
+    "w": 70,
+    "h": 11
+   }
+  },
+  {
+   "filename": "sheet:4",
+   "frame": {
+    "x": 280,
+    "y": 0,
+    "w": 70,
+    "h": 11
+   }
+  },
+  {
+   "filename": "sheet:5",
+   "frame": {
+    "x": 350,
+    "y": 0,
+    "w": 70,
+    "h": 11
+   }
+  }
+ ],
+ "meta": {
+  "image": "wiped-mover.png",
+  "size": {
+   "w": 420,
+   "h": 11
+  },
+  "frameTags": [
+   {
+    "name": "sheet:0",
+    "from": 0,
+    "to": 0
+   },
+   {
+    "name": "sheet:1",
+    "from": 1,
+    "to": 1
+   },
+   {
+    "name": "sheet:2",
+    "from": 2,
+    "to": 2
+   },
+   {
+    "name": "sheet:3",
+    "from": 3,
+    "to": 3
+   },
+   {
+    "name": "sheet:4",
+    "from": 4,
+    "to": 4
+   },
+   {
+    "name": "sheet:5",
+    "from": 5,
+    "to": 5
+   }
+  ]
+ }
+}

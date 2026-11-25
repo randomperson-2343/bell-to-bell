@@ -863,6 +863,8 @@
   const PAPER = ['whistle', 'cassandra', 'revolving', 'clawback', 'lost-decade'];
   // Each ending has its own place (js/art/ending-places-*.js register B.EndingPlaces[id]); the shared city is the fallback.
   function endingShot(ctx, kind, id) {
+    // batch 5: the authored place (grids/endings/<id>.grid, frame place) holds the backdrop and the prop's base; code writes the words on it
+    if (hasArt('endings/' + id) && X.drawArt(ctx, 'endings/' + id, 'place', 0, 0)) { endingPlaceText(ctx, id); return; }
     const place = B.EndingPlaces && B.EndingPlaces[id];
     if (place) { place(ctx, kind); return; }
     const light = kind === 'light', cold = COLD.indexOf(id) >= 0, paper = PAPER.indexOf(id) >= 0;
@@ -938,6 +940,64 @@
     return (GEOM[id] = g);
   }
 
+  // The words each authored ending place carries, at the code's positions (art units, no prop drop). The plates under them are flat in the grids.
+  function endingPlaceText(ctx, id) {
+    const T = (t, x, y, col, left) => X.text(ctx, t, x, y, col, left ? {} : { align: 'center' });
+    if (id === 'fired') T('HOLLOWAY STERN', 160, 17, P.putty);
+    else if (id === 'ward') { T('STATE', 30, 50, P.bone); T('STATE', 290, 50, P.bone); T('HLST', 55, 104, P.ink); }
+    else if (id === 'acquirer') T('RIDGEWAY', 37, 45, P.crimsonD);
+    else if (id === 'revolving') T('RT', 24, 100, P.amber);
+    else if (id === 'fund') T('ARCH', 29, 104, P.amber);
+    else if (id === 'exit') { T('EXIT', 160, 11, P.jade); T('3', 288, 41, P.bone, true); }
+    else if (id === 'everything-rally') { T('FRESH PRICES', 86, 20, P.phosphorD, true); T('12.40', 256, 67, P.phosphor, true); T('3', 301, 14, P.white, true); }
+    else if (id === 'lost-decade') T('NOW 042', 280, 48, P.amber);
+    else if (id === 'depression') T('JOBS', 294, 68, P.amber);
+  }
+  // endingDetail over an authored place: the place already holds the prop's base, so this draws the code's words and marks and the mover
+  // sprites (grids/endings/<id>-mover.grid). Coordinates are the code's (before the 8-unit drop); the grid headers give them after it.
+  function endingDetailArt(ctx, id, p, base, mov, n, dx, dy, G) {
+    const A = 'endings/' + id + '-mover', cx = 160;
+    const T = (t, x, y, col) => X.text(ctx, t, x, y, col, { align: 'center' });
+    if (id === 'wiped') { if (mov) for (let i = 0; i < 6; i++) blitArt(ctx, A, 'sheet:' + i, 112 + i * 7, 20 + i * 8 + Math.round(p * i * 2)); }
+    else if (id === 'fired') { if (base) T('PERSONAL', cx, G.label.y, P.ink); }
+    else if (id === 'perp') {
+      if (mov) {
+        if (p > 0.3) { blitArt(ctx, A, 'flash', 88, 18); blitArt(ctx, A, 'flash', 222, 26); }
+        if (p > 0.6) { ctx.save(); ctx.globalAlpha = 0.25; R(ctx, 70, 10, 180, 66, P.white); ctx.restore(); }
+      }
+    } else if (id === 'master') { if (mov) blitArt(ctx, A, 'yacht', 86 + dx, 16); }
+    else if (id === 'whistle') { if (base) T('LEAKED', 148, 53, P.crimsonD); }
+    else if (id === 'revolving') { if (base) T('PRIVATE / PUBLIC', cx, 12, P.amber); }
+    else if (id === 'depression') { if (mov) for (let i = 0; i < 9 && i < n; i++) blitArt(ctx, A, 'fig:' + (i % 5), 76 + i * 18, 71); }
+    else if (id === 'soft') { for (const L of G.leaves) blitArt(ctx, A, 'leaf', L.x, L.y); }
+    else if (id === 'nobody') {
+      if (base) {
+        for (let i = 0; i < 5; i++) { const x = 90 + i * 28; R(ctx, x + 11, 29, 3, 16, P.crimson); R(ctx, x + 7, 43, 11, 3, P.crimson); R(ctx, x + 9, 46, 7, 3, P.crimson); }
+        T('SELL SELL SELL SELL SELL', cx, 12, P.crimson);
+      }
+    } else if (id === 'fall-guy') { if (base) T('NOT MINE', cx, G.stamp.y, P.crimsonD); }
+    else if (id === 'cassandra') {
+      if (mov) {
+        for (let i = 0; i < 6 && i < n; i++) blitArt(ctx, A, 'sheet', 94 + i * 3, 50 - i * 4);
+        if (n >= 6) { R(ctx, 102, 32, 34, 5, P.crimsonD); R(ctx, 110, 40, 41, 9, P.bone); T('UNREAD', 128, 41, P.ink); } // the top sheet's ruled lines are cleared under the word
+      }
+      if (base) { T('FILED', 202, 33, P.ink); T('WEEK 3', 202, 43, P.crimson); }
+    } else if (id === 'acquirer') {
+      if (mov) { R(ctx, 170, 8, 1, 14 + dy, P.grey); blitArt(ctx, A, 'sign', 140, 22 + dy); T('HLST', 170, 26 + dy, P.ink); }
+    } else if (id === 'ward') { if (mov) blitArt(ctx, A, 'flag', 160, 8 + dy); }
+    else if (id === 'clawback') {
+      if (mov) for (let i = 4; i < 10; i++) { if (i - 4 < n) R(ctx, 98 + i * 12, 54, 11, 2, P.crimson); else for (let k = 3; k < 6; k++) blitArt(ctx, A, 'coin', 100 + i * 12, 68 - k * 4); }
+      if (base) T('40 CENTS', cx, 16, P.amber);
+    } else if (id === 'fund') { if (mov) { for (let i = 0; i < 9 && i < n; i++) R(ctx, 196 + i * 6, 70 - i * 5, 5, 3, P.jade); if (n >= 10) R(ctx, 244, 26, 6, 6, P.jade); } }
+    else if (id === 'right-early') {
+      const ys = [30, 34, 40, 48, 44, 36, 28, 22, 20, 30, 46, 58, 66];
+      if (mov) ys.forEach((y, i) => { if (i >= n) return; const up = i < 4 || i > 8; c1(ctx, 94 + i * 10, y + 2, 10, 5, up ? P.crimson : P.jade, P.white, up ? P.crimsonD : P.jadeD); });
+    } else if (id === 'everything-rally') { if (mov) for (let i = 0; i < 7 && i < n; i++) c1(ctx, 90 + i * 16, 74 - (20 + i * 6), 13, 20 + i * 6, P.jade, P.phosphor, P.jadeD); }
+    else if (id === 'lost-decade') { if (mov) for (let i = 0; i < 10 && i < n; i++) blitArt(ctx, A, 'cal', 84 + i * 15, 21 + (i % 2) * 2); }
+    else if (id === 'grind') { if (base) { const S = G.screen; R(ctx, S.x, S.y, S.w, S.h, P.screenGlow); R(ctx, 148, 31, 18, 1, P.phosphor); R(ctx, 148, 35, 12, 1, P.sky); } }
+    // replaced, quiet, exit: the place is the whole prop; their motion is code (CRT on, strip flash, windows out, door light)
+  }
+
   // o (optional): { part: 'base' | 'mover', n, dx, dy }. With no o every function draws what it always drew.
   // part 'base' leaves out the prop's mover, part 'mover' draws only the mover (nothing for the ids without one). n is how many of the mover's
   // repeated items are drawn (default all), dx / dy an offset added to the mover. Where the two parts overlap, the mover is drawn after the base.
@@ -948,6 +1008,7 @@
     if (o.part === 'mover' && !MOVER[id]) return;
     const base = o.part !== 'mover', mov = o.part !== 'base', n = o.n == null ? Infinity : o.n, dx = o.dx || 0, dy = o.dy || 0;
     const G = endingGeom(id);
+    if (hasArt('endings/' + id)) return endingDetailArt(ctx, id, p, base, mov, n, dx, dy, G);
     if (id === 'wiped') { // the book's charts, falling off the desk
       if (mov) for (let i = 0; i < 6; i++) {
         const drop = Math.round(p * i * 2), x = 112 + i * 7, y = 20 + i * 8 + drop;

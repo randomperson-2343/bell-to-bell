@@ -1,0 +1,83 @@
+{
+ "frames": [
+  {
+   "filename": "fig:0",
+   "frame": {
+    "x": 0,
+    "y": 0,
+    "w": 8,
+    "h": 14
+   }
+  },
+  {
+   "filename": "fig:1",
+   "frame": {
+    "x": 8,
+    "y": 0,
+    "w": 8,
+    "h": 14
+   }
+  },
+  {
+   "filename": "fig:2",
+   "frame": {
+    "x": 16,
+    "y": 0,
+    "w": 8,
+    "h": 14
+   }
+  },
+  {
+   "filename": "fig:3",
+   "frame": {
+    "x": 24,
+    "y": 0,
+    "w": 8,
+    "h": 14
+   }
+  },
+  {
+   "filename": "fig:4",
+   "frame": {
+    "x": 32,
+    "y": 0,
+    "w": 8,
+    "h": 14
+   }
+  }
+ ],
+ "meta": {
+  "image": "depression-mover.png",
+  "size": {
+   "w": 40,
+   "h": 14
+  },
+  "frameTags": [
+   {
+    "name": "fig:0",
+    "from": 0,
+    "to": 0
+   },
+   {
+    "name": "fig:1",
+    "from": 1,
+    "to": 1
+   },
+   {
+    "name": "fig:2",
+    "from": 2,
+    "to": 2
+   },
+   {
+    "name": "fig:3",
+    "from": 3,
+    "to": 3
+   },
+   {
+    "name": "fig:4",
+    "from": 4,
+    "to": 4
+   }
+  ]
+ }
+}

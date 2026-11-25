@@ -1,0 +1,27 @@
+{
+ "frames": [
+  {
+   "filename": "yacht",
+   "frame": {
+    "x": 0,
+    "y": 0,
+    "w": 150,
+    "h": 54
+   }
+  }
+ ],
+ "meta": {
+  "image": "master-mover.png",
+  "size": {
+   "w": 150,
+   "h": 54
+  },
+  "frameTags": [
+   {
+    "name": "yacht",
+    "from": 0,
+    "to": 0
+   }
+  ]
+ }
+}

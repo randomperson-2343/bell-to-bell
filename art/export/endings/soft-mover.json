@@ -1,0 +1,27 @@
+{
+ "frames": [
+  {
+   "filename": "leaf",
+   "frame": {
+    "x": 0,
+    "y": 0,
+    "w": 8,
+    "h": 6
+   }
+  }
+ ],
+ "meta": {
+  "image": "soft-mover.png",
+  "size": {
+   "w": 8,
+   "h": 6
+  },
+  "frameTags": [
+   {
+    "name": "leaf",
+    "from": 0,
+    "to": 0
+   }
+  ]
+ }
+}

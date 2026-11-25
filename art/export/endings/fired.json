@@ -1,0 +1,27 @@
+{
+ "frames": [
+  {
+   "filename": "place",
+   "frame": {
+    "x": 0,
+    "y": 0,
+    "w": 320,
+    "h": 180
+   }
+  }
+ ],
+ "meta": {
+  "image": "fired.png",
+  "size": {
+   "w": 320,
+   "h": 180
+  },
+  "frameTags": [
+   {
+    "name": "place",
+    "from": 0,
+    "to": 0
+   }
+  ]
+ }
+}

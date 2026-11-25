@@ -1,0 +1,27 @@
+{
+ "frames": [
+  {
+   "filename": "flash",
+   "frame": {
+    "x": 0,
+    "y": 0,
+    "w": 7,
+    "h": 7
+   }
+  }
+ ],
+ "meta": {
+  "image": "perp-mover.png",
+  "size": {
+   "w": 7,
+   "h": 7
+  },
+  "frameTags": [
+   {
+    "name": "flash",
+    "from": 0,
+    "to": 0
+   }
+  ]
+ }
+}
