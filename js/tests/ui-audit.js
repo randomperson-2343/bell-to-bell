@@ -42,6 +42,8 @@ const VIEWPORTS = [
 ].filter((v) => !ONLY.length || ONLY.includes(v.n));
 // Clean shots for before/after, on these viewports only.
 const CLEAN = new Set(['desk1440', 'up390', 'side844']);
+// The other six viewports get a clean shot of these three.
+const CLEAN_MORE = new Set(['menu', 'game-trade', 'game-positions']);
 const CLEAN_SCREENS = new Set(['menu', 'game-trade', 'game-positions', 'game-news', 'call', 'pause', 'eod', 'choice-1', 'ending-1']);
 
 function serve() {
@@ -210,7 +212,7 @@ async function check(page, vp, name) {
   const serious = issues.filter((i) => i.type !== 'ellipsis');
   bad += serious.length;
   console.log('AUDIT ' + JSON.stringify({ vp: vp.n, screen: name, n: serious.length, issues }));
-  if (CLEAN.has(vp.n) && CLEAN_SCREENS.has(name)) await emit(page, `clean/${vp.n}/${name}`);
+  if ((CLEAN.has(vp.n) && CLEAN_SCREENS.has(name)) || (!CLEAN.has(vp.n) && CLEAN_MORE.has(name))) await emit(page, `clean/${vp.n}/${name}`);
   if (serious.length) {
     await page.evaluate(markPage, issues);
     await emit(page, `marked/${vp.n}/${name}`);
