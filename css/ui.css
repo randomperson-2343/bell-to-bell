@@ -789,3 +789,23 @@ input.short { width: 72px; }
   .tbl td:first-child span { display: block; }
   .tbl button { margin-left: 2px; padding: 0 6px; }
 }
+
+/* ---- Menu: the logo sits on a clear plate, not on the backdrop's chart line and markers ---- */
+.menu-brand {
+  display: block; width: fit-content; max-width: 100%; box-sizing: border-box; margin: 0 auto; padding: 10px 26px 12px;
+  background: var(--c-ink); border: 2px solid; border-color: var(--c-slate) var(--c-ink2) var(--c-ink2) var(--c-slate);
+  box-shadow: 4px 4px 0 rgba(0, 0, 0, .4);
+}
+.menu-brand .brand-mark { margin-bottom: 4px; }
+.menu-wrap .fine { position: relative; }
+/* A phone on its side has no room for the logo above five buttons: logo left, buttons right. */
+@media (orientation: landscape) and (max-height: 500px) {
+  .menu-wrap {
+    display: grid; grid-template-columns: minmax(0, 1fr) minmax(240px, 300px); grid-template-rows: auto 1fr auto;
+    column-gap: 22px; align-items: center; max-width: 860px; padding: 8px 16px 8px;
+  }
+  .menu-wrap .ticker-tape { grid-column: 1 / -1; grid-row: 1; margin-bottom: 8px; }
+  .menu-wrap .menu-brand { grid-column: 1; grid-row: 2; }
+  .menu-wrap .menu-list { grid-column: 2; grid-row: 2 / span 2; margin: 0; gap: 8px; }
+  .menu-wrap .fine { grid-column: 1; grid-row: 3; margin: 6px 0 0; }
+}
