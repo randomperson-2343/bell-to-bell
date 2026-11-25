@@ -229,6 +229,7 @@
   }
 
   B.Portraits = {
+    NIGHT, // the one-step-down key map for a dark room (the night speaker, the dark trading floor)
     CAST,
     draw,
     paint,

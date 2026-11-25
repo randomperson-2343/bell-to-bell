@@ -208,6 +208,28 @@
       }
     },
 
+    // Authored art from js/art/sprite-data.js (B.Art), drawn a run at a time.
+    // opt: scale (default 1), skip (a string of keys to leave out), map (key -> key, applied first).
+    // Returns false when the art or the frame is missing, so a caller can fall back.
+    drawArt(ctx, id, frame, x, y, opt) {
+      const a = B.Art && B.Art.get(id, frame);
+      if (!a) return false;
+      opt = opt || {};
+      // opt.cols [from, to): only those sprite columns, so one desk's column of a full-canvas layer can be stamped on its own.
+      const k = opt.scale || 1, skip = opt.skip || '', map = opt.map, keys = B.PalKeys, c0 = opt.cols ? opt.cols[0] : 0, c1 = opt.cols ? opt.cols[1] : a.w;
+      for (let r = 0; r < a.h; r++) {
+        const row = a.rows[r];
+        for (let c = 0; c < row.length;) {
+          let j = c + 1; while (j < row.length && row[j] === row[c]) j++;
+          let key = row[c]; if (map && map[key]) key = map[key];
+          const a0 = Math.max(c, c0), a1 = Math.min(j, c1);
+          if (a1 > a0 && key !== '.' && skip.indexOf(key) < 0 && keys[key]) { ctx.fillStyle = keys[key]; ctx.fillRect(x + a0 * k, y + r * k, (a1 - a0) * k, k); }
+          c = j;
+        }
+      }
+      return true;
+    },
+
     // ---- texture ----
     // Deterministic speckle, so the same wall looks the same every frame.
     speckle(ctx, x, y, w, h, col, density, seed) {

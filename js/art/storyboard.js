@@ -464,7 +464,7 @@
     switch (r.shot) {
       case 'tv': return at2x(ctx, (c) => { SH.apartment(c, 0.7); SH.tvSet(c, 40, 50, 104, 68, r.arg || title, act(day), 0); }, day);
       case 'floor': return at2x(ctx, (c) => SH.tradingFloor(c, 0.15, true, day), day);
-      case 'dark': return at2x(ctx, (c) => { SH.tradingFloor(c, 0.15, false, day); c.save(); c.globalAlpha = 0.42; X.rect(c, 0, 0, 320, 180, P.ink); c.restore(); }, day);
+      case 'dark': return at2x(ctx, (c) => { SH.tradingFloor(c, 0.15, false, day); if (!SH.floorArt()) { c.save(); c.globalAlpha = 0.42; X.rect(c, 0, 0, 320, 180, P.ink); c.restore(); } }, day);
       case 'elevator': return at2x(ctx, (c) => SH.elevator(c, 0.6, 41), day);
       case 'bell': return at2x(ctx, (c) => SH.bellScene(c, 0.5, false), day);
       case 'tableau': return at2x(ctx, (c) => { if (!tableau(c, r.arg)) SH.apartment(c, 0.6); }, day);
@@ -919,10 +919,14 @@
       draw(c) { at2x(c, (cc) => SH.tradingFloor(cc, 0.4, false, 60), day); },
       animate(c, v, t) {
         if (t >= 1.25) return;
-        at2x(c, (cc) => wave.forEach(({ g, a, h }) => {
-          K.crt(cc, g.x, g.y, g.w, h, t, { mode: 'roll', at: a, dur: 0.36, band: 12 });
-          K.ping(cc, t, { at: a, flare: { x: g.x, y: g.y, w: g.w, h, col: P.bone, a: 0.18, dur: 0.08 } });
-        }), day);
+        at2x(c, (cc) => {
+          wave.forEach(({ g, a, h }) => {
+            K.crt(cc, g.x, g.y, g.w, h, t, { mode: 'roll', at: a, dur: 0.36, band: 12 });
+            K.ping(cc, t, { at: a, flare: { x: g.x, y: g.y, w: g.w, h, col: P.bone, a: 0.18, dur: 0.08 } });
+          });
+          // the colleagues and heads in front of the screens go back over the wave
+          SH.floorFront(cc, 0.4, false, 60, wave.filter((q) => t >= q.a && t < q.a + 0.36).map((q) => q.g));
+        }, day);
       }
     }];
   }
@@ -1406,13 +1410,14 @@
     const K = B.MotionKit, hold = o.phase === 'hold', detail = o.phase === 'detail', dark = o.dark, Z = o.zoom;
     const S = SH.floorGeom(Z, day), dur = o.dur;
     // the screens the wave crosses: not under the foreground colleagues (zoom > 0.12: x 26 to 286 only), not the late floor's dead ones
-    const wave = dark ? [] : S.filter((g) => (Z <= 0.12 || (g.x >= 26 && g.x + g.w <= 286)) && !((day >= 45) && !g.on));
+    // (the authored floor's dark screens are dead glass on any day, so it skips every unlit one)
+    const wave = dark ? [] : S.filter((g) => ((SH.floorArt() ? Z < 0.3 : Z <= 0.12) || (g.x >= 26 && g.x + g.w <= 286)) && !((day >= 45 || SH.floorArt()) && !g.on));
     let key = null;
     if (dark) { let best = 1e9; S.forEach((g) => { const d = Math.abs(g.x + g.w / 2 - 160); if (g.r === 3 && d < best) { best = d; key = g; } }); }
     // the dark floor's lesser flickers skip the screens under the foreground colleagues too (zoom > 0.12: x 26 to 286 only), as the wave does
-    const rest = dark ? S.filter((g) => g !== key && (Z <= 0.12 || (g.x >= 26 && g.x + g.w <= 286))) : [];
+    const rest = dark ? S.filter((g) => g !== key && ((SH.floorArt() ? Z < 0.3 : Z <= 0.12) || (g.x >= 26 && g.x + g.w <= 286))) : [];
     const art = (c, fn, noBack) => (detail || hold ? at2x(c, fn, day) : framed(c, day, r, title, { noBack, draw: (cc) => at2x(cc, fn, day) }));
-    const paint = (c2) => { SH.tradingFloor(c2, Z, !dark, day); if (dark && !detail) { c2.save(); c2.globalAlpha = 0.42; X.rect(c2, 0, 0, 320, 180, P.ink); c2.restore(); } };
+    const paint = (c2) => { SH.tradingFloor(c2, Z, !dark, day); if (dark && !detail && !SH.floorArt()) { c2.save(); c2.globalAlpha = 0.42; X.rect(c2, 0, 0, 320, 180, P.ink); c2.restore(); } };
     return [
       {
         id: 'floor', depth: 1,
@@ -1432,6 +1437,8 @@
                 K.ping(c2, t, { at, flare: { x: g.x, y: g.y, w: g.w, h: g.h, col: P.bone, a: 0.18, dur: 0.08 } });
               });
             }
+            // what stands in front of the screens (heads, nearer rows, the colleagues) goes back over what was painted on them
+            SH.floorFront(c2, Z, !dark, day, dark ? [key].concat(rest).filter(Boolean) : wave.filter((g) => { const at = 0.35 + 0.5 * Math.max(0, Math.min(1, (g.x + g.w / 2) / 320)); return t >= at && t < at + 0.36; }));
           }, true);
         }
       },
@@ -1679,7 +1686,7 @@
             if (m.off) return;
             const at = 0.25 + 0.10 * (O.live - 1 - m.i), sc = m.screen, bar = m.bar;
             K.crt(c, sc.x, sc.y, sc.w, sc.h, t, { mode: 'off', at, bg: P.screenD, dim });
-            if (t >= at + 0.10) { X.rect(c, bar.x, bar.y, bar.w, bar.h, P.plasticD); c.save(); c.globalAlpha = dim; X.rect(c, bar.x, bar.y, bar.w, bar.h, P.ink); c.restore(); }
+            if (t >= at + 0.10) { X.rect(c, bar.x, bar.y, bar.w, bar.h, bar.col || P.plasticD); c.save(); c.globalAlpha = dim; X.rect(c, bar.x, bar.y, bar.w, bar.h, P.ink); c.restore(); }
           });
         }
       },
@@ -1873,7 +1880,7 @@
           R.officeFrame(c, day, true, down, S, { part: 'top', slipNow });
           // the now-mark (sheet 2, section 10): a 2 px wide bone column at alpha 0.5 at the newest point's x, only while that point is lit, behind the dots
           if (head) {
-            const mx = Math.max(dc.x + 1, Math.min(dc.x + dc.w - 3, x0 + 70)), my0 = Math.max(dc.y + 1, 228), my1 = Math.min(dc.y + dc.h - 2, 250);
+            const mx = Math.max(dc.x + 1, Math.min(dc.x + dc.w - 3, x0 + 70)), my0 = Math.max(dc.y + 1, dc.y + 10), my1 = Math.min(dc.y + dc.h - 2, dc.y + dc.h - 18);
             c.save(); c.globalAlpha = 0.5; X.rect(c, mx, my0, 2, my1 - my0 + 1, P.bone); c.restore();
           }
           K.trace(c, Y, t, { x0, step: 5, from: s, n: 15, w: 3, h: 2, col, head });
