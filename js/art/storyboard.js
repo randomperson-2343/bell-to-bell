@@ -464,7 +464,7 @@
     switch (r.shot) {
       case 'tv': return at2x(ctx, (c) => { SH.apartment(c, 0.7); SH.tvSet(c, 40, 50, 104, 68, r.arg || title, act(day), 0); }, day);
       case 'floor': return at2x(ctx, (c) => SH.tradingFloor(c, 0.15, true, day), day);
-      case 'dark': return at2x(ctx, (c) => { SH.tradingFloor(c, 0.15, false, day); c.save(); c.globalAlpha = 0.42; X.rect(c, 0, 0, 320, 180, P.ink); c.restore(); }, day);
+      case 'dark': return at2x(ctx, (c) => { SH.tradingFloor(c, 0.15, false, day); if (!SH.floorArt()) { c.save(); c.globalAlpha = 0.42; X.rect(c, 0, 0, 320, 180, P.ink); c.restore(); } }, day);
       case 'elevator': return at2x(ctx, (c) => SH.elevator(c, 0.6, 41), day);
       case 'bell': return at2x(ctx, (c) => SH.bellScene(c, 0.5, false), day);
       case 'tableau': return at2x(ctx, (c) => { if (!tableau(c, r.arg)) SH.apartment(c, 0.6); }, day);
@@ -1406,13 +1406,13 @@
     const K = B.MotionKit, hold = o.phase === 'hold', detail = o.phase === 'detail', dark = o.dark, Z = o.zoom;
     const S = SH.floorGeom(Z, day), dur = o.dur;
     // the screens the wave crosses: not under the foreground colleagues (zoom > 0.12: x 26 to 286 only), not the late floor's dead ones
-    const wave = dark ? [] : S.filter((g) => (Z <= 0.12 || (g.x >= 26 && g.x + g.w <= 286)) && !((day >= 45) && !g.on));
+    const wave = dark ? [] : S.filter((g) => ((SH.floorArt() ? Z < 0.3 : Z <= 0.12) || (g.x >= 26 && g.x + g.w <= 286)) && !((day >= 45) && !g.on));
     let key = null;
     if (dark) { let best = 1e9; S.forEach((g) => { const d = Math.abs(g.x + g.w / 2 - 160); if (g.r === 3 && d < best) { best = d; key = g; } }); }
     // the dark floor's lesser flickers skip the screens under the foreground colleagues too (zoom > 0.12: x 26 to 286 only), as the wave does
-    const rest = dark ? S.filter((g) => g !== key && (Z <= 0.12 || (g.x >= 26 && g.x + g.w <= 286))) : [];
+    const rest = dark ? S.filter((g) => g !== key && ((SH.floorArt() ? Z < 0.3 : Z <= 0.12) || (g.x >= 26 && g.x + g.w <= 286))) : [];
     const art = (c, fn, noBack) => (detail || hold ? at2x(c, fn, day) : framed(c, day, r, title, { noBack, draw: (cc) => at2x(cc, fn, day) }));
-    const paint = (c2) => { SH.tradingFloor(c2, Z, !dark, day); if (dark && !detail) { c2.save(); c2.globalAlpha = 0.42; X.rect(c2, 0, 0, 320, 180, P.ink); c2.restore(); } };
+    const paint = (c2) => { SH.tradingFloor(c2, Z, !dark, day); if (dark && !detail && !SH.floorArt()) { c2.save(); c2.globalAlpha = 0.42; X.rect(c2, 0, 0, 320, 180, P.ink); c2.restore(); } };
     return [
       {
         id: 'floor', depth: 1,

@@ -185,6 +185,7 @@
   const floorOn = (r, i, seed) => ((seed || 0) >= 45 ? ((i * 7 + r * 3 + seed) % 5) < 2 : ((i * 7 + r * 3) % 5) !== 0);
   // The glass rects (320x180 art units) of the two near rows' desks, row by row, left to right: { r, i, x, y, w, h, on }.
   function floorGeom(zoom, seed) {
+    if (floorArt()) return floorArtGeom(zoom, seed);
     const m = floorMath(zoom), out = [];
     for (let r = 2; r < 4; r++) for (let i = -1; i < 12; i++) {
       const d = floorDesk(m, r, i);
@@ -192,7 +193,72 @@
     }
     return out;
   }
+  // ---------- the authored trading floor (art/src/rooms/floor-<wide|mid|close>.aseprite) ----------
+  // Three framings joined by cuts, each a stack of full-canvas 320x180 layers (STYLE.md 7.8). The zoom picks the framing (under 0.3 wide,
+  // under 0.6 mid, then close) and, inside a framing, how far the camera has dollied in: each layer slides down by its depth, so the near
+  // rows pass under the lens faster than the wall (no fractional zoom on authored art). Per desk, code picks the screen (on/off) and the
+  // seat (occupied/empty) and stamps only that desk's column of the layer. Every desk is keyed by its row and column in the wide shot, so
+  // the person at a desk is the same person, at the same desk, in every framing.
+  // A row: depth, desk column xs, the glass rect (x offset from the column, y, w, h), and its wide key [row, column offset].
+  const fr = (d, x0, pitch, n, gx, gy, gw, gh, wr, wo) => ({ d, pitch, xs: Array.from({ length: n }, (_, i) => x0 + i * pitch), gx, gy, gw, gh, wr, wo });
+  const FLOOR_ART = {
+    wide: { id: 'rooms/floor-wide', lights: true, fg: false,
+      rows: [fr(0.5, -8, 40, 9, 5, 55, 26, 7, 0, 0), fr(0.5, -22, 52, 7, 7, 71, 34, 8, 1, 0), fr(1, -14, 66, 6, 8, 92, 46, 13, 2, 0), fr(1, -34, 84, 5, 14, 124, 52, 17, 3, 0)] },
+    mid: { id: 'rooms/floor-mid', lights: false, fg: true,
+      rows: [fr(0.5, -14, 66, 6, 8, 53, 46, 13, 2, 0), fr(1, -34, 84, 5, 14, 86, 52, 17, 3, 0), fr(1, -48, 118, 4, 20, 129, 74, 25, 3, 3)] },
+    close: { id: 'rooms/floor-close', lights: true, fg: true,
+      rows: [fr(1, -48, 112, 4, 18, 56, 68, 24, 2, 2), fr(1.4, -76, 160, 3, 29, 97, 94, 34, 3, 1)] }
+  };
+  const floorArt = () => !!(B.Art && B.Art.has('rooms/floor-wide') && B.Art.has('rooms/floor-mid') && B.Art.has('rooms/floor-close'));
+  function floorFraming(zoom) {
+    const z = B.clamp(zoom || 0, 0, 1);
+    const name = z < 0.3 ? 'wide' : z < 0.6 ? 'mid' : 'close', t = name === 'wide' ? z / 0.3 : name === 'mid' ? (z - 0.3) / 0.3 : (z - 0.6) / 0.4;
+    return { name, F: FLOOR_ART[name], t };
+  }
+  // How far a layer of this depth has slid down at dolly t (art units; the wall, at 0.3, never moves, so nothing opens at the edges).
+  const floorDy = (d, t) => Math.round(t * Math.max(0, d - 0.3) * 8);
+  // Who sits at wide desk (row, column) and whether its screen is lit: seeded by the day; one in three empty early, half from day 30,
+  // most from day 45 (the floor empties). The column steps by 5 and the row by 2 so neighbouring desks, and the same desk in the next
+  // row, differ.
+  function floorSeat(wr, wi, seed) {
+    const s = seed || 0, v = wi * 5 + wr * 2 + s;
+    return s >= 45 ? v % 6 === 0 : s >= 30 ? v % 4 < 2 : v % 3 !== 0;
+  }
+  const floorScreen = (wr, wi, seed) => floorOn(wr, wi, seed);
+  // The authored floor's lit glass rects, near rows only (the last two rows of the framing, reported as rows 2 and 3 like the old floor).
+  function floorArtGeom(zoom, seed) {
+    const { F, t } = floorFraming(zoom), out = [], n = F.rows.length;
+    F.rows.forEach((R0, ri) => {
+      if (ri < n - 2) return;
+      const dy = floorDy(R0.d, t);
+      R0.xs.forEach((x, i) => {
+        const g = { r: 4 - (n - ri), i, x: x + R0.gx, y: R0.gy + dy, w: R0.gw, h: R0.gh, on: floorScreen(R0.wr, i + R0.wo, seed) };
+        if (g.x + g.w > 0 && g.x < V.w && g.y < V.h) out.push(g);
+      });
+    });
+    return out;
+  }
+  function floorArtDraw(ctx, zoom, lit, seed) {
+    const { F, t } = floorFraming(zoom), id = F.id, dark = !lit, night = dark && B.Portraits ? B.Portraits.NIGHT : null;
+    const sky = dark ? 'night' : SEASON ? SEASON.id : 'grey';
+    X.rect(ctx, 0, 0, V.w, V.h, P.ink);
+    X.drawArt(ctx, id, 'sky:' + sky, 0, 0);
+    X.drawArt(ctx, id, 'wall', 0, 0, { map: night });
+    if (F.lights) X.drawArt(ctx, id, lit ? 'lights:on' : 'lights:off', 0, 0, { map: night });
+    F.rows.forEach((R0, r) => {
+      const dy = floorDy(R0.d, t);
+      X.drawArt(ctx, id, `r${r}:desk`, 0, dy, { map: night });
+      R0.xs.forEach((x, i) => {
+        const cols = [Math.max(0, x), Math.min(V.w, x + R0.pitch)];
+        if (cols[1] <= cols[0]) return;
+        X.drawArt(ctx, id, `r${r}:screen:${floorScreen(R0.wr, i + R0.wo, seed) ? 'on' : 'off'}`, 0, dy, { cols });
+        X.drawArt(ctx, id, `r${r}:seat:${floorSeat(R0.wr, i + R0.wo, seed) ? 'occupied' : 'empty'}`, 0, dy, { cols, map: night });
+      });
+    });
+    if (F.fg) { const dy = floorDy(1.4, t); X.drawArt(ctx, id, 'fg:left', 0, dy, { map: night }); X.drawArt(ctx, id, 'fg:right', 0, dy, { map: night }); }
+  }
   function tradingFloor(ctx, zoom, lit, seed) {
+    if (floorArt()) return floorArtDraw(ctx, zoom, lit, seed);
     const M = floorMath(zoom), sx = M.sx, sy = M.sy, sw = M.sw;
     // Outline only when the piece is big enough to carry one.
     const kk = (x, y, w, h, base, hi, sh) => (w > 4 && h > 4 ? k1(ctx, x, y, w, h, base, hi, sh, P.ink2) : X.rect(ctx, x, y, w, h, base));
@@ -934,5 +1000,5 @@
 
   B.Scenes = Scenes;
   // The hand-drawn 320x180 set pieces, for the storyboard layer to reuse at 2x.
-  B.Shots = { V, WALKER, WALKER_B, setSeason, apartment, tvSet, elevator, tradingFloor, floorGeom, deskCloseup, bellScene, endingShot, briefingTableau, tableauMover, tableauGeom, endingDetail, endingGeom };
+  B.Shots = { V, WALKER, WALKER_B, setSeason, apartment, tvSet, elevator, tradingFloor, floorGeom, floorArt, deskCloseup, bellScene, endingShot, briefingTableau, tableauMover, tableauGeom, endingDetail, endingGeom };
 })(window.BTB);
