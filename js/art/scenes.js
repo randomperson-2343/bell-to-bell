@@ -975,29 +975,29 @@
     else if (id === 'soft') { if (mov) for (const L of G.leaves) blitArt(ctx, A, 'leaf', L.x, L.y); } // the place has the leaves; the mover redraws them over the window covers
     else if (id === 'nobody') {
       if (base) {
-        for (let i = 0; i < 5; i++) { const x = 90 + i * 28; R(ctx, x + 11, 29, 3, 16, P.crimson); R(ctx, x + 7, 43, 11, 3, P.crimson); R(ctx, x + 9, 46, 7, 3, P.crimson); }
+        for (let i = 0; i < 5; i++) blitArt(ctx, A, 'arrow', 97 + i * 28, 29);
         T('SELL SELL SELL SELL SELL', cx, 12, P.crimson);
       }
     } else if (id === 'fall-guy') { if (base) T('NOT MINE', cx, G.stamp.y, P.crimsonD); }
     else if (id === 'cassandra') {
       if (mov) {
         for (let i = 0; i < 6 && i < n; i++) blitArt(ctx, A, 'sheet', 94 + i * 3, 50 - i * 4);
-        if (n >= 6) { R(ctx, 102, 32, 34, 5, P.crimsonD); R(ctx, 110, 40, 41, 9, P.bone); T('UNREAD', 128, 41, P.ink); } // the top sheet's ruled lines are cleared under the word
+        if (n >= 6) { blitArt(ctx, A, 'strip', 102, 32); blitArt(ctx, A, 'label', 110, 40); T('UNREAD', 128, 41, P.ink); } // the top sheet's ruled lines are cleared under the word
       }
       if (base) { T('FILED', 202, 33, P.ink); T('WEEK 3', 202, 43, P.crimson); }
     } else if (id === 'acquirer') {
       if (mov) { R(ctx, 170, 8, 1, 14 + dy, P.grey); blitArt(ctx, A, 'sign', 140, 22 + dy); T('HLST', 170, 26 + dy, P.ink); }
     } else if (id === 'ward') { if (mov) blitArt(ctx, A, 'flag', 160, 8 + dy); }
     else if (id === 'clawback') {
-      if (mov) for (let i = 4; i < 10; i++) { if (i - 4 < n) R(ctx, 98 + i * 12, 54, 11, 2, P.crimson); else for (let k = 3; k < 6; k++) blitArt(ctx, A, 'coin', 100 + i * 12, 68 - k * 4); }
+      if (mov) for (let i = 4; i < 10; i++) { if (i - 4 < n) blitArt(ctx, A, 'bar', 98 + i * 12, 54); else for (let k = 3; k < 6; k++) blitArt(ctx, A, 'coin', 100 + i * 12, 68 - k * 4); }
       if (base) T('40 CENTS', cx, 16, P.amber);
-    } else if (id === 'fund') { if (mov) { for (let i = 0; i < 9 && i < n; i++) R(ctx, 196 + i * 6, 70 - i * 5, 5, 3, P.jade); if (n >= 10) R(ctx, 244, 26, 6, 6, P.jade); } }
+    } else if (id === 'fund') { if (mov) { for (let i = 0; i < 9 && i < n; i++) blitArt(ctx, A, 'tick', 196 + i * 6, 70 - i * 5); if (n >= 10) blitArt(ctx, A, 'dot', 244, 26); } }
     else if (id === 'right-early') {
       const ys = [30, 34, 40, 48, 44, 36, 28, 22, 20, 30, 46, 58, 66];
-      if (mov) ys.forEach((y, i) => { if (i >= n) return; const up = i < 4 || i > 8; c1(ctx, 94 + i * 10, y + 2, 10, 5, up ? P.crimson : P.jade, P.white, up ? P.crimsonD : P.jadeD); });
-    } else if (id === 'everything-rally') { if (mov) for (let i = 0; i < 7 && i < n; i++) c1(ctx, 90 + i * 16, 74 - (20 + i * 6), 13, 20 + i * 6, P.jade, P.phosphor, P.jadeD); }
+      if (mov) ys.forEach((y, i) => { if (i >= n) return; const up = i < 4 || i > 8; blitArt(ctx, A, up ? 'candle:up' : 'candle:down', 94 + i * 10, y + 2); });
+    } else if (id === 'everything-rally') { if (mov) for (let i = 0; i < 7 && i < n; i++) blitArt(ctx, A, 'bar:' + i, 90 + i * 16, 74 - (20 + i * 6)); }
     else if (id === 'lost-decade') { if (mov) for (let i = 0; i < 10 && i < n; i++) blitArt(ctx, A, 'cal', 84 + i * 15, 21 + (i % 2) * 2); }
-    else if (id === 'grind') { if (base) { const S = G.screen; R(ctx, S.x, S.y, S.w, S.h, P.screenGlow); R(ctx, 148, 31, 18, 1, P.phosphor); R(ctx, 148, 35, 12, 1, P.sky); } }
+    else if (id === 'grind') { if (base) { const S = G.screen; blitArt(ctx, A, 'screen', S.x, S.y); } }
     // replaced, quiet, exit: the place is the whole prop; their motion is code (CRT on, strip flash, windows out, door light)
   }
 

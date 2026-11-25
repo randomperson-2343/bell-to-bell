@@ -8,12 +8,30 @@
     "w": 62,
     "h": 24
    }
+  },
+  {
+   "filename": "strip",
+   "frame": {
+    "x": 62,
+    "y": 0,
+    "w": 62,
+    "h": 24
+   }
+  },
+  {
+   "filename": "label",
+   "frame": {
+    "x": 124,
+    "y": 0,
+    "w": 62,
+    "h": 24
+   }
   }
  ],
  "meta": {
   "image": "cassandra-mover.png",
   "size": {
-   "w": 62,
+   "w": 186,
    "h": 24
   },
   "frameTags": [
@@ -21,6 +39,16 @@
     "name": "sheet",
     "from": 0,
     "to": 0
+   },
+   {
+    "name": "strip",
+    "from": 1,
+    "to": 1
+   },
+   {
+    "name": "label",
+    "from": 2,
+    "to": 2
    }
   ]
  }

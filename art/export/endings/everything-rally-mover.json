@@ -1,0 +1,111 @@
+{
+ "frames": [
+  {
+   "filename": "bar:0",
+   "frame": {
+    "x": 0,
+    "y": 0,
+    "w": 13,
+    "h": 56
+   }
+  },
+  {
+   "filename": "bar:1",
+   "frame": {
+    "x": 13,
+    "y": 0,
+    "w": 13,
+    "h": 56
+   }
+  },
+  {
+   "filename": "bar:2",
+   "frame": {
+    "x": 26,
+    "y": 0,
+    "w": 13,
+    "h": 56
+   }
+  },
+  {
+   "filename": "bar:3",
+   "frame": {
+    "x": 39,
+    "y": 0,
+    "w": 13,
+    "h": 56
+   }
+  },
+  {
+   "filename": "bar:4",
+   "frame": {
+    "x": 52,
+    "y": 0,
+    "w": 13,
+    "h": 56
+   }
+  },
+  {
+   "filename": "bar:5",
+   "frame": {
+    "x": 65,
+    "y": 0,
+    "w": 13,
+    "h": 56
+   }
+  },
+  {
+   "filename": "bar:6",
+   "frame": {
+    "x": 78,
+    "y": 0,
+    "w": 13,
+    "h": 56
+   }
+  }
+ ],
+ "meta": {
+  "image": "everything-rally-mover.png",
+  "size": {
+   "w": 91,
+   "h": 56
+  },
+  "frameTags": [
+   {
+    "name": "bar:0",
+    "from": 0,
+    "to": 0
+   },
+   {
+    "name": "bar:1",
+    "from": 1,
+    "to": 1
+   },
+   {
+    "name": "bar:2",
+    "from": 2,
+    "to": 2
+   },
+   {
+    "name": "bar:3",
+    "from": 3,
+    "to": 3
+   },
+   {
+    "name": "bar:4",
+    "from": 4,
+    "to": 4
+   },
+   {
+    "name": "bar:5",
+    "from": 5,
+    "to": 5
+   },
+   {
+    "name": "bar:6",
+    "from": 6,
+    "to": 6
+   }
+  ]
+ }
+}
