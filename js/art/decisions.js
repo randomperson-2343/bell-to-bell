@@ -292,9 +292,9 @@
       aArt(ctx, 'racks', 'room');
       if (dark) {
         ctx.save(); ctx.globalAlpha = 0.45; X.rect(ctx, 0, 0, V.w, V.h, P.ink); ctx.restore();
-        // the red switch stays lit and off: the art's cover (cells 34,37 24x31), button down and dark
+        // the red switch stays lit and off: the art's cover (cells 34,37 24x31) redrawn, then the authored switch:off frame over it: button pulled down, its slot dark
         ctx.save(); ctx.beginPath(); ctx.rect(100, 109, 72, 93); ctx.clip(); aArt(ctx, 'racks', 'room'); ctx.restore();
-        cel(ctx, 121, 130, 30, 51, P.crimsonD, P.crimson, P.crimsonD); cel(ctx, 127, 166, 18, 9, P.bone, P.white, P.putty2);
+        aArt(ctx, 'racks', 'switch:off');
       } else aArt(ctx, 'racks', 'leds:on');
       return;
     }
