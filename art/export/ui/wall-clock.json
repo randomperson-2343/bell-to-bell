@@ -1,0 +1,55 @@
+{
+ "frames": [
+  {
+   "filename": "normal",
+   "frame": {
+    "x": 0,
+    "y": 0,
+    "w": 16,
+    "h": 14
+   }
+  },
+  {
+   "filename": "late",
+   "frame": {
+    "x": 16,
+    "y": 0,
+    "w": 16,
+    "h": 14
+   }
+  },
+  {
+   "filename": "final",
+   "frame": {
+    "x": 32,
+    "y": 0,
+    "w": 16,
+    "h": 14
+   }
+  }
+ ],
+ "meta": {
+  "image": "wall-clock.png",
+  "size": {
+   "w": 48,
+   "h": 14
+  },
+  "frameTags": [
+   {
+    "name": "normal",
+    "from": 0,
+    "to": 0
+   },
+   {
+    "name": "late",
+    "from": 1,
+    "to": 1
+   },
+   {
+    "name": "final",
+    "from": 2,
+    "to": 2
+   }
+  ]
+ }
+}

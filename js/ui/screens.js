@@ -44,6 +44,8 @@
       B.Music.setVolume(s.musicVolume);
       B.Music.setEnabled(s.music);
       document.documentElement.style.setProperty('--fx', this.fx());
+      // The authored CSS motion (logo glint, mug steam, phone buzz) runs only on full effects.
+      document.documentElement.dataset.motion = this.motion() ? 'full' : 'off';
     }
   };
 
@@ -130,7 +132,7 @@
         if (src && B.Sqwak && String(src).charAt(0) === '@') {
           const a = B.Sqwak.account(src);
           return `<button class="preopen-item sq ${kind}" data-feed-item="${i}">
-            <i class="sq-av" style="--av:var(--c-${a.col})">${B.esc(B.Sqwak.initials(a))}</i>
+            <i class="sq-av" data-av="${a.col}" style="--av:var(--c-${a.col})">${B.esc(B.Sqwak.initials(a))}</i>
             <span class="sq-who"><b>${B.esc(a.name)}</b>${a.followers >= B.Sqwak.HYPE_MIN_FOLLOWERS ? '<i class="sq-v">&#10004;</i>' : ''}<span>${B.esc(a.handle)}</span></span>
             <strong>${B.esc(item.title || '')}</strong>
             <p hidden>${B.esc(item.text || '')}</p>
@@ -170,7 +172,7 @@
       const phone = feed ? `<section class="preopen-device" aria-label="Pre-open phone feed">
         <div class="preopen-speaker" aria-hidden="true"></div>
         <div class="preopen-screen">
-          <div class="preopen-status"><span>6:38</span><i></i><span>LTE&nbsp;▮▮▮</span></div>
+          <div class="preopen-status"><span>6:38</span><i></i><span>LTE <span class="px-ico px-ico-signal" aria-hidden="true"></span><span class="px-ico px-ico-battery" aria-hidden="true"></span></span></div>
           <div class="preopen-top"><span class="sq-logo">sqwak</span>${b.anomalyCount == null ? '<b>NOTIFICATIONS</b>' : `<b>ANOMALIES: ${b.anomalyCount}</b>`}</div>
           <div class="preopen-scroll">${ledgerHTML(b.ledger, false) + feed}</div>
         </div>

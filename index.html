@@ -5,11 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Bell to Bell</title>
   <meta name="description" content="A stressful 16-bit day-trading simulator. Make as much money as humanly possible between the opening and closing bell.">
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32' shape-rendering='crispEdges'%3E%3Crect width='32' height='32' fill='%23171922'/%3E%3Cpath d='M5 5h18v5H5zm3 7h18v5H8zm3 7h16v5H11zm4 7h12v3H15z' fill='%23d2a85c'/%3E%3Cpath d='M23 5h4v5h-4zm3 7h3v5h-3z' fill='%23bd5a66'/%3E%3C/svg%3E">
+  <link rel="icon" type="image/png" sizes="32x32" href="art/ui/favicon-32--base.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="art/ui/favicon-16--base.png">
   <link rel="stylesheet" href="css/fonts.css">
   <link rel="stylesheet" href="css/tokens.css">
   <link rel="stylesheet" href="css/ui.css">
   <link rel="stylesheet" href="css/office.css">
+  <link rel="stylesheet" href="css/art.css">
 </head>
 <body>
   <div id="app">
@@ -239,9 +241,9 @@
                 <div id="phone" hidden></div>
                 <div id="tasks"></div>
                 <div class="feed-tabs">
-                  <button class="on" data-feed="wire">Wire</button>
-                  <button data-feed="chirp">Sqwak</button>
-                  <button data-feed="inbox">Inbox <span id="inbox-badge" class="badge" hidden>0</span></button>
+                  <button class="on" data-feed="wire"><span class="feed-logo feed-logo-wire">Wire</span></button>
+                  <button data-feed="chirp"><span class="feed-logo feed-logo-sqwak">Sqwak</span></button>
+                  <button data-feed="inbox"><span class="feed-logo feed-logo-inbox">Inbox</span> <span id="inbox-badge" class="badge" hidden>0</span></button>
                 </div>
                 <div id="feed-list"></div>
               </div>
@@ -265,8 +267,8 @@
             </div>
             <canvas id="story-art" aria-label="Story objects collected on the desk"></canvas>
             <div class="desk-spacer"></div>
-            <button class="desk-btn" id="btn-mute" title="Mute all audio"><span class="desk-label">Audio On</span></button>
-            <button class="desk-btn" id="btn-pause" aria-label="Pause menu" title="Pause / Save (Esc)"><span class="desk-label">&#10074;&#10074; Menu</span></button>
+            <button class="desk-btn" id="btn-mute" title="Mute all audio"><span class="px-ico px-ico-audio" aria-hidden="true"></span><span class="desk-label">Audio On</span></button>
+            <button class="desk-btn" id="btn-pause" aria-label="Pause menu" title="Pause / Save (Esc)"><span class="px-ico px-ico-pause" aria-hidden="true"></span><span class="desk-label">Menu</span></button>
           </footer>
 
           <div id="mc-banner" hidden></div>

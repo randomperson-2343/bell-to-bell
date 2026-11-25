@@ -1,0 +1,55 @@
+{
+ "frames": [
+  {
+   "filename": "normal",
+   "frame": {
+    "x": 0,
+    "y": 0,
+    "w": 12,
+    "h": 12
+   }
+  },
+  {
+   "filename": "empty",
+   "frame": {
+    "x": 12,
+    "y": 0,
+    "w": 12,
+    "h": 12
+   }
+  },
+  {
+   "filename": "finished",
+   "frame": {
+    "x": 24,
+    "y": 0,
+    "w": 12,
+    "h": 12
+   }
+  }
+ ],
+ "meta": {
+  "image": "cards.png",
+  "size": {
+   "w": 36,
+   "h": 12
+  },
+  "frameTags": [
+   {
+    "name": "normal",
+    "from": 0,
+    "to": 0
+   },
+   {
+    "name": "empty",
+    "from": 1,
+    "to": 1
+   },
+   {
+    "name": "finished",
+    "from": 2,
+    "to": 2
+   }
+  ]
+ }
+}

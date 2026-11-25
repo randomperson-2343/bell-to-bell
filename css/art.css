@@ -1,0 +1,336 @@
+/* ============================================================
+   Bell to Bell — authored pixel-art chrome (batch 3)
+   Frames, plates, buttons, gauges, icons, the logo and the phone,
+   drawn in Aseprite (art/src/ui/) and written to art/ui/ by
+   tools/art/build-ui.js at 2x: one art pixel = 2 CSS px.
+
+   9-slices are border-images. Slices are in image pixels, so a
+   4-art-px corner is "8". The border-image is wider than the box's
+   own border (border-image-width), so it paints into the padding
+   and the layout does not move. Text, numbers, fill widths and the
+   act accent stay live CSS (STYLE 8.1).
+   ============================================================ */
+
+/* Every authored piece keeps its square pixels. */
+.btn, .desk-btn, #phone-tabs button, .wall-plate, .wall-clock, .monitor, .led, .mug,
+.desk-gauge .gauge, .desk-gauge .gauge > i, .toast, .modal, .pause-box, .slot, .ending-row,
+#mc-banner, #phone, .ph-timer, .preopen-device, .preopen-status, .preopen-top, .sq-logo, .sq-av,
+.boot-bar, .boot-bar i, .brand-mark, .logo, .boot-logo, #desk, #office::before, .px-ico, #menu-bg {
+  image-rendering: pixelated;
+}
+
+/* ---------- logo, brand mark, boot bar ---------- */
+/* The wordmark is baked in; the real words stay in the markup (font-size: 0)
+   for screen readers and for anything that reads the page's text. */
+.logo, .boot-logo {
+  font-size: 0; line-height: 0; width: 288px; height: 80px; margin-left: auto; margin-right: auto;
+  background: url(../art/ui/logo--base.png) 0 0 / 288px 80px no-repeat;
+}
+.logo span, .logo em, .boot-logo span, .boot-logo em { font-size: 0; text-shadow: none; }
+/* Belt and braces: some browsers still draw a sliver of zero-size text, so the
+   baked wordmarks also hide their words and clip anything that leaks out. */
+.logo, .boot-logo, .feed-logo, .sq-logo { overflow: hidden; color: transparent !important; text-shadow: none; }
+.logo *, .boot-logo *, .feed-logo *, .sq-logo * { color: transparent !important; text-shadow: none; }
+#screen-exit .boot-logo { background-image: url(../art/ui/logo-closed--base.png); }
+@media (min-width: 1241px) {
+  .logo { width: 432px; height: 120px; background-size: 432px 120px; }
+}
+/* The bell catches the light now and then: base, glint 1, glint 2, glint 1. */
+@media (prefers-reduced-motion: no-preference) {
+  :root[data-motion="full"] .logo, :root[data-motion="full"] #screen-boot .boot-logo { animation: logo-glint 7s steps(1) infinite; }
+}
+@keyframes logo-glint {
+  0%, 91% { background-image: url(../art/ui/logo--base.png); }
+  92%, 96% { background-image: url(../art/ui/logo--glint-1.png); }
+  94% { background-image: url(../art/ui/logo--glint-2.png); }
+  98%, 100% { background-image: url(../art/ui/logo--base.png); }
+}
+
+.brand-mark { width: 84px; height: 42px; background: url(../art/ui/brand-mark--base.png) 0 0 / 84px 42px no-repeat; }
+.brand-mark i, .brand-mark::after { display: none; }
+.menu-mark { transform: none; }
+/* On the splash the bars stack in one at a time. */
+@media (prefers-reduced-motion: no-preference) {
+  :root[data-motion="full"] #screen-boot .brand-mark { animation: brand-build .9s steps(1) both; }
+}
+@keyframes brand-build {
+  0% { background-image: url(../art/ui/brand-mark--build-1.png); }
+  25% { background-image: url(../art/ui/brand-mark--build-2.png); }
+  50% { background-image: url(../art/ui/brand-mark--build-3.png); }
+  75%, 100% { background-image: url(../art/ui/brand-mark--base.png); }
+}
+
+.boot-bar {
+  height: 16px; padding: 4px; background: none; border: 0;
+  border-style: solid; border-width: 0;
+  border-image: url(../art/ui/boot-bar--base.png) 4 fill / 4px / 0 repeat;
+}
+.boot-bar i { height: 8px; background: url(../art/ui/boot-bar-fill--base.png) 0 0 / 8px 8px repeat-x; box-shadow: none; }
+
+/* The authored backdrop is drawn at 480x270 and scaled by a whole number to
+   cover the window (js/main.js sets the size). Fixed, so its overflow never
+   scrolls the menu. */
+#menu-bg { position: fixed; }
+
+/* ---------- buttons ---------- */
+.btn {
+  background: none; border-style: solid; border-width: 2px;
+  border-image: url(../art/ui/btn--default-normal.png) 8 fill / 8px / 0 repeat;
+}
+.btn:hover { background: none; border-image-source: url(../art/ui/btn--default-hover.png); }
+.btn:active { border-image-source: url(../art/ui/btn--default-pressed.png); }
+.btn:disabled { opacity: 1; color: var(--c-grey); border-image-source: url(../art/ui/btn--default-disabled.png); }
+.btn.primary { background: none; border-image-source: url(../art/ui/btn--primary-normal.png); }
+.btn.primary:hover { background: none; border-image-source: url(../art/ui/btn--primary-hover.png); }
+.btn.primary:active { border-image-source: url(../art/ui/btn--primary-pressed.png); }
+.btn.primary:disabled { color: var(--c-ink2); border-image-source: url(../art/ui/btn--primary-disabled.png); }
+.btn.buy { background: none; border-image-source: url(../art/ui/btn--buy-normal.png); }
+.btn.buy:hover { background: none; border-image-source: url(../art/ui/btn--buy-hover.png); }
+.btn.buy:active { border-image-source: url(../art/ui/btn--buy-pressed.png); }
+.btn.buy:disabled { border-image-source: url(../art/ui/btn--buy-disabled.png); }
+.btn.sell { background: none; border-image-source: url(../art/ui/btn--sell-normal.png); }
+.btn.sell:hover { background: none; border-image-source: url(../art/ui/btn--sell-hover.png); }
+.btn.sell:active { border-image-source: url(../art/ui/btn--sell-pressed.png); }
+.btn.sell:disabled { border-image-source: url(../art/ui/btn--sell-disabled.png); }
+.btn.danger { background: none; border-image-source: url(../art/ui/btn--danger-normal.png); }
+.btn.danger:hover { border-image-source: url(../art/ui/btn--danger-hover.png); }
+.btn.danger:active { border-image-source: url(../art/ui/btn--danger-pressed.png); }
+.btn.danger:disabled { border-image-source: url(../art/ui/btn--danger-disabled.png); }
+.btn.ghost { background: none; border-image-source: url(../art/ui/btn--ghost-normal.png); }
+.btn.ghost:hover { border-image-source: url(../art/ui/btn--ghost-hover.png); }
+.btn.ghost:active { border-image-source: url(../art/ui/btn--ghost-pressed.png); }
+.btn.ghost:disabled { border-image-source: url(../art/ui/btn--ghost-disabled.png); }
+
+.desk-btn {
+  background: none; border-style: solid; border-width: 2px;
+  border-image: url(../art/ui/desk-btn--normal.png) 8 fill / 8px / 0 repeat;
+}
+.desk-btn:hover { background: none; border-image-source: url(../art/ui/desk-btn--hover.png); }
+.desk-btn:active { border-image-source: url(../art/ui/desk-btn--pressed.png); }
+/* Muted keeps the plain key, with the label in crimson and the crossed speaker. */
+.desk-btn.muted-audio .desk-label { color: var(--c-crimson-d); }
+
+/* ---------- icons (8x8 art, 16x16 CSS) ---------- */
+.px-ico { display: inline-block; flex: none; width: 16px; height: 16px; background: 0 0 / 16px 16px no-repeat; vertical-align: middle; }
+.px-ico-pause { background-image: url(../art/ui/icons--pause.png); }
+.px-ico-audio { background-image: url(../art/ui/icons--audio-on.png); }
+.muted-audio .px-ico-audio { background-image: url(../art/ui/icons--audio-off.png); }
+.px-ico-phone { background-image: url(../art/ui/icons--phone.png); }
+.px-ico-answer { background-image: url(../art/ui/icons--answer.png); }
+.px-ico-hangup { background-image: url(../art/ui/icons--hangup.png); }
+.px-ico-wire { background-image: url(../art/ui/icons--wire.png); }
+.px-ico-sqwak { background-image: url(../art/ui/icons--sqwak.png); }
+.px-ico-inbox { background-image: url(../art/ui/icons--inbox.png); }
+.px-ico-signal { background-image: url(../art/ui/status-icons--signal3.png); }
+.px-ico-battery { background-image: url(../art/ui/status-icons--battery.png); }
+.btn .px-ico { margin: -4px 6px -4px -2px; }
+/* The comms tabs carry the three app wordmarks; the words stay for screen readers. */
+.feed-logo { display: inline-block; vertical-align: middle; font-size: 0; height: 18px; background: 0 0 / 100% 18px no-repeat; image-rendering: pixelated; }
+.feed-logo-wire { width: 48px; background-image: url(../art/ui/logo-wire--base.png); }
+.feed-logo-sqwak { width: 64px; background-image: url(../art/ui/logo-sqwak--base.png); }
+.feed-logo-inbox { width: 48px; background-image: url(../art/ui/logo-inbox--base.png); }
+.feed-tabs button:not(.on) .feed-logo { opacity: .55; }
+
+/* The coffee mug and its steam. */
+.mug {
+  width: 16px; height: 16px; background: url(../art/ui/mug--base.png) 0 0 / 16px 16px no-repeat; box-shadow: none;
+}
+.mug::after { display: none; }
+.mug::before {
+  content: ""; position: absolute; left: 0; top: -14px; width: 16px; height: 16px;
+  background: url(../art/ui/mug-steam--steam1.png) 0 0 / 16px 16px no-repeat;
+}
+@media (prefers-reduced-motion: no-preference) {
+  :root[data-motion="full"] .mug::before { animation: mug-steam 1.2s steps(1) infinite; }
+}
+@keyframes mug-steam {
+  0% { background-image: url(../art/ui/mug-steam--steam1.png); }
+  33% { background-image: url(../art/ui/mug-steam--steam2.png); }
+  67% { background-image: url(../art/ui/mug-steam--steam3.png); }
+}
+
+/* ---------- the wall ---------- */
+#office::before {
+  background: url(../art/ui/wallpaper--base.png) 0 0 / 64px 46px repeat;
+}
+.wall-plate {
+  background: none; border-style: solid; border-width: 2px;
+  border-image: url(../art/ui/wall-plate--normal.png) 8 fill / 8px / 0 repeat;
+}
+/* The act plate's slot is neutral art; the accent in it stays live. The
+   border-image paints over any inset shadow, so the accent is its own layer,
+   laid in the slot (art x 2-3, y 4-7 repeating: CSS x 4-8, 8px in from top and bottom). */
+.wall-plate.act-plate { position: relative; border-image-source: url(../art/ui/wall-plate--act.png); }
+.wall-plate.act-plate::before { content: ""; position: absolute; left: 2px; top: 6px; bottom: 6px; width: 4px; background: var(--act-accent); pointer-events: none; }
+.wall-clock {
+  background: none; border-style: solid; border-width: 2px;
+  border-image: url(../art/ui/wall-clock--normal.png) 8 fill / 8px / 0 repeat;
+}
+.wall-clock.late { background: none; border-image-source: url(../art/ui/wall-clock--late.png); }
+.wall-clock.final { background: none; border-image-source: url(../art/ui/wall-clock--final.png); }
+
+/* ---------- monitors ---------- */
+.led { width: 8px; height: 8px; background: url(../art/ui/led--jade.png) 0 0 / 8px 8px no-repeat; box-shadow: none; }
+.led.amber { background-image: url(../art/ui/led--amber.png); box-shadow: none; }
+/* Full bezels only where the desk shows them (the 1040px and phone rules strip them). */
+/* The bezel is drawn on ::before so the stand can sit under it, inside the
+   monitor's own box (the desk row is busy with buttons and story props).
+   Padding matches the art's bands exactly (top 16, sides 8, bottom 8), so the
+   screen meets the bezel's inner edge with no gap. */
+@media (min-width: 1041px) and (min-height: 501px) {
+  .monitor {
+    position: relative; z-index: 0; background: none; border: 0; box-shadow: none;
+    padding: 0 8px 24px;
+  }
+  .monitor::before {
+    content: ""; position: absolute; inset: 0 0 16px 0; z-index: -1; pointer-events: none;
+    border-style: solid; border-width: 16px 8px 8px;
+    border-image: url(../art/ui/monitor-bezel--base.png) 16 8 8 fill / 16px 8px 8px / 0 repeat;
+    box-shadow: 5px 6px 0 rgba(0, 0, 0, .20);
+  }
+  body[data-stability="critical"] .monitor { box-shadow: none; }
+  body[data-stability="critical"] .monitor::before { box-shadow: 5px 6px 0 rgba(23, 25, 34, .36); }
+  .monitor > .bezel-top { height: 16px; padding: 0 3px; }
+  .monitor > .bezel-bottom { display: none; }
+  .monitor::after {
+    content: ""; position: absolute; left: 50%; bottom: 0; width: 80px; height: 16px; margin-left: -40px; pointer-events: none;
+    background: url(../art/ui/monitor-stand--base.png) 0 0 / 80px 16px no-repeat;
+  }
+}
+
+/* ---------- the desk ---------- */
+#desk { background: url(../art/ui/desk-surface--base.png) 0 0 / 128px 62px repeat; }
+/* The story props are a 160x32 field at 2x; the desk row grows to fit it. */
+@media (min-width: 1041px) and (min-height: 501px) {
+  #office { grid-template-rows: 46px minmax(0, 1fr) 72px; }
+  #story-art { width: 320px; height: 64px; }
+}
+/* On the wood the gauge's words need light ink. (On a portrait phone the gauge
+   sits on the wall, where the dark ink still reads.) */
+@media (min-width: 821px), (orientation: landscape) {
+  .desk-gauge .desk-label { color: var(--c-bone); text-shadow: 1px 1px 0 var(--c-ink); }
+  .desk-gauge .desk-label i#tb-stress-num { color: var(--c-white); }
+  .desk-gauge[data-stage="loaded"] .desk-label b { color: var(--c-amber); }
+  .desk-gauge[data-stage="tunnel"] .desk-label b, .desk-gauge[data-stage="critical"] .desk-label b { color: var(--c-crimson); }
+}
+/* Between 821 and 1040px there is no room beside the buttons and the gauge. */
+@media (max-width: 1040px) { #story-art { display: none; } }
+
+.desk-gauge .gauge {
+  width: 136px; height: 12px; background: none; border-style: solid; border-width: 2px;
+  border-image: url(../art/ui/stress-gauge--steady.png) 6 fill / 6px / 0 repeat;
+}
+.desk-gauge .gauge > i { background: url(../art/ui/stress-gauge-fill--steady.png) 0 0 / 132px 8px no-repeat; }
+.desk-gauge[data-stage="loaded"] .gauge { border-image-source: url(../art/ui/stress-gauge--loaded.png); }
+.desk-gauge[data-stage="loaded"] .gauge > i { background-image: url(../art/ui/stress-gauge-fill--loaded.png); }
+.desk-gauge[data-stage="tunnel"] .gauge { border-image-source: url(../art/ui/stress-gauge--tunnel.png); }
+.desk-gauge[data-stage="tunnel"] .gauge > i, .desk-gauge[data-stage="tunnel"] .gauge i { background: url(../art/ui/stress-gauge-fill--tunnel.png) 0 0 / 132px 8px no-repeat; }
+.desk-gauge[data-stage="critical"] .gauge { border-image-source: url(../art/ui/stress-gauge--critical.png); }
+.desk-gauge[data-stage="critical"] .gauge > i, .desk-gauge[data-stage="critical"] .gauge i { background: url(../art/ui/stress-gauge-fill--critical.png) 0 0 / 132px 8px no-repeat; }
+
+/* ---------- margin call, toasts, modals, cards ---------- */
+#mc-banner {
+  background: none; border-style: solid; border-width: 3px;
+  border-image: url(../art/ui/margin-call-banner--blink-a.png) 8 fill / 8px / 0 repeat;
+  animation: mc-blink .6s steps(1) infinite;
+}
+@keyframes mc-blink {
+  0% { border-image-source: url(../art/ui/margin-call-banner--blink-a.png); }
+  50% { border-image-source: url(../art/ui/margin-call-banner--blink-b.png); }
+}
+
+.toast {
+  background: none; border-style: solid; border-width: 2px;
+  border-image: url(../art/ui/toast--info.png) 6 fill / 6px / 0 repeat;
+}
+.toast.good { border-image-source: url(../art/ui/toast--good.png); }
+.toast.bad { border-image-source: url(../art/ui/toast--bad.png); }
+.toast.warn { border-image-source: url(../art/ui/toast--warn.png); }
+
+.modal, .pause-box {
+  background: none; border-style: solid; border-width: 3px;
+  border-image: url(../art/ui/modal--base.png) 8 fill / 8px / 0 repeat;
+}
+.modal.wide { border-image-source: url(../art/ui/modal--wide.png); }
+.modal-h .kicker { display: inline-block; padding: 0 6px; line-height: 12px; background: url(../art/ui/modal-kicker--base.png) 0 50% / 16px 12px repeat-x; }
+
+.slot, .ending-row {
+  background: none; border-style: solid; border-width: 2px;
+  border-image: url(../art/ui/cards--normal.png) 8 fill / 8px / 0 repeat;
+}
+.slot.empty-slot, .ending-row.locked { border-image-source: url(../art/ui/cards--empty.png); }
+.slot.finished { border-image-source: url(../art/ui/cards--finished.png); }
+
+/* ---------- the call box on the comms monitor ---------- */
+#phone {
+  background: none; border-style: solid; border-width: 2px;
+  border-image: url(../art/ui/call-box--idle.png) 8 fill / 8px / 0 repeat;
+}
+#phone:has(.ph-opts) { border-image-source: url(../art/ui/call-box--choice.png); }
+#phone.ringing { animation: ring .26s infinite alternate, call-ring .52s steps(1) infinite; }
+@keyframes call-ring {
+  0% { border-image-source: url(../art/ui/call-box--ringing-1.png); }
+  50% { border-image-source: url(../art/ui/call-box--ringing-2.png); }
+}
+#phone .ph-timer { height: 8px; background: url(../art/ui/call-box-timer--amber.png) 0 0 / 8px 8px repeat-x; }
+#phone .ph-timer.urgent { background-image: url(../art/ui/call-box-timer--urgent.png); }
+
+/* ---------- the pre-open phone ---------- */
+.preopen-device {
+  background: none; border-style: solid; border-width: 3px; box-shadow: 7px 8px 0 rgba(0, 0, 0, .4);
+  border-image: url(../art/ui/phone-shell--base.png) 8 fill / 8px / 0 repeat;
+}
+/* A short buzz when the phone first shows its notifications. */
+@media (prefers-reduced-motion: no-preference) {
+  :root[data-motion="full"] .preopen-device { animation: phone-buzz .72s steps(1) .35s 1 both; }
+}
+@keyframes phone-buzz {
+  0%, 33%, 67% { border-image-source: url(../art/ui/phone-shell--vibrate-1.png); transform: translateX(-1px); }
+  17%, 50%, 83% { border-image-source: url(../art/ui/phone-shell--vibrate-2.png); transform: translateX(1px); }
+  100% { border-image-source: url(../art/ui/phone-shell--base.png); transform: none; }
+}
+.preopen-speaker { top: 6px; width: 24px; height: 6px; background: url(../art/ui/phone-speaker--base.png) 0 0 / 24px 6px no-repeat; box-shadow: none; }
+.preopen-home { bottom: 4px; width: 20px; height: 4px; background: url(../art/ui/phone-home--base.png) 0 0 / 20px 4px no-repeat; }
+.preopen-status {
+  border-style: solid; border-width: 0;
+  border-image: url(../art/ui/status-bar--base.png) 6 fill / 6px / 0 repeat;
+}
+.preopen-status > span:last-child { display: flex; align-items: center; justify-content: flex-end; gap: 3px; }
+.preopen-top {
+  border: 0; border-style: solid; border-width: 0;
+  border-image: url(../art/ui/app-header--base.png) 6 fill / 6px / 0 repeat;
+}
+.sq-logo {
+  display: inline-block; vertical-align: middle; font-size: 0; width: 64px; height: 18px;
+  background: url(../art/ui/logo-sqwak--base.png) 0 0 / 64px 18px no-repeat;
+}
+
+/* Sqwak avatars: the ring colour is the account's colour; the initials stay live. */
+.sq-av { border: 0; background: url(../art/ui/sqwak-avatars--preset6.png) 0 0 / 24px 24px no-repeat; }
+.sq-av[data-av="sky"] { background-image: url(../art/ui/sqwak-avatars--preset0.png); }
+.sq-av[data-av="violet"] { background-image: url(../art/ui/sqwak-avatars--preset1.png); }
+.sq-av[data-av="phosphor"] { background-image: url(../art/ui/sqwak-avatars--preset2.png); }
+.sq-av[data-av="crimson"] { background-image: url(../art/ui/sqwak-avatars--preset3.png); }
+.sq-av[data-av="amber"], .sq-av[data-av="desk2"] { background-image: url(../art/ui/sqwak-avatars--preset4.png); }
+.sq-av[data-av="jade"] { background-image: url(../art/ui/sqwak-avatars--preset5.png); }
+.sq-av[data-av="slate2"] { background-image: url(../art/ui/sqwak-avatars--preset7.png); }
+
+/* ---------- phones: desk tabs and the smaller gauge ---------- */
+@media (max-width: 820px), (orientation: landscape) and (max-height: 500px) {
+  #phone-tabs button {
+    background: none; border-style: solid; border-width: 2px;
+    border-image: url(../art/ui/phone-tab--normal.png) 8 fill / 8px / 0 repeat;
+  }
+  #phone-tabs button:hover { border-image-source: url(../art/ui/phone-tab--hover.png); }
+  #phone-tabs button:active { border-image-source: url(../art/ui/phone-tab--pressed.png); }
+  #phone-tabs button { position: relative; color: var(--c-putty2); }
+  #phone-tabs button.on { background: none; color: var(--c-white); border-image-source: url(../art/ui/phone-tab--on.png); box-shadow: none; }
+  /* The border-image paints over an inset shadow, so the live act underline is its own layer. */
+  #phone-tabs button.on::after { content: ""; position: absolute; left: 4px; right: 4px; bottom: 2px; height: 4px; background: var(--act-accent); pointer-events: none; }
+  /* The short gauge crops the fill art (STYLE 8.2), never squeezes it. */
+  .desk-gauge .gauge, #stress-gauge .gauge { width: 70px; }
+}
+@media (max-width: 820px) and (orientation: portrait) {
+  #btn-pause::before { content: none; }
+  #btn-pause .px-ico, #btn-coffee .mug { margin: 0; }
+}

@@ -4,7 +4,32 @@
   const X = B.Pixel;
   const P = B.Pal;
 
+  const has = (id) => B.Art && B.Art.has(id);
+
   B.StoryArt = {
+    // The authored props (art/src/desk/strip-*.aseprite), placed by the same
+    // rules as the code-drawn fallback below. Returns false when the art is missing.
+    drawArt(ctx, g, S, f) {
+      const ids = ['blotter', 'cascade-note', 'shed', 'dossier', 'capitol', 'hold-files', 'quota-note'].map((n) => 'desk/strip-' + n);
+      if (!ids.every(has)) return false;
+      const art = (n, frame, x, y, opt) => X.drawArt(ctx, 'desk/strip-' + n, frame, x, y, opt);
+      art('blotter', 'base', 0, 0);
+      const slip = Math.round((100 - S.m.stability) / 18);
+      for (let i = 0; i < 4; i++) art('cascade-note', i > 1 ? 'stressed' : 'calm', 3 + i * 2 + (i > 1 ? slip : 0), 18 - i * 4);
+      // The stack sheds its first flakes under 50 stability and all of them under 30.
+      if (S.m.stability < 30) art('shed', 'base', 36 + slip, 20);
+      else if (S.m.stability < 50) art('shed', 'base', 36 + slip, 20, { cols: [0, 5] });
+      let x = 44;
+      if (f.leaked || f.reported || f.goPublic || f.fraud) { art('dossier', f.fraud ? 'fraud' : 'violet', x, 5); x += 28; }
+      if (f.regulation || f.dereg || f.whipped || f.whippedAgainst) { art('capitol', f.dereg || f.whippedAgainst ? 'crimson' : 'bone', x, 7); x += 28; }
+      if (S.m.heat >= 50 || f.insiderTraded || f.raid) art('hold-files', 'base', x, 5);
+      const qx = 128;
+      art('quota-note', 'base', qx, 0);
+      X.text(ctx, 'FLOOR', qx + 16, 5, P.ink2, { align: 'center' });
+      X.text(ctx, ((B.StoryData.QUOTAS[g.day] || 0) * 100).toFixed(1) + '%', qx + 16, 14, P.crimsonD, { align: 'center' });
+      return true;
+    },
+
     draw(canvas, g) {
       if (!canvas) return;
       const { ctx } = X.fit(canvas, 160, 32, 4);
@@ -12,6 +37,7 @@
       if (!g || g.mode.kind !== 'story') return;
       const S = g.mode.S;
       const f = S.f || {};
+      if (this.drawArt(ctx, g, S, f)) return;
 
       // A dark blotter and coffee-ring wear keep the desk from reading as a row
       // of isolated icons.

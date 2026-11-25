@@ -59,6 +59,7 @@
     skyline() {
       const cv = $('menu-bg');
       if (!cv || !B.Pixel) return;
+      if (B.Art && B.Art.has('menu/backdrop')) { this.backdrop(cv); return; }
       // A 480x270 field gives the menu a finer pixel grain than the original
       // 320x180 backdrop while keeping integer nearest-neighbour scaling.
       const V = { w: 480, h: 270 };
@@ -107,6 +108,45 @@
         const y = 113 + i * 8;
         X.rect(ctx, 384 + i * 3, y, 54 - i * 4, 4, i < 2 ? P.amberD : i < 4 ? P.sky : P.crimsonD);
       }
+    },
+
+    // The authored menu backdrop (art/src/menu/backdrop.aseprite): sky, the
+    // slipping CASCADE bars, two rows of towers and three frames of window
+    // lights that twinkle in turn. It is drawn at 480x270 and shown at the
+    // smallest whole scale that covers the window, centred, so every art pixel
+    // stays square. The still layers are painted once into a cache; the
+    // twinkle only repaints the lights, and stops for reduced motion.
+    backdrop(cv) {
+      const V = { w: 480, h: 270 }, ID = 'menu/backdrop';
+      const W = window.innerWidth || V.w, H = window.innerHeight || V.h;
+      const s = Math.max(1, Math.ceil(Math.max(W / V.w, H / V.h)));
+      if (cv.width !== V.w || cv.height !== V.h) { cv.width = V.w; cv.height = V.h; }
+      Object.assign(cv.style, { width: V.w * s + 'px', height: V.h * s + 'px', left: Math.round((W - V.w * s) / 2) + 'px', top: Math.round((H - V.h * s) / 2) + 'px' });
+      // The CASCADE bars (art x 384-437) sit right of the menu. When the cover
+      // scale crops the sides, slide them left so they stay whole and in view;
+      // where that would put them behind the menu buttons, they sit out.
+      const ox = (V.w * s - W) / 2, right = (ox + W) / s;
+      const dx = Math.min(0, Math.floor(right - 8 - 438));
+      const cascade = W >= 560 && (384 + dx) * s - ox >= W / 2 + 150 ? dx : null;
+      if (!this.bdCache || this.bdCache.cascade !== cascade) {
+        const c = document.createElement('canvas'); c.width = V.w; c.height = V.h;
+        const g = c.getContext('2d');
+        B.Pixel.drawArt(g, ID, 'sky', 0, 0);
+        if (cascade !== null) B.Pixel.drawArt(g, ID, 'cascade', cascade, 0);
+        ['far', 'near'].forEach((f) => B.Pixel.drawArt(g, ID, f, 0, 0));
+        this.bdCache = { canvas: c, cascade };
+      }
+      const ctx = cv.getContext('2d');
+      ctx.imageSmoothingEnabled = false;
+      const paint = (n) => { ctx.drawImage(this.bdCache.canvas, 0, 0); B.Pixel.drawArt(ctx, ID, 'lights:' + n, 0, 0); };
+      paint(this.bdLight || 0);
+      if (this.bdTimer) return;
+      this.bdTimer = setInterval(() => {
+        const menu = $('screen-menu');
+        if (!menu || !menu.classList.contains('active') || !(B.Motion && B.Motion.enabled())) return;
+        this.bdLight = ((this.bdLight || 0) + 1) % 3;
+        paint(this.bdLight);
+      }, 700);
     },
 
     tape() {

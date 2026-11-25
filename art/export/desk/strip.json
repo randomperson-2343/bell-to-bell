@@ -1,0 +1,41 @@
+{
+ "frames": [
+  {
+   "filename": "calm",
+   "frame": {
+    "x": 0,
+    "y": 0,
+    "w": 160,
+    "h": 32
+   }
+  },
+  {
+   "filename": "stressed",
+   "frame": {
+    "x": 160,
+    "y": 0,
+    "w": 160,
+    "h": 32
+   }
+  }
+ ],
+ "meta": {
+  "image": "strip.png",
+  "size": {
+   "w": 320,
+   "h": 32
+  },
+  "frameTags": [
+   {
+    "name": "calm",
+    "from": 0,
+    "to": 0
+   },
+   {
+    "name": "stressed",
+    "from": 1,
+    "to": 1
+   }
+  ]
+ }
+}

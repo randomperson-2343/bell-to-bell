@@ -1,0 +1,41 @@
+{
+ "frames": [
+  {
+   "filename": "bone",
+   "frame": {
+    "x": 0,
+    "y": 0,
+    "w": 26,
+    "h": 19
+   }
+  },
+  {
+   "filename": "crimson",
+   "frame": {
+    "x": 26,
+    "y": 0,
+    "w": 26,
+    "h": 19
+   }
+  }
+ ],
+ "meta": {
+  "image": "strip-capitol.png",
+  "size": {
+   "w": 52,
+   "h": 19
+  },
+  "frameTags": [
+   {
+    "name": "bone",
+    "from": 0,
+    "to": 0
+   },
+   {
+    "name": "crimson",
+    "from": 1,
+    "to": 1
+   }
+  ]
+ }
+}

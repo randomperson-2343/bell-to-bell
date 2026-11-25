@@ -1,0 +1,83 @@
+{
+ "frames": [
+  {
+   "filename": "base",
+   "frame": {
+    "x": 0,
+    "y": 0,
+    "w": 42,
+    "h": 21
+   }
+  },
+  {
+   "filename": "build:1",
+   "frame": {
+    "x": 42,
+    "y": 0,
+    "w": 42,
+    "h": 21
+   }
+  },
+  {
+   "filename": "build:2",
+   "frame": {
+    "x": 84,
+    "y": 0,
+    "w": 42,
+    "h": 21
+   }
+  },
+  {
+   "filename": "build:3",
+   "frame": {
+    "x": 126,
+    "y": 0,
+    "w": 42,
+    "h": 21
+   }
+  },
+  {
+   "filename": "build:4",
+   "frame": {
+    "x": 168,
+    "y": 0,
+    "w": 42,
+    "h": 21
+   }
+  }
+ ],
+ "meta": {
+  "image": "brand-mark.png",
+  "size": {
+   "w": 210,
+   "h": 21
+  },
+  "frameTags": [
+   {
+    "name": "base",
+    "from": 0,
+    "to": 0
+   },
+   {
+    "name": "build:1",
+    "from": 1,
+    "to": 1
+   },
+   {
+    "name": "build:2",
+    "from": 2,
+    "to": 2
+   },
+   {
+    "name": "build:3",
+    "from": 3,
+    "to": 3
+   },
+   {
+    "name": "build:4",
+    "from": 4,
+    "to": 4
+   }
+  ]
+ }
+}

@@ -1,0 +1,27 @@
+{
+ "frames": [
+  {
+   "filename": "base",
+   "frame": {
+    "x": 0,
+    "y": 0,
+    "w": 8,
+    "h": 14
+   }
+  }
+ ],
+ "meta": {
+  "image": "app-header.png",
+  "size": {
+   "w": 8,
+   "h": 14
+  },
+  "frameTags": [
+   {
+    "name": "base",
+    "from": 0,
+    "to": 0
+   }
+  ]
+ }
+}

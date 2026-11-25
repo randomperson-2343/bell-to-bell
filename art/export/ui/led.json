@@ -1,0 +1,55 @@
+{
+ "frames": [
+  {
+   "filename": "jade",
+   "frame": {
+    "x": 0,
+    "y": 0,
+    "w": 4,
+    "h": 4
+   }
+  },
+  {
+   "filename": "amber",
+   "frame": {
+    "x": 4,
+    "y": 0,
+    "w": 4,
+    "h": 4
+   }
+  },
+  {
+   "filename": "off",
+   "frame": {
+    "x": 8,
+    "y": 0,
+    "w": 4,
+    "h": 4
+   }
+  }
+ ],
+ "meta": {
+  "image": "led.png",
+  "size": {
+   "w": 12,
+   "h": 4
+  },
+  "frameTags": [
+   {
+    "name": "jade",
+    "from": 0,
+    "to": 0
+   },
+   {
+    "name": "amber",
+    "from": 1,
+    "to": 1
+   },
+   {
+    "name": "off",
+    "from": 2,
+    "to": 2
+   }
+  ]
+ }
+}

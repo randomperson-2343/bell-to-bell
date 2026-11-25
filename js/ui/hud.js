@@ -489,7 +489,7 @@
       const m = B.Sqwak.metrics(n);
       const k = (v) => (v >= 10000 ? Math.round(v / 1000) + 'K' : v >= 1000 ? (v / 1000).toFixed(1) + 'K' : String(v));
       const big = a.followers >= B.Sqwak.HYPE_MIN_FOLLOWERS;
-      return `<div class="news chirp sq-post"><span class="sq-av" style="--av:var(--c-${a.col})">${B.esc(B.Sqwak.initials(a))}</span>
+      return `<div class="news chirp sq-post"><span class="sq-av" data-av="${a.col}" style="--av:var(--c-${a.col})">${B.esc(B.Sqwak.initials(a))}</span>
         <div class="sq-body"><div class="sq-who"><b>${B.esc(a.name)}</b>${big ? '<i class="sq-v" title="1M+ followers">&#10004;</i>' : ''}<span>${B.esc(a.handle)} · ${B.Calendar.fmtTime(n.t || 0)}</span></div>
         <div class="txt">${this.sqwakText(n.text)}</div>
         ${n.threadId ? `<button class="sq-thread-link" data-thread="${B.esc(n.threadId)}">${B.esc(n.threadStage || 'THREAD')} · VIEW THREAD</button>` : ''}
@@ -612,8 +612,8 @@
       const p = $('phone');
       p.hidden = false;
       p.classList.add('ringing');
-      p.innerHTML = `<div class="ph-top"><div><div class="ph-from">&#9742; ${B.esc(call.from)}</div><div class="ph-role">${B.esc(call.role || 'Incoming call')}</div></div>
-        <div><button class="btn small buy" data-ph="answer">Answer <kbd>A</kbd></button>${call.kind === 'choice' ? '' : ' <button class="btn small" data-ph="decline">Ignore</button>'}</div></div>
+      p.innerHTML = `<div class="ph-top"><div><div class="ph-from"><span class="px-ico px-ico-phone" aria-hidden="true"></span> ${B.esc(call.from)}</div><div class="ph-role">${B.esc(call.role || 'Incoming call')}</div></div>
+        <div><button class="btn small buy" data-ph="answer"><span class="px-ico px-ico-answer" aria-hidden="true"></span>Answer <kbd>A</kbd></button>${call.kind === 'choice' ? '' : ' <button class="btn small" data-ph="decline">Ignore</button>'}</div></div>
         <div class="ph-timer" id="ph-timer" style="width:100%"></div>`;
       this.ringTimer = true;
       B.SFX.ring();
@@ -629,7 +629,7 @@
           pill.addEventListener('click', () => { if (this.g) this.g.interrupts.answer(); });
           document.getElementById('screen-game').appendChild(pill);
         }
-        pill.textContent = `☎ Answer · ${call.from}`;
+        pill.innerHTML = `<span class="px-ico px-ico-answer" aria-hidden="true"></span>Answer · ${B.esc(call.from)}`;
         pill.hidden = false;
       }
     },
@@ -641,7 +641,7 @@
       this.ringTimer = false;
       this.hideRingPill();
       let body = `<div class="ph-top"><div><div class="ph-from">${B.esc(call.from)}</div><div class="ph-role">${B.esc(call.role || '')}</div></div>`;
-      body += call.kind === 'choice' ? '</div>' : '<button class="btn small" data-ph="hang">Hang up</button></div>';
+      body += call.kind === 'choice' ? '</div>' : '<button class="btn small" data-ph="hang"><span class="px-ico px-ico-hangup" aria-hidden="true"></span>Hang up</button></div>';
       body += `<div class="ph-text">${B.esc(call.text)}</div>`;
       if (call.kind === 'choice') {
         body += '<div class="ph-opts">' + call.options.map((o) => `<button class="btn" data-opt="${o.id}">${B.esc(o.label)}</button>`).join('') + '</div>';
@@ -881,6 +881,7 @@
         if (a.state === 'ringing') frac = (a.ringEnd - m.t) / (g.interrupts.realMin(a.kind === 'choice' ? 10 : 6));
         else if (a.kind === 'choice') frac = (a.choiceEnd - m.t) / g.interrupts.realMin(a.timer || 20);
         pt.style.width = B.clamp(frac, 0, 1) * 100 + '%';
+        pt.classList.toggle('urgent', frac < 0.3);
       }
       document.querySelectorAll('[data-deadline]').forEach((el) => {
         const t = g.interrupts.tasks.find((x) => x.id === el.dataset.deadline);

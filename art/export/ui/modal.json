@@ -1,0 +1,41 @@
+{
+ "frames": [
+  {
+   "filename": "base",
+   "frame": {
+    "x": 0,
+    "y": 0,
+    "w": 16,
+    "h": 16
+   }
+  },
+  {
+   "filename": "wide",
+   "frame": {
+    "x": 16,
+    "y": 0,
+    "w": 16,
+    "h": 16
+   }
+  }
+ ],
+ "meta": {
+  "image": "modal.png",
+  "size": {
+   "w": 32,
+   "h": 16
+  },
+  "frameTags": [
+   {
+    "name": "base",
+    "from": 0,
+    "to": 0
+   },
+   {
+    "name": "wide",
+    "from": 1,
+    "to": 1
+   }
+  ]
+ }
+}
