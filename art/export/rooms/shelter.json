@@ -1,0 +1,41 @@
+{
+ "frames": [
+  {
+   "filename": "back",
+   "frame": {
+    "x": 0,
+    "y": 0,
+    "w": 214,
+    "h": 121
+   }
+  },
+  {
+   "filename": "front",
+   "frame": {
+    "x": 214,
+    "y": 0,
+    "w": 214,
+    "h": 121
+   }
+  }
+ ],
+ "meta": {
+  "image": "shelter.png",
+  "size": {
+   "w": 428,
+   "h": 121
+  },
+  "frameTags": [
+   {
+    "name": "back",
+    "from": 0,
+    "to": 0
+   },
+   {
+    "name": "front",
+    "from": 1,
+    "to": 1
+   }
+  ]
+ }
+}

@@ -1,0 +1,111 @@
+{
+ "frames": [
+  {
+   "filename": "swing:-3",
+   "frame": {
+    "x": 0,
+    "y": 0,
+    "w": 84,
+    "h": 52
+   }
+  },
+  {
+   "filename": "swing:-2",
+   "frame": {
+    "x": 84,
+    "y": 0,
+    "w": 84,
+    "h": 52
+   }
+  },
+  {
+   "filename": "swing:-1",
+   "frame": {
+    "x": 168,
+    "y": 0,
+    "w": 84,
+    "h": 52
+   }
+  },
+  {
+   "filename": "swing:0",
+   "frame": {
+    "x": 252,
+    "y": 0,
+    "w": 84,
+    "h": 52
+   }
+  },
+  {
+   "filename": "swing:1",
+   "frame": {
+    "x": 336,
+    "y": 0,
+    "w": 84,
+    "h": 52
+   }
+  },
+  {
+   "filename": "swing:2",
+   "frame": {
+    "x": 420,
+    "y": 0,
+    "w": 84,
+    "h": 52
+   }
+  },
+  {
+   "filename": "swing:3",
+   "frame": {
+    "x": 504,
+    "y": 0,
+    "w": 84,
+    "h": 52
+   }
+  }
+ ],
+ "meta": {
+  "image": "bell-swing.png",
+  "size": {
+   "w": 588,
+   "h": 52
+  },
+  "frameTags": [
+   {
+    "name": "swing:-3",
+    "from": 0,
+    "to": 0
+   },
+   {
+    "name": "swing:-2",
+    "from": 1,
+    "to": 1
+   },
+   {
+    "name": "swing:-1",
+    "from": 2,
+    "to": 2
+   },
+   {
+    "name": "swing:0",
+    "from": 3,
+    "to": 3
+   },
+   {
+    "name": "swing:1",
+    "from": 4,
+    "to": 4
+   },
+   {
+    "name": "swing:2",
+    "from": 5,
+    "to": 5
+   },
+   {
+    "name": "swing:3",
+    "from": 6,
+    "to": 6
+   }
+  ]
+ }
+}

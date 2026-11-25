@@ -1,0 +1,69 @@
+{
+ "frames": [
+  {
+   "filename": "back",
+   "frame": {
+    "x": 0,
+    "y": 0,
+    "w": 214,
+    "h": 121
+   }
+  },
+  {
+   "filename": "front",
+   "frame": {
+    "x": 214,
+    "y": 0,
+    "w": 214,
+    "h": 121
+   }
+  },
+  {
+   "filename": "eyes:open",
+   "frame": {
+    "x": 428,
+    "y": 0,
+    "w": 214,
+    "h": 121
+   }
+  },
+  {
+   "filename": "eyes:closed",
+   "frame": {
+    "x": 642,
+    "y": 0,
+    "w": 214,
+    "h": 121
+   }
+  }
+ ],
+ "meta": {
+  "image": "bldg-lobby.png",
+  "size": {
+   "w": 856,
+   "h": 121
+  },
+  "frameTags": [
+   {
+    "name": "back",
+    "from": 0,
+    "to": 0
+   },
+   {
+    "name": "front",
+    "from": 1,
+    "to": 1
+   },
+   {
+    "name": "eyes:open",
+    "from": 2,
+    "to": 2
+   },
+   {
+    "name": "eyes:closed",
+    "from": 3,
+    "to": 3
+   }
+  ]
+ }
+}

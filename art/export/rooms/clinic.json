@@ -1,0 +1,125 @@
+{
+ "frames": [
+  {
+   "filename": "back:dentist",
+   "frame": {
+    "x": 0,
+    "y": 0,
+    "w": 214,
+    "h": 121
+   }
+  },
+  {
+   "filename": "back:vet",
+   "frame": {
+    "x": 214,
+    "y": 0,
+    "w": 214,
+    "h": 121
+   }
+  },
+  {
+   "filename": "glow:dentist:1",
+   "frame": {
+    "x": 428,
+    "y": 0,
+    "w": 214,
+    "h": 121
+   }
+  },
+  {
+   "filename": "glow:dentist:2",
+   "frame": {
+    "x": 642,
+    "y": 0,
+    "w": 214,
+    "h": 121
+   }
+  },
+  {
+   "filename": "glow:vet:1",
+   "frame": {
+    "x": 856,
+    "y": 0,
+    "w": 214,
+    "h": 121
+   }
+  },
+  {
+   "filename": "glow:vet:2",
+   "frame": {
+    "x": 1070,
+    "y": 0,
+    "w": 214,
+    "h": 121
+   }
+  },
+  {
+   "filename": "front:dentist",
+   "frame": {
+    "x": 1284,
+    "y": 0,
+    "w": 214,
+    "h": 121
+   }
+  },
+  {
+   "filename": "front:vet",
+   "frame": {
+    "x": 1498,
+    "y": 0,
+    "w": 214,
+    "h": 121
+   }
+  }
+ ],
+ "meta": {
+  "image": "clinic.png",
+  "size": {
+   "w": 1712,
+   "h": 121
+  },
+  "frameTags": [
+   {
+    "name": "back:dentist",
+    "from": 0,
+    "to": 0
+   },
+   {
+    "name": "back:vet",
+    "from": 1,
+    "to": 1
+   },
+   {
+    "name": "glow:dentist:1",
+    "from": 2,
+    "to": 2
+   },
+   {
+    "name": "glow:dentist:2",
+    "from": 3,
+    "to": 3
+   },
+   {
+    "name": "glow:vet:1",
+    "from": 4,
+    "to": 4
+   },
+   {
+    "name": "glow:vet:2",
+    "from": 5,
+    "to": 5
+   },
+   {
+    "name": "front:dentist",
+    "from": 6,
+    "to": 6
+   },
+   {
+    "name": "front:vet",
+    "from": 7,
+    "to": 7
+   }
+  ]
+ }
+}

@@ -1,0 +1,41 @@
+{
+ "frames": [
+  {
+   "filename": "left",
+   "frame": {
+    "x": 0,
+    "y": 0,
+    "w": 62,
+    "h": 105
+   }
+  },
+  {
+   "filename": "right",
+   "frame": {
+    "x": 62,
+    "y": 0,
+    "w": 62,
+    "h": 105
+   }
+  }
+ ],
+ "meta": {
+  "image": "elevator-doors.png",
+  "size": {
+   "w": 124,
+   "h": 105
+  },
+  "frameTags": [
+   {
+    "name": "left",
+    "from": 0,
+    "to": 0
+   },
+   {
+    "name": "right",
+    "from": 1,
+    "to": 1
+   }
+  ]
+ }
+}

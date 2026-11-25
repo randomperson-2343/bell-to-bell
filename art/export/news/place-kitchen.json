@@ -1,0 +1,55 @@
+{
+ "frames": [
+  {
+   "filename": "back",
+   "frame": {
+    "x": 0,
+    "y": 0,
+    "w": 320,
+    "h": 180
+   }
+  },
+  {
+   "filename": "wreath",
+   "frame": {
+    "x": 320,
+    "y": 0,
+    "w": 320,
+    "h": 180
+   }
+  },
+  {
+   "filename": "breakroom",
+   "frame": {
+    "x": 640,
+    "y": 0,
+    "w": 320,
+    "h": 180
+   }
+  }
+ ],
+ "meta": {
+  "image": "place-kitchen.png",
+  "size": {
+   "w": 960,
+   "h": 180
+  },
+  "frameTags": [
+   {
+    "name": "back",
+    "from": 0,
+    "to": 0
+   },
+   {
+    "name": "wreath",
+    "from": 1,
+    "to": 1
+   },
+   {
+    "name": "breakroom",
+    "from": 2,
+    "to": 2
+   }
+  ]
+ }
+}

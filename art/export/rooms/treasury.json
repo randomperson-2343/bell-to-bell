@@ -1,0 +1,111 @@
+{
+ "frames": [
+  {
+   "filename": "back",
+   "frame": {
+    "x": 0,
+    "y": 0,
+    "w": 214,
+    "h": 121
+   }
+  },
+  {
+   "filename": "glow",
+   "frame": {
+    "x": 214,
+    "y": 0,
+    "w": 214,
+    "h": 121
+   }
+  },
+  {
+   "filename": "window:autumn",
+   "frame": {
+    "x": 428,
+    "y": 0,
+    "w": 214,
+    "h": 121
+   }
+  },
+  {
+   "filename": "window:grey",
+   "frame": {
+    "x": 642,
+    "y": 0,
+    "w": 214,
+    "h": 121
+   }
+  },
+  {
+   "filename": "window:winter",
+   "frame": {
+    "x": 856,
+    "y": 0,
+    "w": 214,
+    "h": 121
+   }
+  },
+  {
+   "filename": "front",
+   "frame": {
+    "x": 1070,
+    "y": 0,
+    "w": 214,
+    "h": 121
+   }
+  },
+  {
+   "filename": "cells",
+   "frame": {
+    "x": 1284,
+    "y": 0,
+    "w": 214,
+    "h": 121
+   }
+  }
+ ],
+ "meta": {
+  "image": "treasury.png",
+  "size": {
+   "w": 1498,
+   "h": 121
+  },
+  "frameTags": [
+   {
+    "name": "back",
+    "from": 0,
+    "to": 0
+   },
+   {
+    "name": "glow",
+    "from": 1,
+    "to": 1
+   },
+   {
+    "name": "window:autumn",
+    "from": 2,
+    "to": 2
+   },
+   {
+    "name": "window:grey",
+    "from": 3,
+    "to": 3
+   },
+   {
+    "name": "window:winter",
+    "from": 4,
+    "to": 4
+   },
+   {
+    "name": "front",
+    "from": 5,
+    "to": 5
+   },
+   {
+    "name": "cells",
+    "from": 6,
+    "to": 6
+   }
+  ]
+ }
+}

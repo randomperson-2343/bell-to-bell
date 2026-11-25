@@ -1,0 +1,55 @@
+{
+ "frames": [
+  {
+   "filename": "desk",
+   "frame": {
+    "x": 0,
+    "y": 0,
+    "w": 320,
+    "h": 180
+   }
+  },
+  {
+   "filename": "plate",
+   "frame": {
+    "x": 320,
+    "y": 0,
+    "w": 320,
+    "h": 180
+   }
+  },
+  {
+   "filename": "stamp",
+   "frame": {
+    "x": 640,
+    "y": 0,
+    "w": 320,
+    "h": 180
+   }
+  }
+ ],
+ "meta": {
+  "image": "doc-rating.png",
+  "size": {
+   "w": 960,
+   "h": 180
+  },
+  "frameTags": [
+   {
+    "name": "desk",
+    "from": 0,
+    "to": 0
+   },
+   {
+    "name": "plate",
+    "from": 1,
+    "to": 1
+   },
+   {
+    "name": "stamp",
+    "from": 2,
+    "to": 2
+   }
+  ]
+ }
+}

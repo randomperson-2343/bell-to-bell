@@ -1,0 +1,223 @@
+{
+ "frames": [
+  {
+   "filename": "room:autumn",
+   "frame": {
+    "x": 0,
+    "y": 0,
+    "w": 320,
+    "h": 180
+   }
+  },
+  {
+   "filename": "room:grey",
+   "frame": {
+    "x": 320,
+    "y": 0,
+    "w": 320,
+    "h": 180
+   }
+  },
+  {
+   "filename": "room:winter",
+   "frame": {
+    "x": 640,
+    "y": 0,
+    "w": 320,
+    "h": 180
+   }
+  },
+  {
+   "filename": "glow:1",
+   "frame": {
+    "x": 960,
+    "y": 0,
+    "w": 320,
+    "h": 180
+   }
+  },
+  {
+   "filename": "glow:2",
+   "frame": {
+    "x": 1280,
+    "y": 0,
+    "w": 320,
+    "h": 180
+   }
+  },
+  {
+   "filename": "glow:3",
+   "frame": {
+    "x": 1600,
+    "y": 0,
+    "w": 320,
+    "h": 180
+   }
+  },
+  {
+   "filename": "blinds",
+   "frame": {
+    "x": 1920,
+    "y": 0,
+    "w": 320,
+    "h": 180
+   }
+  },
+  {
+   "filename": "tv",
+   "frame": {
+    "x": 2240,
+    "y": 0,
+    "w": 320,
+    "h": 180
+   }
+  },
+  {
+   "filename": "tv:anchor",
+   "frame": {
+    "x": 2560,
+    "y": 0,
+    "w": 320,
+    "h": 180
+   }
+  },
+  {
+   "filename": "tv:bars",
+   "frame": {
+    "x": 2880,
+    "y": 0,
+    "w": 320,
+    "h": 180
+   }
+  },
+  {
+   "filename": "couch",
+   "frame": {
+    "x": 3200,
+    "y": 0,
+    "w": 320,
+    "h": 180
+   }
+  },
+  {
+   "filename": "phone:off",
+   "frame": {
+    "x": 3520,
+    "y": 0,
+    "w": 320,
+    "h": 180
+   }
+  },
+  {
+   "filename": "phone:on",
+   "frame": {
+    "x": 3840,
+    "y": 0,
+    "w": 320,
+    "h": 180
+   }
+  },
+  {
+   "filename": "player",
+   "frame": {
+    "x": 4160,
+    "y": 0,
+    "w": 320,
+    "h": 180
+   }
+  },
+  {
+   "filename": "wreath",
+   "frame": {
+    "x": 4480,
+    "y": 0,
+    "w": 320,
+    "h": 180
+   }
+  }
+ ],
+ "meta": {
+  "image": "tv-room.png",
+  "size": {
+   "w": 4800,
+   "h": 180
+  },
+  "frameTags": [
+   {
+    "name": "room:autumn",
+    "from": 0,
+    "to": 0
+   },
+   {
+    "name": "room:grey",
+    "from": 1,
+    "to": 1
+   },
+   {
+    "name": "room:winter",
+    "from": 2,
+    "to": 2
+   },
+   {
+    "name": "glow:1",
+    "from": 3,
+    "to": 3
+   },
+   {
+    "name": "glow:2",
+    "from": 4,
+    "to": 4
+   },
+   {
+    "name": "glow:3",
+    "from": 5,
+    "to": 5
+   },
+   {
+    "name": "blinds",
+    "from": 6,
+    "to": 6
+   },
+   {
+    "name": "tv",
+    "from": 7,
+    "to": 7
+   },
+   {
+    "name": "tv:anchor",
+    "from": 8,
+    "to": 8
+   },
+   {
+    "name": "tv:bars",
+    "from": 9,
+    "to": 9
+   },
+   {
+    "name": "couch",
+    "from": 10,
+    "to": 10
+   },
+   {
+    "name": "phone:off",
+    "from": 11,
+    "to": 11
+   },
+   {
+    "name": "phone:on",
+    "from": 12,
+    "to": 12
+   },
+   {
+    "name": "player",
+    "from": 13,
+    "to": 13
+   },
+   {
+    "name": "wreath",
+    "from": 14,
+    "to": 14
+   }
+  ]
+ }
+}

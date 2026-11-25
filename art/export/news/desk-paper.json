@@ -1,0 +1,41 @@
+{
+ "frames": [
+  {
+   "filename": "memo",
+   "frame": {
+    "x": 0,
+    "y": 0,
+    "w": 58,
+    "h": 30
+   }
+  },
+  {
+   "filename": "footnote",
+   "frame": {
+    "x": 58,
+    "y": 0,
+    "w": 58,
+    "h": 30
+   }
+  }
+ ],
+ "meta": {
+  "image": "desk-paper.png",
+  "size": {
+   "w": 116,
+   "h": 30
+  },
+  "frameTags": [
+   {
+    "name": "memo",
+    "from": 0,
+    "to": 0
+   },
+   {
+    "name": "footnote",
+    "from": 1,
+    "to": 1
+   }
+  ]
+ }
+}

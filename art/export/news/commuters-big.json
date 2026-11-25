@@ -1,0 +1,55 @@
+{
+ "frames": [
+  {
+   "filename": "who1",
+   "frame": {
+    "x": 0,
+    "y": 0,
+    "w": 32,
+    "h": 64
+   }
+  },
+  {
+   "filename": "who2",
+   "frame": {
+    "x": 32,
+    "y": 0,
+    "w": 32,
+    "h": 64
+   }
+  },
+  {
+   "filename": "who3",
+   "frame": {
+    "x": 64,
+    "y": 0,
+    "w": 32,
+    "h": 64
+   }
+  }
+ ],
+ "meta": {
+  "image": "commuters-big.png",
+  "size": {
+   "w": 96,
+   "h": 64
+  },
+  "frameTags": [
+   {
+    "name": "who1",
+    "from": 0,
+    "to": 0
+   },
+   {
+    "name": "who2",
+    "from": 1,
+    "to": 1
+   },
+   {
+    "name": "who3",
+    "from": 2,
+    "to": 2
+   }
+  ]
+ }
+}

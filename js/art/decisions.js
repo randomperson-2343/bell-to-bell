@@ -85,6 +85,12 @@
   const MUG = ['.111111...', '1dDDDDd1..', '1qqqqqq111', '1q9qqqq1.1', '1q9qqqq1.1', '1qqqqqq111', '1qqqqqp1..', '.111111...'];
   const LAMP = ['......111.', '.....1aa1.', '....1aaaa1', '...1aaaaa1', '..11111111', '.......1..', '.......1..', '.......1..', '.....111..', '....11111.'];
 
+  // ---- the authored rooms (rooms/<name>): 214x121 cells at 3x from (-2,-2); screen px = 3*cell - 2. Each room draws its art when packed, else the code path below. ----
+  const hasA = (n) => !!(B.Art && B.Art.has('rooms/' + n));
+  const aArt = (ctx, n, frame, map) => X.drawArt(ctx, 'rooms/' + n, frame, -2, -2, { scale: U, map });
+  const aSpr = (ctx, n, frame, cx, cy) => X.drawArt(ctx, 'rooms/' + n, frame, cx * U - 2, cy * U - 2, { scale: U });
+  const SEASON = (day) => R.season(day).id;
+
   // ---- rooms ----
   // Kroll's corner office, by day and after dark.
   // part: 'back' is the room up to the lamplight, 'front' the desk and what is on it (the night office is split there, the lamplight rings drawn between).
@@ -163,7 +169,9 @@
   // The whip has 214 votes; the bill passes with 218, so the board reads 218 then.
   function voteYeas(passed) { return passed ? 218 : 214; }
   function hearing(ctx, day, vote, passed, o) {
-    const skip = o && o.skip;
+    const skip = o && o.skip, ART = hasA('hearing');
+    if (ART) { aArt(ctx, 'hearing', vote ? 'room:vote' : 'room:hearing'); if (skip !== 'chair') aSpr(ctx, 'hearing-chair', 'chair', 133, 48); }
+    else {
     X.gradient(ctx, 0, 0, V.w, 240, P.desk, P.deskD, 8);
     for (let i = 0; i < 9; i++) { cel(ctx, 12 + i * 72, 12, 18, 192, P.desk, P.desk2, P.deskD); cel(ctx, 6 + i * 72, 6, 30, 12, P.desk2, P.bone, P.desk); }
     // The seal: a ringed disc with a column and stars.
@@ -180,18 +188,24 @@
     cel(ctx, -U, 192, V.w + 2 * U, 48, P.deskD, P.desk2, P.ink2);
     for (let i = 0; i < 7; i++) cel(ctx, 240 + i * 54, 204, 42, 15, P.bone, P.white, P.putty2);
     carpet(ctx, 240, P.carpetD, P.carpet);
-    const tx = 426, ty = 30;
+    }
+    const tx = ART ? 424 : 426, ty = ART ? 28 : 30;
     if (vote) {
-      cel(ctx, tx, ty, 198, 105, P.ink, P.slate2, P.ink2);
+      if (!ART) cel(ctx, tx, ty, 198, 105, P.ink, P.slate2, P.ink2);
       R.text(ctx, 'STABILIZATION ACT', tx + 99, ty + 12, P.amber, 'center');
-      X.rect(ctx, tx + 15, ty + 27, 168, U, P.slate);
+      if (!ART) X.rect(ctx, tx + 15, ty + 27, 168, U, P.slate);
       R.text(ctx, 'YEAS', tx + 21, ty + 39, P.jade); if (skip !== 'count') R.text(ctx, String(voteYeas(passed)), tx + 177, ty + 39, P.jade, 'right');
       if (passed) { R.text(ctx, 'NEEDED', tx + 21, ty + 55, P.bone); R.text(ctx, '218', tx + 177, ty + 55, P.bone, 'right'); R.text(ctx, 'PASSED', tx + 99, ty + 78, P.jade, 'center'); }
       else { R.text(ctx, 'SHORT', tx + 21, ty + 55, P.crimson); R.text(ctx, '4', tx + 177, ty + 55, P.crimson, 'right'); R.text(ctx, 'NEEDED 218', tx + 99, ty + 78, P.bone, 'center'); }
     } else {
-      cel(ctx, tx + 12, ty + 12, 174, 48, P.ink, P.slate2, P.ink2);
-      R.text(ctx, 'MARKETS COMMITTEE', tx + 99, ty + 24, P.sky, 'center');
-      X.rect(ctx, tx + 78, ty + 40, U * 2, U * 2, P.crimson); R.text(ctx, 'LIVE', tx + 90, ty + 40, P.crimson);
+      if (ART) { // the board's CRT is flat ink in the art (439,43,168x42); the LIVE light and its text sit in the flat 502,67,36x9
+        R.text(ctx, 'MARKETS COMMITTEE', 523, 55, P.sky, 'center');
+        X.rect(ctx, 505, 68, U * 2, U * 2, P.crimson); R.text(ctx, 'LIVE', 517, 68, P.crimson);
+      } else {
+        cel(ctx, tx + 12, ty + 12, 174, 48, P.ink, P.slate2, P.ink2);
+        R.text(ctx, 'MARKETS COMMITTEE', tx + 99, ty + 24, P.sky, 'center');
+        X.rect(ctx, tx + 78, ty + 40, U * 2, U * 2, P.crimson); R.text(ctx, 'LIVE', tx + 90, ty + 40, P.crimson);
+      }
     }
   }
 
@@ -199,10 +213,28 @@
   // part: 'back' is the windows, the clock and the carpet (the animate lights the windows there), 'glow' only the lamplight rings over them, 'front' the desk.
   function treasury(ctx, day, o) {
     const part = o && o.part;
+    if (hasA('treasury')) { // back, glow, then the season's windows over the glow; the lit cells and the colon are the animate's
+      if (part === 'glow') return;
+      if (part !== 'front') {
+        aArt(ctx, 'treasury', 'back'); aArt(ctx, 'treasury', 'glow'); aArt(ctx, 'treasury', 'window:' + SEASON(day));
+        big(ctx, '2:14', 65, 57, P.ink, 2, 'center');
+        if (!(o && o.skip === 'cells')) for (const c of treasuryArtCells()) X.rect(ctx, c.x, c.y, c.w, c.h, P.amber);
+      }
+      if (part !== 'back') { aArt(ctx, 'treasury', 'front'); R.text(ctx, 'TREASURY · 2:14 AM', 606, 258, P.amber, 'right'); }
+      return;
+    }
     if (part === 'glow') { glow(ctx, 360, 150, [210, 150, 90], P.amber, 0.06); return; }
     if (part !== 'front') treasuryBack(ctx, day, o);
     if (!part) glow(ctx, 360, 150, [210, 150, 90], P.amber, 0.06);
     if (part !== 'back') treasuryFront(ctx);
+  }
+  // The lit windows of the treasury art: the one-cell amber pixels of its `cells` frame, five windows at x 82+26i (18 wide), as screen rects.
+  let TCELLS = null;
+  function treasuryArtCells() {
+    if (TCELLS) return TCELLS;
+    const a = B.Art.get('rooms/treasury', 'cells'), out = [];
+    for (let y = 0; y < a.h; y++) for (let x = 0; x < a.w; x++) if (a.rows[y][x] !== '.') out.push({ x: x * U - 2, y: y * U - 2, w: U, h: U, i: Math.max(0, Math.min(4, Math.floor((x - 82) / 26))) });
+    return (TCELLS = out);
   }
   function treasuryBack(ctx, day, o) {
     X.gradient(ctx, 0, 0, V.w, 210, P.slate, P.ink2, 9);
@@ -222,6 +254,7 @@
 
   // The stairwell on forty-one, where Imani waits with a folder.
   function stairwell(ctx, day) {
+    if (hasA('stairwell')) { aArt(ctx, 'stairwell', 'room'); big(ctx, 'EXIT', 105, 50, P.white, 2, 'center'); big(ctx, '41', 196, 204, P.ink, 2, 'center'); return; }
     X.gradient(ctx, 0, 0, V.w, 360, P.grey, P.slate, 9);
     X.dither(ctx, 0, 0, V.w, 262, P.grey, P.slate2, 0.08);
     cel(ctx, 222, 9, 240, 12, P.bone, P.white, P.putty); glow(ctx, 342, 18, [180, 120], P.white, 0.05);
@@ -255,6 +288,16 @@
     return out;
   }
   function racks(ctx, day, dark) {
+    if (hasA('racks')) {
+      aArt(ctx, 'racks', 'room');
+      if (dark) {
+        ctx.save(); ctx.globalAlpha = 0.45; X.rect(ctx, 0, 0, V.w, V.h, P.ink); ctx.restore();
+        // the red switch stays lit and off: the art's cover (cells 34,37 24x31), button down and dark
+        ctx.save(); ctx.beginPath(); ctx.rect(100, 109, 72, 93); ctx.clip(); aArt(ctx, 'racks', 'room'); ctx.restore();
+        cel(ctx, 121, 130, 30, 51, P.crimsonD, P.crimson, P.crimsonD); cel(ctx, 127, 166, 18, 9, P.bone, P.white, P.putty2);
+      } else aArt(ctx, 'racks', 'leds:on');
+      return;
+    }
     X.gradient(ctx, 0, 0, V.w, 252, P.screenD, P.ink, 8);
     cel(ctx, 150, 6, 490, 15, P.slate, P.slate2, P.ink2); for (let x = 165; x < 640; x += 30) X.rect(ctx, x, 21, U, 12, P.slate);
     const leds = dark ? [] : rackLeds(day);
@@ -278,6 +321,7 @@
 
   // The management screen's eyes: two open squares, or two lines when it blinks.
   function lobbyEyes(ctx, closed) {
+    if (hasA('bldg-lobby')) { aArt(ctx, 'bldg-lobby', closed ? 'eyes:closed' : 'eyes:open'); return; }
     for (const x of [147, 216]) { if (closed) X.rect(ctx, x, 105, 21, U, P.phosphor); else cel(ctx, x, 93, 21, 21, P.phosphor, P.white, P.phosphorD); }
   }
   // The lobby, where the building's model tells you rent is going up.
@@ -289,6 +333,7 @@
     if (part !== 'back') lobbyFront(ctx);
   }
   function lobbyBack(ctx) {
+    if (hasA('bldg-lobby')) { aArt(ctx, 'bldg-lobby', 'back'); return; }
     X.gradient(ctx, 0, 0, V.w, 258, P.putty2, P.plasticD, 10);
     X.dither(ctx, 0, 0, V.w, 258, P.putty2, P.bone, 0.05);
     // Mailboxes and the elevator.
@@ -302,6 +347,10 @@
     glow(ctx, 192, 120, [150, 90], P.phosphor, 0.05);
   }
   function lobbyFront(ctx) {
+    if (hasA('bldg-lobby')) {
+      aArt(ctx, 'bldg-lobby', 'front'); X.scanlines(ctx, 97, 61, 186, 123, P.ink, 0.25);
+      R.text(ctx, '41', 564, 46, P.amber, 'center'); R.text(ctx, 'RENT +9% · CONGRATULATIONS', 192, 189, P.bone, 'center'); return;
+    }
     X.rect(ctx, 150, 141, 84, U * 2, P.phosphor); X.rect(ctx, 144, 135, 9, 9, P.phosphor); X.rect(ctx, 231, 135, 9, 9, P.phosphor);
     X.scanlines(ctx, 99, 60, 186, 123, P.ink, 0.25);
     X.rect(ctx, 183, 207, 18, 36, P.plasticD); cel(ctx, 150, 240, 84, 12, P.plasticD, P.plastic, P.ink2);
@@ -314,10 +363,16 @@
   // The steakhouse: good wine, a candle, and an $8,000 advance.
   const ENV = { x: 246, y: 219, w: 114, h: 27 };
   // the postcard's photo square (a cel with a 3 px outline, drawn in the kitchen with a postcard); the animate covers it with the card's paper
-  const PHOTO = { x: 321, y: 171, w: 30, h: 30 };
+  const PHOTO_OLD = { x: 321, y: 171, w: 30, h: 30 }, PHOTO_ART = { x: 322, y: 172, w: 30, h: 30 };
+  const photo = () => (hasA('kitchen') ? PHOTO_ART : PHOTO_OLD);
   // The $8,000 envelope at x (it slides in from 36 px to the right).
-  function envelope(ctx, x) { cel(ctx, x, ENV.y, ENV.w, ENV.h, P.bone, P.white, P.plasticD); R.text(ctx, '$8,000', x + 57, 229, P.jadeD, 'center'); }
+  // The art's envelope sprite rests at cell 82,73 (px 244,217); `x` stays the old px (ENV.x + slide), so the art draws at x - 2.
+  function envelope(ctx, x) {
+    if (hasA('dinner-envelope')) { X.drawArt(ctx, 'rooms/dinner-envelope', 'base', x - 2, 217, { scale: U }); R.text(ctx, '$8,000', x - 2 + 57, 227, P.jadeD, 'center'); return; }
+    cel(ctx, x, ENV.y, ENV.w, ENV.h, P.bone, P.white, P.plasticD); R.text(ctx, '$8,000', x + 57, 229, P.jadeD, 'center');
+  }
   function dinner(ctx, day, o) {
+    if (hasA('dinner')) { aArt(ctx, 'dinner', 'room'); if (!(o && o.skip === 'envelope')) envelope(ctx, ENV.x); return; }
     X.gradient(ctx, 0, 0, V.w, 240, P.deskD, P.ink2, 9);
     panels(ctx, 0, 120, V.w, 120, P.crimsonD, P.crimson, P.ink2, 90);
     for (let i = 0; i < 6; i++) { const x = 42 + i * 108; cel(ctx, x, 54, 18, 27, P.amberD, P.amber, P.deskD); glow(ctx, x + 9, 66, [48, 27], P.amber, 0.08); }
@@ -333,6 +388,18 @@
 
   // Home at night: the kitchen table, the phone, and whatever came in the mail.
   function kitchen(ctx, day, o, S) {
+    if (hasA('kitchen')) {
+      aArt(ctx, 'kitchen', 'room'); aArt(ctx, 'kitchen', 'window:' + SEASON(day));
+      if (o.phone) aArt(ctx, 'kitchen', 'phone');
+      if (o.doc) { aArt(ctx, 'kitchen', 'doc'); R.text(ctx, o.doc[0], 374, 175, P.ink, 'center'); R.text(ctx, o.doc[1], 374, 193, P.crimsonD, 'center'); }
+      if (o.postcard) {
+        const pet = S && S.wallet && S.wallet.pet ? S.wallet.pet.name.toUpperCase() : 'YOUR PET';
+        aArt(ctx, 'kitchen', 'postcard'); R.text(ctx, pet, 397, 175, P.ink, 'center'); R.text(ctx, 'CHECKUP DUE', 397, 190, P.crimsonD, 'center');
+      }
+      if (o.phone) R.text(ctx, o.phone, 517, 183, P.phosphor, 'center');
+      aArt(ctx, 'kitchen', o.postcard ? 'mug:b' : 'mug:a');
+      return;
+    }
     X.gradient(ctx, 0, 0, V.w, 240, P.slate, P.ink2, 8);
     cityWindow(ctx, 396, 30, 204, 126, day, true, true);
     for (let i = 0; i < 4; i++) { cel(ctx, 27 + i * 81, 36, 78, 57, P.plasticD, P.plastic, P.ink2); X.rect(ctx, 93 + i * 81, 60, U, 12, P.grey2); }
@@ -348,7 +415,7 @@
     }
     if (o.postcard) { // the vet's reminder, face up on the table, with a cartoon cross
       const pet = S && S.wallet && S.wallet.pet ? S.wallet.pet.name.toUpperCase() : 'YOUR PET';
-      cel(ctx, 312, 165, 132, 45, P.bone, P.white, P.putty2); cel(ctx, PHOTO.x, PHOTO.y, PHOTO.w, PHOTO.h, P.sky, P.white, P.slate2);
+      cel(ctx, 312, 165, 132, 45, P.bone, P.white, P.putty2); cel(ctx, PHOTO_OLD.x, PHOTO_OLD.y, PHOTO_OLD.w, PHOTO_OLD.h, P.sky, P.white, P.slate2);
       X.rect(ctx, 327, 184, 18, U, P.crimson); X.rect(ctx, 334, 177, U, 18, P.crimson);
       R.text(ctx, pet, 399, 177, P.ink, 'center'); R.text(ctx, 'CHECKUP DUE', 399, 192, P.crimsonD, 'center');
     }
@@ -363,10 +430,17 @@
   // The 26 waveform bars of the voicemail: i, x, y, w, h.
   function waveBars() {
     const out = [];
-    for (let i = 0; i < 26; i++) { const h = 6 + ((i * 37 + 11) % 30); out.push({ i, x: 249 + i * 6, y: 150 - Math.round(h / 2 / U) * U, w: U, h: Math.round(h / U) * U }); }
+    const d = hasA('voicemail') ? 2 : 0; // the art's bars are on the cell grid: 2 px up and left of the code's
+    for (let i = 0; i < 26; i++) { const h = 6 + ((i * 37 + 11) % 30); out.push({ i, x: 249 - d + i * 6, y: 150 - d - Math.round(h / 2 / U) * U, w: U, h: Math.round(h / U) * U }); }
     return out;
   }
   function voicemail(ctx, day, o) {
+    if (hasA('voicemail')) {
+      aArt(ctx, 'voicemail', 'room');
+      big(ctx, o.who || 'UNKNOWN', 321, 72, P.bone, 2, 'center'); R.text(ctx, 'VOICEMAIL', 321, 48, P.grey2, 'center');
+      R.text(ctx, '0:12', 252, 177, P.phosphor); R.text(ctx, o.len || '0:30', 390, 177, P.grey2, 'right');
+      return;
+    }
     X.gradient(ctx, 0, 0, V.w, 300, P.ink2, P.ink, 8);
     glow(ctx, 321, 150, [210, 150, 99], P.screenGlow, 0.07);
     cel(ctx, 228, 18, 186, 258, P.ink2, P.slate2, P.ink);
@@ -385,9 +459,22 @@
     if (kind && SB && SB.PET) { out.rows = SB.petRows({ kind, sex: 'boy' }, true); const sp = X.sprite(out.rows); out.px = x + 48 - Math.round(sp.w * U / 2); out.py = y + 132 - sp.h * U; }
     return out;
   }
+  // The pets from their sprite grids: the cat at cell 116,69 and the dog at 148,67 (bottom-centre of kennels 1 and 2; the grid header's 84 and 118 are off by one kennel) (frames rest|breathe, rest|wag).
+  function shelterPets(ctx, cat, dog) { aSpr(ctx, 'shelter-cat', cat, 116, 69); aSpr(ctx, 'shelter-dog', dog, 148, 67); }
   // part: 'back' is everything but the four wire meshes, 'front' is only the meshes.
   function shelter(ctx, day, o) {
     const part = o && o.part;
+    if (hasA('shelter')) {
+      if (part !== 'front') {
+        aArt(ctx, 'shelter', 'back');
+        R.text(ctx, 'ADOPT, DON\'T SHOP', 102, 48, P.white, 'center');
+        R.text(ctx, 'OPEN LATE MONDAYS', 102, 78, P.ink, 'center'); R.text(ctx, 'NOBODY ADOPTS IN', 102, 93, P.crimsonD, 'center'); R.text(ctx, 'A CRASH. PROVE US', 102, 102, P.crimsonD, 'center'); R.text(ctx, 'WRONG.', 102, 111, P.crimsonD, 'center');
+        for (let k = 0; k < 4; k++) { const kind = k === 1 ? 'cat' : k === 2 ? 'dog' : null; R.text(ctx, kind ? (kind === 'cat' ? 'CAT' : 'DOG') : 'EMPTY', 273 + 102 * k, 88, kind ? P.ink : P.grey, 'center'); }
+        if (!part) shelterPets(ctx, 'rest', 'rest');
+      }
+      if (part !== 'back') aArt(ctx, 'shelter', 'front');
+      return;
+    }
     if (part !== 'front') {
       X.gradient(ctx, 0, 0, V.w, 246, P.putty2, P.putty, 8);
       cel(ctx, 27, 30, 150, 90, P.bone, P.white, P.putty2); cel(ctx, 36, 39, 132, 27, P.jadeD, P.jade, P.ink2);
@@ -418,11 +505,26 @@
   // part: 'back' is the room to the exam light (the dentist's lamp, the vet's tube) without that light's rings, 'front' the rest;
   // the vet's ceiling rings and the dentist's lamp rings are drawn between by the animate (clinicGlow).
   function clinicGlow(ctx, vet, stage) { // stage 1: the inner ring, 2: both
+    if (hasA('clinic')) { const k = vet ? 'vet' : 'dentist'; aArt(ctx, 'clinic', 'glow:' + k + ':1'); if (stage > 1) aArt(ctx, 'clinic', 'glow:' + k + ':2'); return; }
     if (vet) glow(ctx, 318, 18, stage === 1 ? [120] : [180, 120], P.white, 0.05);
     else glow(ctx, 468, 120, stage === 1 ? [54] : [90, 54], P.white, 0.08);
   }
   function clinic(ctx, day, o, part) {
     const vet = o.kind === 'vet', back = part !== 'front', front = part !== 'back';
+    if (hasA('clinic')) {
+      const k = vet ? 'vet' : 'dentist';
+      if (back) {
+        aArt(ctx, 'clinic', 'back:' + k);
+        if (!part) { clinicGlow(ctx, vet, 2); } // the whole room is lit
+      }
+      if (front) {
+        aArt(ctx, 'clinic', 'front:' + k);
+        if (vet) { R.text(ctx, '4.2', 604, 229, P.phosphor, 'center'); R.text(ctx, 'GENTLE HANDS', 429, 51, P.ink, 'center'); }
+        R.text(ctx, vet ? 'AFTER HOURS' : 'EMERGENCY', 315, 216, P.ink, 'center');
+        big(ctx, o.bill || '', 315, 234, P.crimsonD, 2, 'center');
+      }
+      return;
+    }
     if (back) {
       X.gradient(ctx, 0, 0, V.w, 246, vet ? P.carpet2 : P.phosphorD, vet ? P.carpet : P.jadeD, 9);
       X.rect(ctx, 0, 246, V.w, 114, P.bone); for (let y = 249; y < 360; y += 18) for (let x = ((y / 18) % 2) * 18; x < V.w; x += 36) X.rect(ctx, x, y, 18, 18, P.putty2);
@@ -555,11 +657,11 @@
       layers: [{
         id: 'room', depth: 1, draw: flat({ skip: 'chair' }),
         animate(g, v, t) {
-          const lean = t >= 0.50 && t < 1.10;
-          blit(g, chair, 399 + (lean ? 3 : 0), 144 + (lean ? 6 : 0));
-          // the committee board's screen (the interior of its cel, 441,45,168x42) refreshes once at 0.40 s: the key movement; the LIVE light stays background life
-          e.K.crt(g, 441, 45, 168, 42, t, { mode: 'roll', at: 0.40, dur: 0.36 });
-          if (t >= 0.30) K.blink(g, 504, 70, 37, 9, t, { on: null, off: P.ink, period: 0.5, duty: 0.6, end: e.dur });
+          const lean = t >= 0.50 && t < 1.10, ART = hasA('hearing');
+          if (ART) aSpr(g, 'hearing-chair', 'chair', 133 + (lean ? 1 : 0), 48 + (lean ? 2 : 0)); else blit(g, chair, 399 + (lean ? 3 : 0), 144 + (lean ? 6 : 0));
+          // the committee board's screen (the interior of its cel, 441,45,168x42; the art's is 439,43) refreshes once at 0.40 s: the key movement; the LIVE light stays background life
+          if (ART) e.K.crt(g, 439, 43, 168, 42, t, { mode: 'roll', at: 0.40, dur: 0.36 }); else e.K.crt(g, 441, 45, 168, 42, t, { mode: 'roll', at: 0.40, dur: 0.36 });
+          if (t >= 0.30) K.blink(g, ...(ART ? [502, 67, 36, 9] : [504, 70, 37, 9]), t, { on: null, off: P.ink, period: 0.5, duty: 0.6, end: e.dur });
         }
       }, grain]
     };
@@ -571,10 +673,11 @@
       layers: [{
         id: 'room', depth: 1, draw: flat({ skip: 'count' }),
         animate(g, v, t) {
-          if (t < 0.40) X.rect(g, 441, 66, 168, 12, P.ink);
-          if (t < 1.00) X.rect(g, 441, 82, 168, 12, P.ink);
-          if (t < 1.10) X.rect(g, 441, 105, 168, 12, P.ink);
-          K.tally(g, 603, 69, t, { from: 180, to: voteYeas(e.after && e.S && e.S.f && e.S.f.billPassed), at: 0.40, dur: 0.55, fps: 15, fmt: String, col: P.jade, shadow: P.ink, align: 'right' });
+          const A = hasA('hearing'), cx = A ? 439 : 441, ys = A ? [64, 79, 103] : [66, 82, 105];
+          if (t < 0.40) X.rect(g, cx, ys[0], 168, 12, P.ink);
+          if (t < 1.00) X.rect(g, cx, ys[1], 168, 12, P.ink);
+          if (t < 1.10) X.rect(g, cx, ys[2], 168, 12, P.ink);
+          K.tally(g, A ? 601 : 603, A ? 67 : 69, t, { from: 180, to: voteYeas(e.after && e.S && e.S.f && e.S.f.billPassed), at: 0.40, dur: 0.55, fps: 15, fmt: String, col: P.jade, shadow: P.ink, align: 'right' });
         }
       }, grain]
     };
@@ -582,7 +685,7 @@
 
   // ---- shot 5: the treasury (the five tall windows light one after another; the clock's colon ticks) ----
   LAYER.treasury = (e, flat, grain) => {
-    const K = e.K, wins = [0, 1, 2, 3, 4].map((i) => cityCells(246 + 78 * i, 30, 54, 138, e.day + i));
+    const K = e.K, A = hasA('treasury'), wins = A ? [0, 1, 2, 3, 4].map((i) => treasuryArtCells().filter((c) => c.i === i)) : [0, 1, 2, 3, 4].map((i) => cityCells(246 + 78 * i, 30, 54, 138, e.day + i));
     return {
       // split around the lamplight rings, which sit over the windows in the flat room: the cells are drawn under them, so the lit pixels are the art's exactly
       layers: [{
@@ -590,7 +693,7 @@
         animate(g, v, t) {
           wins.forEach((cells, i) => K.lamps(g, cells, t, { at: 0.40 + 0.12 * i, step: 0, on: P.amber }));
           // the colon of '2:14' (art x 28-29 at 2x, plus its shadow) on the clock face's flat bone
-          K.blink(g, 56, 60, 6, 12, t, { on: null, off: P.bone, period: 1.0, duty: 0.5, end: e.dur });
+          K.blink(g, ...(A ? [55, 58] : [56, 60]), 6, 12, t, { on: null, off: P.bone, period: 1.0, duty: 0.5, end: e.dur });
         }
       }, { id: 'mid', depth: 1, draw: flat({ part: 'glow' }) }, { id: 'front', depth: 1, draw: flat({ part: 'front' }) }, grain]
     };
@@ -617,17 +720,18 @@
     camera: null,
     layers: [{ id: 'room', depth: 1, draw: flat(), animate(g, v, t) {
       if (t < 0.40) return;
-      if (standbyOn(t, e.dur)) glow(g, 186, 42, [21, 12], P.amber, 0.12);
-      e.K.blink(g, 183, 39, 6, 6, t, { on: P.amber, period: 1.0, duty: 0.5, end: e.dur });
+      const a = hasA('racks');
+      if (standbyOn(t, e.dur)) glow(g, a ? 187 : 186, a ? 43 : 42, [21, 12], P.amber, 0.12);
+      e.K.blink(g, a ? 184 : 183, a ? 40 : 39, 6, 6, t, { on: P.amber, period: 1.0, duty: 0.5, end: e.dur });
     } }, grain]
   }) : e.after && e.S && e.S.f && e.S.f.pulledPlug && e.phase === '317' ? ({
     camera: null, cues: [{ at: 0.40, sfx: 'click' }],
-    layers: [{ id: 'room', depth: 1, draw: flat(), animate(g, v, t) { LEDS.forEach((L) => { if (t < RACK_DEATH(L)) X.rect(g, L.x, L.y, L.w, L.h, L.col); }); } }, grain]
+    layers: [{ id: 'room', depth: 1, draw: flat(), animate(g, v, t) { const a = hasA('racks'); LEDS.forEach((L) => { if (t < RACK_DEATH(L)) X.rect(g, a ? Math.round((L.x + 2) / U) * U - 2 : L.x, a ? Math.round((L.y + 2) / U) * U - 2 : L.y, L.w, L.h, L.col); }); } }, grain]
   }) : ({ layers: [{ id: 'room', depth: 1, draw: flat(), animate(g, v, t) {
     for (let i = 0; i < 7; i++) {
       if (!(t >= 0.40 + 0.09 * i && t < 0.52 + 0.09 * i)) continue;
       g.save(); g.globalAlpha = 0.45;
-      for (let sy = 9; sy < 213; sy += 12) X.rect(g, 177 + 69 * i + 6, 30 + sy, 42, 6, P.phosphorD);
+      for (let sy = 9; sy < 213; sy += 12) X.rect(g, (hasA('racks') ? 178 : 177) + 69 * i + 6, (hasA('racks') ? 31 : 30) + sy, 42, 6, P.phosphorD);
       g.restore();
     }
   } }, grain] });
@@ -648,8 +752,8 @@
   // ---- shots 10 and 11: the kitchen (the phone rings twice; the postcard's photo blinks under a paper cover) ----
   LAYER.kitchen = (e, flat, grain) => {
     const K = e.K;
-    if (e.opt.phone) return { cues: [{ at: 0.40, sfx: 'ring' }], layers: [{ id: 'room', depth: 1, draw: flat(), animate(g, v, t) { K.flicker(g, 477, 165, 78, 45, 'decision:phone', t, { spans: [[0.40, 0.60], [0.90, 1.10]], col: P.phosphor, a: 0.30 }); } }, grain] };
-    if (e.opt.postcard) return { layers: [{ id: 'room', depth: 1, draw: flat(), animate(g, v, t) { if (t >= 0.30) K.blink(g, PHOTO.x, PHOTO.y, PHOTO.w, PHOTO.h, t, { on: null, off: P.bone, period: 0.5, duty: 0.6, end: e.dur }); } }, grain] };
+    if (e.opt.phone) return { cues: [{ at: 0.40, sfx: 'ring' }], layers: [{ id: 'room', depth: 1, draw: flat(), animate(g, v, t) { K.flicker(g, ...(hasA('kitchen') ? [478, 166] : [477, 165]), 78, 45, 'decision:phone', t, { spans: [[0.40, 0.60], [0.90, 1.10]], col: P.phosphor, a: 0.30 }); } }, grain] };
+    if (e.opt.postcard) return { layers: [{ id: 'room', depth: 1, draw: flat(), animate(g, v, t) { if (t >= 0.30) K.blink(g, photo().x, photo().y, photo().w, photo().h, t, { on: null, off: P.bone, period: 0.5, duty: 0.6, end: e.dur }); } }, grain] };
     return null;
   };
 
@@ -658,7 +762,7 @@
     const K = e.K, cells = waveBars().slice(3, 9);
     return { layers: [{ id: 'room', depth: 1, draw: flat(), animate(g, v, t) {
       K.lamps(g, cells, t, { at: 0.40, step: 0.10, on: P.phosphor, off: P.slate2 });
-      if (t >= 0.30) K.blink(g, 315, 210, 9, 18, t, { on: null, off: P.phosphorD, period: 0.5, duty: 0.6, end: e.dur });
+      if (t >= 0.30) K.blink(g, ...(hasA('voicemail') ? [313, 208] : [315, 210]), 9, 18, t, { on: null, off: P.phosphorD, period: 0.5, duty: 0.6, end: e.dur });
     } }, grain] };
   };
   // ---- shot 13: the shelter (the light over the two empty kennels stutters; the cat breathes, the dog wags) ----
@@ -673,6 +777,7 @@
         {
           id: 'mid', depth: 1, draw() {},
           animate(g, v, t) {
+            if (hasA('shelter')) { shelterPets(g, t >= 0.70 && t < 1.50 ? 'breathe' : 'rest', t >= 0.80 && t < 1.30 && Math.floor(t * 6) % 2 === 1 ? 'wag' : 'rest'); return; }
             // life: the cat's upper 13 rows 3 px higher for one breath; the dog's tail flicks on odd poses (6 a second)
             if (upper && t >= 0.70 && t < 1.50) blit(g, upper, cat.px, cat.py - U);
             if (tail && t >= 0.80 && t < 1.30 && Math.floor(t * 6) % 2 === 1) { X.rect(g, dog.px + 48, dog.py + 24, 9, 12, P.slate); blit(g, tail, dog.px, dog.py + 24); }
@@ -681,8 +786,9 @@
         {
           id: 'front', depth: 1, draw: flat({ part: 'front' }),
           animate(g, v, t) {
-            K.flicker(g, 231, 108, 84, 132, 'decision:adopt:k0', t, { spans, col: P.ink, a: 0.35 });
-            K.flicker(g, 537, 108, 84, 132, 'decision:adopt:k3', t, { spans: spans.map((p) => [p[0] + 0.12, p[1] + 0.12]), col: P.ink, a: 0.35 });
+            const A = hasA('shelter');
+            K.flicker(g, A ? 229 : 231, A ? 106 : 108, 84, 132, 'decision:adopt:k0', t, { spans, col: P.ink, a: 0.35 });
+            K.flicker(g, A ? 535 : 537, A ? 106 : 108, 84, 132, 'decision:adopt:k3', t, { spans: spans.map((p) => [p[0] + 0.12, p[1] + 0.12]), col: P.ink, a: 0.35 });
           }
         },
         grain
@@ -696,7 +802,7 @@
       cues: [{ at: 0.45, sfx: 'click' }],
       layers: [
         { id: 'room', depth: 1, draw: flat({ part: 'back' }), animate(g, v, t) {
-          if (t < 0.45) { if (vet) cel(g, 258, 12, 120, 12, P.grey, P.grey2, P.slate2); else cel(g, 444, 72, 48, 27, P.putty, P.putty2, P.plasticD); }
+          if (t < 0.45) { const A = hasA('clinic'); if (vet) cel(g, A ? 256 : 258, A ? 10 : 12, 120, 12, P.grey, P.grey2, P.slate2); else cel(g, A ? 442 : 444, A ? 70 : 72, 48, 27, P.putty, P.putty2, P.plasticD); }
         } },
         { id: 'mid', depth: 1, draw() {}, animate(g, v, t) { if (t >= 0.60) clinicGlow(g, vet, 2); else if (t >= 0.45) clinicGlow(g, vet, 1); } },
         { id: 'front', depth: 1, draw: flat({ part: 'front' }) },
@@ -756,5 +862,5 @@
     return true;
   }
 
-  B.DecisionArt = { ROOMS, room, still, glow, cityCells, senator: senatorRows, lobbyEyes, waveBars, kennel, roomLayers, faceLayers, rackLeds, postcardPhoto: () => Object.assign({}, PHOTO) };
+  B.DecisionArt = { ROOMS, room, still, glow, cityCells, senator: senatorRows, lobbyEyes, waveBars, kennel, roomLayers, faceLayers, rackLeds, postcardPhoto: () => Object.assign({}, photo()) };
 })(window.BTB);

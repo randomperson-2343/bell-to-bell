@@ -1,0 +1,41 @@
+{
+ "frames": [
+  {
+   "filename": "ship:bone",
+   "frame": {
+    "x": 0,
+    "y": 0,
+    "w": 25,
+    "h": 9
+   }
+  },
+  {
+   "filename": "ship:crimson",
+   "frame": {
+    "x": 25,
+    "y": 0,
+    "w": 25,
+    "h": 9
+   }
+  }
+ ],
+ "meta": {
+  "image": "tableau-ship.png",
+  "size": {
+   "w": 50,
+   "h": 9
+  },
+  "frameTags": [
+   {
+    "name": "ship:bone",
+    "from": 0,
+    "to": 0
+   },
+   {
+    "name": "ship:crimson",
+    "from": 1,
+    "to": 1
+   }
+  ]
+ }
+}
