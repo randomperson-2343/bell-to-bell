@@ -602,6 +602,7 @@
       ctx.clip('evenodd');
     }
     if (!world) { /* corner brackets only */ }
+    else if ((r.shot === 'floor' || r.shot === 'dark') && SH.floorArt && SH.floorArt()) { /* the authored floor has its own rail and cables: no marks over the traders */ }
     else if (r.shot === 'floor' || r.shot === 'dark' || r.shot === 'place') {
       for (let i = 0; i < 8; i++) {
         const x = 82 + i * 69 + ((day * 11) % 17);

@@ -204,8 +204,9 @@
   const peopleBoxes = [];
   function person(ctx, x, y, scale, act, face, who, pose) {
     const s = scale || 1;
-    if (B.Art && B.Art.has('news/you') && !who && pose) peopleBoxes.push({ x: x - 78, y: y - 20 * s, w: 156, h: 400 });
-    else if (who && B.Art && B.Art.has('news/commuters-big')) peopleBoxes.push({ x: x - 34, y: y - 20 * s, w: 68, h: 400 });
+    const box = (B.Art && B.Art.has('news/you') && !who && pose) ? { x: x - 78, y: y - 20 * s, w: 156, h: 400 }
+      : (who && B.Art && B.Art.has('news/commuters-big')) ? { x: x - 34, y: y - 20 * s, w: 68, h: 400 } : null;
+    if (box && !peopleBoxes.some((b) => b.x === box.x && b.y === box.y)) peopleBoxes.push(box);
     if (who && personArt(ctx, x, y, s, face, who)) return;
     if (!who && pose && youArt(ctx, x, y, s, face, pose, act)) return;
     ctx.save();
@@ -298,8 +299,8 @@
     return B.clamp(x, M.x + M.w + 40, M.x + 380);
   }
   function placeFrame(ctx, sb, headline, detail, o) {
-    peopleBoxes.length = 0;
     o = o || {};
+    if (o.part !== 'front') peopleBoxes.length = 0;     // the back layer clears and records; the front layer keeps what the back recorded
     const back = o.part !== 'front', front = o.part !== 'back', ns = !!o.noSpeckle;
     const c = colors(sb.act), shift = sb.crop;
     if (back && placeArt(ctx, sb, ns)) { /* authored place */ } else if (back) {
