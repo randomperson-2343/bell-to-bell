@@ -164,10 +164,15 @@
 
   const KEY = {}; Object.keys(B.PalKeys).forEach((k) => { if (B.PalKeys[k]) KEY[B.PalKeys[k]] = k; });
   const cache = {};
-  // sprite(name, { closed: true }) is the same face with its eyes shut, cached apart.
+  // After dark every key steps one down its ramp (the same map the night rooms
+  // are built with), so a face standing in a night room is lit like the room.
+  const NIGHT = { 9: '8', 8: '5', 7: '4', 6: '3', 5: '3', 4: '2', 3: '2', 2: '1', p: '2', P: 'p', q: 'P', e: 'D', D: 'd', d: '1', C: 'c', c: '1', v: 'C', r: 'R', j: 'J', J: 'c', a: 'A', A: 'd', b: '3', m: '2', h: 'H' };
+  // sprite(name, { closed: true }) is the same face with its eyes shut, cached apart;
+  // { night: true } is the face stepped down for a night room.
   function sprite(name, o) {
-    const closed = !!(o && o.closed), key = closed ? name + ':closed' : name;
+    const closed = !!(o && o.closed), night = !!(o && o.night), key = name + (closed ? ':closed' : '') + (night ? ':night' : '');
     if (cache[key]) return cache[key];
+    if (night) return (cache[key] = X.sprite(sprite(name, { closed }).rows.map((r) => r.replace(/./g, (k) => NIGHT[k] || k))));
     const art = drawn(name, closed);
     if (art) return (cache[key] = X.sprite(art.rows));
     const c = CAST[name] || { skin: P.desk2, hair: P.ink2, suit: P.slate, accent: P.grey2, cut: 'crop', brow: 'level', mouth: 'flat' };
@@ -182,17 +187,18 @@
   // y 18..20 (x 18..29, y 15..17 for the screen avatar); a drawn face keeps its
   // blink inside one band of rows. One fillRect per changed opaque cell.
   const blinks = {};
-  function blinkCells(name) {
-    if (blinks[name]) return blinks[name];
-    const a = sprite(name), b = sprite(name, { closed: true }), out = [];
+  function blinkCells(name, night) {
+    const key = name + (night ? ':night' : '');
+    if (blinks[key]) return blinks[key];
+    const a = sprite(name, { night }), b = sprite(name, { closed: true, night }), out = [];
     for (let y = 0; y < b.h; y++) for (let x = 0; x < b.w; x++) {
       const k = b.rows[y][x];
       if (k !== (a.rows[y] || '')[x] && B.PalKeys[k]) out.push([x, y, B.PalKeys[k]]);
     }
-    return (blinks[name] = out);
+    return (blinks[key] = out);
   }
-  function paintEyes(ctx, name) {
-    for (const [x, y, col] of blinkCells(name)) { ctx.fillStyle = col; ctx.fillRect(x, y, 1, 1); }
+  function paintEyes(ctx, name, night) {
+    for (const [x, y, col] of blinkCells(name, night)) { ctx.fillStyle = col; ctx.fillRect(x, y, 1, 1); }
   }
   // Side of the (square) portrait grid: 80 for a drawn face, 48 for a procedural one.
   const size = (name) => sprite(name).h;
@@ -203,7 +209,7 @@
     paint(ctx, name);
   }
 
-  // Paint a portrait into any context on its own grid (size(name) square).
+  // Paint a portrait into any context on its own grid (size(name) square); night: true steps it down for a night room.
   // Scenes scale it up with ctx.scale and pass bare: true to drop the card
   // background and frame, so the person stands in the room instead of on a badge.
   function paint(ctx, name, opt) {
@@ -214,7 +220,7 @@
       X.dither(ctx, f, f, n - 2 * f, n - 2 * f, P.slate, c.accent, 0.13);
       for (let i = f + 4; i < n - f; i += 8 * (f - 1)) X.rect(ctx, i, f + 1, 1, n - 2 * f - 2, P.ink2);
     }
-    X.drawSprite(ctx, sprite(name), 0, 0);
+    X.drawSprite(ctx, sprite(name, { night: !!(opt && opt.night) }), 0, 0);
     if (bare) return;
     X.rect(ctx, 0, 0, n, f, c.accent);
     X.rect(ctx, 0, n - f, n, f, P.ink);

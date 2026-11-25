@@ -1,0 +1,41 @@
+{
+ "frames": [
+  {
+   "filename": "open",
+   "frame": {
+    "x": 0,
+    "y": 0,
+    "w": 80,
+    "h": 80
+   }
+  },
+  {
+   "filename": "closed",
+   "frame": {
+    "x": 80,
+    "y": 0,
+    "w": 80,
+    "h": 80
+   }
+  }
+ ],
+ "meta": {
+  "image": "perry-nakash.png",
+  "size": {
+   "w": 160,
+   "h": 80
+  },
+  "frameTags": [
+   {
+    "name": "open",
+    "from": 0,
+    "to": 0
+   },
+   {
+    "name": "closed",
+    "from": 1,
+    "to": 1
+   }
+  ]
+ }
+}

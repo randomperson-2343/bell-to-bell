@@ -457,13 +457,15 @@
     ctx.save(); ctx.translate(x == null ? 40 : x, 46); ctx.scale(k, k); fn(ctx); ctx.restore();
   }
   // The speaker, standing in the room at 5x: a medium close-up, feet out of shot.
-  function speaker(ctx, name, x) {
+  // night: the room is after dark, so the face steps one key down with it.
+  function speaker(ctx, name, x, night) {
     if (!B.Portraits || !B.Portraits.has(name)) return false;
     speakerSpace(ctx, (s) => {
-      B.Portraits.paint(s, name, { bare: true });
+      B.Portraits.paint(s, name, { bare: true, night });
       // A drawn face is cut at the chest; carry its last row down past the bottom of the frame so the body runs out of shot.
-      if (!B.Portraits.drawn(name)) return;
-      const sp = B.Portraits.sprite(name), row = sp.rows[sp.h - 1], below = Math.ceil((V.h - 46) / Math.floor(240 / sp.h)) - sp.h;
+      // The landlord's screen stands on its own foot, so it is left as drawn.
+      if (!B.Portraits.drawn(name) || (B.Portraits.CAST[name] || {}).screen) return;
+      const sp = B.Portraits.sprite(name, { night }), row = sp.rows[sp.h - 1], below = Math.ceil((V.h - 46) / Math.floor(240 / sp.h)) - sp.h;
       for (let i = 0; i < row.length; i++) { const col = B.PalKeys[row[i]]; if (col) { s.fillStyle = col; s.fillRect(i, sp.h, 1, below); } }
     }, x, name);
     return true;
@@ -665,15 +667,16 @@
     const L = build(env, flat, grain);
     return L ? Object.assign({ camera: TILT() }, L) : null;
   }
+  const isNight = (id) => !!((ROOMS[id] || [])[1] || {}).night;
   function faceLayers(id, day, S, name) {
-    const M = B.Motion, K = B.MotionKit;
+    const M = B.Motion, K = B.MotionKit, night = isNight(id);
     if (!M || !M.layered || !K || !B.Portraits || !B.Portraits.has(name)) return null;
     // the room dimmed behind (depth 0.3), the speaker rising 12 px into frame from 0.30 to 0.80 s, one blink at 1.55 s (after the caption has typed)
     return {
       camera: K.rise(12, 2.1, 0.30, 0.80),
       layers: [
         { id: 'room', depth: 0.3, draw(c) { room(c, id, day, false, S); dim(c, 0.35); } },
-        { id: 'speaker', depth: 1, draw(c) { speaker(c, name, 40); }, animate(g, v, t) { if (t >= 1.55 && t < 1.67) speakerSpace(g, (sp) => B.Portraits.paintEyes(sp, name), 40, name); } }
+        { id: 'speaker', depth: 1, draw(c) { speaker(c, name, 40, night); }, animate(g, v, t) { if (t >= 1.55 && t < 1.67) speakerSpace(g, (sp) => B.Portraits.paintEyes(sp, name, night), 40, name); } }
       ]
     };
   }
@@ -688,7 +691,7 @@
       L(roomLayers(id, day, false, S, 'room'), R.beat('decision', `${tag}:room`, 1.5, (c) => room(c, id, day, false, S), who, { sfx: 'room', transition: 'fade' })),
       L(faceLayers(id, day, S, name), R.beat('decision', `${tag}:face`, 2.1, (c) => {
         room(c, id, day, false, S); dim(c, 0.35);
-        if (!speaker(c, name, 40)) dim(c, 0.1);
+        if (!speaker(c, name, 40, isNight(id))) dim(c, 0.1);
       }, R.clean(o.title || '').toUpperCase(), { sfx: 'broadcast', informative: true }))
     ];
   };
