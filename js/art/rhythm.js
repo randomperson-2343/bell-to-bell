@@ -712,7 +712,7 @@
   B.Rhythm = {
     view:V, endingIds:ENDING_IDS,
     // Drawing helpers for js/art/storyboard.js.
-    placeFrame, peopleBoxes, commuterX, monitorGeom, phoneFrame, phoneGeom, lockMinute, stackSlip, CLOSE_DIM, officeFrame, officeGeom, closeFrame, closeGeom, closeDown, sqwakFrame, sqwakGeom, sqwakStats, skyline, skylineWindows, skylineLit, monitorScreen, season, sky, weather, text, colors, clean, chart, chartSeries, person, marketDown, beat,
+    placeFrame, peopleBoxes, commuterX, monitorGeom, phoneFrame, phoneGeom, lockMinute, stackSlip, CLOSE_DIM, officeFrame, officeGeom, closeFrame, closeGeom, closeDown, sqwakFrame, sqwakGeom, sqwakStats, skyline, skylineWindows, skylineLit, skyVar, monitorScreen, season, sky, weather, text, colors, clean, chart, chartSeries, person, marketDown, beat,
     phoneRowCount(feed){return Math.min(4,(feed||[]).length);},
     storyboard:board
   };
