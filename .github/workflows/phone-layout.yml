@@ -20,11 +20,6 @@ jobs:
       - run: npm install --no-save playwright@1.49.1
       - run: npx playwright install --with-deps chromium
       - run: node js/tests/phone-run.js
-      # Art review shots, old main beside this branch, printed to the log (temporary, removed before merge).
-      - run: git fetch --depth=1 origin main && git worktree add /tmp/before FETCH_HEAD
-        if: always()
-      - run: UI_SHOTS_LOG=1 node js/tests/ui-shots.js /tmp/before .
-        if: always()
       - uses: actions/upload-artifact@v4
         if: always()
         with:
