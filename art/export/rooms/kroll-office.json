@@ -89,12 +89,30 @@
     "w": 214,
     "h": 121
    }
+  },
+  {
+   "filename": "screen:day",
+   "frame": {
+    "x": 2140,
+    "y": 0,
+    "w": 214,
+    "h": 121
+   }
+  },
+  {
+   "filename": "screen:night",
+   "frame": {
+    "x": 2354,
+    "y": 0,
+    "w": 214,
+    "h": 121
+   }
   }
  ],
  "meta": {
   "image": "kroll-office.png",
   "size": {
-   "w": 2140,
+   "w": 2568,
    "h": 121
   },
   "frameTags": [
@@ -147,6 +165,16 @@
     "name": "glow:1",
     "from": 9,
     "to": 9
+   },
+   {
+    "name": "screen:day",
+    "from": 10,
+    "to": 10
+   },
+   {
+    "name": "screen:night",
+    "from": 11,
+    "to": 11
    }
   ]
  }

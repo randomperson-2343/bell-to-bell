@@ -122,8 +122,11 @@
   function officeArtFront(ctx, night, glowToo, lamp) {
     art(ctx, night ? 'front:night' : 'front:day');
     const m = OFFICE_SCREEN;
-    X.rect(ctx, m.x, m.y, m.w, m.h, night ? P.screenGlow : P.screen);
-    for (let i = 0; i < 4; i++) X.rect(ctx, m.x + 6, m.y + 6 + i * 6, 36 - i * 6, U, i % 2 ? P.jade : P.crimson);
+    // the screen's content is art (screen:day / screen:night, cells 189,56 17x11); the flat fill and bars stay for an older sheet without it
+    if (!art(ctx, night ? 'screen:night' : 'screen:day')) {
+      X.rect(ctx, m.x, m.y, m.w, m.h, night ? P.screenGlow : P.screen);
+      for (let i = 0; i < 4; i++) X.rect(ctx, m.x + 6, m.y + 6 + i * 6, 36 - i * 6, U, i % 2 ? P.jade : P.crimson);
+    }
     if (lamp !== false) art(ctx, night ? 'lamp:on' : 'lamp:off');
     if (night && glowToo) { art(ctx, 'glow:1'); art(ctx, 'glow:2'); }
   }
