@@ -110,7 +110,9 @@ function auditPage() {
       const el = t.parentElement;
       if (!el || /^(SCRIPT|STYLE|NOSCRIPT|OPTION|TITLE)$/.test(el.tagName) || !vis(el)) continue;
       const cs = getComputedStyle(el);
-      if (parseFloat(cs.fontSize) === 0 || cs.color.replace(/\s/g, '').endsWith(',0)') || cs.color === 'transparent') continue;
+      // A 0px font is not trusted to hide text: mobile Chrome's minimum font
+      // size still paints it. The range's own boxes say what is painted.
+      if (el.closest('#menu-tape') || cs.color.replace(/\s/g, '').endsWith(',0)') || cs.color === 'transparent') continue;
       const clip = clipOf(el);
       const rg = document.createRange(); rg.selectNodeContents(t);
       for (const d of rg.getClientRects()) {
@@ -299,7 +301,7 @@ async function viewport(browser, vp) {
     });
   });
   await closeModal(page);
-  const ids = await page.evaluate(() => { const C = BTB.StoryData.CHOICES; const k = Object.keys(C); return k.sort((a, b) => JSON.stringify(C[b].text).length - JSON.stringify(C[a].text).length).slice(0, 2).concat(k.slice(0, 1)); });
+  const ids = await page.evaluate(() => { const C = BTB.StoryData.CHOICES; const k = Object.keys(C); const L = (x) => (JSON.stringify(C[x].text || '') + JSON.stringify(C[x].options || '')).length; return k.sort((a, b) => L(b) - L(a)).slice(0, 2).concat(k.slice(0, 1)); });
   for (let i = 0; i < ids.length; i++) {
     await step(page, vp, 'choice-' + (i + 1), async () => {
       await page.evaluate((id) => {
