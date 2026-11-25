@@ -988,16 +988,16 @@
     else if (id === 'cassandra') {
       if (mov) {
         for (let i = 0; i < 6 && i < n; i++) blitArt(ctx, A, 'sheet', 94 + i * 3, 50 - i * 4);
-        if (n >= 6) { blitArt(ctx, A, 'strip', 102, 32); blitArt(ctx, A, 'label', 110, 40); T('UNREAD', 128, 41, P.ink); } // the top sheet's ruled lines are cleared under the word
+        if (n >= 6) { blitArt(ctx, A, 'strip', 102, 32); blitArt(ctx, A, 'label', 107, 40); T('UNREAD', 130, 41, P.ink); } // the top sheet's ruled lines are cleared under the word
       }
       if (base) { T('FILED', 202, 33, P.ink); T('WEEK 3', 202, 43, P.crimson); }
     } else if (id === 'acquirer') {
       if (mov) { R(ctx, 170, 8, 1, 14 + dy, P.grey); blitArt(ctx, A, 'sign', 140, 22 + dy); T('HLST', 170, 26 + dy, P.ink); }
     } else if (id === 'ward') { if (mov) blitArt(ctx, A, 'flag', 160, 8 + dy); }
     else if (id === 'clawback') {
-      if (mov) for (let i = 4; i < 10; i++) { if (i - 4 < n) blitArt(ctx, A, 'bar', 98 + i * 12, 54); else for (let k = 3; k < 6; k++) blitArt(ctx, A, 'coin', 100 + i * 12, 68 - k * 4); }
+      if (mov) for (let i = 4; i < 10; i++) { if (i - 4 < n) blitArt(ctx, A, 'bar', 98 + i * 12, 57); else for (let k = 3; k < 6; k++) blitArt(ctx, A, 'coin', 100 + i * 12, 68 - k * 4); }
       if (base) T('40 CENTS', cx, 16, P.amber);
-    } else if (id === 'fund') { if (mov) { for (let i = 0; i < 9 && i < n; i++) blitArt(ctx, A, 'tick', 196 + i * 6, 70 - i * 5); if (n >= 10) blitArt(ctx, A, 'dot', 244, 26); } }
+    } else if (id === 'fund') { if (mov) { for (let i = 0; i < 9 && i < n; i++) blitArt(ctx, A, 'tick', 196 + i * 6, 70 - i * 5); if (n >= 10) blitArt(ctx, A, 'dot', 244, 23); } }
     else if (id === 'right-early') {
       const ys = [30, 34, 40, 48, 44, 36, 28, 22, 20, 30, 46, 58, 66];
       if (mov) ys.forEach((y, i) => { if (i >= n) return; const up = i < 4 || i > 8; blitArt(ctx, A, up ? 'candle:up' : 'candle:down', 94 + i * 10, y + 2); });

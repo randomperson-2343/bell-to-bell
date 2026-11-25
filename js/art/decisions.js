@@ -595,13 +595,13 @@
     if (!B.Portraits || !B.Portraits.has(name)) return false;
     speakerSpace(ctx, (s) => {
       B.Portraits.paint(s, name, { bare: true, night });
-      // A drawn face is cut at the chest; its torso is authored art (torso/<name>, 120x32 cells) that picks up the last row and runs out of shot.
+      // A drawn face is cut at the chest; its torso is authored art (torso/<name>, 120x62 cells) that repaints the shoulders and runs out of shot.
       // The landlord's screen stands on its own foot, so it is left as drawn.
       if (!B.Portraits.drawn(name) || (B.Portraits.CAST[name] || {}).screen) return;
-      const sp = B.Portraits.sprite(name, { night }), k = Math.max(1, Math.floor(240 / sp.h));
-      const below = Math.ceil((V.h - 46) / k) - sp.h;
-      const tid = 'torso/' + (B.Portraits.SLUG[name] || '');
-      if (B.Art && B.Art.has(tid)) { X.drawArt(s, tid, night ? 'night' : 'day', -20, 50); return; }
+      const sp = B.Portraits.sprite(name, { night }), tid = 'torso/' + (B.Portraits.SLUG[name] || '');
+      // the torso grid is 120 wide and 62 tall around its portrait: centred on the face, its top 30 rows over the portrait's last ones
+      if (B.Art && B.Art.has(tid)) { X.drawArt(s, tid, night ? 'night' : 'day', -((120 - sp.w) >> 1), sp.h - 30); return; }
+      const k = Math.max(1, Math.floor(240 / sp.h)), below = Math.ceil((V.h - 46) / k) - sp.h;
       // no torso art: a clean crop, the last row dropped straight down and one ink band at the foot, no stretch
       const row = sp.rows[sp.h - 1], key = (i) => B.PalKeys[row[i]];
       for (let i = 0; i < row.length; i++) { const col = key(i); if (col) { s.fillStyle = col; s.fillRect(i, sp.h, 1, below); } }

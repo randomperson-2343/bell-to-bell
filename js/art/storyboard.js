@@ -857,7 +857,7 @@
           for (const kx of [51, 69, 87]) { X.rect(ctx, kx, 63, U * 2, 9, P.grey2); X.rect(ctx, kx, 63, U * 2, U, P.white); }
         }
       }
-      ctx.scale(5, 5); X.text(ctx, String(week), 14, 19, P.ink, { align: 'center' }); ctx.restore();
+      ctx.scale(5, 5); X.text(ctx, String(week), 14, id === 'penthouse' ? 18 : 19, P.ink, { align: 'center' }); ctx.restore();
       if (late > 0) HA(ctx, id, 'late:door');
       if (late >= 3) HA(ctx, id, 'late:notice');
     }
