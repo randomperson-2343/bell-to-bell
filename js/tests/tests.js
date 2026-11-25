@@ -1370,15 +1370,41 @@
     assert(B.Life.byId('dadBill').day < 27, "Dad's surgery should land before most careers end");
   });
 
-  test('Portraits: every face is a full 48x48 sprite in the palette, outlined like the pet', () => {
+  test('Portraits: every face is a full square sprite in the palette, 80x80 when drawn, 48x48 and outlined when procedural', () => {
     for (const name of Object.keys(B.Portraits.CAST)) {
-      const sp = B.Portraits.sprite(name);
-      assert(sp.h === 48 && sp.rows.every((r) => r.length === 48), name + ' is not 48x48');
+      const sp = B.Portraits.sprite(name), n = B.Portraits.drawn(name) ? 80 : 48;
+      assert(sp.h === n && sp.rows.every((r) => r.length === n), `${name} is not ${n}x${n}`);
+      assert(B.Portraits.size(name) === n, name + ': size() disagrees with the sprite');
       const cells = sp.rows.join('');
       assert(cells.split('').every((ch) => ch === '.' || B.PalKeys[ch]), name + ' uses a colour outside the palette');
-      assert(cells.replace(/\./g, '').length > 700, name + ' is missing most of its pixels');
-      assert(cells.includes('1'), name + ' has no ink outline');
+      assert(cells.replace(/\./g, '').length > n * n * 0.3, name + ' is missing most of its pixels');
+      assert(cells.includes('1') || cells.includes('0'), name + ' has no ink edge');
     }
+  });
+
+  test('Portraits: every drawn face has its open and closed frames, the right slug, and no orphan art', () => {
+    const slugs = Object.values(B.Portraits.SLUG);
+    assert(new Set(slugs).size === slugs.length, 'two speakers share a portrait slug');
+    assert(Object.keys(B.Portraits.SLUG).every((n) => B.Portraits.CAST[n]), 'a slug names nobody in the cast');
+    for (const id of B.Art.ids().filter((i) => i.startsWith('portraits/'))) {
+      assert(slugs.includes(id.slice(10)), id + ' is drawn but no speaker uses it');
+      const f = B.Art.frames(id);
+      assert(f.includes('open') && f.includes('closed'), id + ' needs frames tagged open and closed, has ' + f.join(','));
+      const a = B.Art.get(id, 'open');
+      assert(a.w === 80 && a.h === 80, id + ' is not 80x80');
+    }
+    // every face in the slug map is drawn: losing one export must not quietly bring back the 48px procedural face
+    for (const name of Object.keys(B.Portraits.SLUG)) assert(B.Portraits.drawn(name), name + ' has a slug but no drawn art in sprite-data.js');
+    // after dark a face steps one key down: never brighter, never a new colour, and its blink still closes
+    const night = B.Portraits.sprite('Desmond Kroll', { night: true }), day = B.Portraits.sprite('Desmond Kroll');
+    assert(night !== day && night.rows.join('') !== day.rows.join(''), 'the night face is the day face');
+    assert(night.rows.join('').split('').every((ch) => ch === '.' || B.PalKeys[ch]), 'the night face uses a colour outside the palette');
+    assert(night.rows.every((r, y) => [...r].every((ch, x) => (ch === '.') === (day.rows[y][x] === '.'))), 'the night face changes the silhouette');
+    let nightCells = 0, keysOk = true;
+    const recN = { fillRect() { nightCells++; }, set fillStyle(v) { if (!Object.values(B.PalKeys).includes(v)) keysOk = false; } };
+    B.Portraits.paintEyes(recN, 'Desmond Kroll', true);
+    assert(nightCells > 0 && keysOk, 'the night blink draws nothing or off-palette');
+    assert(B.Portraits.sprite('Desmond Kroll', { night: true }) === night, 'the night face is not cached');
   });
 
   test('Decision rooms show the props for their own beat, never a borrowed one', () => {
@@ -1411,18 +1437,28 @@
       for (const o of [{ noGrain: true }, { part: 'back', noGrain: true }, { part: 'front', noGrain: true }, { skip: 'chair' }, { skip: 'count' }, { skip: 'envelope' }, { skip: 'cells' }]) A.room(ctx, id, 20, false, null, o);
       assert(typeof A.roomLayers === 'function', 'roomLayers is exported');
     }
-    // the face of every cast member shuts its eyes with at most 51 cells, inside the band, and the closed sprite is the open one except for the eyes
-    let cells = 0, outside = 0;
-    const rec = { fillRect(x, y) { cells++; if (!(x >= 16 && x <= 32 && y >= 18 && y <= 20) && !(x >= 18 && x <= 29 && y >= 15 && y <= 17)) outside++; }, set fillStyle(v) {} };
+    // the face of every cast member shuts its eyes: the closed sprite is the open one except inside one band of rows (3 rows on a procedural face,
+    // at most 6 on a drawn one), and paintEyes draws only inside that band, at most 51 cells (36 for the screen avatar) on a procedural face
+    let cells = 0, outside = 0, band = [];
+    const rec = { fillRect(x, y) { cells++; if (!band.includes(y)) outside++; }, set fillStyle(v) {} };
     for (const name of Object.keys(B.Portraits.CAST)) {
-      const open = B.Portraits.sprite(name), shut = B.Portraits.sprite(name, { closed: true }), screen = !!B.Portraits.CAST[name].screen;
-      assert(shut !== open && shut.h === 48 && shut.rows.every((r) => r.length === 48), name + ' has no closed sprite');
-      const rows = screen ? [15, 16, 17] : [18, 19, 20];
-      for (let y = 0; y < 48; y++) if (!rows.includes(y)) assert(open.rows[y] === shut.rows[y], `${name}: row ${y} differs between the open and the closed face`);
-      assert(rows.some((y) => open.rows[y] !== shut.rows[y]), name + ': the eyes do not close');
+      const open = B.Portraits.sprite(name), shut = B.Portraits.sprite(name, { closed: true }), screen = !!B.Portraits.CAST[name].screen, drawn = B.Portraits.drawn(name), n = open.h;
+      assert(shut !== open && shut.h === n && shut.rows.every((r) => r.length === n), name + ' has no closed sprite');
+      const diff = []; for (let y = 0; y < n; y++) if (open.rows[y] !== shut.rows[y]) diff.push(y);
+      assert(diff.length > 0, name + ': the eyes do not close');
+      if (drawn) {
+        // STYLE.md: a drawn face blinks inside rows 28-33, between columns 16 and 63, and the closed frame never punches a hole
+        assert(diff[0] >= 28 && diff[diff.length - 1] <= 33, `${name}: the blink spans rows ${diff[0]} to ${diff[diff.length - 1]}, outside the eye band 28-33`);
+        for (const y of diff) for (let x = 0; x < n; x++) if (open.rows[y][x] !== shut.rows[y][x]) {
+          assert(x >= 16 && x < 64, `${name}: the blink changes column ${x}, outside the eyes`);
+          assert(shut.rows[y][x] !== '.', `${name}: the closed frame is transparent at ${x},${y} where the open face is not`);
+        }
+      }
+      else { const rows = screen ? [15, 16, 17] : [18, 19, 20]; assert(diff.every((y) => rows.includes(y)), `${name}: rows ${diff.join(',')} differ outside the eye band`); }
       assert(B.Portraits.sprite(name, { closed: true }) === shut, name + ': the closed sprite is not cached');
+      band = []; for (let y = diff[0]; y <= diff[diff.length - 1]; y++) band.push(y);
       cells = 0; outside = 0; B.Portraits.paintEyes(rec, name);
-      assert(cells > 0 && cells <= (screen ? 36 : 51) && outside === 0, `${name}: paintEyes drew ${cells} cells, ${outside} outside the band`);
+      assert(cells > 0 && cells <= (drawn ? 160 : screen ? 36 : 51) && outside === 0, `${name}: paintEyes drew ${cells} cells, ${outside} outside the band`);
     }
   });
 

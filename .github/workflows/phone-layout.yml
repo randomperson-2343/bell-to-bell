@@ -15,6 +15,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+      - run: node tools/art/build-sprites.js --check
       - run: npm install --no-save playwright@1.49.1
       - run: npx playwright install --with-deps chromium
       - run: node js/tests/phone-run.js
