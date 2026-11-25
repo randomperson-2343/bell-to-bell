@@ -179,13 +179,14 @@
   }
   // who: 0 is you; 1-3 are the strangers on your commute.
   // The authored commuters (who 1..3): news/commuters (16x32 cells) at 2*scale for scales up to 2, news/commuters-big (32x64) at scale for 3 and 4.
-  // You (who 0): news/you, 44x64 cells at scale s, centre column 22; pose 'back' (over-shoulder), 'front' (close) or 'side', ':late' after act 2.
+  // You (who 0): news/you, 88x128 cells at 2 px (the world's pixel), centre column 44, head top at y - 20*s (s is the framing: 3 over-shoulder, 4 close);
+  // pose 'back' (over-shoulder), 'front' (close) or 'side', ':late' after act 2.
   function youArt(ctx, x, y, s, face, pose, act) {
     if (!(B.Art && B.Art.has('news/you'))) return false;
     ctx.save();
     ctx.translate(x, y - 20 * s);
     ctx.scale(face < 0 ? -1 : 1, 1);
-    const ok = X.drawArt(ctx, 'news/you', (pose || 'front') + (act > 2 ? ':late' : ''), -22 * s, 0, { scale: s });
+    const ok = X.drawArt(ctx, 'news/you', (pose || 'front') + (act > 2 ? ':late' : ''), -88, 0, { scale: 2 });
     ctx.restore();
     return ok;
   }
