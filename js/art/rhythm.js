@@ -426,7 +426,13 @@
   // The room background (ink, then the 10-band ink2 gradient) restricted to rect r: the same pixels as the full room inside r,
   // for any r. Each band is dithered from a start aligned to the 4x4 pattern (x to a multiple of 4, y to a multiple of 4 from the
   // band's own top, which is itself a multiple of 4) and clipped to r, so the phase is the full frame's.
+  // With the authored room (news/phone-room, 320x180 at 2x) the rect is the art clipped to r; the gradient is the fallback.
+  const roomArt = (ctx) => !!(B.Art && B.Art.has('news/phone-room')) && X.drawArt(ctx, 'news/phone-room', 'room', 0, 0, { scale: 2 });
   function roomArea(ctx, r) {
+    ctx.save(); ctx.beginPath(); ctx.rect(r.x, r.y, r.w, r.h); ctx.clip();
+    const drawn = roomArt(ctx);
+    ctx.restore();
+    if (drawn) return;
     X.rect(ctx, r.x, r.y, r.w, r.h, P.ink);
     const n = 10, bh = Math.ceil(V.h / n), xa = r.x - (((r.x % 4) + 4) % 4);
     ctx.save(); ctx.beginPath(); ctx.rect(r.x, r.y, r.w, r.h); ctx.clip();
@@ -451,7 +457,7 @@
       const room = !part || part === 'room' || part === 'back', device = !part || part === 'device' || part === 'back';
       if (room) {
         if (o.area) roomArea(ctx, o.area);
-        else { X.rect(ctx,0,0,V.w,V.h,P.ink); X.gradient(ctx,0,0,V.w,V.h,P.ink2,P.ink,10); }
+        else if (!roomArt(ctx)) { X.rect(ctx,0,0,V.w,V.h,P.ink); X.gradient(ctx,0,0,V.w,V.h,P.ink2,P.ink,10); }
       }
       if (device) {
         // A thin reflected edge keeps the handoff and the close view grounded

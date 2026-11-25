@@ -8,12 +8,21 @@
     "w": 320,
     "h": 180
    }
+  },
+  {
+   "filename": "glow",
+   "frame": {
+    "x": 320,
+    "y": 0,
+    "w": 320,
+    "h": 180
+   }
   }
  ],
  "meta": {
   "image": "doc-voicemail.png",
   "size": {
-   "w": 320,
+   "w": 640,
    "h": 180
   },
   "frameTags": [
@@ -21,6 +30,11 @@
     "name": "phone",
     "from": 0,
     "to": 0
+   },
+   {
+    "name": "glow",
+    "from": 1,
+    "to": 1
    }
   ]
  }

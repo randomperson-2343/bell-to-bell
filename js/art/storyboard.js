@@ -465,8 +465,11 @@
       lines.forEach((ln, i) => big(ctx, ln, 320, y0 + i * 28, P.bone, 3, 'center'));
     },
     voicemail(ctx, day, value, c, o) {
-      X.rect(ctx, 0, 0, V.w, V.h, P.ink); ctx.save(); ctx.globalAlpha = 0.14; X.rect(ctx, 170, 0, 300, 300, P.screenGlow); ctx.restore();
-      artPlate(ctx, 'voicemail', [['news/doc-voicemail', 'phone']]);
+      // the phone's light on the surface is the art's glow frame (stepped halos); the flat translucent box is the fallback for a sheet without it
+      const vmGlow = !!(B.Art && B.Art.get('news/doc-voicemail', 'glow'));
+      X.rect(ctx, 0, 0, V.w, V.h, P.ink);
+      if (!vmGlow) { ctx.save(); ctx.globalAlpha = 0.14; X.rect(ctx, 170, 0, 300, 300, P.screenGlow); ctx.restore(); }
+      artPlate(ctx, vmGlow ? 'voicemail:glow' : 'voicemail', vmGlow ? [['news/doc-voicemail', 'glow'], ['news/doc-voicemail', 'phone']] : [['news/doc-voicemail', 'phone']]);
       R.text(ctx, LABELS.voicemail, 320, 40, P.grey2, 'center');
       for (let i = 0; i < DOC_GEOM.voicemail.count; i++) { const b = DOC_GEOM.voicemail.bar(i, day); X.rect(ctx, b.x, b.y, b.w, b.h, i < (o && o.played != null ? o.played : 12) ? P.phosphor : P.slate2); }
       const lines = valueLines(value, 90), y0 = inWin(lines.length, 196, 60, 22, 14);
@@ -2229,8 +2232,11 @@
       SH.endingShot(c, o.dark ? 'dark' : 'light', o.id);
       c.save(); c.translate(0, 8); SH.endingDetail(c, o.id || 'grind', p, lo && lo.part ? { part: lo.part } : undefined); c.restore();
       if (card) {
-        c.save(); c.globalAlpha = 0.5; X.rect(c, 0, 96, 320, 40, P.ink); c.restore();
-        X.box(c, 40, 100, 240, 26);
+        // the plaque is art (endings/card plate, with its own drop shadow); the translucent band and code box are the fallback
+        if (!(B.Art && B.Art.has('endings/card') && X.drawArt(c, 'endings/card', 'plate', 0, 0))) {
+          c.save(); c.globalAlpha = 0.5; X.rect(c, 0, 96, 320, 40, P.ink); c.restore();
+          X.box(c, 40, 100, 240, 26);
+        }
         X.textShadow(c, R.clean(o.title || '').toUpperCase().slice(0, 36), 160, 106, o.dark ? P.crimson : P.amber, P.ink, { align: 'center', spacing: 2 });
         X.text(c, 'ENDING REACHED', 160, 117, P.grey2, { align: 'center' });
       }
