@@ -370,16 +370,67 @@
   // Where things are on the floor, for the drawing below and the layered office and close shots: the six windows (x, y, w, h, and the
   // sky inside), the five monitors (cel, screen, and the bar a dead screen shows), your desk's chart screen, how many monitors are dead
   // (one more each act) and how far the CASCADE stack slips (stability falls).
+  // The authored desk (art/src/rooms/your-desk.aseprite, 320x180 cells at 2x; the five monitors are one sprite, your-desk-monitor,
+  // stamped on or dead). Anchors from the grid header, in 640x360 px (cells x 2).
+  const DESK = 'rooms/your-desk', DESK_MON = 'rooms/your-desk-monitor';
+  const deskArt = () => !!(B.Art && B.Art.has(DESK) && B.Art.has(DESK_MON));
   function officeGeom(day, S) {
     const dead = board(day).act - 1, st = S && S.m ? S.m.stability : 100, slip = stackSlip(st), windows = [], monitors = [];
+    if (deskArt()) {
+      for (let i = 0; i < 6; i++) { const x = 20 + i * 104; windows.push({ x, y: 16, w: 84, h: 44, sky: { x, y: 16, w: 84, h: 44 } }); }
+      // bar: the power LED on the chin, which a monitor shut down at the close puts out (ink2, as the dead sprite has it)
+      for (let i = 0; i < 5; i++) { const x = 18 + i * 122; monitors.push({ i, x, y: 76, w: 112, h: 144, off: i >= 5 - dead, screen: { x: x + 10, y: 88, w: 92, h: 80 }, bar: { x: x + 94, y: 178, w: 4, h: 2, col: P.ink2 } }); }
+      const f = (S && S.f) || {}, files = !!(S && S.m && (S.m.heat >= 50 || f.insiderTraded || f.raid));
+      return { dead, live: 5 - dead, st, slip, files, windows, monitors, deskChart: { x: 542, y: 202, w: 84, h: 52 } };
+    }
     for (let i = 0; i < 6; i++) { const x = 18 + i * 104; windows.push({ x, y: 16, w: 90, h: 44, sky: { x: x + 2, y: 18, w: 86, h: 40 } }); }
     for (let i = 0; i < 5; i++) { const x = 24 + i * 124; monitors.push({ i, x, y: 78, w: 104, h: 126, off: i >= 5 - dead, screen: { x: x + 10, y: 92, w: 84, h: 78 }, bar: { x: x + 20, y: 176, w: 64, h: 3 } }); }
     // the red HOLD FILES stack on your desk appears once the heat is on
     const f = (S && S.f) || {}, files = !!(S && S.m && (S.m.heat >= 50 || f.insiderTraded || f.raid));
     return { dead, live: 5 - dead, st, slip, files, windows, monitors, deskChart: { x: 540, y: 218, w: 86, h: 50 } };
   }
+  // Your desk from the authored art: the same parts and options as officeFrame (below). Layers, back to front: the season's sky, the
+  // wall, the wreath (week 11 on), the five monitors, the desk, the CASCADE stack's base, the day's clutter, the HOLD FILES, the red
+  // bits, the top two sheets (stressed under 60 stability) at the slip. Charts and the CASCADE label stay code, on the authored glass.
+  function officeArtFrame(ctx, day, detail, down, S, o) {
+    const part = o.part, wall = !part || part === 'wall', mons = !part || part === 'monitors', desk = !part || part === 'desk';
+    const sb = board(day), c = colors(sb.act), s = season(day);
+    if (down == null) down = marketDown(day - 1);
+    const G = officeGeom(day, S), st = G.st, art = (id, f, x, y) => X.drawArt(ctx, id, f, x, y, { scale: 2 });
+    const top = (sl) => {
+      art(DESK, st < 60 ? 'sheets:top-stressed' : 'sheets:top', sl * 2, 0);
+      ctx.save(); ctx.scale(2, 2); X.textShadow(ctx, 'CASCADE', 24, 105, c.signal, P.ink); ctx.restore();
+    };
+    if (part === 'top') { top(o.slipNow == null ? G.slip : o.slipNow); return; }
+    if (wall) {
+      art(DESK, 'sky:' + s.id, 0, 0);
+      G.windows.forEach((W, i) => weather(ctx, W.sky.x, W.sky.y, W.sky.w, 30, day + i, part === 'wall'));
+      art(DESK, 'wall', 0, 0);
+      if (s.wreath) art(DESK, 'wreath', 0, 0);
+    }
+    if (mons) {
+      for (const m of G.monitors) { art(DESK_MON, m.off ? 'dead' : 'on', m.x, m.y); if (!m.off) chart(ctx, m.screen.x, m.screen.y, m.screen.w, m.screen.h, day + m.i, down); }
+    }
+    if (desk) {
+      art(DESK, 'desk', 0, 0);
+      // the day's clutter: a mug every other day, notes on alternate pairs of days, takeout every fifth day
+      if (day % 2) art(DESK, 'clutter:mug', 0, 0);
+      if (Math.floor(day / 2) % 2) art(DESK, 'clutter:notes', 0, 0);
+      if (day % 5 === 0) art(DESK, 'clutter:takeout', 0, 0);
+      // the CASCADE plate is on the desk: its label goes on in the wide too (with detail it rides with the top sheets)
+      if (!detail) { ctx.save(); ctx.scale(2, 2); X.textShadow(ctx, 'CASCADE', 24, 105, c.signal, P.ink); ctx.restore(); }
+      if (detail) {
+        art(DESK, 'sheets:base', 0, 0);
+        if (G.files) art(DESK, 'hold-files', 0, 0);
+        if (st < 40) art(DESK, 'cascade-red', G.slip * 2, 0);
+        if (!o.noTopSheets) top(G.slip);
+        const dc = G.deskChart; chart(ctx, dc.x, dc.y, dc.w, dc.h, day, down, o.deskChart === 'screen' ? 'screen' : undefined);
+      }
+    }
+  }
   function officeFrame(ctx, day, detail, down, S, o) {
     o = o || {};
+    if (deskArt()) return officeArtFrame(ctx, day, detail, down, S, o);
     const part = o.part, wall = !part || part === 'wall', mons = !part || part === 'monitors', desk = !part || part === 'desk';
     const sb=board(day), c=colors(sb.act), s=season(day);
     if (down == null) down = marketDown(day - 1);

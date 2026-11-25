@@ -1679,7 +1679,7 @@
             if (m.off) return;
             const at = 0.25 + 0.10 * (O.live - 1 - m.i), sc = m.screen, bar = m.bar;
             K.crt(c, sc.x, sc.y, sc.w, sc.h, t, { mode: 'off', at, bg: P.screenD, dim });
-            if (t >= at + 0.10) { X.rect(c, bar.x, bar.y, bar.w, bar.h, P.plasticD); c.save(); c.globalAlpha = dim; X.rect(c, bar.x, bar.y, bar.w, bar.h, P.ink); c.restore(); }
+            if (t >= at + 0.10) { X.rect(c, bar.x, bar.y, bar.w, bar.h, bar.col || P.plasticD); c.save(); c.globalAlpha = dim; X.rect(c, bar.x, bar.y, bar.w, bar.h, P.ink); c.restore(); }
           });
         }
       },

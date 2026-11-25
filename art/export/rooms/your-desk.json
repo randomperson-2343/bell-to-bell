@@ -1,0 +1,209 @@
+{
+ "frames": [
+  {
+   "filename": "sky:autumn",
+   "frame": {
+    "x": 0,
+    "y": 0,
+    "w": 320,
+    "h": 180
+   }
+  },
+  {
+   "filename": "sky:grey",
+   "frame": {
+    "x": 320,
+    "y": 0,
+    "w": 320,
+    "h": 180
+   }
+  },
+  {
+   "filename": "sky:winter",
+   "frame": {
+    "x": 640,
+    "y": 0,
+    "w": 320,
+    "h": 180
+   }
+  },
+  {
+   "filename": "wreath",
+   "frame": {
+    "x": 960,
+    "y": 0,
+    "w": 320,
+    "h": 180
+   }
+  },
+  {
+   "filename": "wall",
+   "frame": {
+    "x": 1280,
+    "y": 0,
+    "w": 320,
+    "h": 180
+   }
+  },
+  {
+   "filename": "desk",
+   "frame": {
+    "x": 1600,
+    "y": 0,
+    "w": 320,
+    "h": 180
+   }
+  },
+  {
+   "filename": "sheets:base",
+   "frame": {
+    "x": 1920,
+    "y": 0,
+    "w": 320,
+    "h": 180
+   }
+  },
+  {
+   "filename": "sheets:top",
+   "frame": {
+    "x": 2240,
+    "y": 0,
+    "w": 320,
+    "h": 180
+   }
+  },
+  {
+   "filename": "sheets:top-stressed",
+   "frame": {
+    "x": 2560,
+    "y": 0,
+    "w": 320,
+    "h": 180
+   }
+  },
+  {
+   "filename": "cascade-red",
+   "frame": {
+    "x": 2880,
+    "y": 0,
+    "w": 320,
+    "h": 180
+   }
+  },
+  {
+   "filename": "hold-files",
+   "frame": {
+    "x": 3200,
+    "y": 0,
+    "w": 320,
+    "h": 180
+   }
+  },
+  {
+   "filename": "clutter:mug",
+   "frame": {
+    "x": 3520,
+    "y": 0,
+    "w": 320,
+    "h": 180
+   }
+  },
+  {
+   "filename": "clutter:notes",
+   "frame": {
+    "x": 3840,
+    "y": 0,
+    "w": 320,
+    "h": 180
+   }
+  },
+  {
+   "filename": "clutter:takeout",
+   "frame": {
+    "x": 4160,
+    "y": 0,
+    "w": 320,
+    "h": 180
+   }
+  }
+ ],
+ "meta": {
+  "image": "your-desk.png",
+  "size": {
+   "w": 4480,
+   "h": 180
+  },
+  "frameTags": [
+   {
+    "name": "sky:autumn",
+    "from": 0,
+    "to": 0
+   },
+   {
+    "name": "sky:grey",
+    "from": 1,
+    "to": 1
+   },
+   {
+    "name": "sky:winter",
+    "from": 2,
+    "to": 2
+   },
+   {
+    "name": "wreath",
+    "from": 3,
+    "to": 3
+   },
+   {
+    "name": "wall",
+    "from": 4,
+    "to": 4
+   },
+   {
+    "name": "desk",
+    "from": 5,
+    "to": 5
+   },
+   {
+    "name": "sheets:base",
+    "from": 6,
+    "to": 6
+   },
+   {
+    "name": "sheets:top",
+    "from": 7,
+    "to": 7
+   },
+   {
+    "name": "sheets:top-stressed",
+    "from": 8,
+    "to": 8
+   },
+   {
+    "name": "cascade-red",
+    "from": 9,
+    "to": 9
+   },
+   {
+    "name": "hold-files",
+    "from": 10,
+    "to": 10
+   },
+   {
+    "name": "clutter:mug",
+    "from": 11,
+    "to": 11
+   },
+   {
+    "name": "clutter:notes",
+    "from": 12,
+    "to": 12
+   },
+   {
+    "name": "clutter:takeout",
+    "from": 13,
+    "to": 13
+   }
+  ]
+ }
+}
