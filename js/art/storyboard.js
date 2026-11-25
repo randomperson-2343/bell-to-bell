@@ -2251,8 +2251,12 @@
     X.rect(ctx, 0, 0, V.w, V.h, P.ink);
     if (lo && lo.part === 'city') R.skyline(ctx, 1, 61, 270, 60, true, { noWindows: true });
     else R.skyline(ctx, 1, 61, 270, 60);
-    X.dither(ctx, 0, 180, V.w, 90, P.ink, P.amber, 0.18);
+    // the morning-after foreground (endings/after, 320x45 cells at 2x under the baseline); without the art, the ink alone
     X.rect(ctx, 0, 270, V.w, 90, P.ink);
+    if (B.Art && B.Art.has('endings/after')) {
+      X.drawArt(ctx, 'endings/after', 'a', 0, 270, { scale: 2 });
+      if (R.season(60).snow) X.drawArt(ctx, 'endings/after', 'snow', 0, 270, { scale: 2 });
+    }
   }
   // ---- The endings, animated (stage 3, batch 9) ----
   // World: one layer (the city and the prop without its mover, the street's signature), the prop's one movement drawn above it inside endingSpace.

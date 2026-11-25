@@ -1,0 +1,41 @@
+{
+ "frames": [
+  {
+   "filename": "a",
+   "frame": {
+    "x": 0,
+    "y": 0,
+    "w": 320,
+    "h": 45
+   }
+  },
+  {
+   "filename": "snow",
+   "frame": {
+    "x": 320,
+    "y": 0,
+    "w": 320,
+    "h": 45
+   }
+  }
+ ],
+ "meta": {
+  "image": "after.png",
+  "size": {
+   "w": 640,
+   "h": 45
+  },
+  "frameTags": [
+   {
+    "name": "a",
+    "from": 0,
+    "to": 0
+   },
+   {
+    "name": "snow",
+    "from": 1,
+    "to": 1
+   }
+  ]
+ }
+}
