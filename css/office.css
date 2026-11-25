@@ -361,8 +361,10 @@ body[data-act="endless"] #story-art { display: none; }
   /* The word itself goes too: a 0px font still painted it on some phones,
      right under the OPEN plate. */
   #stress-gauge .sg-word { display: none; }
-  #stress-gauge .gauge { width: 64px; }
-  #stress-gauge .gauge > i { background-size: 64px 100%; }
+  /* A two-letter tag so the bare number reads as stress; the bar is shorter to keep the whole gauge clear of the OPEN plate. */
+  #stress-gauge .desk-label i::before { content: "ST "; color: var(--c-phosphor-d); }
+  #stress-gauge .gauge { width: 48px; }
+  #stress-gauge .gauge > i { background-size: 48px 100%; }
   #wall { padding-right: 112px; }
   #wall-date, #wall-act { display: none; }
 }

@@ -812,9 +812,14 @@ input.short { width: 72px; }
   .menu-wrap .ticker-tape { grid-column: 1 / -1; grid-row: 1; margin-bottom: 8px; }
   .menu-wrap .menu-brand { grid-column: 1; grid-row: 2; }
   .menu-wrap .menu-list { grid-column: 2; grid-row: 2 / span 2; margin: 0; gap: 8px; }
-  .menu-wrap .fine { grid-column: 1; grid-row: 3; margin: 6px 0 0; }
+  .menu-wrap .fine { grid-column: 1; grid-row: 3; margin: 6px 0 0; justify-self: start; }
 }
 
 /* Comms tabs: the Inbox count sits beside its logo, never under it, however narrow the column. */
 .feed-tabs { flex-wrap: nowrap; }
 .feed-tabs button { display: flex; align-items: center; justify-content: center; gap: 3px; white-space: nowrap; min-width: 0; padding-left: 4px; padding-right: 4px; }
+
+/* The ticket's rule line breaks between its facts, never inside one ("2x o/n" alone on a line). */
+.tk-rules .rb { white-space: nowrap; }
+/* The menu's disclaimer sits on an ink plate, clear of the lit tower windows behind it. */
+.menu-wrap .fine { display: inline-block; padding: 3px 10px; background: var(--c-ink); border: 1px solid var(--c-slate); }
