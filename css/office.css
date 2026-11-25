@@ -352,6 +352,9 @@ body[data-act="endless"] #story-art { display: none; }
   #stress-gauge .desk-label { font-size: 0; }
   #stress-gauge .desk-label i { font-size: 11px; }
   #stress-gauge .desk-label b { display: none; }
+  /* The word itself goes too: a 0px font still painted it on some phones,
+     right under the OPEN plate. */
+  #stress-gauge .sg-word { display: none; }
   #stress-gauge .gauge { width: 64px; }
   #stress-gauge .gauge > i { background-size: 64px 100%; }
   #wall { padding-right: 112px; }
