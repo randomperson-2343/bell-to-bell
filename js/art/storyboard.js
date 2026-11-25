@@ -76,12 +76,14 @@
   }
   // The tableaux were drawn with a header strip at y=0, which the letterbox
   // hides. Drop them 7px so the strip reads, and extend it up to the top.
-  // tableauSpace is the transform: the 1.3 zoom about (160, 76) when asked, then the 7 px drop. fn draws in it.
+  // tableauSpace is the transform: the zoom when asked (1.3 about (160, 76); 1.5 with its crop 7 units lower), then the 7 px drop. fn draws in it.
   // The tableau detail's zoom: the whole 3x on 2x art (1.5) when the tableaux are authored, else 1.3.
   const tabZoom = () => (artHas('news/tableaux') ? 1.5 : 1.3);
   function tableauSpace(c, zoom, fn) {
     c.save();
-    if (zoom) { c.translate(160 * (1 - zoom), 76 * (1 - zoom)); c.scale(zoom, zoom); }
+    // at the whole 3x (1.5) the crop sits 7 art units lower than about (160, 76), so the top caption the tableaux carry stays in frame
+    if (zoom === 1.5) { c.translate(-80, -31); c.scale(zoom, zoom); }
+    else if (zoom) { c.translate(160 * (1 - zoom), 76 * (1 - zoom)); c.scale(zoom, zoom); }
     c.translate(0, 7);
     fn(c);
     c.restore();
@@ -499,9 +501,11 @@
   // tilts down so the paper sits above the caption box: z pushes in on it.
   // o (optional; absent draws everything): part 'desk' is the desk and the room (no paper), 'paper' only the paper, at o.dy art units lower (whole units).
   // deskSpace runs fn(c) in the same art space as the paper and the desk: 2x, then the zoom's translate and scale; a layered beat draws its moving marks there.
+  // DESK_PAN (art units, set only while framed draws a camera's establish of the authored desk): the crop centre moves across from x 119.
+  let DESK_PAN = 0;
   function deskXform(c, z, ty, fn) {
     c.save();
-    c.translate(Math.round(160 - 119 * z), Math.round(ty - 153 * z)); c.scale(z, z);
+    c.translate(Math.round(160 - (119 + (artHas('news/desk-closeup') ? DESK_PAN : 0)) * z), Math.round(ty - 153 * z)); c.scale(z, z);
     fn(c);
     c.restore();
   }
@@ -553,6 +557,16 @@
   }
   // With rooms/racks (214x121 cells at 3x at (-2,-2)) the shot is the art's room, its LEDs lit when o.lit (the layered beat's start) and dark otherwise (the pulled stack).
   const racksArt = () => artHas('rooms/racks');
+  // The covers that turn the lit rack room (room + leds:on) back into the unlit room: one per leds:on cell, in the room frame's colour there, sorted by row then x.
+  let RACK_COVERS = null;
+  function rackCovers() {
+    if (RACK_COVERS) return RACK_COVERS;
+    const on = B.Art.get('rooms/racks', 'leds:on'), room = B.Art.get('rooms/racks', 'room'), K = B.PalKeys, out = [];
+    if (on && room) for (let y = 0; y < on.h; y++) for (let x = 0; x < on.w; x++) {
+      if (on.rows[y][x] !== '.' && K[room.rows[y][x]]) out.push({ x: 3 * x - 2, y: 3 * y - 2, col: K[room.rows[y][x]] });
+    }
+    return (RACK_COVERS = out);
+  }
   function racksShot(ctx, day, o) {
     if (racksArt() && X.drawArt(ctx, 'rooms/racks', 'room', -2, -2, { scale: 3 })) { if (o && o.lit) X.drawArt(ctx, 'rooms/racks', 'leds:on', -2, -2, { scale: 3 }); return; }
     X.rect(ctx, 0, 0, V.w, V.h, P.ink);
@@ -644,15 +658,47 @@
   }
   // o (optional): draw(c) is drawn in place of the shot, noBack leaves out the ink behind a zoomed shot. A layered establish draws its bottom layer
   // with { draw } and its animated marks with { draw, noBack: true }, so they sit in exactly the transform the art was drawn in.
-  // Shots whose picture is authored 2x art (the W1 places, the TV room, the elevator, the documents).
-  function pushArt(r) {
+  // The push-in a shot of authored art takes: 1.5 when its picture is 2x art (the W1 places, the TV room, the elevator, the document establishes), so it lands
+  // on the whole 3x; 1 when its picture is the desk close-up, which deskZoom already draws at the whole 3x; 0 for a code picture (the camera's own zoom).
+  // the documents whose establish is a room or a device (2x art); the rest (memo, footnote) lie on the desk.
+  const ROOM_DOCS = { rating: 0, post: 0, vote: 0, voicemail: 0, ticket: 0, chart: 0 };
+  function pushArt(r, day) {
+    const desk = artHas('news/desk-closeup') ? 1 : 0;
     switch (r.shot) {
-      case 'place': return artHas('news/place-subway');
-      case 'tv': return artHas('news/tv-room');
-      case 'elevator': return artHas('news/elevator');
-      case 'insert': return docHas(r.doc);
-      default: return false;
+      case 'place': {
+        const pl = R.storyboard(day).place;
+        if (pl === 'desk') return desk;
+        if (pl === 'lobby' || pl === 'elevator') return artHas('news/elevator') ? 1.5 : 0;
+        return artHas('news/place-subway') ? 1.5 : 0;
+      }
+      case 'tv': return artHas('news/tv-room') ? 1.5 : 0;
+      case 'elevator': return artHas('news/elevator') ? 1.5 : 0;
+      case 'insert': return r.doc in ROOM_DOCS ? (docHas(r.doc) ? 1.5 : 0) : desk;
+      default: return 0;
     }
+  }
+  // What a pushed-in shot of authored art must keep in frame (wide screen px): the wire monitor and its headline, the TV, the phone. null: the camera's own crop.
+  function pushSubject(r, day) {
+    const sb = R.storyboard(day), TV = { x: 80, y: 100, w: 208, h: 136 };
+    if (r.shot === 'tv' || (r.shot === 'insert' && r.doc === 'rating') || (r.shot === 'place' && sb.place === 'apartment')) return TV;
+    // the elevator is taller than a 1.5 crop: the frame across and the floor number at the top stay in, the sills go
+    if (r.shot === 'elevator' || (r.shot === 'place' && (sb.place === 'lobby' || sb.place === 'elevator'))) return { x: 180, y: 8, w: 280, h: 0 };
+    if (r.shot === 'place') return R.monitorGeom(sb, false);
+    if (r.shot === 'insert' && r.doc === 'post') { const g = R.phoneGeom(1, false); return { x: g.x - 16, y: g.y, w: g.w + 32, h: g.h }; }
+    // the office's CASCADE stack and its label down the left (across only)
+    if (r.shot === 'insert' && r.doc === 'chart') return { x: 40, y: null, w: 120, h: 0 };
+    return null;
+  }
+  // The crop of a push-in z: the camera's anchors (ax across, 0.4 down) placed within the range of crops that hold the subject (when it fits) in frame,
+  // so each camera still frames the shot its own way.
+  function pushCrop(z, ax, S) {
+    const vw = V.w / z, vh = V.h / z;
+    const range = (a, lo, hi) => lo + a * (hi - lo);
+    let xl = 0, xh = V.w - vw, yl = 0, yh = V.h - vh;
+    if (S && S.w <= vw) { xl = Math.max(xl, S.x + S.w - vw); xh = Math.min(xh, S.x); }
+    if (S && S.y != null && S.h <= vh) { yl = Math.max(yl, S.y + S.h - vh); yh = Math.min(yh, S.y); }
+    const x0 = xl <= xh ? range(ax, xl, xh) : ax * (V.w - vw), y0 = yl <= yh ? range(0.4, yl, yh) : 0.4 * (V.h - vh);
+    return { tx: -Math.round(x0 * z), ty: -Math.round(y0 * z) };
   }
   function framed(ctx, day, r, title, o) {
     const draw = (o && o.draw) || ((c) => shotFrame(c, day, r, title));
@@ -660,10 +706,13 @@
     const cam = flat ? CAMS.wide : CAM_ORDER[kindIndex(day, r) % CAM_ORDER.length];
     if (cam[0] === 1) return draw(ctx);
     // authored art is never drawn at a fractional scale: a push-in on 2x art lands on the whole 3x (zoom 1.5) about the same crop centre
-    const z = pushArt(r) ? 1.5 : cam[0];
+    const pz = pushArt(r, day), z = pz || cam[0];
+    // the authored desk is already at the whole 3x: the camera pans across it instead (the paper stays in frame)
+    if (z === 1) { DESK_PAN = Math.round((cam[1] - 0.5) * 100); try { return draw(ctx); } finally { DESK_PAN = 0; } }
     if (!(o && o.noBack)) X.rect(ctx, 0, 0, V.w, V.h, P.ink);
     ctx.save();
-    ctx.translate(Math.round(cam[1] * V.w * (1 - z)), Math.round(0.4 * V.h * (1 - z)));
+    if (pz) { const k = pushCrop(z, cam[1], pushSubject(r, day)); ctx.translate(k.tx, k.ty); }
+    else ctx.translate(Math.round(cam[1] * V.w * (1 - z)), Math.round(0.4 * V.h * (1 - z)));
     ctx.scale(z, z);
     draw(ctx);
     ctx.restore();
@@ -676,8 +725,9 @@
       case 'tableau': return at2x(ctx, (c) => { if (!tableau(c, r.arg, tabZoom())) SH.apartment(c, 0.6); }, day);
       case 'floor': return at2x(ctx, (c) => SH.tradingFloor(c, 0.7, true, day), day);
       case 'elevator': return at2x(ctx, (c) => SH.elevator(c, 1, 41), day);
-      case 'bell': return at2x(ctx, (c) => { c.save(); c.translate(160 * -0.6, 40 * -0.6); c.scale(1.6, 1.6); SH.bellScene(c, 0.2, false); c.restore(); }, day);
-      case 'tv': return at2x(ctx, (c) => { SH.apartment(c, 0.7); c.save(); c.translate(92 * -0.3, 74 * -0.3); c.scale(1.3, 1.3); SH.tvSet(c, 40, 50, 104, 68, r.arg || title, act(day), 0); c.restore(); }, day);
+      // the push-ins land on the whole 3x (1.5, about the same centre) when the picture is authored 2x art; the code pictures keep 1.6 and 1.3
+      case 'bell': { const z = artHas('news/bell') ? 1.5 : 1.6; return at2x(ctx, (c) => { c.save(); c.translate(160 * (1 - z), 40 * (1 - z)); c.scale(z, z); SH.bellScene(c, 0.2, false); c.restore(); }, day); }
+      case 'tv': { const z = artHas('news/tv-room') ? 1.5 : 1.3; return at2x(ctx, (c) => { SH.apartment(c, 0.7); c.save(); c.translate(92 * (1 - z), 74 * (1 - z)); c.scale(z, z); SH.tvSet(c, 40, 50, 104, 68, r.arg || title, act(day), 0); c.restore(); }, day); }
       default: return R.placeFrame(ctx, R.storyboard(day), title, true);
     }
   }
@@ -1076,7 +1126,7 @@
     }
   }
   // The Sunday framing: the wall calendar and most of the window (the housing tier reads through its size) stay in shot. fn draws in apartment art units.
-  function sundaySpace(c, fn) { c.save(); c.translate(-36, -50); c.scale(1.18, 1.18); fn(c); c.restore(); }
+  function sundaySpace(c, fn) { c.save(); c.translate(-124 / 3, -190 / 3); c.scale(4 / 3, 4 / 3); fn(c); c.restore(); }
   // The two native-pixel edge rects over the Sunday picture (the left margin and the amber tab).
   function SUN_EDGE(c) { X.rect(c, 0, 0, 5, 276, P.ink2); X.rect(c, 0, 0, 44, 2, P.amberD); }
   function sundayShot(ctx, day, home, w) {
@@ -1555,7 +1605,7 @@
   // for the layer that draws the monitor (drawn through placeArt in the same transform as the art, noBack).
   function monitorRefresh(day, r, title, detail) {
     const K = B.MotionKit, sb = R.storyboard(day), G = R.monitorGeom(sb, detail);
-    const tf = 0.40 + 0.36 * (G.h - 42) / (G.h + 6), band = R.monitorScreen ? R.monitorScreen(G).band : { x: G.x + 3, y: G.y + G.h - 48, w: G.w - 6, h: 45 };
+    const tf = 0.40 + 0.36 * (G.h - 42) / (G.h + 6), band = R.monitorScreen && artHas(G.w >= 300 ? 'news/wire-monitor-detail' : 'news/wire-monitor') ? R.monitorScreen(G).band : { x: G.x + 3, y: G.y + G.h - 48, w: G.w - 6, h: 45 };
     return (c, t) => {
       if (t >= tf + 0.08 && t >= 0.76) return;
       placeArt(c, day, r, title, detail, { noBack: true }, (cc) => {
@@ -1719,15 +1769,16 @@
     const K = B.MotionKit, cells = [];
     for (let j = 0; j < 17; j++) for (let i = 0; i < 8; i++) cells.push({ x: 36 + 76 * i, y: 40 + 8 + 12 * j, w: 48, h: 6 });
     if (racksArt()) {
-      // the art's LEDs (one cell each, on a flat 'S' slot bar) switch off row by row, top to bottom, left to right: the code covers each with its slot colour
-      const leds = B.DecisionArt.rackLeds(day).map((L) => { const cx = Math.round((L.x + 2) / 3), cy = Math.round((L.y + 2) / 3); return { x: 3 * cx - 2, y: 3 * cy - 2, w: 3, h: 3 }; })
-        .sort((a, b) => a.y - b.y || a.x - b.x);
-      const end = 0.35 + 135 * 0.0075, step = (end - 0.35) / leds.length, slot = B.PalKeys.S;
+      // the lit LEDs are the cells of the art's leds:on overlay; each switches off row by row, top to bottom, left to right, by repainting that cell in the
+      // room frame's own colour under it. Once all have switched the picture is the unlit room (flat racksShot), and the covers stay drawn to the end of the shot.
+      const leds = rackCovers(), end = 0.35 + 135 * 0.0075, step = (end - 0.35) / Math.max(1, leds.length);
       return [
         {
           id: 'racks', depth: 1,
           draw(c) { framed(c, day, r, title, { draw: (cc) => racksShot(cc, day, { lit: true }) }); },
-          animate(c, v, t) { if (t >= end) return; framed(c, day, r, title, { noBack: true, draw: (cc) => K.lamps(cc, leds, t, { at: 0.35, step, on: slot }) }); }
+          animate(c, v, t) {
+            framed(c, day, r, title, { noBack: true, draw: (cc) => leds.forEach((q, k) => { if (t >= 0.35 + k * step) X.rect(cc, q.x, q.y, 3, 3, q.col); }) });
+          }
         },
         marksLayer(day, r, false)
       ];
@@ -2301,7 +2352,8 @@
   }
   // the city's lit windows go out from the right: window w is lit (amber, brighter than the art's) until 0.40 + (1 - x / 640) s
   function endingCityLayers() {
-    const wins = R.skylineLit ? R.skylineLit(1, 270, 60) : R.skylineWindows(1, 61, 270).filter((w) => w.shown).map((w) => ({ x: w.x, y: w.y, w: 2, h: 2 }));
+    // the same windows lastLight's skyline (seed 61, baseline 270, day 60) lights: the authored skyline's cells, or the code towers' without the art
+    const wins = artHas('news/skyline') && R.skylineLit ? R.skylineLit(61, 270, 60) : R.skylineWindows(1, 61, 270).filter((w) => w.shown).map((w) => ({ x: w.x, y: w.y, w: 2, h: 2 }));
     return [{
       id: 'city', depth: 1,
       draw(c) { lastLight(c, false, { part: 'city' }); },

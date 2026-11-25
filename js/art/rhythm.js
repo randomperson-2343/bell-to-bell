@@ -121,7 +121,9 @@
     if (s) X.dither(ctx, 0, Math.round(y * 0.6), V.w, Math.round(y * 0.4), P.ink, s.dawn, s.glow);
     if (skyArt()) {
       const v = skyVar(day, seed);
-      if (X.drawArt(ctx, 'news/skyline', (s && s.snow ? 'snow:' : '') + v, 0, y - 168, { scale: 2 })) {
+      // snow:<v> is a cap overlay on the same canvas, so winter draws the towers first and the caps on top.
+      if (X.drawArt(ctx, 'news/skyline', v, 0, y - 168, { scale: 2 })) {
+        if (s && s.snow) X.drawArt(ctx, 'news/skyline', 'snow:' + v, 0, y - 168, { scale: 2 });
         if (!(o && o.noWindows)) skylineLit(seed, y, day).forEach((q) => X.rect(ctx, q.x, q.y, q.w, q.h, c.wash));
         if (s) weather(ctx, 0, 0, V.w, y - 20, day, noSpeckle);
         return;
