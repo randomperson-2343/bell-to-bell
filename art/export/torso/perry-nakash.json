@@ -1,0 +1,41 @@
+{
+ "frames": [
+  {
+   "filename": "day",
+   "frame": {
+    "x": 0,
+    "y": 0,
+    "w": 120,
+    "h": 32
+   }
+  },
+  {
+   "filename": "night",
+   "frame": {
+    "x": 120,
+    "y": 0,
+    "w": 120,
+    "h": 32
+   }
+  }
+ ],
+ "meta": {
+  "image": "perry-nakash.png",
+  "size": {
+   "w": 240,
+   "h": 32
+  },
+  "frameTags": [
+   {
+    "name": "day",
+    "from": 0,
+    "to": 0
+   },
+   {
+    "name": "night",
+    "from": 1,
+    "to": 1
+   }
+  ]
+ }
+}
