@@ -418,7 +418,10 @@
       if (Math.floor(day / 2) % 2) art(DESK, 'clutter:notes', 0, 0);
       if (day % 5 === 0) art(DESK, 'clutter:takeout', 0, 0);
       // the CASCADE plate is on the desk: its label goes on in the wide too (with detail it rides with the top sheets)
-      if (!detail) { ctx.save(); ctx.scale(2, 2); X.textShadow(ctx, 'CASCADE', 24, 105, c.signal, P.ink); ctx.restore(); }
+      if (!detail) {
+        ctx.save(); ctx.scale(2, 2); X.textShadow(ctx, 'CASCADE', 24, 105, c.signal, P.ink); ctx.restore();
+        const dc = G.deskChart; chart(ctx, dc.x, dc.y, dc.w, dc.h, day, down);
+      }
       if (detail) {
         art(DESK, 'sheets:base', 0, 0);
         if (G.files) art(DESK, 'hold-files', 0, 0);

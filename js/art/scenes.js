@@ -238,6 +238,30 @@
     });
     return out;
   }
+  // What stands in front of each given glass (from floorGeom): the seat of its own row (the trader's head), the rows nearer the
+  // camera and the foreground colleagues, clipped to that glass. A shot that paints on the screens (the refresh wave, the dark
+  // flicker) calls it after, so nothing it paints lands on a head or a colleague, and with nothing painted it changes no pixel.
+  function floorFront(ctx, zoom, lit, seed, glasses) {
+    if (!floorArt() || !glasses || !glasses.length) return;
+    const { F, t } = floorFraming(zoom), id = F.id, night = !lit && B.Portraits ? B.Portraits.NIGHT : null, n = F.rows.length;
+    for (const g of glasses) {
+      const ri = n - (4 - g.r), cols = [Math.max(0, g.x), Math.min(V.w, g.x + g.w)];
+      if (ri < 0 || cols[1] <= cols[0]) continue;
+      ctx.save(); ctx.beginPath(); ctx.rect(g.x, g.y, g.w, g.h); ctx.clip();
+      for (let r = ri; r < n; r++) {
+        const R0 = F.rows[r], dy = floorDy(R0.d, t);
+        if (r > ri) X.drawArt(ctx, id, `r${r}:desk`, 0, dy, { map: night, cols });
+        R0.xs.forEach((x, i) => {
+          const c = [Math.max(cols[0], x), Math.min(cols[1], x + R0.pitch)];
+          if (c[1] <= c[0]) return;
+          if (r > ri) X.drawArt(ctx, id, `r${r}:screen:${floorScreen(R0.wr, i + R0.wo, seed) ? 'on' : 'off'}`, 0, dy, { cols: c });
+          X.drawArt(ctx, id, `r${r}:seat:${floorSeat(R0.wr, i + R0.wo, seed) ? 'occupied' : 'empty'}`, 0, dy, { cols: c, map: night });
+        });
+      }
+      if (F.fg) { const dy = floorDy(1.4, t); X.drawArt(ctx, id, 'fg:left', 0, dy, { map: night, cols }); X.drawArt(ctx, id, 'fg:right', 0, dy, { map: night, cols }); }
+      ctx.restore();
+    }
+  }
   function floorArtDraw(ctx, zoom, lit, seed) {
     const { F, t } = floorFraming(zoom), id = F.id, dark = !lit, night = dark && B.Portraits ? B.Portraits.NIGHT : null;
     const sky = dark ? 'night' : SEASON ? SEASON.id : 'grey';
@@ -908,7 +932,7 @@
         {
           dur: 3.0,
           sfx: 'office',
-          draw(ctx, _v, p) { tradingFloor(ctx, p * 0.35, true, 3); },
+          draw(ctx, _v, p) { tradingFloor(ctx, p * (floorArt() ? 0.29 : 0.35), true, 3); },
           line: 'Two hundred people, all of them certain about something different.'
         },
         {
@@ -1000,5 +1024,5 @@
 
   B.Scenes = Scenes;
   // The hand-drawn 320x180 set pieces, for the storyboard layer to reuse at 2x.
-  B.Shots = { V, WALKER, WALKER_B, setSeason, apartment, tvSet, elevator, tradingFloor, floorGeom, floorArt, deskCloseup, bellScene, endingShot, briefingTableau, tableauMover, tableauGeom, endingDetail, endingGeom };
+  B.Shots = { V, WALKER, WALKER_B, setSeason, apartment, tvSet, elevator, tradingFloor, floorGeom, floorArt, floorFront, deskCloseup, bellScene, endingShot, briefingTableau, tableauMover, tableauGeom, endingDetail, endingGeom };
 })(window.BTB);

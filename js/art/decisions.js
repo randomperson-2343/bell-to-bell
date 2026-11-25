@@ -92,7 +92,8 @@
     const part = o && o.part;
     if (B.Art && B.Art.has(OFFICE)) {
       if (part !== 'front') officeArtBack(ctx, day, night);
-      if (part !== 'back') officeArtFront(ctx, night, !part);
+      // at night the front layer leaves the lamp to its animate (off, then on at the click), so no lit pixel shows before 0.45 s
+      if (part !== 'back') officeArtFront(ctx, night, !part, !(night && part === 'front'));
       return;
     }
     if (part !== 'front') officeBack(ctx, day, night, !part);
@@ -112,12 +113,12 @@
   }
   // The monitor's screen (565,166 51x33) is left dark in the art for the chart and the CRT turn-on.
   const OFFICE_SCREEN = { x: 565, y: 166, w: 51, h: 33 };
-  function officeArtFront(ctx, night, glowToo) {
+  function officeArtFront(ctx, night, glowToo, lamp) {
     art(ctx, night ? 'front:night' : 'front:day');
     const m = OFFICE_SCREEN;
     X.rect(ctx, m.x, m.y, m.w, m.h, night ? P.screenGlow : P.screen);
     for (let i = 0; i < 4; i++) X.rect(ctx, m.x + 6, m.y + 6 + i * 6, 36 - i * 6, U, i % 2 ? P.jade : P.crimson);
-    art(ctx, night ? 'lamp:on' : 'lamp:off');
+    if (lamp !== false) art(ctx, night ? 'lamp:on' : 'lamp:off');
     if (night && glowToo) { art(ctx, 'glow:1'); art(ctx, 'glow:2'); }
   }
   function officeBack(ctx, day, night, withGlow) {
@@ -529,7 +530,7 @@
         cues: [{ at: 0.45, sfx: 'click' }],
         layers: [
           { id: 'room', depth: 1, draw: flat({ part: 'back' }) },
-          { id: 'front', depth: 1, draw: flat({ part: 'front' }), animate(g, v, t) { if (t < 0.45) art(g, 'lamp:off'); else { art(g, 'glow:1'); if (t >= 0.60) art(g, 'glow:2'); } } },
+          { id: 'front', depth: 1, draw: flat({ part: 'front' }), animate(g, v, t) { if (t < 0.45) art(g, 'lamp:off'); else { art(g, 'lamp:on'); art(g, 'glow:1'); if (t >= 0.60) art(g, 'glow:2'); } } },
           grain
         ]
       };

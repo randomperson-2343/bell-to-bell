@@ -2231,16 +2231,16 @@ async function run() {
     const sOf = o.game && o.game.mode.S;
     const dw = await page.evaluate(([o]) => { const R = BTB.Rhythm, S = o.game && o.game.mode.S; return window.finalDiff('office', o, 0, (g) => R.officeFrame(g, o.day, false, null, S), [[0, 16, 640, 46]]); }, [o]);
     assert(dw.bad === 0, `office wide day ${o.day}: the final picture differs from today's wide outside the windows (${dw.bad} px)`);
-    const dd = await page.evaluate(([o]) => { const R = BTB.Rhythm, S = o.game && o.game.mode.S; return window.finalDiff('office', o, 1, (g) => R.officeFrame(g, o.day, true, null, S), [[0, 16, 640, 46], [540, 218, 86, 50]]); }, [o]);
+    const dd = await page.evaluate(([o]) => { const R = BTB.Rhythm, S = o.game && o.game.mode.S; return window.finalDiff('office', o, 1, (g) => R.officeFrame(g, o.day, true, null, S), [[0, 16, 640, 46], [542, 202, 84, 52]]); }, [o]);
     assert(dd.bad === 0, `office desk day ${o.day}: the final picture differs from today's desk outside the windows and the chart (${dd.bad} px)`);
-    const dh = await page.evaluate(([o]) => { const R = BTB.Rhythm, S = o.game && o.game.mode.S; return window.finalDiff('office', o, 2, (g) => R.officeFrame(g, o.day, true, null, S), [[0, 16, 640, 46], [540, 218, 86, 50]]); }, [o]);
+    const dh = await page.evaluate(([o]) => { const R = BTB.Rhythm, S = o.game && o.game.mode.S; return window.finalDiff('office', o, 2, (g) => R.officeFrame(g, o.day, true, null, S), [[0, 16, 640, 46], [542, 202, 84, 52]]); }, [o]);
     assert(dh.bad === 0, `office hold day ${o.day}: the final picture differs from today's desk outside the windows and the chart (${dh.bad} px)`);
   }
   // the desk chart ticks every 0.25 s from 0.25 s; a new point is bone for 0.12 s; the line at 0.2 s is today's line
-  const chartR = [540, 218, 86, 50];
+  const chartR = [542, 202, 84, 52];
   for (const o of [offDays[0], offDays[2]]) {
     const at = (i, t) => lp('office', o, i, 'desk', t, false, chartR);
-    const flatChart = await page.evaluate(([o]) => { const R = BTB.Rhythm, g = document.createElement('canvas'); g.width = 640; g.height = 360; const c = g.getContext('2d'); R.officeFrame(c, o.day, true, null, o.game && o.game.mode.S); const d = c.getImageData(540, 218, 86, 50).data; let x = 2166136261; for (let i = 0; i < d.length; i++) { x ^= d[i]; x = Math.imul(x, 16777619); } return (x >>> 0).toString(16); }, [o]);
+    const flatChart = await page.evaluate(([o]) => { const R = BTB.Rhythm, g = document.createElement('canvas'); g.width = 640; g.height = 360; const c = g.getContext('2d'); R.officeFrame(c, o.day, true, null, o.game && o.game.mode.S); const d = c.getImageData(542, 202, 84, 52).data; let x = 2166136261; for (let i = 0; i < d.length; i++) { x ^= d[i]; x = Math.imul(x, 16777619); } return (x >>> 0).toString(16); }, [o]);
     assert(await at(1, 0.2) === flatChart, `office desk day ${o.day}: before the first tick the chart is not today's`);
     const pics = [];
     for (const t of [0.2, 0.3, 0.45, 0.55, 0.8, 1.05, 1.3, 1.55, 1.8]) pics.push(await at(1, t));
@@ -2250,11 +2250,11 @@ async function run() {
     assert(await at(2, 0.1) !== await at(2, 0.25) && await at(2, 0.25) !== await at(2, 0.5) && await at(2, 0.5) !== await at(2, 0.75), `office hold day ${o.day}: the chart does not tick at 0.20, 0.45 and 0.70`);
     assert(await at(2, 0.85) !== await at(2, 0.75) && await at(2, 0.85) === await at(2, 0.9), `office hold day ${o.day}: the last point is not back to the line colour by the end`);
   }
-  // the now-mark: a 2 px wide P.bone column at alpha 0.5 at x0 + 70 (616 and 617), y 228 to 250, drawn exactly while the chart's newest point is bone (desk and hold), inside the chart screen
+  // the now-mark: a 2 px wide P.bone column at alpha 0.5 at x0 + 70 (618 and 619), y 212 to 236, drawn exactly while the chart's newest point is bone (desk and hold), inside the chart screen
   {
     // the mark is P.bone at alpha 0.5 (alpha 127 or 128 over the transparent layer), 2 px wide
     const mk = (o, i, t) => page.evaluate(([o, i, t]) => { const b = BTB.Scenes.office(o)[i], l = b.layers.find((x) => x.id === 'desk'), g = document.createElement('canvas'); g.width = 640; g.height = 360; const c = g.getContext('2d'); l.animate(c, { w: 640, h: 360 }, t, t / b.dur, {});
-      const d = c.getImageData(616, 228, 2, 22).data, B0 = BTB.Pal.bone, rgb = [parseInt(B0.slice(1, 3), 16), parseInt(B0.slice(3, 5), 16), parseInt(B0.slice(5, 7), 16)]; let n = 0;
+      const d = c.getImageData(618, 212, 2, 22).data, B0 = BTB.Pal.bone, rgb = [parseInt(B0.slice(1, 3), 16), parseInt(B0.slice(3, 5), 16), parseInt(B0.slice(5, 7), 16)]; let n = 0;
       for (let k = 0; k < d.length; k += 4) if (d[k + 3] >= 126 && d[k + 3] <= 129 && Math.abs(d[k] - rgb[0]) <= 1 && Math.abs(d[k + 1] - rgb[1]) <= 1 && Math.abs(d[k + 2] - rgb[2]) <= 1) n++;
       return { n }; }, [o, i, t]);
     for (const o of [offDays[0], offDays[2]]) {
