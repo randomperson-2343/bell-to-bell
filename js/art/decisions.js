@@ -465,8 +465,17 @@
       // A drawn face is cut at the chest; carry its last row down past the bottom of the frame so the body runs out of shot.
       // The landlord's screen stands on its own foot, so it is left as drawn.
       if (!B.Portraits.drawn(name) || (B.Portraits.CAST[name] || {}).screen) return;
-      const sp = B.Portraits.sprite(name, { night }), row = sp.rows[sp.h - 1], below = Math.ceil((V.h - 46) / Math.floor(240 / sp.h)) - sp.h;
-      for (let i = 0; i < row.length; i++) { const col = B.PalKeys[row[i]]; if (col) { s.fillStyle = col; s.fillRect(i, sp.h, 1, below); } }
+      // The arms widen out of shot as they go down, one cell a side every two rows, so the torso is not a slab with straight sides.
+      const sp = B.Portraits.sprite(name, { night }), row = sp.rows[sp.h - 1], k = Math.max(1, Math.floor(240 / sp.h)), below = Math.ceil((V.h - 46) / k) - sp.h;
+      const key = (i) => B.PalKeys[row[i]], n = row.length;
+      for (let i = 0; i < n; i++) { const col = key(i); if (col) { s.fillStyle = col; s.fillRect(i, sp.h, 1, below); } }
+      for (let j = 0; j < below; j++) {
+        const grow = Math.min(Math.ceil(40 / k), Math.floor(j / 2));
+        if (!grow) continue;
+        // the outline cell moves out to the new edge, the cloth inside it follows
+        if (key(0)) { s.fillStyle = key(1) || key(0); s.fillRect(-grow, sp.h + j, grow, 1); s.fillStyle = key(0); s.fillRect(-grow, sp.h + j, 1, 1); }
+        if (key(n - 1)) { s.fillStyle = key(n - 2) || key(n - 1); s.fillRect(n, sp.h + j, grow, 1); s.fillStyle = key(n - 1); s.fillRect(n + grow - 1, sp.h + j, 1, 1); }
+      }
     }, x, name);
     return true;
   }
