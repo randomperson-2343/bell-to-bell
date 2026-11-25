@@ -324,7 +324,7 @@ async function viewport(browser, vp) {
     await step(page, vp, 'ending-' + (i + 1), async () => {
       await page.evaluate((id) => {
         const base = BTB.StoryEndings.list.find((e) => e.id === id);
-        const e = Object.assign({ wealth: 184322.17, story: ['The tape stopped at four.', 'Nobody on the floor said anything for a while.'], pull: 'It was never about the money.', epilogue: 'Personally: you kept the watch.' }, base);
+        const e = Object.assign({}, base, { wealth: 184322.17, story: ['The tape stopped at four, and the floor went quiet in the way it only does after a number nobody wanted to see.', 'Nobody on the floor said anything for a while. Then the phones started again.', 'By Friday the desk had a new name on the door.'], pull: 'It was never about the money.', epilogue: 'Personally: you kept the watch, and the habit of checking it at 9:29.' });
         BTB.Screens.storyEnding(BTB.UI.g, e);
       }, pick[i]);
       await wait(500);
