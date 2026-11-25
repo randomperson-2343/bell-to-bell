@@ -1,0 +1,27 @@
+{
+ "frames": [
+  {
+   "filename": "coin",
+   "frame": {
+    "x": 0,
+    "y": 0,
+    "w": 5,
+    "h": 5
+   }
+  }
+ ],
+ "meta": {
+  "image": "clawback-mover.png",
+  "size": {
+   "w": 5,
+   "h": 5
+  },
+  "frameTags": [
+   {
+    "name": "coin",
+    "from": 0,
+    "to": 0
+   }
+  ]
+ }
+}

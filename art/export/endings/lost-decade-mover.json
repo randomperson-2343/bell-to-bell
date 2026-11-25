@@ -1,0 +1,27 @@
+{
+ "frames": [
+  {
+   "filename": "cal",
+   "frame": {
+    "x": 0,
+    "y": 0,
+    "w": 13,
+    "h": 18
+   }
+  }
+ ],
+ "meta": {
+  "image": "lost-decade-mover.png",
+  "size": {
+   "w": 13,
+   "h": 18
+  },
+  "frameTags": [
+   {
+    "name": "cal",
+    "from": 0,
+    "to": 0
+   }
+  ]
+ }
+}

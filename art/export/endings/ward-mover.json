@@ -1,0 +1,27 @@
+{
+ "frames": [
+  {
+   "filename": "flag",
+   "frame": {
+    "x": 0,
+    "y": 0,
+    "w": 24,
+    "h": 12
+   }
+  }
+ ],
+ "meta": {
+  "image": "ward-mover.png",
+  "size": {
+   "w": 24,
+   "h": 12
+  },
+  "frameTags": [
+   {
+    "name": "flag",
+    "from": 0,
+    "to": 0
+   }
+  ]
+ }
+}

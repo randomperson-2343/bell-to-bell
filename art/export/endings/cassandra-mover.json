@@ -1,0 +1,27 @@
+{
+ "frames": [
+  {
+   "filename": "sheet",
+   "frame": {
+    "x": 0,
+    "y": 0,
+    "w": 62,
+    "h": 24
+   }
+  }
+ ],
+ "meta": {
+  "image": "cassandra-mover.png",
+  "size": {
+   "w": 62,
+   "h": 24
+  },
+  "frameTags": [
+   {
+    "name": "sheet",
+    "from": 0,
+    "to": 0
+   }
+  ]
+ }
+}
