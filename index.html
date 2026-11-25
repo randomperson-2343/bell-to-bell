@@ -187,13 +187,13 @@
                       <div class="tk-row">
                         <label for="tk-qty">Qty</label>
                         <input id="tk-qty" type="number" min="1" step="1" value="100">
+                        <button type="button" id="tk-adv" class="tk-adv" aria-expanded="false">Market &#9662;</button>
                         <div class="sizes">
                           <button data-pct="0.1">10%</button><button data-pct="0.25">25%</button><button data-pct="0.5">50%</button><button data-pct="0.75">75%</button><button data-pct="1">MAX</button>
                         </div>
                         <span id="tk-max" class="muted"></span>
                       </div>
-                      <div class="tk-row">
-                        <button type="button" id="tk-adv" class="tk-adv" aria-expanded="false">Market &#9662;</button>
+                      <div class="tk-row tk-extra">
                         <label for="tk-type">Type</label>
                         <select id="tk-type"><option value="market">Market</option><option value="limit">Limit</option><option value="stop">Stop</option></select>
                         <input id="tk-price" type="number" step="0.01" placeholder="price" disabled>
@@ -255,7 +255,7 @@
           <footer id="desk">
             <nav id="phone-tabs" aria-label="Desk view">
               <button type="button" data-ptab="trade" class="on">Trade</button>
-              <button type="button" data-ptab="positions">Positions <span id="ptab-pos-badge" class="badge dim" hidden>0</span></button>
+              <button type="button" data-ptab="positions"><span class="pl">Positions</span><span class="ps">Pos</span> <span id="ptab-pos-badge" class="badge dim" hidden>0</span></button>
               <button type="button" data-ptab="news">News <span id="ptab-news-badge" class="badge" hidden></span></button>
             </nav>
             <button class="desk-btn" id="btn-coffee" aria-label="Coffee break" title="Coffee break: lowers stress, but you can't trade for 15 minutes">
