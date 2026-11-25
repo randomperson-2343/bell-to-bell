@@ -834,9 +834,12 @@
       HA(ctx, id, 'room:' + dn);
       if (s.wreath) HA(ctx, id, 'wreath');
       ctx.save(); ctx.translate(-2, -2);
-      if (id === 'penthouse') { // the penthouse's window covers the calendar's wall, so the art has no paper there: the code's own calendar goes over the glass
-        X.rect(ctx, 69, 60, U, U, P.ink2); box(ctx, 39, 66, 66, 78, P.bone, P.white, P.putty2); box(ctx, 39, 66, 66, 18, P.crimsonD, P.crimson, P.crimsonD);
-        for (const kx of [51, 69, 87]) { X.rect(ctx, kx, 63, U * 2, 9, P.grey2); X.rect(ctx, kx, 63, U * 2, U, P.white); }
+      if (id === 'penthouse') { // the penthouse's window covers the calendar's wall, so the art has no paper there: the authored calendar (weekend/penthouse-cal) goes over the glass, the week number on its clear paper
+        if (B.Art && B.Art.has('weekend/penthouse-cal')) X.drawArt(ctx, 'weekend/penthouse-cal', 'cal', 39, 62, { scale: 2 });
+        else {
+          X.rect(ctx, 69, 60, U, U, P.ink2); box(ctx, 39, 66, 66, 78, P.bone, P.white, P.putty2); box(ctx, 39, 66, 66, 18, P.crimsonD, P.crimson, P.crimsonD);
+          for (const kx of [51, 69, 87]) { X.rect(ctx, kx, 63, U * 2, 9, P.grey2); X.rect(ctx, kx, 63, U * 2, U, P.white); }
+        }
       }
       ctx.scale(5, 5); X.text(ctx, String(week), 14, 19, P.ink, { align: 'center' }); ctx.restore();
       if (late > 0) HA(ctx, id, 'late:door');

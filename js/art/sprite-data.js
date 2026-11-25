@@ -66496,6 +66496,51 @@
         ".B122C1b0A1M0A1O.B",
         ".B122C1b0A1M0A1O.B"
       ]
+    } },
+    "weekend/penthouse-cal": { w: 33, h: 41, frames: {
+      "cal": [
+        ".F0D.E0A3B0A.E0D.E",
+        ".F0A9A4A0A.E0A9A4A0A.E0A9A4A0A.E",
+        "0G4A5A0G4A5A0G4A5A0F",
+        "0ArE0A4A5A0ArE0A4A5A0ArE0A4A5A0ArCRA0A",
+        "0ArE0DrE0DrE0DrCRA0A",
+        "0ArE0CrF0CrF0CrDRA0A",
+        "0ArE0CrF0CrF0CrDRA0A",
+        "0ArdRA0A",
+        "0ArdRA0A",
+        "0ArdRA0A",
+        "0ArARd0A",
+        "0ArARd0A",
+        "0g",
+        "0A9A8c7A0A",
+        "0A9A8c7A0A",
+        "0A9A8c7A0A",
+        "0A9A8c7A0A",
+        "0A9A8c7A0A",
+        "0A9A8c7A0A",
+        "0A9A8c7A0A",
+        "0A9A8c7A0A",
+        "0A9A8c7A0A",
+        "0A9A8c7A0A",
+        "0A9A8c7A0A",
+        "0A9A8c7A0A",
+        "0A9A8c7A0A",
+        "0A9A8c7A0A",
+        "0A9A8c7A0A",
+        "0A9A8c7A0A",
+        "0A9A8c7A0A",
+        "0A9A8c7A0A",
+        "0A9A8c7A0A",
+        "0A9A8c7A0A",
+        "0A9A8A6a8A7A0A",
+        "0A9A8A6A8E6A8E6A8E6A8E6A8A6A8A7A0A",
+        "0A9A8A6A8E6A8E6A8E6A8E6A8A6A0A6A0A",
+        "0A9A8A6Z0A6A7A0A",
+        "0A9A8Z0A6A7B0A",
+        "0A9A8Y0A6A7C0A",
+        "0A7Z0A7D0A",
+        "0g"
+      ]
     } }
   };
   const cache = {};

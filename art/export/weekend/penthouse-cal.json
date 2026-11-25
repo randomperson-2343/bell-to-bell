@@ -1,0 +1,27 @@
+{
+ "frames": [
+  {
+   "filename": "cal",
+   "frame": {
+    "x": 0,
+    "y": 0,
+    "w": 33,
+    "h": 41
+   }
+  }
+ ],
+ "meta": {
+  "image": "penthouse-cal.png",
+  "size": {
+   "w": 33,
+   "h": 41
+  },
+  "frameTags": [
+   {
+    "name": "cal",
+    "from": 0,
+    "to": 0
+   }
+  ]
+ }
+}
