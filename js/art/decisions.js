@@ -598,7 +598,7 @@
       const sp = B.Portraits.sprite(name, { night }), k = Math.max(1, Math.floor(240 / sp.h));
       const below = Math.ceil((V.h - 46) / k) - sp.h;
       const tid = 'torso/' + (B.Portraits.SLUG[name] || '');
-      if (B.Art && B.Art.has(tid)) { X.drawArt(s, tid, night ? 'night' : 'day', -20, sp.h); return; }
+      if (B.Art && B.Art.has(tid)) { X.drawArt(s, tid, night ? 'night' : 'day', -20, 50); return; }
       // no torso art: a clean crop, the last row dropped straight down and one ink band at the foot, no stretch
       const row = sp.rows[sp.h - 1], key = (i) => B.PalKeys[row[i]];
       for (let i = 0; i < row.length; i++) { const col = key(i); if (col) { s.fillStyle = col; s.fillRect(i, sp.h, 1, below); } }
