@@ -179,6 +179,16 @@
   }
   // who: 0 is you; 1-3 are the strangers on your commute.
   // The authored commuters (who 1..3): news/commuters (16x32 cells) at 2*scale for scales up to 2, news/commuters-big (32x64) at scale for 3 and 4.
+  // You (who 0): news/you, 44x64 cells at scale s, centre column 22; pose 'back' (over-shoulder), 'front' (close) or 'side', ':late' after act 2.
+  function youArt(ctx, x, y, s, face, pose, act) {
+    if (!(B.Art && B.Art.has('news/you'))) return false;
+    ctx.save();
+    ctx.translate(x, y - 20 * s);
+    ctx.scale(face < 0 ? -1 : 1, 1);
+    const ok = X.drawArt(ctx, 'news/you', (pose || 'front') + (act > 2 ? ':late' : ''), -22 * s, 0, { scale: s });
+    ctx.restore();
+    return ok;
+  }
   function personArt(ctx, x, y, s, face, who) {
     const big = s >= 3, id = big ? 'news/commuters-big' : 'news/commuters';
     if (who < 1 || who > 3 || !(B.Art && B.Art.has(id))) return false;
@@ -189,9 +199,10 @@
     ctx.restore();
     return ok;
   }
-  function person(ctx, x, y, scale, act, face, who) {
+  function person(ctx, x, y, scale, act, face, who, pose) {
     const s = scale || 1;
     if (who && personArt(ctx, x, y, s, face, who)) return;
+    if (!who && pose && youArt(ctx, x, y, s, face, pose, act)) return;
     ctx.save();
     ctx.translate(x, y - 20 * s);
     ctx.scale((face < 0 ? -2 : 2) * s, 2 * s);
@@ -343,8 +354,8 @@
     // Observable composition markers: framing and subject position vary by camera.
     if (sb.camera === 'insert' && !(B.Art && B.Art.has('news/place-marker') && X.drawArt(ctx, 'news/place-marker', 'marker:insert', 0, 0, { scale: 2 }))) cel3(ctx, 468, 86, 116, 82, P.bone, P.white, P.plasticD);
     // The over-shoulder and close markers show you (who 0), the same person in every shot; the big commuters are strangers, so they stay out of these.
-    if (sb.camera === 'over-shoulder') { person(ctx, 576, 234, 3, sb.act, -1, 0); X.rect(ctx, 516, 278, 124, 82, P.ink2); }
-    if (sb.camera === 'close') { person(ctx, 516, 205, 4, sb.act, -1, 0); }
+    if (sb.camera === 'over-shoulder') { person(ctx, 576, 234, 3, sb.act, -1, 0, 'back'); if (!(B.Art && B.Art.has('news/you'))) X.rect(ctx, 516, 278, 124, 82, P.ink2); }
+    if (sb.camera === 'close') { person(ctx, 516, 205, 4, sb.act, -1, 0, 'front'); }
     X.scanlines(ctx, 0, 0, V.w, V.h, P.ink, .08);
   }
 

@@ -1,0 +1,97 @@
+{
+ "frames": [
+  {
+   "filename": "back",
+   "frame": {
+    "x": 0,
+    "y": 0,
+    "w": 44,
+    "h": 64
+   }
+  },
+  {
+   "filename": "back:late",
+   "frame": {
+    "x": 44,
+    "y": 0,
+    "w": 44,
+    "h": 64
+   }
+  },
+  {
+   "filename": "front",
+   "frame": {
+    "x": 88,
+    "y": 0,
+    "w": 44,
+    "h": 64
+   }
+  },
+  {
+   "filename": "front:late",
+   "frame": {
+    "x": 132,
+    "y": 0,
+    "w": 44,
+    "h": 64
+   }
+  },
+  {
+   "filename": "side",
+   "frame": {
+    "x": 176,
+    "y": 0,
+    "w": 44,
+    "h": 64
+   }
+  },
+  {
+   "filename": "side:late",
+   "frame": {
+    "x": 220,
+    "y": 0,
+    "w": 44,
+    "h": 64
+   }
+  }
+ ],
+ "meta": {
+  "image": "you.png",
+  "size": {
+   "w": 264,
+   "h": 64
+  },
+  "frameTags": [
+   {
+    "name": "back",
+    "from": 0,
+    "to": 0
+   },
+   {
+    "name": "back:late",
+    "from": 1,
+    "to": 1
+   },
+   {
+    "name": "front",
+    "from": 2,
+    "to": 2
+   },
+   {
+    "name": "front:late",
+    "from": 3,
+    "to": 3
+   },
+   {
+    "name": "side",
+    "from": 4,
+    "to": 4
+   },
+   {
+    "name": "side:late",
+    "from": 5,
+    "to": 5
+   }
+  ]
+ }
+}
