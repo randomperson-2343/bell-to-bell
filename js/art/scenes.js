@@ -864,7 +864,7 @@
   // Each ending has its own place (js/art/ending-places-*.js register B.EndingPlaces[id]); the shared city is the fallback.
   function endingShot(ctx, kind, id) {
     // batch 5: the authored place (grids/endings/<id>.grid, frame place) holds the backdrop and the prop's base; code writes the words on it
-    if (hasArt('endings/' + id) && X.drawArt(ctx, 'endings/' + id, 'place', 0, 0)) { endingPlaceText(ctx, id); return; }
+    if (endingArt(id) && X.drawArt(ctx, 'endings/' + id, 'place', 0, 0)) { endingPlaceText(ctx, id); return; }
     const place = B.EndingPlaces && B.EndingPlaces[id];
     if (place) { place(ctx, kind); return; }
     const light = kind === 'light', cold = COLD.indexOf(id) >= 0, paper = PAPER.indexOf(id) >= 0;
@@ -940,6 +940,9 @@
     return (GEOM[id] = g);
   }
 
+  // An ending uses its authored art only when the place and, where it has one, its mover sprite are both packed; otherwise it is all code.
+  const ART_MOVER = { wiped: 1, perp: 1, master: 1, cassandra: 1, acquirer: 1, ward: 1, clawback: 1, 'lost-decade': 1, depression: 1, soft: 1 };
+  const endingArt = (id) => hasArt('endings/' + id) && (!ART_MOVER[id] || hasArt('endings/' + id + '-mover'));
   // The words each authored ending place carries, at the code's positions (art units, no prop drop). The plates under them are flat in the grids.
   function endingPlaceText(ctx, id) {
     const T = (t, x, y, col, left) => X.text(ctx, t, x, y, col, left ? {} : { align: 'center' });
@@ -948,7 +951,7 @@
     else if (id === 'acquirer') T('RIDGEWAY', 37, 45, P.crimsonD);
     else if (id === 'revolving') T('RT', 24, 100, P.amber);
     else if (id === 'fund') T('ARCH', 29, 104, P.amber);
-    else if (id === 'exit') { T('EXIT', 160, 11, P.jade); T('3', 288, 41, P.bone, true); }
+    else if (id === 'exit') { R(ctx, 145, 8, 31, 7, P.jadeD); T('EXIT', 160, 8, P.white); T('3', 288, 41, P.bone, true); } // the lit sign's face is cleared of its rule lines under the word
     else if (id === 'everything-rally') { T('FRESH PRICES', 86, 20, P.phosphorD, true); T('12.40', 256, 67, P.phosphor, true); T('3', 301, 14, P.white, true); }
     else if (id === 'lost-decade') T('NOW 042', 280, 48, P.amber);
     else if (id === 'depression') T('JOBS', 294, 68, P.amber);
@@ -969,7 +972,7 @@
     else if (id === 'whistle') { if (base) T('LEAKED', 148, 53, P.crimsonD); }
     else if (id === 'revolving') { if (base) T('PRIVATE / PUBLIC', cx, 12, P.amber); }
     else if (id === 'depression') { if (mov) for (let i = 0; i < 9 && i < n; i++) blitArt(ctx, A, 'fig:' + (i % 5), 76 + i * 18, 71); }
-    else if (id === 'soft') { for (const L of G.leaves) blitArt(ctx, A, 'leaf', L.x, L.y); }
+    else if (id === 'soft') { if (mov) for (const L of G.leaves) blitArt(ctx, A, 'leaf', L.x, L.y); } // the place has the leaves; the mover redraws them over the window covers
     else if (id === 'nobody') {
       if (base) {
         for (let i = 0; i < 5; i++) { const x = 90 + i * 28; R(ctx, x + 11, 29, 3, 16, P.crimson); R(ctx, x + 7, 43, 11, 3, P.crimson); R(ctx, x + 9, 46, 7, 3, P.crimson); }
@@ -1008,7 +1011,7 @@
     if (o.part === 'mover' && !MOVER[id]) return;
     const base = o.part !== 'mover', mov = o.part !== 'base', n = o.n == null ? Infinity : o.n, dx = o.dx || 0, dy = o.dy || 0;
     const G = endingGeom(id);
-    if (hasArt('endings/' + id)) return endingDetailArt(ctx, id, p, base, mov, n, dx, dy, G);
+    if (endingArt(id)) return endingDetailArt(ctx, id, p, base, mov, n, dx, dy, G);
     if (id === 'wiped') { // the book's charts, falling off the desk
       if (mov) for (let i = 0; i < 6; i++) {
         const drop = Math.round(p * i * 2), x = 112 + i * 7, y = 20 + i * 8 + drop;
@@ -1285,5 +1288,5 @@
 
   B.Scenes = Scenes;
   // The hand-drawn 320x180 set pieces, for the storyboard layer to reuse at 2x.
-  B.Shots = { V, WALKER, WALKER_B, setSeason, apartment, tvSet, tvBars, elevator, tradingFloor, floorGeom, floorArt, floorFront, deskCloseup, deskPaper, bellScene, endingShot, briefingTableau, tableauMover, tableauGeom, endingDetail, endingGeom };
+  B.Shots = { V, endingArt, WALKER, WALKER_B, setSeason, apartment, tvSet, tvBars, elevator, tradingFloor, floorGeom, floorArt, floorFront, deskCloseup, deskPaper, bellScene, endingShot, briefingTableau, tableauMover, tableauGeom, endingDetail, endingGeom };
 })(window.BTB);

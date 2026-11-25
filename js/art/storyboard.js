@@ -2272,7 +2272,7 @@
     const K = B.MotionKit, M = B.Motion, G = SH.endingGeom(id);
     const D = (g, q, extra) => SH.endingDetail(g, id, q, Object.assign({ part: 'mover' }, extra));
     // the authored places keep the screens flat in screen (grid key S), the code's off screen is screenD
-    const authored = artHas('endings/' + id), offScreen = authored ? P.screen : P.screenD;
+    const authored = !!(SH.endingArt && SH.endingArt(id)), offScreen = authored ? P.screen : P.screenD;
     const count = (t, a, step, N) => Math.max(0, Math.min(N, Math.floor((t - a) / step + 1e-9) + 1));
     const COUNT = { cassandra: [0.40, 0.12, 6], 'lost-decade': [0.40, 0.09, 10], depression: [0.40, 0.10, 9], 'right-early': [0.40, 0.07, 13], 'everything-rally': [0.40, 0.12, 7], fund: [0.40, 0.08, 10], clawback: [0.50, 0.15, 6] };
     if (id === 'wiped') return (g, t) => D(g, M.ease.in(K.span(t, 0.40, 1.30)));
@@ -2304,7 +2304,7 @@
       };
     }
     if (id === 'quiet') return (g, t) => { const rk = quietRank(); G.cells.forEach((c, k) => { if (t < 0.40 + 1.00 * rk[k] / 33) X.rect(g, c.x, c.y, 7, 6, P.amberD); }); };
-    if (id === 'nobody') return (g, t) => G.screens.forEach((s, i) => K.crt(g, s.x, s.y, 18, 30, t, { mode: 'on', at: 0.45 + 0.15 * i, bg: offScreen }));
+    if (id === 'nobody') return (g, t) => G.screens.forEach((s, i) => K.crt(g, s.x, s.y + (authored ? 1 : 0), 18, authored ? 29 : 30, t, { mode: 'on', at: 0.45 + 0.15 * i, bg: offScreen }));
     if (id === 'replaced') {
       return (g, t) => {
         for (let i = 0; i < 4; i++) {
