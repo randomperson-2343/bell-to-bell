@@ -94,7 +94,7 @@
     const part = o && o.part, p = o && o.p != null ? o.p : 0.6;
     if (part !== 'scan') X.rect(c, 0, 0, 320, 180, P.ink);
     let ok = true;
-    tableauSpace(c, zoom, (g) => { ok = SH.briefingTableau(g, n, p, o ? { part, noMover: o.noMover, over: o.over } : undefined); });
+    tableauSpace(c, zoom, (g) => { ok = SH.briefingTableau(g, n, p, o ? { part, noMover: o.noMover, over: o.over, zoomed: !!zoom } : zoom ? { zoomed: true } : undefined); });
     if (!ok) return false;
     if (!zoom && part !== 'art') X.rect(c, 0, 0, 320, 7, P.slate);
     return true;
@@ -228,7 +228,8 @@
     X.rect(ctx, x + 16, y + 18, w - 32, 2, P.grey);
     R.text(ctx, label, x + 20, y + 26, P.ink);
   }
-  function valueLines(value, width) { return X.wrap(R.clean(value), width).slice(0, 2); }
+  // Up to n (2) lines of whole words; a value that runs longer ends on an ellipsis, never mid-word.
+  function valueLines(value, width, n) { return X.wrapFit(R.clean(value), width, n || 2); }
   // The footnote's circled line (y of the pen's middle).
   const footnoteLine = (day) => 50 + (6 + day % 6) * 12;
   // Where the documents' moving marks sit, read by the flat art (DOC_DRAW) and by the layered documents (docLayers), so the two cannot drift apart.
@@ -274,7 +275,7 @@
         X.rect(ctx, 376, ly, 60, 2, P.crimson);
       }
       X.cel(ctx, 440, 70, 180, 150, P.amber, P.bone, P.amberD, P.ink2, 3);
-      valueLines(value, 80).forEach((ln, i) => big(ctx, ln, 530, 110 + i * 26, P.ink, 2, 'center'));
+      valueLines(value, 80, 3).forEach((ln, i) => big(ctx, ln, 530, 110 + i * 26, P.ink, 2, 'center'));
     },
     rating(ctx, day, value, c) {
       deskUnder(ctx); paper(ctx, 120, 24, 400, 248, LABELS.rating);
@@ -397,7 +398,7 @@
         X.rect(ctx, 82, ly - 5, 2, 12, P.crimson); X.rect(ctx, 374, ly - 5, 2, 12, P.crimson);
         X.rect(ctx, 376, ly, 60, 2, P.crimson);
       }
-      valueLines(value, 80).forEach((ln, i) => big(ctx, ln, 530, 110 + i * 26, P.ink, 2, 'center'));
+      valueLines(value, 80, 3).forEach((ln, i) => big(ctx, ln, 530, 110 + i * 26, P.ink, 2, 'center'));
     },
     rating(ctx, day, value, c) {
       const sk = keyOf(c.signal), map = sk ? { r: sk } : null;
@@ -524,7 +525,7 @@
         if (part !== 'paper') SH.deskCloseup(g, 1, { crash: R.marketDown(day - 1), ticker: ['INDX', 'CRVS', 'FRLN', 'MRDN', 'BSTN'][day % 5] });
         if (part === 'desk') return;
         const bandCol = r.doc === 'rating' || r.doc === 'vote' ? P.sky : r.doc === 'chart' ? P.crimsonD : P.amberD;
-        if (SH.deskPaper && SH.deskPaper(g, dy, r.doc === 'footnote' ? 'footnote' : 'memo', bandCol, R.clean(r.arg || '').slice(0, 9))) return;
+        if (SH.deskPaper && SH.deskPaper(g, dy, r.doc === 'footnote' ? 'footnote' : 'memo', bandCol, R.clean(r.arg || ''))) return;
         X.cel(g, 90, 138 + dy, 58, 30, P.bone, P.white, P.putty, P.ink, 1);
         X.rect(g, 94, 142 + dy, 50, 1, P.grey);
         X.rect(g, 94, 148 + dy, 50, 7, bandCol);
@@ -683,7 +684,9 @@
     if (r.shot === 'tv' || (r.shot === 'insert' && r.doc === 'rating') || (r.shot === 'place' && sb.place === 'apartment')) return TV;
     // the elevator is taller than a 1.5 crop: the frame across and the floor number at the top stay in, the sills go
     if (r.shot === 'elevator' || (r.shot === 'place' && (sb.place === 'lobby' || sb.place === 'elevator'))) return { x: 180, y: 8, w: 280, h: 0 };
-    if (r.shot === 'place') return R.monitorGeom(sb, false);
+    // a place establish holds the wire monitor and the commuter beside it (rhythm commuterX: 64 px wide about cx, head at y 204) with a margin,
+    // down to the commuter's waist (y 300), so the zoomed establish shows them from the waist up rather than a head at the frame's corner
+    if (r.shot === 'place') { const M = R.monitorGeom(sb, false), cx = R.commuterX ? R.commuterX(sb) : M.x + M.w - 44; return { x: M.x, y: M.y, w: Math.max(M.w, cx + 44 - M.x), h: 300 - M.y }; }
     if (r.shot === 'insert' && r.doc === 'post') { const g = R.phoneGeom(1, false); return { x: g.x - 16, y: g.y, w: g.w + 32, h: g.h }; }
     // the office's CASCADE stack and its label down the left (across only)
     if (r.shot === 'insert' && r.doc === 'chart') return { x: 40, y: null, w: 120, h: 0 };

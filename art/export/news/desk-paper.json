@@ -5,25 +5,25 @@
    "frame": {
     "x": 0,
     "y": 0,
-    "w": 58,
-    "h": 30
+    "w": 88,
+    "h": 34
    }
   },
   {
    "filename": "footnote",
    "frame": {
-    "x": 58,
+    "x": 88,
     "y": 0,
-    "w": 58,
-    "h": 30
+    "w": 88,
+    "h": 34
    }
   }
  ],
  "meta": {
   "image": "desk-paper.png",
   "size": {
-   "w": 116,
-   "h": 30
+   "w": 176,
+   "h": 34
   },
   "frameTags": [
    {

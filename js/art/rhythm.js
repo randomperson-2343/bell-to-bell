@@ -287,6 +287,12 @@
     }
     return true;
   }
+  // The commuter's x in a place establish (feet at y 244, sprite 64 px wide about x): the day's spot, kept 8 px clear right of the wire monitor and
+  // close enough that the monitor and the commuter fit one 1.5 push-in crop (427 px across), so a zoomed establish holds them both.
+  function commuterX(sb) {
+    const M = monitorGeom(sb, false), x = B.clamp(470 - sb.crop / 2, 380, 560);
+    return B.clamp(x, M.x + M.w + 40, M.x + 380);
+  }
   function placeFrame(ctx, sb, headline, detail, o) {
     o = o || {};
     const back = o.part !== 'front', front = o.part !== 'back', ns = !!o.noSpeckle;
@@ -351,7 +357,7 @@
     if (!front) return;
     const M = monitorGeom(sb, detail), mx = M.x, my = M.y, mw = M.w, mh = M.h;
     monitor(ctx, mx, my, mw, mh, headline, sb.act);
-    if (!detail) person(ctx, B.clamp(470-shift/2,380,560), 244, 2, sb.act, -1, 1 + (sb.day + 2) % 3);
+    if (!detail) person(ctx, commuterX(sb), 244, 2, sb.act, -1, 1 + (sb.day + 2) % 3);
     // Observable composition markers: framing and subject position vary by camera.
     if (sb.camera === 'insert' && !(B.Art && B.Art.has('news/place-marker') && X.drawArt(ctx, 'news/place-marker', 'marker:insert', 0, 0, { scale: 2 }))) cel3(ctx, 468, 86, 116, 82, P.bone, P.white, P.plasticD);
     // The over-shoulder and close markers show you (who 0), the same person in every shot; the big commuters are strangers, so they stay out of these.
@@ -384,8 +390,9 @@
       const yy=sy+25+i*(rowH+5);
       X.rect(ctx, sx+5, yy, sw-10, rowH, i<glow ? P.screenGlow : P.screenD);
       X.rect(ctx, sx+5, yy, 3, rowH, item.kind==='chirp'?P.violet:item.kind==='mail'?P.amber:P.sky);
-      text(ctx, clean(item.source || 'WIRE').slice(0,18), sx+14, yy+6, c.wash);
-      X.wrap(clean(item.title || ''), sw-34).slice(0, compact?3:2).forEach((line,k) => text(ctx,line,sx+14,yy+19+k*10,P.bone));
+      text(ctx, X.wrapFit(clean(item.source || 'WIRE'), sw-28, 1)[0] || '', sx+14, yy+6, c.wash);
+      // whole words, and an ellipsis on the last line when the title runs longer than the card
+      X.wrapFit(clean(item.title || ''), sw-34, compact?3:2).forEach((line,k) => text(ctx,line,sx+14,yy+19+k*10,P.bone));
     });
     if (part === 'rows') { cards(); return rows.length; }
     // Glow is behind the device and never becomes an opaque slab.
@@ -662,10 +669,10 @@
       text(ctx, b.when || 'NOW', sx + sw - 14, cy + 10, P.grey2, 'right');
       // the thumb lies over the post's left edge at py+112..148: the first headline line has the full width, the two under the thumb start 16 px in
       const head = clean(b.head).toUpperCase(), l0 = X.wrap(head, (sw - 30) / 2)[0] || '';
-      const hl = useArt ? [l0].concat(X.wrap(head.slice(l0.length).trim(), (sw - 46) / 2).slice(0, 2)) : X.wrap(head, (sw - 30) / 2).slice(0, 3);
+      const hl = useArt ? [l0].concat(X.wrapFit(head.slice(l0.length).trim(), (sw - 46) / 2, 2)) : X.wrapFit(head, (sw - 30) / 2, 3);
       hl.forEach((line, i) => big(ctx, line, sx + 12 + (useArt && i > 0 ? 16 : 0), cy + 26 + i * 18, P.bone, 2));
       const bodyY = cy + 88;
-      X.wrap(clean(b.text), sw - 30).slice(0, 5).forEach((line, i) => text(ctx, line, sx + 12, bodyY + i * 10, P.putty2));
+      X.wrapFit(clean(b.text), sw - 30, 5).forEach((line, i) => text(ctx, line, sx + 12, bodyY + i * 10, P.putty2));
       // glitch thumbnail strip
       for (let i = 0; i < 6; i++) X.rect(ctx, sx + 12 + ((i * 29 + sb.day) % (sw - 60)), cy + 150 + i * 4, 30 + (i * 11) % 24, 2, i % 2 ? P.crimsonD : P.crimson);
       if (!o.noStats) text(ctx, sqwakStats(b).join('   '), stats.x, stats.y, P.grey2);
@@ -673,8 +680,9 @@
       if (b.reply) {
         const ry = cy + 198;
         X.rect(ctx, sx + 12, ry, 14, 14, P.slate);
-        text(ctx, clean(b.reply[0]).slice(0, 26), sx + 32, ry + 1, P.sky);
-        X.wrap(clean(b.reply[1]), sw - 44).slice(0, 3).forEach((line, i) => text(ctx, line, sx + 32, ry + 12 + i * 10, P.bone));
+        text(ctx, X.wrapFit(clean(b.reply[0]), sw - 44, 1)[0] || '', sx + 32, ry + 1, P.sky);
+        // four lines fit above the screen's bottom edge (py + 318); a longer reply ends on an ellipsis
+        X.wrapFit(clean(b.reply[1]), sw - 44, 4).forEach((line, i) => text(ctx, line, sx + 32, ry + 12 + i * 10, P.bone));
       }
       if (useArt) hand('hand:front');
     }
@@ -692,7 +700,7 @@
   B.Rhythm = {
     view:V, endingIds:ENDING_IDS,
     // Drawing helpers for js/art/storyboard.js.
-    placeFrame, monitorGeom, phoneFrame, phoneGeom, lockMinute, stackSlip, CLOSE_DIM, officeFrame, officeGeom, closeFrame, closeGeom, closeDown, sqwakFrame, sqwakGeom, sqwakStats, skyline, skylineWindows, skylineLit, monitorScreen, season, sky, weather, text, colors, clean, chart, chartSeries, person, marketDown, beat,
+    placeFrame, commuterX, monitorGeom, phoneFrame, phoneGeom, lockMinute, stackSlip, CLOSE_DIM, officeFrame, officeGeom, closeFrame, closeGeom, closeDown, sqwakFrame, sqwakGeom, sqwakStats, skyline, skylineWindows, skylineLit, monitorScreen, season, sky, weather, text, colors, clean, chart, chartSeries, person, marketDown, beat,
     phoneRowCount(feed){return Math.min(4,(feed||[]).length);},
     storyboard:board
   };

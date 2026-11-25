@@ -11,7 +11,7 @@
     ' ': [0, 0, 0, 0, 0], '!': [0, 0, 0x5F, 0, 0], '"': [0, 7, 0, 7, 0], '#': [0x14, 0x7F, 0x14, 0x7F, 0x14],
     $: [0x24, 0x2A, 0x7F, 0x2A, 0x12], '%': [0x23, 0x13, 8, 0x64, 0x62], '&': [0x36, 0x49, 0x55, 0x22, 0x50],
     "'": [0, 5, 3, 0, 0], '(': [0, 0x1C, 0x22, 0x41, 0], ')': [0, 0x41, 0x22, 0x1C, 0], '*': [0x14, 8, 0x3E, 8, 0x14],
-    '+': [8, 8, 0x3E, 8, 8], ',': [0, 0x50, 0x30, 0, 0], '-': [8, 8, 8, 8, 8], '.': [0, 0x60, 0x60, 0, 0],
+    '+': [8, 8, 0x3E, 8, 8], ',': [0, 0x50, 0x30, 0, 0], '-': [8, 8, 8, 8, 8], '.': [0, 0x60, 0x60, 0, 0], '\u2026': [0x40, 0, 0x40, 0, 0x40],
     '/': [0x20, 0x10, 8, 4, 2],
     0: [0x3E, 0x51, 0x49, 0x45, 0x3E], 1: [0, 0x42, 0x7F, 0x40, 0], 2: [0x42, 0x61, 0x51, 0x49, 0x46],
     3: [0x21, 0x41, 0x45, 0x4B, 0x31], 4: [0x18, 0x14, 0x12, 0x7F, 0x10], 5: [0x27, 0x45, 0x45, 0x45, 0x39],
@@ -174,6 +174,22 @@
       }
       if (line.length) lines.push(line);
       return lines;
+    },
+
+    // Wrap to at most n lines that each fit widthPx. What does not fit ends the last line on a whole word and an ellipsis,
+    // and a single word wider than the line is cut with one, so no line is ever sliced mid-word without a mark.
+    wrapFit(str, widthPx, n, spacing) {
+      const per = 5 + (spacing == null ? 1 : spacing), max = Math.max(1, Math.floor(widthPx / per));
+      const cut = (s) => {
+        if (s.length <= max) return s;
+        const room = max - 1, sp = s.lastIndexOf(' ', room);
+        return (sp > room / 2 ? s.slice(0, sp) : s.slice(0, room)).replace(/[\s,;:.\-]+$/, '') + '\u2026';
+      };
+      // a lone separator (the feed's middle dot, a dash, a bar) left at a line's end or start is dropped
+      const all = this.wrap(str, widthPx, spacing).map((l) => l.replace(/\s+[\u00b7|\/\-]$/, '').replace(/^[\u00b7|\/\-]\s+/, '')).filter((l) => l.length);
+      n = n || 1;
+      if (all.length <= n) return all.map(cut);
+      return all.slice(0, n - 1).map(cut).concat([cut(all.slice(n - 1).join(' '))]);
     },
 
     // A lit cel: an ink outline, light on the top and left edges, shade on
