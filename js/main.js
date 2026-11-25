@@ -104,7 +104,7 @@
       }
       // The CASCADE mark begins aligned and slips as it falls toward the skyline.
       // Below 560px wide it would land behind the menu buttons, so it sits out.
-      if (window.innerWidth >= 560) for (let i = 0; i < 6; i++) {
+      if (window.innerWidth >= 560 && !(window.matchMedia && matchMedia('(orientation: landscape) and (max-height: 500px)').matches)) for (let i = 0; i < 6; i++) {
         const y = 113 + i * 8;
         X.rect(ctx, 384 + i * 3, y, 54 - i * 4, 4, i < 2 ? P.amberD : i < 4 ? P.sky : P.crimsonD);
       }
@@ -127,7 +127,7 @@
       // where that would put them behind the menu buttons, they sit out.
       const ox = (V.w * s - W) / 2, right = (ox + W) / s;
       const dx = Math.min(0, Math.floor(right - 8 - 438));
-      const cascade = W >= 560 && (384 + dx) * s - ox >= W / 2 + 150 ? dx : null;
+      const cascade = W >= 560 && !(window.matchMedia && matchMedia('(orientation: landscape) and (max-height: 500px)').matches) && (384 + dx) * s - ox >= W / 2 + 150 ? dx : null;
       if (!this.bdCache || this.bdCache.cascade !== cascade) {
         const c = document.createElement('canvas'); c.width = V.w; c.height = V.h;
         const g = c.getContext('2d');
