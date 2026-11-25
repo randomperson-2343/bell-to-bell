@@ -589,6 +589,12 @@
     if (r.shot === 'insert' && phase === 'detail') return; // native documents already have fine linework
     ctx.save();
     ctx.globalAlpha = 0.5;
+    // the place's people stand in front of the fine marks (the cable and rail lines): clip their boxes out
+    if (world && r.shot === 'place' && R.peopleBoxes && R.peopleBoxes.length) {
+      ctx.beginPath(); ctx.rect(0, 0, V.w, V.h);
+      R.peopleBoxes.forEach((b) => ctx.rect(b.x, b.y, b.w, b.h));
+      ctx.clip('evenodd');
+    }
     if (!world) { /* corner brackets only */ }
     else if (r.shot === 'floor' || r.shot === 'dark' || r.shot === 'place') {
       for (let i = 0; i < 8; i++) {

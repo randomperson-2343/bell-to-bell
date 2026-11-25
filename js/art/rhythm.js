@@ -200,8 +200,12 @@
     ctx.restore();
     return ok;
   }
+  // The boxes the people occupy in the shot being drawn, so the fine marks (storyboard finePass) leave them alone: placeFrame clears it.
+  const peopleBoxes = [];
   function person(ctx, x, y, scale, act, face, who, pose) {
     const s = scale || 1;
+    if (B.Art && B.Art.has('news/you') && !who && pose) peopleBoxes.push({ x: x - 78, y: y - 20 * s, w: 156, h: 400 });
+    else if (who && B.Art && B.Art.has('news/commuters-big')) peopleBoxes.push({ x: x - 34, y: y - 20 * s, w: 68, h: 400 });
     if (who && personArt(ctx, x, y, s, face, who)) return;
     if (!who && pose && youArt(ctx, x, y, s, face, pose, act)) return;
     ctx.save();
@@ -294,6 +298,7 @@
     return B.clamp(x, M.x + M.w + 40, M.x + 380);
   }
   function placeFrame(ctx, sb, headline, detail, o) {
+    peopleBoxes.length = 0;
     o = o || {};
     const back = o.part !== 'front', front = o.part !== 'back', ns = !!o.noSpeckle;
     const c = colors(sb.act), shift = sb.crop;
@@ -700,7 +705,7 @@
   B.Rhythm = {
     view:V, endingIds:ENDING_IDS,
     // Drawing helpers for js/art/storyboard.js.
-    placeFrame, commuterX, monitorGeom, phoneFrame, phoneGeom, lockMinute, stackSlip, CLOSE_DIM, officeFrame, officeGeom, closeFrame, closeGeom, closeDown, sqwakFrame, sqwakGeom, sqwakStats, skyline, skylineWindows, skylineLit, monitorScreen, season, sky, weather, text, colors, clean, chart, chartSeries, person, marketDown, beat,
+    placeFrame, peopleBoxes, commuterX, monitorGeom, phoneFrame, phoneGeom, lockMinute, stackSlip, CLOSE_DIM, officeFrame, officeGeom, closeFrame, closeGeom, closeDown, sqwakFrame, sqwakGeom, sqwakStats, skyline, skylineWindows, skylineLit, monitorScreen, season, sky, weather, text, colors, clean, chart, chartSeries, person, marketDown, beat,
     phoneRowCount(feed){return Math.min(4,(feed||[]).length);},
     storyboard:board
   };
