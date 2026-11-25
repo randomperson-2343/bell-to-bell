@@ -592,20 +592,17 @@
     if (!B.Portraits || !B.Portraits.has(name)) return false;
     speakerSpace(ctx, (s) => {
       B.Portraits.paint(s, name, { bare: true, night });
-      // A drawn face is cut at the chest; carry its last row down past the bottom of the frame so the body runs out of shot.
+      // A drawn face is cut at the chest; its torso is authored art (torso/<name>, 120x32 cells) that picks up the last row and runs out of shot.
       // The landlord's screen stands on its own foot, so it is left as drawn.
       if (!B.Portraits.drawn(name) || (B.Portraits.CAST[name] || {}).screen) return;
-      // The arms widen out of shot as they go down, one cell a side every two rows, so the torso is not a slab with straight sides.
-      const sp = B.Portraits.sprite(name, { night }), row = sp.rows[sp.h - 1], k = Math.max(1, Math.floor(240 / sp.h)), below = Math.ceil((V.h - 46) / k) - sp.h;
-      const key = (i) => B.PalKeys[row[i]], n = row.length;
-      for (let i = 0; i < n; i++) { const col = key(i); if (col) { s.fillStyle = col; s.fillRect(i, sp.h, 1, below); } }
-      for (let j = 0; j < below; j++) {
-        const grow = Math.min(Math.ceil(40 / k), Math.floor(j / 2));
-        if (!grow) continue;
-        // the outline cell moves out to the new edge, the cloth inside it follows
-        if (key(0)) { s.fillStyle = key(1) || key(0); s.fillRect(-grow, sp.h + j, grow, 1); s.fillStyle = key(0); s.fillRect(-grow, sp.h + j, 1, 1); }
-        if (key(n - 1)) { s.fillStyle = key(n - 2) || key(n - 1); s.fillRect(n, sp.h + j, grow, 1); s.fillStyle = key(n - 1); s.fillRect(n + grow - 1, sp.h + j, 1, 1); }
-      }
+      const sp = B.Portraits.sprite(name, { night }), k = Math.max(1, Math.floor(240 / sp.h));
+      const below = Math.ceil((V.h - 46) / k) - sp.h;
+      const tid = 'torso/' + (B.Portraits.SLUG[name] || '');
+      if (B.Art && B.Art.has(tid)) { X.drawArt(s, tid, night ? 'night' : 'day', -20, sp.h); return; }
+      // no torso art: a clean crop, the last row dropped straight down and one ink band at the foot, no stretch
+      const row = sp.rows[sp.h - 1], key = (i) => B.PalKeys[row[i]];
+      for (let i = 0; i < row.length; i++) { const col = key(i); if (col) { s.fillStyle = col; s.fillRect(i, sp.h, 1, below); } }
+      s.fillStyle = P.ink; s.fillRect(-20, sp.h + below - 2, 120, 2);
     }, x, name);
     return true;
   }
