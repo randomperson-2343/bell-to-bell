@@ -1,0 +1,27 @@
+{
+ "frames": [
+  {
+   "filename": "base",
+   "frame": {
+    "x": 0,
+    "y": 0,
+    "w": 12,
+    "h": 5
+   }
+  }
+ ],
+ "meta": {
+  "image": "strip-shed.png",
+  "size": {
+   "w": 12,
+   "h": 5
+  },
+  "frameTags": [
+   {
+    "name": "base",
+    "from": 0,
+    "to": 0
+   }
+  ]
+ }
+}

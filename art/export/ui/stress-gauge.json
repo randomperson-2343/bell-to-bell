@@ -1,0 +1,69 @@
+{
+ "frames": [
+  {
+   "filename": "steady",
+   "frame": {
+    "x": 0,
+    "y": 0,
+    "w": 8,
+    "h": 8
+   }
+  },
+  {
+   "filename": "loaded",
+   "frame": {
+    "x": 8,
+    "y": 0,
+    "w": 8,
+    "h": 8
+   }
+  },
+  {
+   "filename": "tunnel",
+   "frame": {
+    "x": 16,
+    "y": 0,
+    "w": 8,
+    "h": 8
+   }
+  },
+  {
+   "filename": "critical",
+   "frame": {
+    "x": 24,
+    "y": 0,
+    "w": 8,
+    "h": 8
+   }
+  }
+ ],
+ "meta": {
+  "image": "stress-gauge.png",
+  "size": {
+   "w": 32,
+   "h": 8
+  },
+  "frameTags": [
+   {
+    "name": "steady",
+    "from": 0,
+    "to": 0
+   },
+   {
+    "name": "loaded",
+    "from": 1,
+    "to": 1
+   },
+   {
+    "name": "tunnel",
+    "from": 2,
+    "to": 2
+   },
+   {
+    "name": "critical",
+    "from": 3,
+    "to": 3
+   }
+  ]
+ }
+}

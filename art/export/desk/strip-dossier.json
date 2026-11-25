@@ -1,0 +1,41 @@
+{
+ "frames": [
+  {
+   "filename": "violet",
+   "frame": {
+    "x": 0,
+    "y": 0,
+    "w": 27,
+    "h": 20
+   }
+  },
+  {
+   "filename": "fraud",
+   "frame": {
+    "x": 27,
+    "y": 0,
+    "w": 27,
+    "h": 20
+   }
+  }
+ ],
+ "meta": {
+  "image": "strip-dossier.png",
+  "size": {
+   "w": 54,
+   "h": 20
+  },
+  "frameTags": [
+   {
+    "name": "violet",
+    "from": 0,
+    "to": 0
+   },
+   {
+    "name": "fraud",
+    "from": 1,
+    "to": 1
+   }
+  ]
+ }
+}

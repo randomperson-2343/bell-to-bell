@@ -1,0 +1,83 @@
+{
+ "frames": [
+  {
+   "filename": "signal0",
+   "frame": {
+    "x": 0,
+    "y": 0,
+    "w": 8,
+    "h": 8
+   }
+  },
+  {
+   "filename": "signal1",
+   "frame": {
+    "x": 8,
+    "y": 0,
+    "w": 8,
+    "h": 8
+   }
+  },
+  {
+   "filename": "signal2",
+   "frame": {
+    "x": 16,
+    "y": 0,
+    "w": 8,
+    "h": 8
+   }
+  },
+  {
+   "filename": "signal3",
+   "frame": {
+    "x": 24,
+    "y": 0,
+    "w": 8,
+    "h": 8
+   }
+  },
+  {
+   "filename": "battery",
+   "frame": {
+    "x": 32,
+    "y": 0,
+    "w": 8,
+    "h": 8
+   }
+  }
+ ],
+ "meta": {
+  "image": "status-icons.png",
+  "size": {
+   "w": 40,
+   "h": 8
+  },
+  "frameTags": [
+   {
+    "name": "signal0",
+    "from": 0,
+    "to": 0
+   },
+   {
+    "name": "signal1",
+    "from": 1,
+    "to": 1
+   },
+   {
+    "name": "signal2",
+    "from": 2,
+    "to": 2
+   },
+   {
+    "name": "signal3",
+    "from": 3,
+    "to": 3
+   },
+   {
+    "name": "battery",
+    "from": 4,
+    "to": 4
+   }
+  ]
+ }
+}

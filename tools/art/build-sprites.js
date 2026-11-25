@@ -16,6 +16,9 @@
 // "<group>/<name>". Every pixel must be one of the 32 palette colours or
 // transparent; anything else stops the build.
 //
+// The 'ui' group is page chrome (buttons, frames, icons) drawn by CSS from the
+// PNGs that tools/art/build-ui.js writes to art/ui/, so it is left out here.
+//
 // Rows are stored run-length encoded: each run is the palette key followed by
 // one character of RUN (a run of 1..64), longer runs are split.
 'use strict';
@@ -40,7 +43,7 @@ function encodeRow(row) {
 
 function build() {
   const pal = palette(), sprites = {}, problems = [];
-  const groups = fs.existsSync(EXPORT) ? fs.readdirSync(EXPORT).filter((g) => fs.statSync(path.join(EXPORT, g)).isDirectory()).sort() : [];
+  const groups = fs.existsSync(EXPORT) ? fs.readdirSync(EXPORT).filter((g) => g !== 'ui' && fs.statSync(path.join(EXPORT, g)).isDirectory()).sort() : [];
   for (const g of groups) {
     for (const f of fs.readdirSync(path.join(EXPORT, g)).filter((f) => f.endsWith('.png')).sort()) {
       const name = f.slice(0, -4), id = `${g}/${name}`, jsonPath = path.join(EXPORT, g, name + '.json');

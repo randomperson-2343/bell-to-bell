@@ -1,0 +1,111 @@
+{
+ "frames": [
+  {
+   "filename": "sky",
+   "frame": {
+    "x": 0,
+    "y": 0,
+    "w": 480,
+    "h": 270
+   }
+  },
+  {
+   "filename": "cascade",
+   "frame": {
+    "x": 480,
+    "y": 0,
+    "w": 480,
+    "h": 270
+   }
+  },
+  {
+   "filename": "far",
+   "frame": {
+    "x": 960,
+    "y": 0,
+    "w": 480,
+    "h": 270
+   }
+  },
+  {
+   "filename": "near",
+   "frame": {
+    "x": 1440,
+    "y": 0,
+    "w": 480,
+    "h": 270
+   }
+  },
+  {
+   "filename": "lights:0",
+   "frame": {
+    "x": 1920,
+    "y": 0,
+    "w": 480,
+    "h": 270
+   }
+  },
+  {
+   "filename": "lights:1",
+   "frame": {
+    "x": 2400,
+    "y": 0,
+    "w": 480,
+    "h": 270
+   }
+  },
+  {
+   "filename": "lights:2",
+   "frame": {
+    "x": 2880,
+    "y": 0,
+    "w": 480,
+    "h": 270
+   }
+  }
+ ],
+ "meta": {
+  "image": "backdrop.png",
+  "size": {
+   "w": 3360,
+   "h": 270
+  },
+  "frameTags": [
+   {
+    "name": "sky",
+    "from": 0,
+    "to": 0
+   },
+   {
+    "name": "cascade",
+    "from": 1,
+    "to": 1
+   },
+   {
+    "name": "far",
+    "from": 2,
+    "to": 2
+   },
+   {
+    "name": "near",
+    "from": 3,
+    "to": 3
+   },
+   {
+    "name": "lights:0",
+    "from": 4,
+    "to": 4
+   },
+   {
+    "name": "lights:1",
+    "from": 5,
+    "to": 5
+   },
+   {
+    "name": "lights:2",
+    "from": 6,
+    "to": 6
+   }
+  ]
+ }
+}

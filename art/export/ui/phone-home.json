@@ -1,0 +1,27 @@
+{
+ "frames": [
+  {
+   "filename": "base",
+   "frame": {
+    "x": 0,
+    "y": 0,
+    "w": 10,
+    "h": 2
+   }
+  }
+ ],
+ "meta": {
+  "image": "phone-home.png",
+  "size": {
+   "w": 10,
+   "h": 2
+  },
+  "frameTags": [
+   {
+    "name": "base",
+    "from": 0,
+    "to": 0
+   }
+  ]
+ }
+}

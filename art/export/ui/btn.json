@@ -1,0 +1,349 @@
+{
+ "frames": [
+  {
+   "filename": "default-normal",
+   "frame": {
+    "x": 0,
+    "y": 0,
+    "w": 12,
+    "h": 12
+   }
+  },
+  {
+   "filename": "default-hover",
+   "frame": {
+    "x": 12,
+    "y": 0,
+    "w": 12,
+    "h": 12
+   }
+  },
+  {
+   "filename": "default-pressed",
+   "frame": {
+    "x": 24,
+    "y": 0,
+    "w": 12,
+    "h": 12
+   }
+  },
+  {
+   "filename": "default-disabled",
+   "frame": {
+    "x": 36,
+    "y": 0,
+    "w": 12,
+    "h": 12
+   }
+  },
+  {
+   "filename": "primary-normal",
+   "frame": {
+    "x": 48,
+    "y": 0,
+    "w": 12,
+    "h": 12
+   }
+  },
+  {
+   "filename": "primary-hover",
+   "frame": {
+    "x": 60,
+    "y": 0,
+    "w": 12,
+    "h": 12
+   }
+  },
+  {
+   "filename": "primary-pressed",
+   "frame": {
+    "x": 72,
+    "y": 0,
+    "w": 12,
+    "h": 12
+   }
+  },
+  {
+   "filename": "primary-disabled",
+   "frame": {
+    "x": 84,
+    "y": 0,
+    "w": 12,
+    "h": 12
+   }
+  },
+  {
+   "filename": "buy-normal",
+   "frame": {
+    "x": 96,
+    "y": 0,
+    "w": 12,
+    "h": 12
+   }
+  },
+  {
+   "filename": "buy-hover",
+   "frame": {
+    "x": 108,
+    "y": 0,
+    "w": 12,
+    "h": 12
+   }
+  },
+  {
+   "filename": "buy-pressed",
+   "frame": {
+    "x": 120,
+    "y": 0,
+    "w": 12,
+    "h": 12
+   }
+  },
+  {
+   "filename": "buy-disabled",
+   "frame": {
+    "x": 132,
+    "y": 0,
+    "w": 12,
+    "h": 12
+   }
+  },
+  {
+   "filename": "sell-normal",
+   "frame": {
+    "x": 144,
+    "y": 0,
+    "w": 12,
+    "h": 12
+   }
+  },
+  {
+   "filename": "sell-hover",
+   "frame": {
+    "x": 156,
+    "y": 0,
+    "w": 12,
+    "h": 12
+   }
+  },
+  {
+   "filename": "sell-pressed",
+   "frame": {
+    "x": 168,
+    "y": 0,
+    "w": 12,
+    "h": 12
+   }
+  },
+  {
+   "filename": "sell-disabled",
+   "frame": {
+    "x": 180,
+    "y": 0,
+    "w": 12,
+    "h": 12
+   }
+  },
+  {
+   "filename": "danger-normal",
+   "frame": {
+    "x": 192,
+    "y": 0,
+    "w": 12,
+    "h": 12
+   }
+  },
+  {
+   "filename": "danger-hover",
+   "frame": {
+    "x": 204,
+    "y": 0,
+    "w": 12,
+    "h": 12
+   }
+  },
+  {
+   "filename": "danger-pressed",
+   "frame": {
+    "x": 216,
+    "y": 0,
+    "w": 12,
+    "h": 12
+   }
+  },
+  {
+   "filename": "danger-disabled",
+   "frame": {
+    "x": 228,
+    "y": 0,
+    "w": 12,
+    "h": 12
+   }
+  },
+  {
+   "filename": "ghost-normal",
+   "frame": {
+    "x": 240,
+    "y": 0,
+    "w": 12,
+    "h": 12
+   }
+  },
+  {
+   "filename": "ghost-hover",
+   "frame": {
+    "x": 252,
+    "y": 0,
+    "w": 12,
+    "h": 12
+   }
+  },
+  {
+   "filename": "ghost-pressed",
+   "frame": {
+    "x": 264,
+    "y": 0,
+    "w": 12,
+    "h": 12
+   }
+  },
+  {
+   "filename": "ghost-disabled",
+   "frame": {
+    "x": 276,
+    "y": 0,
+    "w": 12,
+    "h": 12
+   }
+  }
+ ],
+ "meta": {
+  "image": "btn.png",
+  "size": {
+   "w": 288,
+   "h": 12
+  },
+  "frameTags": [
+   {
+    "name": "default-normal",
+    "from": 0,
+    "to": 0
+   },
+   {
+    "name": "default-hover",
+    "from": 1,
+    "to": 1
+   },
+   {
+    "name": "default-pressed",
+    "from": 2,
+    "to": 2
+   },
+   {
+    "name": "default-disabled",
+    "from": 3,
+    "to": 3
+   },
+   {
+    "name": "primary-normal",
+    "from": 4,
+    "to": 4
+   },
+   {
+    "name": "primary-hover",
+    "from": 5,
+    "to": 5
+   },
+   {
+    "name": "primary-pressed",
+    "from": 6,
+    "to": 6
+   },
+   {
+    "name": "primary-disabled",
+    "from": 7,
+    "to": 7
+   },
+   {
+    "name": "buy-normal",
+    "from": 8,
+    "to": 8
+   },
+   {
+    "name": "buy-hover",
+    "from": 9,
+    "to": 9
+   },
+   {
+    "name": "buy-pressed",
+    "from": 10,
+    "to": 10
+   },
+   {
+    "name": "buy-disabled",
+    "from": 11,
+    "to": 11
+   },
+   {
+    "name": "sell-normal",
+    "from": 12,
+    "to": 12
+   },
+   {
+    "name": "sell-hover",
+    "from": 13,
+    "to": 13
+   },
+   {
+    "name": "sell-pressed",
+    "from": 14,
+    "to": 14
+   },
+   {
+    "name": "sell-disabled",
+    "from": 15,
+    "to": 15
+   },
+   {
+    "name": "danger-normal",
+    "from": 16,
+    "to": 16
+   },
+   {
+    "name": "danger-hover",
+    "from": 17,
+    "to": 17
+   },
+   {
+    "name": "danger-pressed",
+    "from": 18,
+    "to": 18
+   },
+   {
+    "name": "danger-disabled",
+    "from": 19,
+    "to": 19
+   },
+   {
+    "name": "ghost-normal",
+    "from": 20,
+    "to": 20
+   },
+   {
+    "name": "ghost-hover",
+    "from": 21,
+    "to": 21
+   },
+   {
+    "name": "ghost-pressed",
+    "from": 22,
+    "to": 22
+   },
+   {
+    "name": "ghost-disabled",
+    "from": 23,
+    "to": 23
+   }
+  ]
+ }
+}

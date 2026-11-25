@@ -1,0 +1,55 @@
+{
+ "frames": [
+  {
+   "filename": "steam1",
+   "frame": {
+    "x": 0,
+    "y": 0,
+    "w": 8,
+    "h": 8
+   }
+  },
+  {
+   "filename": "steam2",
+   "frame": {
+    "x": 8,
+    "y": 0,
+    "w": 8,
+    "h": 8
+   }
+  },
+  {
+   "filename": "steam3",
+   "frame": {
+    "x": 16,
+    "y": 0,
+    "w": 8,
+    "h": 8
+   }
+  }
+ ],
+ "meta": {
+  "image": "mug-steam.png",
+  "size": {
+   "w": 24,
+   "h": 8
+  },
+  "frameTags": [
+   {
+    "name": "steam1",
+    "from": 0,
+    "to": 0
+   },
+   {
+    "name": "steam2",
+    "from": 1,
+    "to": 1
+   },
+   {
+    "name": "steam3",
+    "from": 2,
+    "to": 2
+   }
+  ]
+ }
+}

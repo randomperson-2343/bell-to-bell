@@ -1,0 +1,279 @@
+{
+ "frames": [
+  {
+   "filename": "mug",
+   "frame": {
+    "x": 0,
+    "y": 0,
+    "w": 8,
+    "h": 8
+   }
+  },
+  {
+   "filename": "mug-steam1",
+   "frame": {
+    "x": 8,
+    "y": 0,
+    "w": 8,
+    "h": 8
+   }
+  },
+  {
+   "filename": "mug-steam2",
+   "frame": {
+    "x": 16,
+    "y": 0,
+    "w": 8,
+    "h": 8
+   }
+  },
+  {
+   "filename": "mug-steam3",
+   "frame": {
+    "x": 24,
+    "y": 0,
+    "w": 8,
+    "h": 8
+   }
+  },
+  {
+   "filename": "pause",
+   "frame": {
+    "x": 32,
+    "y": 0,
+    "w": 8,
+    "h": 8
+   }
+  },
+  {
+   "filename": "audio-on",
+   "frame": {
+    "x": 40,
+    "y": 0,
+    "w": 8,
+    "h": 8
+   }
+  },
+  {
+   "filename": "audio-off",
+   "frame": {
+    "x": 48,
+    "y": 0,
+    "w": 8,
+    "h": 8
+   }
+  },
+  {
+   "filename": "phone",
+   "frame": {
+    "x": 56,
+    "y": 0,
+    "w": 8,
+    "h": 8
+   }
+  },
+  {
+   "filename": "answer",
+   "frame": {
+    "x": 64,
+    "y": 0,
+    "w": 8,
+    "h": 8
+   }
+  },
+  {
+   "filename": "hangup",
+   "frame": {
+    "x": 72,
+    "y": 0,
+    "w": 8,
+    "h": 8
+   }
+  },
+  {
+   "filename": "wire",
+   "frame": {
+    "x": 80,
+    "y": 0,
+    "w": 8,
+    "h": 8
+   }
+  },
+  {
+   "filename": "sqwak",
+   "frame": {
+    "x": 88,
+    "y": 0,
+    "w": 8,
+    "h": 8
+   }
+  },
+  {
+   "filename": "inbox",
+   "frame": {
+    "x": 96,
+    "y": 0,
+    "w": 8,
+    "h": 8
+   }
+  },
+  {
+   "filename": "arrow-up",
+   "frame": {
+    "x": 104,
+    "y": 0,
+    "w": 8,
+    "h": 8
+   }
+  },
+  {
+   "filename": "arrow-down",
+   "frame": {
+    "x": 112,
+    "y": 0,
+    "w": 8,
+    "h": 8
+   }
+  },
+  {
+   "filename": "halt",
+   "frame": {
+    "x": 120,
+    "y": 0,
+    "w": 8,
+    "h": 8
+   }
+  },
+  {
+   "filename": "lock",
+   "frame": {
+    "x": 128,
+    "y": 0,
+    "w": 8,
+    "h": 8
+   }
+  },
+  {
+   "filename": "check",
+   "frame": {
+    "x": 136,
+    "y": 0,
+    "w": 8,
+    "h": 8
+   }
+  },
+  {
+   "filename": "cross",
+   "frame": {
+    "x": 144,
+    "y": 0,
+    "w": 8,
+    "h": 8
+   }
+  }
+ ],
+ "meta": {
+  "image": "icons.png",
+  "size": {
+   "w": 152,
+   "h": 8
+  },
+  "frameTags": [
+   {
+    "name": "mug",
+    "from": 0,
+    "to": 0
+   },
+   {
+    "name": "mug-steam1",
+    "from": 1,
+    "to": 1
+   },
+   {
+    "name": "mug-steam2",
+    "from": 2,
+    "to": 2
+   },
+   {
+    "name": "mug-steam3",
+    "from": 3,
+    "to": 3
+   },
+   {
+    "name": "pause",
+    "from": 4,
+    "to": 4
+   },
+   {
+    "name": "audio-on",
+    "from": 5,
+    "to": 5
+   },
+   {
+    "name": "audio-off",
+    "from": 6,
+    "to": 6
+   },
+   {
+    "name": "phone",
+    "from": 7,
+    "to": 7
+   },
+   {
+    "name": "answer",
+    "from": 8,
+    "to": 8
+   },
+   {
+    "name": "hangup",
+    "from": 9,
+    "to": 9
+   },
+   {
+    "name": "wire",
+    "from": 10,
+    "to": 10
+   },
+   {
+    "name": "sqwak",
+    "from": 11,
+    "to": 11
+   },
+   {
+    "name": "inbox",
+    "from": 12,
+    "to": 12
+   },
+   {
+    "name": "arrow-up",
+    "from": 13,
+    "to": 13
+   },
+   {
+    "name": "arrow-down",
+    "from": 14,
+    "to": 14
+   },
+   {
+    "name": "halt",
+    "from": 15,
+    "to": 15
+   },
+   {
+    "name": "lock",
+    "from": 16,
+    "to": 16
+   },
+   {
+    "name": "check",
+    "from": 17,
+    "to": 17
+   },
+   {
+    "name": "cross",
+    "from": 18,
+    "to": 18
+   }
+  ]
+ }
+}

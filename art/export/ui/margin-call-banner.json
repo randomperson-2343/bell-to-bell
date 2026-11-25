@@ -1,0 +1,41 @@
+{
+ "frames": [
+  {
+   "filename": "blink-a",
+   "frame": {
+    "x": 0,
+    "y": 0,
+    "w": 12,
+    "h": 12
+   }
+  },
+  {
+   "filename": "blink-b",
+   "frame": {
+    "x": 12,
+    "y": 0,
+    "w": 12,
+    "h": 12
+   }
+  }
+ ],
+ "meta": {
+  "image": "margin-call-banner.png",
+  "size": {
+   "w": 24,
+   "h": 12
+  },
+  "frameTags": [
+   {
+    "name": "blink-a",
+    "from": 0,
+    "to": 0
+   },
+   {
+    "name": "blink-b",
+    "from": 1,
+    "to": 1
+   }
+  ]
+ }
+}

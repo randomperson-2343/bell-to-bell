@@ -6,3 +6,4 @@ Thumbs.db
 /src-tauri/target/
 __pycache__/
 qa/phone/
+qa/ui/

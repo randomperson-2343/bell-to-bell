@@ -1,0 +1,139 @@
+{
+ "frames": [
+  {
+   "filename": "preset0",
+   "frame": {
+    "x": 0,
+    "y": 0,
+    "w": 12,
+    "h": 12
+   }
+  },
+  {
+   "filename": "preset1",
+   "frame": {
+    "x": 12,
+    "y": 0,
+    "w": 12,
+    "h": 12
+   }
+  },
+  {
+   "filename": "preset2",
+   "frame": {
+    "x": 24,
+    "y": 0,
+    "w": 12,
+    "h": 12
+   }
+  },
+  {
+   "filename": "preset3",
+   "frame": {
+    "x": 36,
+    "y": 0,
+    "w": 12,
+    "h": 12
+   }
+  },
+  {
+   "filename": "preset4",
+   "frame": {
+    "x": 48,
+    "y": 0,
+    "w": 12,
+    "h": 12
+   }
+  },
+  {
+   "filename": "preset5",
+   "frame": {
+    "x": 60,
+    "y": 0,
+    "w": 12,
+    "h": 12
+   }
+  },
+  {
+   "filename": "preset6",
+   "frame": {
+    "x": 72,
+    "y": 0,
+    "w": 12,
+    "h": 12
+   }
+  },
+  {
+   "filename": "preset7",
+   "frame": {
+    "x": 84,
+    "y": 0,
+    "w": 12,
+    "h": 12
+   }
+  },
+  {
+   "filename": "verified",
+   "frame": {
+    "x": 96,
+    "y": 0,
+    "w": 12,
+    "h": 12
+   }
+  }
+ ],
+ "meta": {
+  "image": "sqwak-avatars.png",
+  "size": {
+   "w": 108,
+   "h": 12
+  },
+  "frameTags": [
+   {
+    "name": "preset0",
+    "from": 0,
+    "to": 0
+   },
+   {
+    "name": "preset1",
+    "from": 1,
+    "to": 1
+   },
+   {
+    "name": "preset2",
+    "from": 2,
+    "to": 2
+   },
+   {
+    "name": "preset3",
+    "from": 3,
+    "to": 3
+   },
+   {
+    "name": "preset4",
+    "from": 4,
+    "to": 4
+   },
+   {
+    "name": "preset5",
+    "from": 5,
+    "to": 5
+   },
+   {
+    "name": "preset6",
+    "from": 6,
+    "to": 6
+   },
+   {
+    "name": "preset7",
+    "from": 7,
+    "to": 7
+   },
+   {
+    "name": "verified",
+    "from": 8,
+    "to": 8
+   }
+  ]
+ }
+}
