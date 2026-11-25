@@ -26,12 +26,21 @@
     "w": 214,
     "h": 121
    }
+  },
+  {
+   "filename": "switch:off",
+   "frame": {
+    "x": 642,
+    "y": 0,
+    "w": 214,
+    "h": 121
+   }
   }
  ],
  "meta": {
   "image": "racks.png",
   "size": {
-   "w": 642,
+   "w": 856,
    "h": 121
   },
   "frameTags": [
@@ -49,6 +58,11 @@
     "name": "standby",
     "from": 2,
     "to": 2
+   },
+   {
+    "name": "switch:off",
+    "from": 3,
+    "to": 3
    }
   ]
  }

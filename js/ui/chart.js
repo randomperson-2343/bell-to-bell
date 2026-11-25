@@ -81,14 +81,14 @@
       ctx.strokeStyle = '#182622';
       ctx.lineWidth = 1;
       const steps = 5;
-      // The last-price tag is 18px tall; an axis label under it would print
-      // through, so labels that close to it give way.
+      // The last-price tag is 18px tall and a label about 12: a label within half of each plus 2px of the tag's centre would print
+      // through it, so those give way.
       const ly = y(tk.last);
       for (let i = 0; i <= steps; i++) {
         const v = lo + (hi - lo) * (i / steps);
         const yy = Math.round(y(v)) + 0.5;
         ctx.beginPath(); ctx.moveTo(0, yy); ctx.lineTo(plotW, yy); ctx.stroke();
-        if (Math.abs(yy - ly) > 14) ctx.fillText(B.fmt.price(v), plotW + 6, yy + 4);
+        if (Math.abs(yy - ly) > 21) ctx.fillText(B.fmt.price(v), plotW + 6, yy + 4);
       }
       // session separator + time labels
       if (tf !== 1 && sepIdx > 0) {

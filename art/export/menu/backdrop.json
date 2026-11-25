@@ -10,7 +10,7 @@
    }
   },
   {
-   "filename": "cascade",
+   "filename": "far",
    "frame": {
     "x": 480,
     "y": 0,
@@ -19,7 +19,7 @@
    }
   },
   {
-   "filename": "far",
+   "filename": "near",
    "frame": {
     "x": 960,
     "y": 0,
@@ -28,7 +28,7 @@
    }
   },
   {
-   "filename": "near",
+   "filename": "lights:0",
    "frame": {
     "x": 1440,
     "y": 0,
@@ -37,7 +37,7 @@
    }
   },
   {
-   "filename": "lights:0",
+   "filename": "lights:1",
    "frame": {
     "x": 1920,
     "y": 0,
@@ -46,18 +46,9 @@
    }
   },
   {
-   "filename": "lights:1",
-   "frame": {
-    "x": 2400,
-    "y": 0,
-    "w": 480,
-    "h": 270
-   }
-  },
-  {
    "filename": "lights:2",
    "frame": {
-    "x": 2880,
+    "x": 2400,
     "y": 0,
     "w": 480,
     "h": 270
@@ -67,7 +58,7 @@
  "meta": {
   "image": "backdrop.png",
   "size": {
-   "w": 3360,
+   "w": 2880,
    "h": 270
   },
   "frameTags": [
@@ -77,34 +68,29 @@
     "to": 0
    },
    {
-    "name": "cascade",
+    "name": "far",
     "from": 1,
     "to": 1
    },
    {
-    "name": "far",
+    "name": "near",
     "from": 2,
     "to": 2
    },
    {
-    "name": "near",
+    "name": "lights:0",
     "from": 3,
     "to": 3
    },
    {
-    "name": "lights:0",
+    "name": "lights:1",
     "from": 4,
     "to": 4
    },
    {
-    "name": "lights:1",
+    "name": "lights:2",
     "from": 5,
     "to": 5
-   },
-   {
-    "name": "lights:2",
-    "from": 6,
-    "to": 6
    }
   ]
  }

@@ -102,16 +102,9 @@
           }
         }
       }
-      // The CASCADE mark begins aligned and slips as it falls toward the skyline.
-      // Below 560px wide it would land behind the menu buttons, so it sits out.
-      if (window.innerWidth >= 560) for (let i = 0; i < 6; i++) {
-        const y = 113 + i * 8;
-        X.rect(ctx, 384 + i * 3, y, 54 - i * 4, 4, i < 2 ? P.amberD : i < 4 ? P.sky : P.crimsonD);
-      }
     },
 
-    // The authored menu backdrop (art/src/menu/backdrop.aseprite): sky, the
-    // slipping CASCADE bars, two rows of towers and three frames of window
+    // The authored menu backdrop (art/src/menu/backdrop.aseprite): sky, two rows of towers and three frames of window
     // lights that twinkle in turn. It is drawn at 480x270 and shown at the
     // smallest whole scale that covers the window, centred, so every art pixel
     // stays square. The still layers are painted once into a cache; the
@@ -122,19 +115,12 @@
       const s = Math.max(1, Math.ceil(Math.max(W / V.w, H / V.h)));
       if (cv.width !== V.w || cv.height !== V.h) { cv.width = V.w; cv.height = V.h; }
       Object.assign(cv.style, { width: V.w * s + 'px', height: V.h * s + 'px', left: Math.round((W - V.w * s) / 2) + 'px', top: Math.round((H - V.h * s) / 2) + 'px' });
-      // The CASCADE bars (art x 384-437) sit right of the menu. When the cover
-      // scale crops the sides, slide them left so they stay whole and in view;
-      // where that would put them behind the menu buttons, they sit out.
-      const ox = (V.w * s - W) / 2, right = (ox + W) / s;
-      const dx = Math.min(0, Math.floor(right - 8 - 438));
-      const cascade = W >= 560 && (384 + dx) * s - ox >= W / 2 + 150 ? dx : null;
-      if (!this.bdCache || this.bdCache.cascade !== cascade) {
+      // The sky, then the two rows of towers (the CASCADE bars that once floated right of the menu are gone: the logo carries its own bar mark).
+      if (!this.bdCache) {
         const c = document.createElement('canvas'); c.width = V.w; c.height = V.h;
         const g = c.getContext('2d');
-        B.Pixel.drawArt(g, ID, 'sky', 0, 0);
-        if (cascade !== null) B.Pixel.drawArt(g, ID, 'cascade', cascade, 0);
-        ['far', 'near'].forEach((f) => B.Pixel.drawArt(g, ID, f, 0, 0));
-        this.bdCache = { canvas: c, cascade };
+        ['sky', 'far', 'near'].forEach((f) => B.Pixel.drawArt(g, ID, f, 0, 0));
+        this.bdCache = { canvas: c };
       }
       const ctx = cv.getContext('2d');
       ctx.imageSmoothingEnabled = false;

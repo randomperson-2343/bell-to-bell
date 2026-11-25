@@ -1,0 +1,27 @@
+{
+ "frames": [
+  {
+   "filename": "plate",
+   "frame": {
+    "x": 0,
+    "y": 0,
+    "w": 320,
+    "h": 180
+   }
+  }
+ ],
+ "meta": {
+  "image": "card.png",
+  "size": {
+   "w": 320,
+   "h": 180
+  },
+  "frameTags": [
+   {
+    "name": "plate",
+    "from": 0,
+    "to": 0
+   }
+  ]
+ }
+}

@@ -1,0 +1,27 @@
+{
+ "frames": [
+  {
+   "filename": "room",
+   "frame": {
+    "x": 0,
+    "y": 0,
+    "w": 320,
+    "h": 180
+   }
+  }
+ ],
+ "meta": {
+  "image": "phone-room.png",
+  "size": {
+   "w": 320,
+   "h": 180
+  },
+  "frameTags": [
+   {
+    "name": "room",
+    "from": 0,
+    "to": 0
+   }
+  ]
+ }
+}

@@ -80,10 +80,11 @@
       $('tk-max').textContent = `max buy ${B.fmt.qty(mxB)} · max sell ${B.fmt.qty(mxS)}`;
       $('tk-est').textContent = q ? `≈ ${B.fmt.compact(q * tk.last)} notional` : '';
       const r = g.broker.rules;
-      const cap = g.mode.kind === 'story' && B.Economy ? ` · desk cap ${B.Economy.fmtX(B.Economy.deskCap(r.maxLev))}x` : '';
-      const bits = [`LEV ${r.maxLev}x day${cap} / ${r.overnightLev}x o/n`];
+      const bits = [`LEV ${r.maxLev}x day`];
+      if (g.mode.kind === 'story' && B.Economy) bits.push(`desk cap ${B.Economy.fmtX(B.Economy.deskCap(r.maxLev))}x / ${r.overnightLev}x o/n`);
+      else bits[0] += ` / ${r.overnightLev}x o/n`;
       if (r.shortBan.length) bits.push('<span class="warn">SHORT BAN: financials</span>');
-      $('tk-rules').innerHTML = bits.join(' · ');
+      $('tk-rules').innerHTML = bits.map((b) => `<span class="rb">${b}</span>`).join(' · ');
       if (this.tab === 'options') this.renderChain();
     },
 

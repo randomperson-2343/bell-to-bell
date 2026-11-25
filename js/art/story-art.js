@@ -25,7 +25,7 @@
       if (S.m.heat >= 50 || f.insiderTraded || f.raid) art('hold-files', 'base', x, 5);
       const qx = 128;
       art('quota-note', 'base', qx, 0);
-      X.text(ctx, 'FLOOR', qx + 16, 5, P.ink2, { align: 'center' });
+      X.text(ctx, 'FLOOR', qx + 16, 5, P.ink2, { align: 'center', spacing: 0 });   // 24 px, inside the note's 29 px face
       X.text(ctx, ((B.StoryData.QUOTAS[g.day] || 0) * 100).toFixed(1) + '%', qx + 16, 14, P.crimsonD, { align: 'center' });
       return true;
     },
@@ -85,16 +85,16 @@
       if (S.m.heat >= 50 || f.insiderTraded || f.raid) {
         X.plate(ctx, x, 5, 28, 21, P.crimsonD, P.crimson, P.ink);
         X.text(ctx, 'HOLD', x + 14, 9, P.white, { align: 'center' });
-        X.text(ctx, 'FILES', x + 14, 17, P.bone, { align: 'center' });
+        X.text(ctx, 'FILES', x + 14, 17, P.bone, { align: 'center', spacing: 0 });
       }
 
       // A clipped quota strip turns the rising campaign target into physical
       // pressure on the desk, not just a meter in the terminal.
-      // 32px wide so the 29px FLOOR label sits inside the note, not off its edge.
+      // 32px wide; FLOOR is set tight (24px) so it sits inside the note, not off its edge.
       const qx = 128;
       X.plate(ctx, qx, 1, 32, 24, P.putty2, P.white, P.plasticD);
       X.rect(ctx, qx + 12, 0, 8, 3, P.slate2);
-      X.text(ctx, 'FLOOR', qx + 16, 5, P.ink2, { align: 'center' });
+      X.text(ctx, 'FLOOR', qx + 16, 5, P.ink2, { align: 'center', spacing: 0 });   // 24 px, inside the note's 29 px face
       X.text(ctx, ((B.StoryData.QUOTAS[g.day] || 0) * 100).toFixed(1) + '%', qx + 16, 14, P.crimsonD, { align: 'center' });
     }
   };

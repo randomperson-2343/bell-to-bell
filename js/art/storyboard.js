@@ -94,7 +94,7 @@
     const part = o && o.part, p = o && o.p != null ? o.p : 0.6;
     if (part !== 'scan') X.rect(c, 0, 0, 320, 180, P.ink);
     let ok = true;
-    tableauSpace(c, zoom, (g) => { ok = SH.briefingTableau(g, n, p, o ? { part, noMover: o.noMover, over: o.over } : undefined); });
+    tableauSpace(c, zoom, (g) => { ok = SH.briefingTableau(g, n, p, o ? { part, noMover: o.noMover, over: o.over, zoomed: !!zoom } : zoom ? { zoomed: true } : undefined); });
     if (!ok) return false;
     if (!zoom && part !== 'art') X.rect(c, 0, 0, 320, 7, P.slate);
     return true;
@@ -228,7 +228,8 @@
     X.rect(ctx, x + 16, y + 18, w - 32, 2, P.grey);
     R.text(ctx, label, x + 20, y + 26, P.ink);
   }
-  function valueLines(value, width) { return X.wrap(R.clean(value), width).slice(0, 2); }
+  // Up to n (2) lines of whole words; a value that runs longer ends on an ellipsis, never mid-word.
+  function valueLines(value, width, n) { return X.wrapFit(R.clean(value), width, n || 2); }
   // The footnote's circled line (y of the pen's middle).
   const footnoteLine = (day) => 50 + (6 + day % 6) * 12;
   // Where the documents' moving marks sit, read by the flat art (DOC_DRAW) and by the layered documents (docLayers), so the two cannot drift apart.
@@ -274,14 +275,15 @@
         X.rect(ctx, 376, ly, 60, 2, P.crimson);
       }
       X.cel(ctx, 440, 70, 180, 150, P.amber, P.bone, P.amberD, P.ink2, 3);
-      valueLines(value, 80).forEach((ln, i) => big(ctx, ln, 530, 110 + i * 26, P.ink, 2, 'center'));
+      valueLines(value, 72, 3).forEach((ln, i) => big(ctx, ln, 530, 110 + i * 26, P.ink, 2, 'center'));   // 12 letters (142 px) inside the card
     },
     rating(ctx, day, value, c) {
       deskUnder(ctx); paper(ctx, 120, 24, 400, 248, LABELS.rating);
       for (let i = 0; i < 4; i++) X.rect(ctx, 140, 196 + i * 12, 240 + ((i * 53) % 100), 2, P.grey2);
       // A stamp, double-ruled, in the act's signal colour.
       X.rect(ctx, 150, 64, 340, 110, c.signal); X.rect(ctx, 156, 70, 328, 98, P.bone); X.rect(ctx, 162, 76, 316, 86, c.signal); X.rect(ctx, 166, 80, 308, 78, P.bone);
-      const lines = valueLines(value, 150);
+      // 96 px at scale 3 (16 letters, 285 px) fits inside the stamp's inner rule (166..474) with ~11 px each side
+      const lines = valueLines(value, 96);
       lines.forEach((ln, i) => big(ctx, ln, 320, 96 + i * 28 + (lines.length === 1 ? 12 : 0), c.signal === P.amber ? P.amberD : c.signal, 3, 'center'));
     },
     post(ctx, day, value, c, o) {
@@ -397,12 +399,13 @@
         X.rect(ctx, 82, ly - 5, 2, 12, P.crimson); X.rect(ctx, 374, ly - 5, 2, 12, P.crimson);
         X.rect(ctx, 376, ly, 60, 2, P.crimson);
       }
-      valueLines(value, 80).forEach((ln, i) => big(ctx, ln, 530, 110 + i * 26, P.ink, 2, 'center'));
+      valueLines(value, 72, 3).forEach((ln, i) => big(ctx, ln, 530, 110 + i * 26, P.ink, 2, 'center'));   // 12 letters (142 px) inside the card
     },
     rating(ctx, day, value, c) {
       const sk = keyOf(c.signal), map = sk ? { r: sk } : null;
       artPlate(ctx, 'rating', [['news/doc-rating', 'desk'], ['news/doc-rating', 'plate'], ['news/doc-rating', 'stamp']], map);
-      const lines = valueLines(value, 150);
+      // 96 px at scale 3 (16 letters, 285 px) fits inside the stamp's inner rule (166..474) with ~11 px each side
+      const lines = valueLines(value, 96);
       lines.forEach((ln, i) => big(ctx, ln, 320, 96 + i * 28 + (lines.length === 1 ? 12 : 0), c.signal === P.amber ? P.amberD : c.signal, 3, 'center'));
     },
     post(ctx, day, value, c, o) {
@@ -464,8 +467,11 @@
       lines.forEach((ln, i) => big(ctx, ln, 320, y0 + i * 28, P.bone, 3, 'center'));
     },
     voicemail(ctx, day, value, c, o) {
-      X.rect(ctx, 0, 0, V.w, V.h, P.ink); ctx.save(); ctx.globalAlpha = 0.14; X.rect(ctx, 170, 0, 300, 300, P.screenGlow); ctx.restore();
-      artPlate(ctx, 'voicemail', [['news/doc-voicemail', 'phone']]);
+      // the phone's light on the surface is the art's glow frame (stepped halos); the flat translucent box is the fallback for a sheet without it
+      const vmGlow = !!(B.Art && B.Art.get('news/doc-voicemail', 'glow'));
+      X.rect(ctx, 0, 0, V.w, V.h, P.ink);
+      if (!vmGlow) { ctx.save(); ctx.globalAlpha = 0.14; X.rect(ctx, 170, 0, 300, 300, P.screenGlow); ctx.restore(); }
+      artPlate(ctx, vmGlow ? 'voicemail:glow' : 'voicemail', vmGlow ? [['news/doc-voicemail', 'glow'], ['news/doc-voicemail', 'phone']] : [['news/doc-voicemail', 'phone']]);
       R.text(ctx, LABELS.voicemail, 320, 40, P.grey2, 'center');
       for (let i = 0; i < DOC_GEOM.voicemail.count; i++) { const b = DOC_GEOM.voicemail.bar(i, day); X.rect(ctx, b.x, b.y, b.w, b.h, i < (o && o.played != null ? o.played : 12) ? P.phosphor : P.slate2); }
       const lines = valueLines(value, 90), y0 = inWin(lines.length, 196, 60, 22, 14);
@@ -491,7 +497,10 @@
   function actCard(ctx, day, o) {
     const a = (B.StoryData.actIndex(day) + 1), c = R.colors(a);
     X.rect(ctx, 0, 0, V.w, V.h, P.ink);
-    X.gradient(ctx, 0, 0, V.w, V.h, c.wash, P.ink, 12);
+    // the act opens on the city at night: the authored towers (news/skyline, 2x) along the bottom on plain ink, their windows lit in the act's
+    // colour; the variant is the one skylineLit lights (R.skyVar), so every lit window sits on a tower; the banded gradient is only the fallback without the art
+    if (artHas('news/skyline') && X.drawArt(ctx, 'news/skyline', R.skyVar(day), 0, V.h - 168, { scale: 2 })) R.skylineLit(day * 7 + 3, V.h, day).forEach((q) => X.rect(ctx, q.x, q.y, q.w, q.h, c.wash));
+    else X.gradient(ctx, 0, 0, V.w, V.h, c.wash, P.ink, 12);
     const label = act(day);
     if (!(o && o.noName)) big(ctx, label.split('·')[1] ? label.split('·')[1].trim() : label, 320, 150, P.bone, 4, 'center');
     big(ctx, `ACT ${label.split('·')[0].trim()}`, 320, 112, c.signal, 2, 'center');
@@ -524,7 +533,7 @@
         if (part !== 'paper') SH.deskCloseup(g, 1, { crash: R.marketDown(day - 1), ticker: ['INDX', 'CRVS', 'FRLN', 'MRDN', 'BSTN'][day % 5] });
         if (part === 'desk') return;
         const bandCol = r.doc === 'rating' || r.doc === 'vote' ? P.sky : r.doc === 'chart' ? P.crimsonD : P.amberD;
-        if (SH.deskPaper && SH.deskPaper(g, dy, r.doc === 'footnote' ? 'footnote' : 'memo', bandCol, R.clean(r.arg || '').slice(0, 9))) return;
+        if (SH.deskPaper && SH.deskPaper(g, dy, r.doc === 'footnote' ? 'footnote' : 'memo', bandCol, R.clean(r.arg || ''))) return;
         X.cel(g, 90, 138 + dy, 58, 30, P.bone, P.white, P.putty, P.ink, 1);
         X.rect(g, 94, 142 + dy, 50, 1, P.grey);
         X.rect(g, 94, 148 + dy, 50, 7, bandCol);
@@ -588,7 +597,14 @@
     if (r.shot === 'insert' && phase === 'detail') return; // native documents already have fine linework
     ctx.save();
     ctx.globalAlpha = 0.5;
+    // the place's people stand in front of the fine marks (the cable and rail lines): clip their boxes out
+    if (world && r.shot === 'place' && R.peopleBoxes && R.peopleBoxes.length) {
+      ctx.beginPath(); ctx.rect(0, 0, V.w, V.h);
+      R.peopleBoxes.forEach((b) => ctx.rect(b.x, b.y, b.w, b.h));
+      ctx.clip('evenodd');
+    }
     if (!world) { /* corner brackets only */ }
+    else if ((r.shot === 'floor' || r.shot === 'dark') && SH.floorArt && SH.floorArt()) { /* the authored floor has its own rail and cables: no marks over the traders */ }
     else if (r.shot === 'floor' || r.shot === 'dark' || r.shot === 'place') {
       for (let i = 0; i < 8; i++) {
         const x = 82 + i * 69 + ((day * 11) % 17);
@@ -683,7 +699,9 @@
     if (r.shot === 'tv' || (r.shot === 'insert' && r.doc === 'rating') || (r.shot === 'place' && sb.place === 'apartment')) return TV;
     // the elevator is taller than a 1.5 crop: the frame across and the floor number at the top stay in, the sills go
     if (r.shot === 'elevator' || (r.shot === 'place' && (sb.place === 'lobby' || sb.place === 'elevator'))) return { x: 180, y: 8, w: 280, h: 0 };
-    if (r.shot === 'place') return R.monitorGeom(sb, false);
+    // a place establish holds the wire monitor and the commuter beside it (rhythm commuterX: 64 px wide about cx, head at y 204) with a margin,
+    // down to the commuter's waist (y 300), so the zoomed establish shows them from the waist up rather than a head at the frame's corner
+    if (r.shot === 'place') { const M = R.monitorGeom(sb, false), cx = R.commuterX ? R.commuterX(sb) : M.x + M.w - 44; return { x: M.x, y: M.y, w: Math.max(M.w, cx + 44 - M.x), h: 300 - M.y }; }
     if (r.shot === 'insert' && r.doc === 'post') { const g = R.phoneGeom(1, false); return { x: g.x - 16, y: g.y, w: g.w + 32, h: g.h }; }
     // the office's CASCADE stack and its label down the left (across only)
     if (r.shot === 'insert' && r.doc === 'chart') return { x: 40, y: null, w: 120, h: 0 };
@@ -834,11 +852,14 @@
       HA(ctx, id, 'room:' + dn);
       if (s.wreath) HA(ctx, id, 'wreath');
       ctx.save(); ctx.translate(-2, -2);
-      if (id === 'penthouse') { // the penthouse's window covers the calendar's wall, so the art has no paper there: the code's own calendar goes over the glass
-        X.rect(ctx, 69, 60, U, U, P.ink2); box(ctx, 39, 66, 66, 78, P.bone, P.white, P.putty2); box(ctx, 39, 66, 66, 18, P.crimsonD, P.crimson, P.crimsonD);
-        for (const kx of [51, 69, 87]) { X.rect(ctx, kx, 63, U * 2, 9, P.grey2); X.rect(ctx, kx, 63, U * 2, U, P.white); }
+      if (id === 'penthouse') { // the penthouse's window covers the calendar's wall, so the art has no paper there: the authored calendar (weekend/penthouse-cal) goes over the glass, the week number on its clear paper
+        if (B.Art && B.Art.has('weekend/penthouse-cal')) X.drawArt(ctx, 'weekend/penthouse-cal', 'cal', 39, 62, { scale: 2 });
+        else {
+          X.rect(ctx, 69, 60, U, U, P.ink2); box(ctx, 39, 66, 66, 78, P.bone, P.white, P.putty2); box(ctx, 39, 66, 66, 18, P.crimsonD, P.crimson, P.crimsonD);
+          for (const kx of [51, 69, 87]) { X.rect(ctx, kx, 63, U * 2, 9, P.grey2); X.rect(ctx, kx, 63, U * 2, U, P.white); }
+        }
       }
-      ctx.scale(5, 5); X.text(ctx, String(week), 14, 19, P.ink, { align: 'center' }); ctx.restore();
+      ctx.scale(5, 5); X.text(ctx, String(week), 14, id === 'penthouse' ? 18 : 19, P.ink, { align: 'center' }); ctx.restore();
       if (late > 0) HA(ctx, id, 'late:door');
       if (late >= 3) HA(ctx, id, 'late:notice');
     }
@@ -2214,8 +2235,11 @@
       SH.endingShot(c, o.dark ? 'dark' : 'light', o.id);
       c.save(); c.translate(0, 8); SH.endingDetail(c, o.id || 'grind', p, lo && lo.part ? { part: lo.part } : undefined); c.restore();
       if (card) {
-        c.save(); c.globalAlpha = 0.5; X.rect(c, 0, 96, 320, 40, P.ink); c.restore();
-        X.box(c, 40, 100, 240, 26);
+        // the plaque is art (endings/card plate, with its own drop shadow); the translucent band and code box are the fallback
+        if (!(B.Art && B.Art.has('endings/card') && X.drawArt(c, 'endings/card', 'plate', 0, 0))) {
+          c.save(); c.globalAlpha = 0.5; X.rect(c, 0, 96, 320, 40, P.ink); c.restore();
+          X.box(c, 40, 100, 240, 26);
+        }
         X.textShadow(c, R.clean(o.title || '').toUpperCase().slice(0, 36), 160, 106, o.dark ? P.crimson : P.amber, P.ink, { align: 'center', spacing: 2 });
         X.text(c, 'ENDING REACHED', 160, 117, P.grey2, { align: 'center' });
       }
@@ -2251,8 +2275,12 @@
     X.rect(ctx, 0, 0, V.w, V.h, P.ink);
     if (lo && lo.part === 'city') R.skyline(ctx, 1, 61, 270, 60, true, { noWindows: true });
     else R.skyline(ctx, 1, 61, 270, 60);
-    X.dither(ctx, 0, 180, V.w, 90, P.ink, P.amber, 0.18);
+    // the morning-after foreground (endings/after, 320x45 cells at 2x under the baseline); without the art, the ink alone
     X.rect(ctx, 0, 270, V.w, 90, P.ink);
+    if (B.Art && B.Art.has('endings/after')) {
+      X.drawArt(ctx, 'endings/after', 'a', 0, 270, { scale: 2 });
+      if (R.season(60).snow) X.drawArt(ctx, 'endings/after', 'snow', 0, 270, { scale: 2 });
+    }
   }
   // ---- The endings, animated (stage 3, batch 9) ----
   // World: one layer (the city and the prop without its mover, the street's signature), the prop's one movement drawn above it inside endingSpace.

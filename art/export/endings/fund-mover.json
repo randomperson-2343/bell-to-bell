@@ -1,0 +1,41 @@
+{
+ "frames": [
+  {
+   "filename": "tick",
+   "frame": {
+    "x": 0,
+    "y": 0,
+    "w": 6,
+    "h": 6
+   }
+  },
+  {
+   "filename": "dot",
+   "frame": {
+    "x": 6,
+    "y": 0,
+    "w": 6,
+    "h": 6
+   }
+  }
+ ],
+ "meta": {
+  "image": "fund-mover.png",
+  "size": {
+   "w": 12,
+   "h": 6
+  },
+  "frameTags": [
+   {
+    "name": "tick",
+    "from": 0,
+    "to": 0
+   },
+   {
+    "name": "dot",
+    "from": 1,
+    "to": 1
+   }
+  ]
+ }
+}

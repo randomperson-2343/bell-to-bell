@@ -136,9 +136,9 @@
     }
     if (statics < 0.9) {
       X.drawArt(ctx, A, 'tv:anchor', ox, oy);
-      // the art's plate: crimson band rows 98..106 for the kicker, ink rows 107..117 for the one-line headline
-      X.text(ctx, (kicker || 'MARKET WATCH').slice(0, 26), x + 6, y + h - 19, P.white);
-      X.wrap(headline || '', w - 12).slice(0, 1).forEach((ln) => X.text(ctx, ln, x + 6, y + h - 9, P.amber));
+      // the art's plate: crimson band rows 92..100 for the kicker, ink rows 101..117 for a two-line headline
+      X.text(ctx, X.wrapFit(kicker || 'MARKET WATCH', w - 12, 1)[0] || '', x + 6, y + h - 25, P.white);
+      X.wrapFit(headline || '', w - 12, 2).forEach((ln, i) => X.text(ctx, ln, x + 6, y + h - 16 + i * 8, P.amber));
       X.scanlines(ctx, x + 2, y + 2, w - 4, h - 4, P.ink, 0.2);
     }
     X.rect(ctx, x + w - 4, y + h + 8, 2, 2, statics > 0.5 ? P.crimson : P.jade);
@@ -473,13 +473,15 @@
     }
     X.drawArt(ctx, A, 'props', 0, 0);
   }
-  // The day's paper on the desk (news/desk-paper, 58x30 at 90,138+dy): kind 'memo' or 'footnote', band (4,10) 50x7 in bandCol; code writes the value.
+  // The day's paper on the desk (news/desk-paper, 88x34 at 60,137+dy; right edge at 148, clear of the hands): kind 'memo' or 'footnote',
+  // band (5,8) 78x4 in bandCol; code writes the value in up to two lines of whole words (13 chars each) at (6,15) and (6,24).
   // Returns false without the art, so the caller keeps its own drawing.
   function deskPaper(ctx, dy, kind, bandCol, text) {
     if (!hasArt('news/desk-paper')) return false;
-    X.drawArt(ctx, 'news/desk-paper', kind === 'footnote' ? 'footnote' : 'memo', 90, 138 + (dy || 0));
-    if (bandCol) X.rect(ctx, 94, 148 + (dy || 0), 50, 7, bandCol);
-    if (text) X.text(ctx, text, 95, 158 + (dy || 0), P.ink);
+    const y = 137 + (dy || 0);
+    X.drawArt(ctx, 'news/desk-paper', kind === 'footnote' ? 'footnote' : 'memo', 60, y);
+    if (bandCol) X.rect(ctx, 65, y + 8, 78, 4, bandCol);
+    if (text) X.wrapFit(text, 78, 2).forEach((ln, i) => X.text(ctx, ln, 66, y + 15 + i * 9, P.ink));
     return true;
   }
   function deskCloseup(ctx, p, o) {
@@ -705,16 +707,20 @@
     X.rect(ctx, 0, 0, V.w, V.h, P.ink);
     X.drawArt(ctx, 'news/tableaux', 't' + day, 0, 0);
     if (mover) tableauMover(ctx, day, p);
-    X.drawArt(ctx, 'news/tableaux', day >= 11 ? 'header:feed' : 'header:wire', 0, 0);
-    if (day === 9) X.rect(ctx, 265, 3, 46, 7, P.crimsonD); // session 9 is live on the wire header
-    X.text(ctx, day >= 11 ? 'PUBLIC FEED' : 'OVERNIGHT WIRE', 8, 3, P.bone);
-    X.text(ctx, day >= 9 ? 'LIVE' : 'UPDATE', 288, 3, P.white, { align: 'center' });
+    // the header strip sits above the zoomed detail's crop (o.zoomed), so it is only drawn where it is seen
+    if (!(o && o.zoomed)) {
+      X.drawArt(ctx, 'news/tableaux', day >= 11 ? 'header:feed' : 'header:wire', 0, 0);
+      if (day === 9) X.rect(ctx, 265, 3, 46, 7, P.crimsonD); // session 9 is live on the wire header
+      X.text(ctx, day >= 11 ? 'PUBLIC FEED' : 'OVERNIGHT WIRE', 8, 3, P.bone);
+      X.text(ctx, day >= 9 ? 'LIVE' : 'UPDATE', 288, 3, P.white, { align: 'center' });
+    }
     if (day === 3) {
       X.box(ctx, 87, 21, 146, 21);
       X.text(ctx, 'KAVRO STRAIT', 160, 28, P.amber, { align: 'center', spacing: 2 });
     } else if (day === 5) {
-      X.text(ctx, 'GRID REQUESTS: DELAYED', 12, 23, P.crimson);
-      X.text(ctx, 'COMPUTE LOAD: +38%', 12, 34, P.amber);
+      // on the open night sky, inside the zoomed detail's crop (art x 54..266) with a margin past its corner marks
+      X.text(ctx, 'GRID REQUESTS: DELAYED', 66, 23, P.crimson);
+      X.text(ctx, 'COMPUTE LOAD: +38%', 66, 34, P.amber);
     } else if (day === 8) {
       const G = tableauGeom(8);
       for (let i = 0; i < 4; i++) G.links[i].forEach((l) => X.rect(ctx, l.x, l.y, l.w, l.h, G.col(i)));
@@ -975,29 +981,29 @@
     else if (id === 'soft') { if (mov) for (const L of G.leaves) blitArt(ctx, A, 'leaf', L.x, L.y); } // the place has the leaves; the mover redraws them over the window covers
     else if (id === 'nobody') {
       if (base) {
-        for (let i = 0; i < 5; i++) { const x = 90 + i * 28; R(ctx, x + 11, 29, 3, 16, P.crimson); R(ctx, x + 7, 43, 11, 3, P.crimson); R(ctx, x + 9, 46, 7, 3, P.crimson); }
+        for (let i = 0; i < 5; i++) blitArt(ctx, A, 'arrow', 97 + i * 28, 29);
         T('SELL SELL SELL SELL SELL', cx, 12, P.crimson);
       }
     } else if (id === 'fall-guy') { if (base) T('NOT MINE', cx, G.stamp.y, P.crimsonD); }
     else if (id === 'cassandra') {
       if (mov) {
         for (let i = 0; i < 6 && i < n; i++) blitArt(ctx, A, 'sheet', 94 + i * 3, 50 - i * 4);
-        if (n >= 6) { R(ctx, 102, 32, 34, 5, P.crimsonD); R(ctx, 110, 40, 41, 9, P.bone); T('UNREAD', 128, 41, P.ink); } // the top sheet's ruled lines are cleared under the word
+        if (n >= 6) { blitArt(ctx, A, 'strip', 102, 32); blitArt(ctx, A, 'label', 107, 40); T('UNREAD', 130, 41, P.ink); } // the top sheet's ruled lines are cleared under the word
       }
       if (base) { T('FILED', 202, 33, P.ink); T('WEEK 3', 202, 43, P.crimson); }
     } else if (id === 'acquirer') {
       if (mov) { R(ctx, 170, 8, 1, 14 + dy, P.grey); blitArt(ctx, A, 'sign', 140, 22 + dy); T('HLST', 170, 26 + dy, P.ink); }
     } else if (id === 'ward') { if (mov) blitArt(ctx, A, 'flag', 160, 8 + dy); }
     else if (id === 'clawback') {
-      if (mov) for (let i = 4; i < 10; i++) { if (i - 4 < n) R(ctx, 98 + i * 12, 54, 11, 2, P.crimson); else for (let k = 3; k < 6; k++) blitArt(ctx, A, 'coin', 100 + i * 12, 68 - k * 4); }
+      if (mov) for (let i = 4; i < 10; i++) { if (i - 4 < n) blitArt(ctx, A, 'bar', 98 + i * 12, 57); else for (let k = 3; k < 6; k++) blitArt(ctx, A, 'coin', 100 + i * 12, 68 - k * 4); }
       if (base) T('40 CENTS', cx, 16, P.amber);
-    } else if (id === 'fund') { if (mov) { for (let i = 0; i < 9 && i < n; i++) R(ctx, 196 + i * 6, 70 - i * 5, 5, 3, P.jade); if (n >= 10) R(ctx, 244, 26, 6, 6, P.jade); } }
+    } else if (id === 'fund') { if (mov) { for (let i = 0; i < 9 && i < n; i++) blitArt(ctx, A, 'tick', 196 + i * 6, 70 - i * 5); if (n >= 10) blitArt(ctx, A, 'dot', 244, 23); } }
     else if (id === 'right-early') {
       const ys = [30, 34, 40, 48, 44, 36, 28, 22, 20, 30, 46, 58, 66];
-      if (mov) ys.forEach((y, i) => { if (i >= n) return; const up = i < 4 || i > 8; c1(ctx, 94 + i * 10, y + 2, 10, 5, up ? P.crimson : P.jade, P.white, up ? P.crimsonD : P.jadeD); });
-    } else if (id === 'everything-rally') { if (mov) for (let i = 0; i < 7 && i < n; i++) c1(ctx, 90 + i * 16, 74 - (20 + i * 6), 13, 20 + i * 6, P.jade, P.phosphor, P.jadeD); }
+      if (mov) ys.forEach((y, i) => { if (i >= n) return; const up = i < 4 || i > 8; blitArt(ctx, A, up ? 'candle:up' : 'candle:down', 94 + i * 10, y + 2); });
+    } else if (id === 'everything-rally') { if (mov) for (let i = 0; i < 7 && i < n; i++) blitArt(ctx, A, 'bar:' + i, 90 + i * 16, 74 - (20 + i * 6)); }
     else if (id === 'lost-decade') { if (mov) for (let i = 0; i < 10 && i < n; i++) blitArt(ctx, A, 'cal', 84 + i * 15, 21 + (i % 2) * 2); }
-    else if (id === 'grind') { if (base) { const S = G.screen; R(ctx, S.x, S.y, S.w, S.h, P.screenGlow); R(ctx, 148, 31, 18, 1, P.phosphor); R(ctx, 148, 35, 12, 1, P.sky); } }
+    else if (id === 'grind') { if (base) { const S = G.screen; blitArt(ctx, A, 'screen', S.x, S.y); } }
     // replaced, quiet, exit: the place is the whole prop; their motion is code (CRT on, strip flash, windows out, door light)
   }
 

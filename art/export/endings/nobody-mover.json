@@ -1,0 +1,27 @@
+{
+ "frames": [
+  {
+   "filename": "arrow",
+   "frame": {
+    "x": 0,
+    "y": 0,
+    "w": 11,
+    "h": 20
+   }
+  }
+ ],
+ "meta": {
+  "image": "nobody-mover.png",
+  "size": {
+   "w": 11,
+   "h": 20
+  },
+  "frameTags": [
+   {
+    "name": "arrow",
+    "from": 0,
+    "to": 0
+   }
+  ]
+ }
+}
