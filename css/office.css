@@ -411,3 +411,8 @@ body[data-act="endless"] #story-art { display: none; }
   #chart-wrap { grid-column: 1; grid-row: 2; min-height: 0; }
   #ticket { grid-column: 2; grid-row: 1 / span 2; overflow-y: auto; border-top: 0; border-left: 1px solid var(--c-slate); }
 }
+
+/* A phone on its side narrower than 800px: the desk bar drops the Mute button (Settings has it), as the upright phone does, so the tabs, Break, the stress gauge and Menu do not run into each other. */
+@media (orientation: landscape) and (max-height: 500px) and (max-width: 800px) {
+  #btn-mute { display: none; }
+}
