@@ -1,0 +1,153 @@
+{
+ "frames": [
+  {
+   "filename": "back:day",
+   "frame": {
+    "x": 0,
+    "y": 0,
+    "w": 214,
+    "h": 121
+   }
+  },
+  {
+   "filename": "window:day",
+   "frame": {
+    "x": 214,
+    "y": 0,
+    "w": 214,
+    "h": 121
+   }
+  },
+  {
+   "filename": "front:day",
+   "frame": {
+    "x": 428,
+    "y": 0,
+    "w": 214,
+    "h": 121
+   }
+  },
+  {
+   "filename": "lamp:off",
+   "frame": {
+    "x": 642,
+    "y": 0,
+    "w": 214,
+    "h": 121
+   }
+  },
+  {
+   "filename": "lamp:on",
+   "frame": {
+    "x": 856,
+    "y": 0,
+    "w": 214,
+    "h": 121
+   }
+  },
+  {
+   "filename": "back:night",
+   "frame": {
+    "x": 1070,
+    "y": 0,
+    "w": 214,
+    "h": 121
+   }
+  },
+  {
+   "filename": "window:night",
+   "frame": {
+    "x": 1284,
+    "y": 0,
+    "w": 214,
+    "h": 121
+   }
+  },
+  {
+   "filename": "front:night",
+   "frame": {
+    "x": 1498,
+    "y": 0,
+    "w": 214,
+    "h": 121
+   }
+  },
+  {
+   "filename": "glow:2",
+   "frame": {
+    "x": 1712,
+    "y": 0,
+    "w": 214,
+    "h": 121
+   }
+  },
+  {
+   "filename": "glow:1",
+   "frame": {
+    "x": 1926,
+    "y": 0,
+    "w": 214,
+    "h": 121
+   }
+  }
+ ],
+ "meta": {
+  "image": "kroll-office.png",
+  "size": {
+   "w": 2140,
+   "h": 121
+  },
+  "frameTags": [
+   {
+    "name": "back:day",
+    "from": 0,
+    "to": 0
+   },
+   {
+    "name": "window:day",
+    "from": 1,
+    "to": 1
+   },
+   {
+    "name": "front:day",
+    "from": 2,
+    "to": 2
+   },
+   {
+    "name": "lamp:off",
+    "from": 3,
+    "to": 3
+   },
+   {
+    "name": "lamp:on",
+    "from": 4,
+    "to": 4
+   },
+   {
+    "name": "back:night",
+    "from": 5,
+    "to": 5
+   },
+   {
+    "name": "window:night",
+    "from": 6,
+    "to": 6
+   },
+   {
+    "name": "front:night",
+    "from": 7,
+    "to": 7
+   },
+   {
+    "name": "glow:2",
+    "from": 8,
+    "to": 8
+   },
+   {
+    "name": "glow:1",
+    "from": 9,
+    "to": 9
+   }
+  ]
+ }
+}

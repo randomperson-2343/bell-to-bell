@@ -90,8 +90,35 @@
   // part: 'back' is the room up to the lamplight, 'front' the desk and what is on it (the night office is split there, the lamplight rings drawn between).
   function office(ctx, day, night, o) {
     const part = o && o.part;
+    if (B.Art && B.Art.has(OFFICE)) {
+      if (part !== 'front') officeArtBack(ctx, day, night);
+      if (part !== 'back') officeArtFront(ctx, night, !part);
+      return;
+    }
     if (part !== 'front') officeBack(ctx, day, night, !part);
     if (part !== 'back') officeFront(ctx, night);
+  }
+  // The drawn office (art/src/rooms/kroll-office.aseprite): 214x121 cells at 3x from (-2,-2), so its grid meets the speaker's.
+  // Layers: window (behind the glass), back (the room), front (desk and what is on it), lamp, and at night glow:1 and glow:2,
+  // the lamp's light as lit copies of what it falls on. The day sky takes the season: its key and the clouds' are swapped,
+  // then the weather falls inside the glass (307,37 300x150).
+  const OFFICE = 'rooms/kroll-office';
+  const OFFICE_SKY = { autumn: { 8: 'a', 7: 'A' }, grey: { b: '6', 8: '7', 7: 'P' }, winter: { b: '7', 8: '9', 7: '8' } };
+  const art = (ctx, frame, map) => X.drawArt(ctx, OFFICE, frame, -2, -2, { scale: U, map });
+  function officeArtBack(ctx, day, night) {
+    if (night) art(ctx, 'window:night');
+    else { art(ctx, 'window:day', OFFICE_SKY[R.season(day).id]); R.weather(ctx, 307, 37, 300, 126, day); }
+    art(ctx, night ? 'back:night' : 'back:day');
+  }
+  // The monitor's screen (565,166 51x33) is left dark in the art for the chart and the CRT turn-on.
+  const OFFICE_SCREEN = { x: 565, y: 166, w: 51, h: 33 };
+  function officeArtFront(ctx, night, glowToo) {
+    art(ctx, night ? 'front:night' : 'front:day');
+    const m = OFFICE_SCREEN;
+    X.rect(ctx, m.x, m.y, m.w, m.h, night ? P.screenGlow : P.screen);
+    for (let i = 0; i < 4; i++) X.rect(ctx, m.x + 6, m.y + 6 + i * 6, 36 - i * 6, U, i % 2 ? P.jade : P.crimson);
+    art(ctx, night ? 'lamp:on' : 'lamp:off');
+    if (night && glowToo) { art(ctx, 'glow:1'); art(ctx, 'glow:2'); }
   }
   function officeBack(ctx, day, night, withGlow) {
     X.gradient(ctx, 0, 0, V.w, 240, night ? P.slate : P.putty2, night ? P.ink2 : P.putty, 10);
@@ -494,6 +521,19 @@
   const LAMP_OFF = LAMP.map((r) => r.replace(/a/g, 'A'));
   LAYER.office = (e, flat, grain) => {
     const K = e.K;
+    if (B.Art && B.Art.has(OFFICE)) {
+      const m = OFFICE_SCREEN;
+      if (!e.opt.night) return { layers: [{ id: 'room', depth: 1, draw: flat(), animate(g, v, t) { K.crt(g, m.x, m.y, m.w, m.h, t, { mode: 'on', at: 0.45, bg: P.screenD }); } }, grain] };
+      // At night the lamp clicks on at 0.45 s with the first pool of light, and the light spreads at 0.60 s.
+      return {
+        cues: [{ at: 0.45, sfx: 'click' }],
+        layers: [
+          { id: 'room', depth: 1, draw: flat({ part: 'back' }) },
+          { id: 'front', depth: 1, draw: flat({ part: 'front' }), animate(g, v, t) { if (t < 0.45) art(g, 'lamp:off'); else { art(g, 'glow:1'); if (t >= 0.60) art(g, 'glow:2'); } } },
+          grain
+        ]
+      };
+    }
     if (!e.opt.night) return { layers: [{ id: 'room', depth: 1, draw: flat(), animate(g, v, t) { K.crt(g, 564, 165, 51, 33, t, { mode: 'on', at: 0.45, bg: P.screenD }); } }, grain] };
     return {
       cues: [{ at: 0.45, sfx: 'click' }],

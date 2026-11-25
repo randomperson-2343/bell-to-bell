@@ -208,6 +208,26 @@
       }
     },
 
+    // Authored art from js/art/sprite-data.js (B.Art), drawn a run at a time.
+    // opt: scale (default 1), skip (a string of keys to leave out), map (key -> key, applied first).
+    // Returns false when the art or the frame is missing, so a caller can fall back.
+    drawArt(ctx, id, frame, x, y, opt) {
+      const a = B.Art && B.Art.get(id, frame);
+      if (!a) return false;
+      opt = opt || {};
+      const k = opt.scale || 1, skip = opt.skip || '', map = opt.map, keys = B.PalKeys;
+      for (let r = 0; r < a.h; r++) {
+        const row = a.rows[r];
+        for (let c = 0; c < row.length;) {
+          let j = c + 1; while (j < row.length && row[j] === row[c]) j++;
+          let key = row[c]; if (map && map[key]) key = map[key];
+          if (key !== '.' && skip.indexOf(key) < 0 && keys[key]) { ctx.fillStyle = keys[key]; ctx.fillRect(x + c * k, y + r * k, (j - c) * k, k); }
+          c = j;
+        }
+      }
+      return true;
+    },
+
     // ---- texture ----
     // Deterministic speckle, so the same wall looks the same every frame.
     speckle(ctx, x, y, w, h, col, density, seed) {
