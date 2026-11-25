@@ -178,7 +178,7 @@
     return (FIG_SP[key] = X.sprite(rows));
   }
   // who: 0 is you; 1-3 are the strangers on your commute.
-  // The authored commuters (who 1..3): news/commuters (16x32 cells) at 2*scale for scales up to 2, news/commuters-big (32x64) at scale for 3 and 4.
+  // The authored commuters (who 1..3): news/commuters (16x32 cells) at 2*scale for scale 1, news/commuters-big (32x64) at scale from 2 up, so at scale 2 they share the 2 px world pixel with you.
   // You (who 0): news/you, 88x128 cells at 2 px (the world's pixel), centre column 44, head top at y - 20*s (s is the framing: 3 over-shoulder, 4 close);
   // pose 'back' (over-shoulder), 'front' (close) or 'side', ':late' after act 2.
   function youArt(ctx, x, y, s, face, pose, act) {
@@ -191,7 +191,7 @@
     return ok;
   }
   function personArt(ctx, x, y, s, face, who) {
-    const big = s >= 3, id = big ? 'news/commuters-big' : 'news/commuters';
+    const big = s >= 2, id = big ? 'news/commuters-big' : 'news/commuters';
     if (who < 1 || who > 3 || !(B.Art && B.Art.has(id))) return false;
     ctx.save();
     ctx.translate(x, y - 20 * s);
