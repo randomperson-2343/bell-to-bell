@@ -1,0 +1,153 @@
+{
+ "frames": [
+  {
+   "filename": "t3",
+   "frame": {
+    "x": 0,
+    "y": 0,
+    "w": 320,
+    "h": 180
+   }
+  },
+  {
+   "filename": "t5",
+   "frame": {
+    "x": 320,
+    "y": 0,
+    "w": 320,
+    "h": 180
+   }
+  },
+  {
+   "filename": "t8",
+   "frame": {
+    "x": 640,
+    "y": 0,
+    "w": 320,
+    "h": 180
+   }
+  },
+  {
+   "filename": "t9",
+   "frame": {
+    "x": 960,
+    "y": 0,
+    "w": 320,
+    "h": 180
+   }
+  },
+  {
+   "filename": "t11",
+   "frame": {
+    "x": 1280,
+    "y": 0,
+    "w": 320,
+    "h": 180
+   }
+  },
+  {
+   "filename": "t12",
+   "frame": {
+    "x": 1600,
+    "y": 0,
+    "w": 320,
+    "h": 180
+   }
+  },
+  {
+   "filename": "t13",
+   "frame": {
+    "x": 1920,
+    "y": 0,
+    "w": 320,
+    "h": 180
+   }
+  },
+  {
+   "filename": "t14",
+   "frame": {
+    "x": 2240,
+    "y": 0,
+    "w": 320,
+    "h": 180
+   }
+  },
+  {
+   "filename": "header:wire",
+   "frame": {
+    "x": 2560,
+    "y": 0,
+    "w": 320,
+    "h": 180
+   }
+  },
+  {
+   "filename": "header:feed",
+   "frame": {
+    "x": 2880,
+    "y": 0,
+    "w": 320,
+    "h": 180
+   }
+  }
+ ],
+ "meta": {
+  "image": "tableaux.png",
+  "size": {
+   "w": 3200,
+   "h": 180
+  },
+  "frameTags": [
+   {
+    "name": "t3",
+    "from": 0,
+    "to": 0
+   },
+   {
+    "name": "t5",
+    "from": 1,
+    "to": 1
+   },
+   {
+    "name": "t8",
+    "from": 2,
+    "to": 2
+   },
+   {
+    "name": "t9",
+    "from": 3,
+    "to": 3
+   },
+   {
+    "name": "t11",
+    "from": 4,
+    "to": 4
+   },
+   {
+    "name": "t12",
+    "from": 5,
+    "to": 5
+   },
+   {
+    "name": "t13",
+    "from": 6,
+    "to": 6
+   },
+   {
+    "name": "t14",
+    "from": 7,
+    "to": 7
+   },
+   {
+    "name": "header:wire",
+    "from": 8,
+    "to": 8
+   },
+   {
+    "name": "header:feed",
+    "from": 9,
+    "to": 9
+   }
+  ]
+ }
+}

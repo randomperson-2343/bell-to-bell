@@ -13,6 +13,28 @@
   // B.Rhythm.season): exteriors seen through windows follow October to January.
   let SEASON = null;
   function setSeason(s) { SEASON = s || null; }
+  // ---- batch 4 authored art (grids/news/*.grid, packed into B.Art); each set piece falls back to its code drawing ----
+  const hasArt = (id) => !!(B.Art && B.Art.has(id));
+  const seasonId = () => (SEASON && SEASON.id) || 'autumn';
+  // Moving sprites are drawn every animation frame: in the browser paint each frame once into its own canvas and blit it
+  // (drawArt paints run by run). Without a DOM (the node tests) it falls back to drawArt, which paints the same pixels.
+  const ART_IMG = new Map();
+  function blitArt(ctx, id, frame, x, y, map) {
+    const doc = typeof document !== 'undefined' && document && document.createElement ? document : null;
+    const a = doc && B.Art && B.Art.get(id, frame);
+    if (!a) return X.drawArt(ctx, id, frame, x, y, map ? { map } : undefined);
+    const key = id + '#' + frame + (map ? '#' + JSON.stringify(map) : '');
+    let img = ART_IMG.get(key);
+    if (!img) {
+      img = doc.createElement('canvas'); img.width = a.w; img.height = a.h;
+      X.drawArt(img.getContext('2d'), id, frame, 0, 0, map ? { map } : undefined);
+      ART_IMG.set(key, img);
+    }
+    const sm = ctx.imageSmoothingEnabled; ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(img, x, y);
+    ctx.imageSmoothingEnabled = sm;
+    return true;
+  }
   function windowWeather(ctx, x, y, w, h, seed) {
     if (!SEASON) return;
     if (SEASON.snow) {
@@ -21,6 +43,11 @@
     } else if (SEASON.id === 'autumn') {
       X.dither(ctx, x, y + Math.round(h * 0.6), w, Math.round(h * 0.4), P.slate2, P.amberD, 0.3);
     }
+  }
+
+  // Weather over an authored window: falling snow only (the season frames already paint the light, the autumn haze and the snow caps).
+  function artWeather(ctx, x, y, w, h, seed) {
+    if (SEASON && SEASON.snow) X.speckle(ctx, x, y, w, h, P.bone, 0.02 + SEASON.snow * 0.03, seed || 5);
   }
 
   // ---------- reusable set pieces ----------
@@ -44,7 +71,22 @@
 
   // Pre-dawn apartment: one window, a TV throwing light on the far wall.
   // o.noScreen leaves the phone's lit screen out (the voicemail establish lights it in an animate).
+  // news/tv-room. glow 0.15..0.7 picks how many of the three stepped glow frames stack (none below 0.25; 0.5 one, 0.6 two, 0.7 three).
+  const tvGlowSteps = (glow) => (glow < 0.25 ? 0 : glow < 0.55 ? 1 : glow < 0.65 ? 2 : 3);
+  function apartmentArt(ctx, glow, o) {
+    const A = 'news/tv-room', n = tvGlowSteps(glow);
+    X.drawArt(ctx, A, 'room:' + seasonId(), 0, 0);
+    artWeather(ctx, 215, 25, 72, 54, 3);
+    for (let k = 1; k <= n; k++) X.drawArt(ctx, A, 'glow:' + k, 0, 0);
+    if (n) X.drawArt(ctx, A, 'blinds', 0, 0);
+    X.drawArt(ctx, A, 'couch', 0, 0);
+    X.text(ctx, '5:58', 170, 108, P.crimson, { align: 'center' });
+    X.drawArt(ctx, A, o && o.noScreen ? 'phone:off' : 'phone:on', 0, 0);
+    X.drawArt(ctx, A, 'player', 0, 0);
+    if (SEASON && SEASON.wreath) X.drawArt(ctx, A, 'wreath', 0, 0);
+  }
   function apartment(ctx, glow, o) {
+    if (hasArt('news/tv-room')) return apartmentArt(ctx, glow, o);
     X.rect(ctx, 0, 0, V.w, V.h, P.ink);
     X.gradient(ctx, 0, 0, V.w, 140, P.ink2, P.ink, 6);
     for (let x = 6; x < V.w; x += 24) X.rect(ctx, x, 0, 1, 138, P.ink);
@@ -84,7 +126,32 @@
   }
 
   // The TV itself, with whatever headline is running under it.
+  // The TV on the authored room: set and anchor are art (offset from the art's 40,50), the lower third's words and the scanlines are code.
+  function tvSetArt(ctx, x, y, w, h, headline, kicker, statics) {
+    const A = 'news/tv-room', ox = x - 40, oy = y - 50;
+    X.drawArt(ctx, A, 'tv', ox, oy);
+    if (statics > 0.02) {
+      X.speckle(ctx, x + 2, y + 2, w - 4, h - 4, P.putty, 0.35 * statics, 1);
+      X.speckle(ctx, x + 2, y + 2, w - 4, h - 4, P.slate2, 0.25 * statics, 2);
+    }
+    if (statics < 0.9) {
+      X.drawArt(ctx, A, 'tv:anchor', ox, oy);
+      // the art's plate: crimson band rows 98..106 for the kicker, ink rows 107..117 for the one-line headline
+      X.text(ctx, (kicker || 'MARKET WATCH').slice(0, 26), x + 6, y + h - 19, P.white);
+      X.wrap(headline || '', w - 12).slice(0, 1).forEach((ln) => X.text(ctx, ln, x + 6, y + h - 9, P.amber));
+      X.scanlines(ctx, x + 2, y + 2, w - 4, h - 4, P.ink, 0.2);
+    }
+    X.rect(ctx, x + w - 4, y + h + 8, 2, 2, statics > 0.5 ? P.crimson : P.jade);
+  }
+  // The TV's bar graphic (tv-room tv:bars over the screen, then scanlines), for the storyboard's cut. False without the art.
+  function tvBars(ctx) {
+    if (!hasArt('news/tv-room')) return false;
+    X.drawArt(ctx, 'news/tv-room', 'tv:bars', 0, 0);
+    X.scanlines(ctx, 42, 52, 100, 48, P.ink, 0.2);
+    return true;
+  }
   function tvSet(ctx, x, y, w, h, headline, kicker, statics) {
+    if (hasArt('news/tv-room')) return tvSetArt(ctx, x, y, w, h, headline, kicker, statics);
     k1(ctx, x - 7, y - 7, w + 14, h + 20, P.plastic, P.plastic2, P.plasticD);
     for (let i = 0; i < 6; i++) X.rect(ctx, x + w - 20 + i * 3, y + h + 5, 1, 4, P.plasticD);
     X.rect(ctx, x + 8, y + h + 13, 6, 4, P.ink); X.rect(ctx, x + w - 14, y + h + 13, 6, 4, P.ink);
@@ -117,7 +184,26 @@
   // 'number' (the indicator well and its floor number), 'arrow' (the up glyph), 'doors', 'frame'; and, for a single cached layer in the flat
   // picture's own order (the car's glow reaches past the doorway), 'wall' (the lobby without the housing and button) and 'top' (housing, well,
   // number and call button: the part of the flat picture drawn after the car).
+  // news/elevator + news/elevator-doors. The wall's doorway is transparent, so no clip is needed; the leaves close at 98 and 160 (62x105).
+  function elevatorArt(ctx, open, floor, part) {
+    const all = part == null, has = (n) => all || part === n, A = 'news/elevator';
+    if (has('lobby') || part === 'wall') blitArt(ctx, A, 'wall', 0, 0);
+    if (has('car')) blitArt(ctx, A, 'car', 0, 0);
+    if (has('doors')) {
+      const slide = Math.round(open * 62);
+      ctx.save(); ctx.beginPath(); ctx.rect(98, 26, 124, 105); ctx.clip();
+      blitArt(ctx, 'news/elevator-doors', 'left', 98 - slide, 26);
+      blitArt(ctx, 'news/elevator-doors', 'right', 160 + slide, 26);
+      ctx.restore();
+    }
+    if (has('lobby') || part === 'top') blitArt(ctx, A, 'top', 0, 0);
+    if (part === 'number') X.rect(ctx, 136, 9, 48, 10, P.ink);
+    if (all || part === 'number' || part === 'top') X.text(ctx, String(floor || 41), 160, 11, P.amber, { align: 'center' });
+    if (part === 'arrow') X.text(ctx, '\u2191', 140, 11, P.amberD);
+    if (has('frame')) blitArt(ctx, A, 'frame', 0, 0);
+  }
   function elevator(ctx, open, floor, part) {
+    if (hasArt('news/elevator') && hasArt('news/elevator-doors')) return elevatorArt(ctx, open, floor, part);
     const all = part == null, has = (n) => all || part === n;
     if (has('lobby') || part === 'wall') {
       ctx.save();
@@ -356,7 +442,48 @@
 
   // Your own desk, filling the frame. This is the shot the live HUD takes over from.
   const MUG1 = ['.1111..', '188881.', '1d88811', '188881.1', '188881.1', '1888811', '188881.', '.1111..'];
+  // The two desk screens' contents (code over the authored glass and over the code CRT alike).
+  function deskTradeFill(ctx, o, x, y, w, h) {
+    let v = h * 0.6;
+    for (let i = 0; i < w - 4; i += 3) {
+      v += (((i * 37) % 11) - 5) * 0.8 - (o && o.crash ? 0.7 : -0.25);
+      v = B.clamp(v, 6, h - 6);
+      const up = ((i * 13) % 7) > 3;
+      X.rect(ctx, x + 2 + i, y + v, 2, Math.max(2, 3 + ((i * 5) % 6)), up ? P.jade : P.crimson);
+    }
+    X.rect(ctx, x, y + h - 9, w, 9, P.screenD);
+    X.text(ctx, o && o.ticker ? o.ticker : 'INDX', x + 2, y + h - 8, P.phosphor);
+  }
+  function deskCommsFill(ctx, x, y, w, h) {
+    for (let i = 0; i < 6; i++) {
+      X.rect(ctx, x + 2, y + 3 + i * 13, w - 4, 10, P.screenGlow);
+      X.rect(ctx, x + 3, y + 5 + i * 13, ((i * 29) % (w - 20)) + 10, 2, i % 3 === 0 ? P.amber : P.phosphorD);
+      X.rect(ctx, x + 3, y + 9 + i * 13, ((i * 17) % (w - 26)) + 8, 2, P.phosphorD);
+    }
+  }
+  // news/desk-closeup: room, monitors (screens open), code screens and labels, props. The paper is deskPaper.
+  function deskArt(ctx, o) {
+    const A = 'news/desk-closeup';
+    X.drawArt(ctx, A, 'room', 0, 0);
+    X.drawArt(ctx, A, 'monitors', 0, 0);
+    for (const [x, w, label, fill] of [[10, 176, 'TRADE', (a, b, c, d) => deskTradeFill(ctx, o, a, b, c, d)], [196, 114, 'COMMS', (a, b, c, d) => deskCommsFill(ctx, a, b, c, d)]]) {
+      X.crt(ctx, x + 5, 30, w - 10, 84, true);
+      fill(x + 6, 31, w - 12, 82);
+      X.text(ctx, label, x + w / 2, 118, P.plasticD, { align: 'center' });
+    }
+    X.drawArt(ctx, A, 'props', 0, 0);
+  }
+  // The day's paper on the desk (news/desk-paper, 58x30 at 90,138+dy): kind 'memo' or 'footnote', band (4,10) 50x7 in bandCol; code writes the value.
+  // Returns false without the art, so the caller keeps its own drawing.
+  function deskPaper(ctx, dy, kind, bandCol, text) {
+    if (!hasArt('news/desk-paper')) return false;
+    X.drawArt(ctx, 'news/desk-paper', kind === 'footnote' ? 'footnote' : 'memo', 90, 138 + (dy || 0));
+    if (bandCol) X.rect(ctx, 94, 148 + (dy || 0), 50, 7, bandCol);
+    if (text) X.text(ctx, text, 95, 158 + (dy || 0), P.ink);
+    return true;
+  }
   function deskCloseup(ctx, p, o) {
+    if (hasArt('news/desk-closeup')) return deskArt(ctx, o);
     const lit = o && o.dim ? P.slate : P.putty;
     X.rect(ctx, 0, 0, V.w, V.h, lit);
     X.gradient(ctx, 0, 0, V.w, 70, P.putty2, lit, 5);
@@ -411,7 +538,28 @@
   // `part` draws one layer of it for the layered closing shot; undefined draws the whole picture, as ever.
   // Parts: 'wall' (wall, floor, clock, window), 'bell' (bracket, bell, sound waves), 'desks', 'walkers' (only when `empty`).
   // 'walkers' alternates two leg poses with the shuffle step; the whole picture keeps the single pose.
+  function bellArt(ctx, swing, empty, part) {
+    const all = part == null, has = (n) => all || part === n, A = 'news/bell';
+    if (has('wall')) {
+      X.drawArt(ctx, A, 'wall:' + seasonId(), 0, 0);
+      artWeather(ctx, 233, 15, 62, 42, 9);
+      if (SEASON && SEASON.wreath) X.drawArt(ctx, A, 'wreath', 0, 0);
+    }
+    if (has('bell')) {
+      // the code's swing offset a (cells) picks the nearest 2-cell frame; rings count down as the swing dies (as the code's three rings)
+      const a = Math.round(Math.sin(swing * Math.PI * 7) * (1 - swing) * 6), k = Math.max(-3, Math.min(3, Math.round(a / 2)));
+      blitArt(ctx, 'news/bell-swing', 'swing:' + k, 118, 19);
+      let n = 0; for (let i = 0; i < 3; i++) if (1 - swing - i * 0.22 > 0.05) n++;
+      if (n) blitArt(ctx, A, 'rings:' + n, 0, 0);
+    }
+    if (has('desks')) X.drawArt(ctx, A, empty ? 'desks:empty' : 'desks:full', 0, 0);
+    if (empty && (all || part === 'walkers')) {
+      const shuffle = Math.round(swing * 14), pose = part === 'walkers' && shuffle % 2 ? 'b' : 'a';
+      for (let i = 0; i < 4; i++) blitArt(ctx, 'news/walkers', pose, 58 + i * 62 + shuffle, 96, { 2: i % 2 ? '1' : '2', d: 'e', D: 'D' });
+    }
+  }
   function bellScene(ctx, swing, empty, part) {
+    if (hasArt('news/bell') && hasArt('news/bell-swing') && hasArt('news/walkers')) return bellArt(ctx, swing, empty, part);
     const all = part == null, has = (n) => all || part === n;
     if (has('wall')) {
     X.rect(ctx, 0, 0, V.w, V.h, P.putty);
@@ -506,8 +654,26 @@
   }
   // The tableau's mover: the three ships (3), the nine queue figures (9), the witness at the table (12, 13). The flat picture draws it in its place in the
   // order of the art. A layer builder passes o.shift(i) -> [dx, dy] (whole art units added to item i).
+  const tableauArt = () => hasArt('news/tableaux') && hasArt('news/tableau-ship') && hasArt('news/tableau-queue') && hasArt('news/tableau-witness');
+  function tableauMoverArt(ctx, n, p, sh) {
+    if (n === 3) {
+      for (let i = 0; i < 3; i++) {
+        const d = sh(i);
+        blitArt(ctx, 'news/tableau-ship', i === 1 ? 'ship:crimson' : 'ship:bone', 123 + i * 35 + Math.round(p * 9) + d[0] - 6, 66 + i * 12 + d[1] - 4);
+      }
+    } else if (n === 9) {
+      for (let i = 0; i < 9; i++) {
+        const d = sh(i);
+        blitArt(ctx, 'news/tableau-queue', `queue:${i % 3 ? 'ink' : 'red'}-${i % 2 ? 'light' : 'dark'}`, 52 + i * 27 + Math.round((i % 2) * p * 3) + d[0], 84 + d[1]);
+      }
+    } else if (n === 12 || n === 13) {
+      const d = sh(0);
+      blitArt(ctx, 'news/tableau-witness', 'witness', 154 + d[0], 85 + d[1]);
+    }
+  }
   function tableauMover(ctx, n, p, o) {
     const sh = (i) => (o && o.shift ? o.shift(i) : [0, 0]);
+    if (tableauArt()) return tableauMoverArt(ctx, n, p, sh);
     const rc = (x, y, w, h, c) => { if (h > 0) X.rect(ctx, x, y, w, h, c); };
     if (n === 3) {
       for (let i = 0; i < 3; i++) {
@@ -534,10 +700,44 @@
   // o (optional): part 'art' draws everything but the scanlines, 'scan' only the scanlines; noMover leaves out the tableau's mover (tableauMover).
   // over (tableau 9): the band under the queue and its caption are left out of 'art' and drawn first in 'scan', so they sit over the figures (which a layer
   // builder draws between the two, whole: under the 1.3 zoom a figure cut at the band's edge would differ from the flat picture in the edge row).
+  // news/tableaux: the picture, its mover, the header strip; then the code's words, links and covers on the authored plates (grid header).
+  function briefingTableauArt(ctx, day, p, o, part, mover) {
+    X.rect(ctx, 0, 0, V.w, V.h, P.ink);
+    X.drawArt(ctx, 'news/tableaux', 't' + day, 0, 0);
+    if (mover) tableauMover(ctx, day, p);
+    X.drawArt(ctx, 'news/tableaux', day >= 11 ? 'header:feed' : 'header:wire', 0, 0);
+    if (day === 9) X.rect(ctx, 265, 3, 46, 7, P.crimsonD); // session 9 is live on the wire header
+    X.text(ctx, day >= 11 ? 'PUBLIC FEED' : 'OVERNIGHT WIRE', 8, 3, P.bone);
+    X.text(ctx, day >= 9 ? 'LIVE' : 'UPDATE', 288, 3, P.white, { align: 'center' });
+    if (day === 3) {
+      X.box(ctx, 87, 21, 146, 21);
+      X.text(ctx, 'KAVRO STRAIT', 160, 28, P.amber, { align: 'center', spacing: 2 });
+    } else if (day === 5) {
+      X.text(ctx, 'GRID REQUESTS: DELAYED', 12, 23, P.crimson);
+      X.text(ctx, 'COMPUTE LOAD: +38%', 12, 34, P.amber);
+    } else if (day === 8) {
+      const G = tableauGeom(8);
+      for (let i = 0; i < 4; i++) G.links[i].forEach((l) => X.rect(ctx, l.x, l.y, l.w, l.h, G.col(i)));
+      X.text(ctx, 'CORRELATED MODEL FLOW', 160, 19, P.violet, { align: 'center', spacing: 2 });
+    } else if (day === 9) {
+      X.text(ctx, 'RIDGEWAY TRUST', 160, 34, P.ink, { align: 'center' });
+      if (!(o && o.over)) tableau9Strip(ctx);
+    } else if (day === 11) {
+      X.text(ctx, 'PRESERVE ALL RECORDS', 160, 18, P.crimson, { align: 'center', spacing: 2 });
+    } else if (day === 12 || day === 13) {
+      X.text(ctx, day === 12 ? 'MARKETS COMMITTEE · LIVE' : 'STABILIZATION VOTE · LIVE', 160, 20, day === 12 ? P.sky : P.amber, { align: 'center' });
+      if (day === 13) X.text(ctx, 'VOTE PENDING', 160, 118, P.crimson, { align: 'center' });
+    } else {
+      X.text(ctx, 'SYSTEM STATUS: UNRESOLVED', 160, 18, P.bone, { align: 'center' });
+    }
+    if (part !== 'art') X.scanlines(ctx, 0, 13, V.w, 125, P.ink, 0.1);
+    return true;
+  }
   function briefingTableau(ctx, day, p, o) {
     if ([3, 5, 8, 9, 11, 12, 13, 14].indexOf(day) < 0) return false;
     const part = o && o.part, mover = !(o && o.noMover);
     if (part === 'scan') { if (day === 9 && o.over) tableau9Strip(ctx); X.scanlines(ctx, 0, 13, V.w, 125, P.ink, 0.1); return true; }
+    if (tableauArt()) return briefingTableauArt(ctx, day, p, o, part, mover);
     X.rect(ctx, 0, 0, V.w, V.h, P.ink);
     X.gradient(ctx, 0, 0, V.w, 138, P.ink2, P.screenD, 7);
     X.rect(ctx, 0, 0, V.w, 13, P.slate);
@@ -1024,5 +1224,5 @@
 
   B.Scenes = Scenes;
   // The hand-drawn 320x180 set pieces, for the storyboard layer to reuse at 2x.
-  B.Shots = { V, WALKER, WALKER_B, setSeason, apartment, tvSet, elevator, tradingFloor, floorGeom, floorArt, floorFront, deskCloseup, bellScene, endingShot, briefingTableau, tableauMover, tableauGeom, endingDetail, endingGeom };
+  B.Shots = { V, WALKER, WALKER_B, setSeason, apartment, tvSet, tvBars, elevator, tradingFloor, floorGeom, floorArt, floorFront, deskCloseup, deskPaper, bellScene, endingShot, briefingTableau, tableauMover, tableauGeom, endingDetail, endingGeom };
 })(window.BTB);

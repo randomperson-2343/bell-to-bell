@@ -1,0 +1,139 @@
+{
+ "frames": [
+  {
+   "filename": "window:autumn",
+   "frame": {
+    "x": 0,
+    "y": 0,
+    "w": 214,
+    "h": 121
+   }
+  },
+  {
+   "filename": "window:grey",
+   "frame": {
+    "x": 214,
+    "y": 0,
+    "w": 214,
+    "h": 121
+   }
+  },
+  {
+   "filename": "window:winter",
+   "frame": {
+    "x": 428,
+    "y": 0,
+    "w": 214,
+    "h": 121
+   }
+  },
+  {
+   "filename": "room",
+   "frame": {
+    "x": 642,
+    "y": 0,
+    "w": 214,
+    "h": 121
+   }
+  },
+  {
+   "filename": "phone",
+   "frame": {
+    "x": 856,
+    "y": 0,
+    "w": 214,
+    "h": 121
+   }
+  },
+  {
+   "filename": "doc",
+   "frame": {
+    "x": 1070,
+    "y": 0,
+    "w": 214,
+    "h": 121
+   }
+  },
+  {
+   "filename": "postcard",
+   "frame": {
+    "x": 1284,
+    "y": 0,
+    "w": 214,
+    "h": 121
+   }
+  },
+  {
+   "filename": "mug:a",
+   "frame": {
+    "x": 1498,
+    "y": 0,
+    "w": 214,
+    "h": 121
+   }
+  },
+  {
+   "filename": "mug:b",
+   "frame": {
+    "x": 1712,
+    "y": 0,
+    "w": 214,
+    "h": 121
+   }
+  }
+ ],
+ "meta": {
+  "image": "kitchen.png",
+  "size": {
+   "w": 1926,
+   "h": 121
+  },
+  "frameTags": [
+   {
+    "name": "window:autumn",
+    "from": 0,
+    "to": 0
+   },
+   {
+    "name": "window:grey",
+    "from": 1,
+    "to": 1
+   },
+   {
+    "name": "window:winter",
+    "from": 2,
+    "to": 2
+   },
+   {
+    "name": "room",
+    "from": 3,
+    "to": 3
+   },
+   {
+    "name": "phone",
+    "from": 4,
+    "to": 4
+   },
+   {
+    "name": "doc",
+    "from": 5,
+    "to": 5
+   },
+   {
+    "name": "postcard",
+    "from": 6,
+    "to": 6
+   },
+   {
+    "name": "mug:a",
+    "from": 7,
+    "to": 7
+   },
+   {
+    "name": "mug:b",
+    "from": 8,
+    "to": 8
+   }
+  ]
+ }
+}

@@ -77,6 +77,8 @@
   // The tableaux were drawn with a header strip at y=0, which the letterbox
   // hides. Drop them 7px so the strip reads, and extend it up to the top.
   // tableauSpace is the transform: the 1.3 zoom about (160, 76) when asked, then the 7 px drop. fn draws in it.
+  // The tableau detail's zoom: the whole 3x on 2x art (1.5) when the tableaux are authored, else 1.3.
+  const tabZoom = () => (artHas('news/tableaux') ? 1.5 : 1.3);
   function tableauSpace(c, zoom, fn) {
     c.save();
     if (zoom) { c.translate(160 * (1 - zoom), 76 * (1 - zoom)); c.scale(zoom, zoom); }
@@ -119,7 +121,13 @@
   // leaves out the windows lit by a k in [lo, hi) (the ones a shot switches on itself); o.noLabel leaves out the LIGHTS ON text, o.labelStem leaves only its 'LIGHTS ON: ' stem.
   function skylineShot(ctx, day, title, o) {
     const part = o && o.part, skip = o && o.skip, a = (B.StoryData.actIndex(day) + 1), s = R.season(day);
-    if (part !== 'top') {
+    if (part !== 'top' && skyArt() && X.drawArt(ctx, 'news/false-dawn', 'sky:' + (day >= 28 && day <= 35 ? 'rally' : s.id), 0, 0, { scale: 2 })) {
+      // the authored city: sky, every tower with its windows unlit, the winter snow caps; the code lights the day's windows and draws the weather and the ground
+      X.drawArt(ctx, 'news/false-dawn', 'towers', 0, 0, { scale: 2 });
+      if (s.snow) X.drawArt(ctx, 'news/false-dawn', 'snow', 0, 0, { scale: 2 });
+      const f0 = lit(day);
+      skyWindows().forEach((w) => { if (w.k < f0 && !(skip && skip[0] <= w.k && w.k < skip[1])) X.rect(ctx, w.x, w.y, 4, 4, day > 35 ? P.sky : P.amber); });
+    } else if (part !== 'top') {
       X.rect(ctx, 0, 0, V.w, V.h, P.ink);
       X.gradient(ctx, 0, 0, V.w, 260, day >= 28 && day <= 35 ? P.amberD : P.ink2, P.ink, 12);
       const f = lit(day);
@@ -136,7 +144,7 @@
     if (part === 'city') return;
     const f = lit(day);
     R.weather(ctx, 0, 0, V.w, 240, day);
-    X.rect(ctx, 0, 260, V.w, 100, P.ink);
+    if (!(skyArt() && X.drawArt(ctx, 'news/false-dawn', 'ground', 0, 0, { scale: 2 }))) X.rect(ctx, 0, 260, V.w, 100, P.ink);
     // o.labelStem draws only 'LIGHTS ON: ' (the shot's tally draws the number after it, at x 24 + 11 x 6)
     if (o && o.labelStem) R.text(ctx, 'LIGHTS ON:', 24, 24, a >= 3 ? P.sky : P.amber);
     else if (!(o && o.noLabel)) R.text(ctx, `LIGHTS ON: ${Math.round(f * 100)}%`, 24, 24, a >= 3 ? P.sky : P.amber);
@@ -144,8 +152,27 @@
   }
   // The windows the day lights: those with k in [lo, f) (lo = f - 0.08), as the 3x3 rects skylineShot draws, left out when a later (nearer) tower
   // covers them, since a lamp drawn over the city would show through it. The same arithmetic as skylineShot's loop.
+  // The authored false dawn (news/false-dawn): towers at x = i*26-6 px, windows 4x4 px; skyWindows lists every window a nearer tower does not cover, with its k.
+  const skyArt = () => artHas('news/false-dawn');
+  let skyWin = null;
+  function skyWindows() {
+    if (skyWin) return skyWin;
+    const towers = [], out = [];
+    for (let i = 0; i < 26; i++) towers.push({ w: 18 + ((i * 17) % 20), h: 60 + ((i * 41) % 150), x: i * 26 - 6 });
+    for (let i = 0; i < 26; i++) {
+      const { w, h, x } = towers[i];
+      for (let yy = 8; yy < h - 6; yy += 12) for (let xx = 4; xx < w - 4; xx += 8) {
+        const k = ((i * 131 + xx * 7 + yy * 3) % 100) / 100, cx = x + xx, cy = 260 - h + yy;
+        if (cx >= 640) continue;
+        if (towers.some((q, j) => j > i && cx < q.x + q.w && cx + 4 > q.x && cy + 4 > 260 - q.h)) continue;
+        out.push({ x: cx, y: cy, w: 4, h: 4, k });
+      }
+    }
+    return (skyWin = out);
+  }
   function skyCells(day) {
     const f = lit(day), lo = f - 0.08, towers = [], cells = [];
+    if (skyArt()) return { cells: skyWindows().filter((w) => lo <= w.k && w.k < f), lo, f };
     for (let i = 0; i < 26; i++) towers.push({ w: 18 + ((i * 17) % 20), h: 60 + ((i * 41) % 150), x: i * 26 - 6 });
     for (let i = 0; i < 26; i++) {
       const { w, h, x } = towers[i];
@@ -327,6 +354,128 @@
       valueLines(value, 90).forEach((ln, i) => big(ctx, ln, 320, 150 + i * 22, P.bone, 2, 'center'));
     }
   };
+  // ---- batch 4 authored art: news/doc-<name> (320x180 cells, drawn at 2x). Each document keeps its code drawing as the fallback; the code keeps every number, text, marker, lamp and bar.
+  const artHas = (id) => !!(B.Art && B.Art.has(id));
+  const docHas = (name) => artHas('news/doc-' + name);
+  const artCache = new Map();
+  // One art plate, painted once into an offscreen canvas keyed by its ids and map, then blitted (the headless harness has no document: it paints direct).
+  function artPlate(ctx, key, frames, map) {
+    const k = key + '|' + (map ? JSON.stringify(map) : '');
+    let cv = artCache.get(k);
+    if (!cv && typeof document !== 'undefined') {
+      cv = document.createElement('canvas'); cv.width = V.w; cv.height = V.h;
+      const g = cv.getContext('2d');
+      frames.forEach((f) => X.drawArt(g, f[0], f[1], 0, 0, { scale: 2, map }));
+      if (artCache.size > 40) artCache.clear();
+      artCache.set(k, cv);
+    }
+    if (cv) ctx.drawImage(cv, 0, 0); else frames.forEach((f) => X.drawArt(ctx, f[0], f[1], 0, 0, { scale: 2, map }));
+  }
+  const keyOf = (col) => { const K = B.PalKeys || {}; for (const k in K) if (K[k] === col) return k; return null; };
+  // value text centred in a window (top y, height h, line step st, text height th)
+  const inWin = (n, y, h, st, th) => y + Math.max(0, Math.round((h - ((n - 1) * st + th)) / 2));
+  const DOC_CODE = Object.assign({}, DOC_DRAW);
+  const DOC_ART = {
+    memo(ctx, day, value, c, o) {
+      const part = o && o.part;
+      if (!part || part === 'paper') {
+        artPlate(ctx, 'memo', [['news/doc-memo', 'desk'], ['news/doc-memo', 'paper']]);
+      }
+      if (!part) { const b = DOC_GEOM.memo.band; X.rect(ctx, b.x, b.y, b.w, b.h, c.wash); }
+      if (!part || part === 'ink') {
+        const lines = valueLines(value, 200);
+        lines.forEach((ln, i) => big(ctx, ln, 320, 104 + i * 22 + (lines.length === 1 ? 10 : 0), P.ink, 2, 'center'));
+      }
+    },
+    footnote(ctx, day, value, c, o) {
+      artPlate(ctx, 'footnote', [['news/doc-footnote', 'desk'], ['news/doc-footnote', 'paper']]);
+      if (!(o && o.noMarker)) {
+        const ly = footnoteLine(day);
+        X.rect(ctx, 84, ly - 7, 290, 2, P.crimson); X.rect(ctx, 84, ly + 7, 290, 2, P.crimson);
+        X.rect(ctx, 82, ly - 5, 2, 12, P.crimson); X.rect(ctx, 374, ly - 5, 2, 12, P.crimson);
+        X.rect(ctx, 376, ly, 60, 2, P.crimson);
+      }
+      valueLines(value, 80).forEach((ln, i) => big(ctx, ln, 530, 110 + i * 26, P.ink, 2, 'center'));
+    },
+    rating(ctx, day, value, c) {
+      const sk = keyOf(c.signal), map = sk ? { r: sk } : null;
+      artPlate(ctx, 'rating', [['news/doc-rating', 'desk'], ['news/doc-rating', 'plate'], ['news/doc-rating', 'stamp']], map);
+      const lines = valueLines(value, 150);
+      lines.forEach((ln, i) => big(ctx, ln, 320, 96 + i * 28 + (lines.length === 1 ? 12 : 0), c.signal === P.amber ? P.amberD : c.signal, 3, 'center'));
+    },
+    post(ctx, day, value, c, o) {
+      const part = o && o.part;
+      if (!part || part === 'city') { X.rect(ctx, 0, 0, V.w, V.h, P.ink); R.skyline(ctx, B.StoryData.actIndex(day) + 1, day * 5, 300, day); }
+      if (!part || part === 'phone') {
+        X.rect(ctx, 200, 28, 240, 276, P.screenD);
+        big(ctx, 'sqwak', 320, 36, P.bone, 2, 'center');
+        X.rect(ctx, 208, 60, 224, 150, P.screen);
+        if (!(o && o.noFlag)) X.rect(ctx, 216, 70, 10, 10, P.crimson);
+        R.text(ctx, 'TRENDING', 232, 72, P.crimson);
+        valueLines(value, 96).forEach((ln, i) => big(ctx, ln, 216, 96 + i * 20, P.bone, 2));
+        for (let i = 0; i < 3; i++) X.rect(ctx, 216 + i * 70, 190, 44, 6, i === 2 ? P.sky : P.slate2);
+        artPlate(ctx, 'post-phone', [['news/doc-post', 'phone']]);
+      }
+      if (!part || part === 'glass') { artPlate(ctx, 'post-glass', [['news/doc-post', 'glass']]); X.scanlines(ctx, 200, 28, 240, 276, P.ink, 0.1); }
+    },
+    chart(ctx, day, value, c, o) {
+      artPlate(ctx, 'chart', [['news/doc-chart', 'desk'], ['news/doc-chart', 'paper']]);
+      let y = 120; const down = R.marketDown(day);
+      for (let i = 0; i < 90; i++) { y = B.clamp(y + (((i * 19 + day * 7) % 13) - 6) * 0.8 + (down ? 0.5 : -0.3), 66, 172); X.rect(ctx, 92 + i * 5, y, 4, 2, P.ink2); }
+      if (!(o && o.noMarker)) {
+        const cx = 92 + 60 * 5;
+        X.rect(ctx, cx - 30, 70, 60, 2, P.crimson); X.rect(ctx, cx - 30, 166, 60, 2, P.crimson);
+        X.rect(ctx, cx - 32, 72, 2, 94, P.crimson); X.rect(ctx, cx + 30, 72, 2, 94, P.crimson);
+      }
+      valueLines(value, 240).forEach((ln, i) => big(ctx, ln, 320, 196 + i * 22, P.crimsonD, 2, 'center'));
+    },
+    ticket(ctx, day, value, c, o) {
+      const part = o && o.part;
+      if (!part || part === 'screen') {
+        artPlate(ctx, 'ticket-screen', [['news/doc-ticket', 'screen']]);
+        R.text(ctx, LABELS.ticket, 90, 46, P.phosphorD);
+        R.text(ctx, 'BID', 150, 66, P.jade, 'center'); R.text(ctx, 'ASK', 490, 66, P.crimson, 'center');
+      }
+      if (!part) {
+        for (let i = 0; i < 5; i++) {
+          const bid = DOC_GEOM.ticket.bid(i), ask = DOC_GEOM.ticket.ask(i);
+          X.rect(ctx, bid.x, bid.y, bid.w, bid.h, i ? P.screenGlow : P.jadeD);
+          X.rect(ctx, ask.x, ask.y, ask.w, ask.h, P.crimsonD);
+        }
+      }
+      if (!part || part === 'glass') {
+        artPlate(ctx, 'ticket-glass', [['news/doc-ticket', 'glass']]);
+        const lines = valueLines(value, 150), y0 = inWin(lines.length, 172, 68, 28, 21);
+        lines.forEach((ln, i) => big(ctx, ln, 320, y0 + i * 28, P.phosphor, 3, 'center'));
+        X.scanlines(ctx, 74, 34, 492, 214, P.ink, 0.12);
+      }
+    },
+    vote(ctx, day, value, c, o) {
+      artPlate(ctx, 'vote', [['news/doc-vote', 'board']]);
+      const VG = DOC_GEOM.vote;
+      if (!(o && o.unlit)) for (let r = 0; r < VG.rows; r++) for (let k = 0; k < VG.cols; k++) {
+        const y = VG.yea(r, k), n = VG.nay(r, k);
+        if (VG.yeaLit(r, k)) X.rect(ctx, y.x, y.y, y.w, y.h, P.jadeD);
+        if (VG.nayLit(r, k)) X.rect(ctx, n.x, n.y, n.w, n.h, P.crimsonD);
+      }
+      const lines = valueLines(value, 180), y0 = inWin(lines.length, 152, 104, 28, 21);
+      lines.forEach((ln, i) => big(ctx, ln, 320, y0 + i * 28, P.bone, 3, 'center'));
+    },
+    voicemail(ctx, day, value, c, o) {
+      X.rect(ctx, 0, 0, V.w, V.h, P.ink); ctx.save(); ctx.globalAlpha = 0.14; X.rect(ctx, 170, 0, 300, 300, P.screenGlow); ctx.restore();
+      artPlate(ctx, 'voicemail', [['news/doc-voicemail', 'phone']]);
+      R.text(ctx, LABELS.voicemail, 320, 40, P.grey2, 'center');
+      for (let i = 0; i < DOC_GEOM.voicemail.count; i++) { const b = DOC_GEOM.voicemail.bar(i, day); X.rect(ctx, b.x, b.y, b.w, b.h, i < (o && o.played != null ? o.played : 12) ? P.phosphor : P.slate2); }
+      const lines = valueLines(value, 90), y0 = inWin(lines.length, 196, 60, 22, 14);
+      lines.forEach((ln, i) => big(ctx, ln, 320, y0 + i * 22, P.bone, 2, 'center'));
+    }
+  };
+  Object.keys(DOC_ART).forEach((k) => { DOC_DRAW[k] = (ctx, day, value, c, o) => (docHas(k) ? DOC_ART[k] : DOC_CODE[k])(ctx, day, value, c, o); });
+  // The vote lamps are 4x4 cells (8 px) in the art's sockets; the code board keeps its 9 px lamps.
+  const voteCode = { yea: DOC_GEOM.vote.yea, nay: DOC_GEOM.vote.nay };
+  DOC_GEOM.vote.yea = (q, k) => (docHas('vote') ? { x: 2 * (32 + Math.round(6.5 * k)), y: 2 * (28 + Math.round(6.5 * q)), w: 8, h: 8 } : voteCode.yea(q, k));
+  DOC_GEOM.vote.nay = (q, k) => (docHas('vote') ? { x: 2 * (170 + Math.round(6.5 * k)), y: 2 * (28 + Math.round(6.5 * q)), w: 8, h: 8 } : voteCode.nay(q, k));
+
   // o is the document's own options (see DOC_DRAW); o.noGrain leaves out the full-screen 0.05 scanlines, which a layered beat draws in its top layer.
   function insertShot(ctx, day, value, doc, o) {
     const a = (B.StoryData.actIndex(day) + 1), c = R.colors(a);
@@ -357,7 +506,8 @@
     c.restore();
   }
   // The desk's zoom (1.15 when none is given) and the y it is placed at: one source for the paper and the marks drawn on it.
-  const deskZoom = (zoom) => ({ z: zoom || 1.15, ty: zoom ? 84 : 104 });
+  // With the authored desk (news/desk-closeup, 2x art) every push-in lands on the whole 3x (zoom 1.5), about the same crop centre.
+  const deskZoom = (zoom) => ({ z: artHas('news/desk-closeup') ? 1.5 : zoom || 1.15, ty: zoom ? 84 : 104 });
   function deskSpace(ctx, day, zoom, fn) {
     const { z, ty } = deskZoom(zoom);
     at2x(ctx, (c) => deskXform(c, z, ty, fn), day);
@@ -369,9 +519,11 @@
       deskXform(c, z, ty, (g) => {
         if (part !== 'paper') SH.deskCloseup(g, 1, { crash: R.marketDown(day - 1), ticker: ['INDX', 'CRVS', 'FRLN', 'MRDN', 'BSTN'][day % 5] });
         if (part === 'desk') return;
+        const bandCol = r.doc === 'rating' || r.doc === 'vote' ? P.sky : r.doc === 'chart' ? P.crimsonD : P.amberD;
+        if (SH.deskPaper && SH.deskPaper(g, dy, r.doc === 'footnote' ? 'footnote' : 'memo', bandCol, R.clean(r.arg || '').slice(0, 9))) return;
         X.cel(g, 90, 138 + dy, 58, 30, P.bone, P.white, P.putty, P.ink, 1);
         X.rect(g, 94, 142 + dy, 50, 1, P.grey);
-        X.rect(g, 94, 148 + dy, 50, 7, r.doc === 'rating' || r.doc === 'vote' ? P.sky : r.doc === 'chart' ? P.crimsonD : P.amberD);
+        X.rect(g, 94, 148 + dy, 50, 7, bandCol);
         X.text(g, R.clean(r.arg || '').slice(0, 9), 95, 158 + dy, P.ink);
       });
     }, day);
@@ -399,7 +551,10 @@
       default: return R.placeFrame(ctx, sb, title, false);
     }
   }
-  function racksShot(ctx, day) {
+  // With rooms/racks (214x121 cells at 3x at (-2,-2)) the shot is the art's room, its LEDs lit when o.lit (the layered beat's start) and dark otherwise (the pulled stack).
+  const racksArt = () => artHas('rooms/racks');
+  function racksShot(ctx, day, o) {
+    if (racksArt() && X.drawArt(ctx, 'rooms/racks', 'room', -2, -2, { scale: 3 })) { if (o && o.lit) X.drawArt(ctx, 'rooms/racks', 'leds:on', -2, -2, { scale: 3 }); return; }
     X.rect(ctx, 0, 0, V.w, V.h, P.ink);
     for (let i = 0; i < 8; i++) {
       X.cel(ctx, 30 + i * 76, 40, 60, 210, P.ink2, P.slate, P.ink, P.ink2, 3);
@@ -444,7 +599,7 @@
       }
       X.rect(ctx, 0, 259, V.w, 1, signal);
     } else if (r.shot === 'racks') {
-      for (let i = 0; i < 8; i++) {
+      if (!racksArt()) for (let i = 0; i < 8; i++) {
         X.rect(ctx, 34 + i * 76, 53, 1, 186, P.grey2);
         for (let j = 0; j < 8; j++) X.rect(ctx, 73 + i * 76, 58 + j * 22, 2, 1, j > 3 ? P.crimson : P.sky);
       }
@@ -489,15 +644,27 @@
   }
   // o (optional): draw(c) is drawn in place of the shot, noBack leaves out the ink behind a zoomed shot. A layered establish draws its bottom layer
   // with { draw } and its animated marks with { draw, noBack: true }, so they sit in exactly the transform the art was drawn in.
+  // Shots whose picture is authored 2x art (the W1 places, the TV room, the elevator, the documents).
+  function pushArt(r) {
+    switch (r.shot) {
+      case 'place': return artHas('news/place-subway');
+      case 'tv': return artHas('news/tv-room');
+      case 'elevator': return artHas('news/elevator');
+      case 'insert': return docHas(r.doc);
+      default: return false;
+    }
+  }
   function framed(ctx, day, r, title, o) {
     const draw = (o && o.draw) || ((c) => shotFrame(c, day, r, title));
-    const flat = r.shot === 'skyline' || r.shot === 'tableau' || r.shot === 'bell' || (r.shot === 'insert' && (r.weight === 'S' || r.doc === 'vote'));
+    const flat = r.shot === 'skyline' || r.shot === 'tableau' || r.shot === 'bell' || (r.shot === 'racks' && racksArt()) || (r.shot === 'insert' && (r.weight === 'S' || r.doc === 'vote'));
     const cam = flat ? CAMS.wide : CAM_ORDER[kindIndex(day, r) % CAM_ORDER.length];
     if (cam[0] === 1) return draw(ctx);
+    // authored art is never drawn at a fractional scale: a push-in on 2x art lands on the whole 3x (zoom 1.5) about the same crop centre
+    const z = pushArt(r) ? 1.5 : cam[0];
     if (!(o && o.noBack)) X.rect(ctx, 0, 0, V.w, V.h, P.ink);
     ctx.save();
-    ctx.translate(Math.round(cam[1] * V.w * (1 - cam[0])), Math.round(0.4 * V.h * (1 - cam[0])));
-    ctx.scale(cam[0], cam[0]);
+    ctx.translate(Math.round(cam[1] * V.w * (1 - z)), Math.round(0.4 * V.h * (1 - z)));
+    ctx.scale(z, z);
     draw(ctx);
     ctx.restore();
   }
@@ -506,7 +673,7 @@
       case 'insert': case 'dark': case 'racks':
         return r.arg ? insertShot(ctx, day, r.arg, r.doc) : at2x(ctx, (c) => SH.tradingFloor(c, 0.7, false, day), day);
       case 'skyline': return skylineShot(ctx, day, title);
-      case 'tableau': return at2x(ctx, (c) => { if (!tableau(c, r.arg, 1.3)) SH.apartment(c, 0.6); }, day);
+      case 'tableau': return at2x(ctx, (c) => { if (!tableau(c, r.arg, tabZoom())) SH.apartment(c, 0.6); }, day);
       case 'floor': return at2x(ctx, (c) => SH.tradingFloor(c, 0.7, true, day), day);
       case 'elevator': return at2x(ctx, (c) => SH.elevator(c, 1, 41), day);
       case 'bell': return at2x(ctx, (c) => { c.save(); c.translate(160 * -0.6, 40 * -0.6); c.scale(1.6, 1.6); SH.bellScene(c, 0.2, false); c.restore(); }, day);
@@ -586,10 +753,79 @@
       spill: [{ x: 204, y: 240, w: 51, h: 21, col, a: 0.10 }, { x: 210, y: 249, w: 39, h: 12, col, a: 0.12 }, { x: 216, y: 258, w: 27, h: 6, col, a: 0.14 }]
     };
   }
+  // Night window lights per tier, from the grids' headers: cell x.y.k (k in hundredths); the code lights a cell amber when k/100 < lit(day).
+  const HOME_WIN = {
+    couch: '157.50.3 158.50.9 166.44.16 168.44.22 175.45.29 178.45.35 184.46.42 188.46.48 193.47.55 194.47.61 202.48.68 204.48.74',
+    share: '',
+    studio: '',
+    onebed: '118.52.9 118.55.18 118.58.27 118.61.36 126.35.22 126.38.31 126.41.40 126.44.49 126.47.58 126.50.67 126.53.76 126.56.85 126.59.94 126.62.3 128.35.28 128.38.37 128.41.46 128.44.55 128.47.64 128.50.73 128.53.82 128.56.91 128.59.0 128.62.9 134.42.35 134.45.44 134.48.53 134.51.62 134.54.71 134.57.80 134.60.89 136.42.41 136.45.50 136.48.59 136.51.68 136.54.77 136.57.86 136.60.95 142.49.48 142.52.57 142.55.66 142.58.75 142.61.84 144.49.54 144.52.63 144.55.72 144.58.81 144.61.90 146.49.60 146.52.69 146.55.78 146.58.87 146.61.96 150.32.61 150.35.70 150.38.79 150.41.88 150.44.97 150.47.6 150.50.15 150.53.24 150.56.33 150.59.42 150.62.51 158.39.74 158.42.83 158.45.92 158.48.1 158.51.10 158.54.19 158.57.28 158.60.37 160.39.80 160.42.89 160.45.98 160.48.7 160.51.16 160.54.25 160.57.34 160.60.43 166.46.87 166.49.96 166.52.5 166.55.14 166.58.23 166.61.32 168.46.93 168.49.2 168.52.11 168.55.20 168.58.29 168.61.38 174.29.0 174.32.9 174.35.18 174.38.27 174.41.36 174.44.45 174.47.54 174.50.63 174.53.72 174.56.81 174.59.90 174.62.99 176.29.6 176.32.15 176.35.24 176.38.33 176.41.42 176.44.51 176.47.60 176.50.69 176.53.78 176.56.87 176.59.96 176.62.5 178.29.12 178.32.21 178.35.30 178.38.39 178.41.48 178.44.57 178.47.66 178.50.75 178.53.84 178.56.93 178.59.2 178.62.11 182.36.13 182.39.22 182.42.31 182.45.40 182.48.49 182.51.58 182.54.67 182.57.76 182.60.85 190.43.26 190.46.35 190.49.44 190.52.53 190.55.62 190.58.71 190.61.80 192.43.32 192.46.41 192.49.50 192.52.59 192.55.68 192.58.77 192.61.86 198.50.39 198.53.48 198.56.57 198.59.66 198.62.75 200.50.45 200.53.54 200.56.63 200.59.72 200.62.81',
+    loft: '79.39.9 79.42.18 79.45.27 87.22.22 87.25.31 87.28.40 87.31.49 87.34.58 87.37.67 87.40.76 87.43.85 87.46.94 89.22.28 89.25.37 89.28.46 89.31.55 89.34.64 89.37.73 89.40.82 89.43.91 89.46.0 95.29.35 95.32.44 95.35.53 95.38.62 95.41.71 95.44.80 97.29.41 97.32.50 97.35.59 97.38.68 97.41.77 97.44.86 103.36.48 103.39.57 103.42.66 103.45.75 105.36.54 105.39.63 105.42.72 105.45.81 107.36.60 107.39.69 107.42.78 107.45.87 111.19.61 111.22.70 111.25.79 111.28.88 111.31.97 111.34.6 111.37.15 111.40.24 111.43.33 111.46.42 119.26.74 119.29.83 119.32.92 119.35.1 119.38.10 119.41.19 119.44.28 121.26.80 121.29.89 121.32.98 121.35.7 121.38.16 121.41.25 121.44.34 127.33.87 127.36.96 127.39.5 127.42.14 127.45.23 129.33.93 129.36.2 129.39.11 129.42.20 129.45.29 135.16.0 135.19.9 135.22.18 135.25.27 135.28.36 135.31.45 135.34.54 135.37.63 135.40.72 135.43.81 135.46.90 137.16.6 137.19.15 137.22.24 137.25.33 137.28.42 137.31.51 137.34.60 137.37.69 137.40.78 137.43.87 137.46.96 139.16.12 139.19.21 139.22.30 139.25.39 139.28.48 139.31.57 139.34.66 139.37.75 139.40.84 139.43.93 139.46.2 143.23.13 143.26.22 143.29.31 143.32.40 143.35.49 143.38.58 143.41.67 143.44.76 151.30.26 151.33.35 151.36.44 151.39.53 151.42.62 151.45.71 153.30.32 153.33.41 153.36.50 153.39.59 153.42.68 153.45.77 159.37.39 159.40.48 159.43.57 159.46.66 161.37.45 161.40.54 161.43.63 161.46.72 167.20.52 167.23.61 167.26.70 167.29.79 167.32.88 167.35.97 167.38.6 167.41.15 167.44.24 169.20.58 169.23.67 169.26.76 169.29.85 169.32.94 169.35.3 169.38.12 169.41.21 169.44.30 171.20.64 171.23.73 171.26.82 171.29.91 171.32.0 171.35.9 171.38.18 171.41.27 171.44.36 175.27.65 175.30.74 175.33.83 175.36.92 175.39.1 175.42.10 175.45.19 183.34.78 183.37.87 183.40.96 183.43.5 183.46.14 185.34.84 185.37.93 185.40.2 185.43.11 185.46.20 191.17.91 191.20.0 191.23.9 191.26.18 191.29.27 191.32.36 191.35.45 191.38.54 191.41.63 191.44.72 193.17.97 193.20.6 193.23.15 193.26.24 193.29.33 193.32.42 193.35.51 193.38.60 193.41.69 193.44.78 199.24.4 199.27.13 199.30.22 199.33.31 199.36.40 199.39.49 199.42.58 199.45.67 201.24.10 201.27.19 201.30.28 201.33.37 201.36.46 201.39.55 201.42.64 201.45.73 203.24.16 203.27.25 203.30.34 203.33.43 203.36.52 203.39.61 203.42.70 203.45.79',
+    penthouse: '20.64.9 27.59.22 27.62.31 27.65.40 29.59.28 29.62.37 29.65.46 34.63.35 34.66.44 36.63.41 36.66.50 41.58.48 41.61.57 41.64.66 43.58.54 43.61.63 43.64.72 45.58.60 45.61.69 45.64.78 48.62.61 48.65.70 55.57.74 55.60.83 55.63.92 55.66.1 57.57.80 57.60.89 57.63.98 57.66.7 62.61.87 62.64.96 64.61.93 64.64.2 69.56.0 69.59.9 69.62.18 69.65.27 71.56.6 71.59.15 71.62.24 71.65.33 73.56.12 73.59.21 73.62.30 73.65.39 76.60.13 76.63.22 76.66.31 83.64.26 85.64.32 90.59.39 90.62.48 90.65.57 92.59.45 92.62.54 92.65.63 97.63.52 97.66.61 99.63.58 99.66.67 101.63.64 101.66.73 104.58.65 104.61.74 104.64.83 111.62.78 111.65.87 113.62.84 113.65.93 118.57.91 118.60.0 118.63.9 118.66.18 120.57.97 120.60.6 120.63.15 120.66.24 125.61.4 125.64.13 127.61.10 127.64.19 129.61.16 129.64.25 132.56.17 132.59.26 132.62.35 132.65.44 139.60.30 139.63.39 139.66.48 141.60.36 141.63.45 141.66.54 146.64.43 148.64.49 153.59.56 153.62.65 153.65.74 155.59.62 155.62.71 155.65.80 157.59.68 157.62.77 157.65.86 160.63.69 160.66.78 167.58.82 167.61.91 167.64.0 169.58.88 169.61.97 169.64.6 174.62.95 174.65.4 176.62.1 176.65.10 181.57.8 181.60.17 181.63.26 181.66.35 183.57.14 183.60.23 183.63.32 183.66.41 185.57.20 185.60.29 185.63.38 185.66.47 188.61.21 188.64.30 195.56.34 195.59.43 195.62.52 195.65.61 197.56.40 197.59.49 197.62.58 197.65.67 202.60.47 202.63.56 202.66.65 204.60.53 204.63.62 204.66.71'
+  };
+  // The authored weekend homes (homes/<tier>: 214x121 cells at 3x at (-2,-2); homes/pets 90x22 at cell (116,72)). The code keeps the week number, the 5:58 alarm,
+  // the lit night windows, the laptop's lines, the floor phone's light and the weather; the pet's breath is an overlay frame.
+  const homeArt = (id) => artHas('homes/' + id);
+  const HW = {};
+  const homeWin = (id) => HW[id] || (HW[id] = (HOME_WIN[id] || '').split(' ').filter(Boolean).map((q) => { const a = q.split('.'); return { x: +a[0], y: +a[1], k: a[2] / 100 }; }));
+  const HA = (ctx, id, frame, map) => X.drawArt(ctx, 'homes/' + id, frame, -2, -2, { scale: 3, map });
+  function bedFrame(day, week) {
+    return day === 4 ? 'bed:letter' : day === 39 ? 'bed:letters' : day === 34 ? 'bed:invite' : day === 44 ? 'laptop:dead'
+      : (day === 14 || day === 24 || week % 3 === 0) ? 'bed:laptop' : week % 3 === 1 ? 'bed:papers' : 'bed:mail';
+  }
+  function apartmentArt(ctx, day, home, night, w, part) {
+    const id = home.id, week = Math.floor(day / 5) + 1, s = R.season(day), lay = LAYOUT[id] || LAYOUT.studio, late = w ? w.lateWeeks | 0 : 0;
+    const on = (name) => !part || part === name, dn = night ? 'night' : 'day', { wx, wy, ww, wh } = windowRect(home);
+    if (on('outside')) {
+      HA(ctx, id, 'outside:' + (night ? 'night' : s.id));
+      if (night) { const f = lit(day); homeWin(id).forEach((c) => { if (c.k < f) X.rect(ctx, 3 * c.x - 2, 3 * c.y - 2, 3, 3, P.amber); }); }
+      ctx.save(); ctx.beginPath(); ctx.rect(wx, wy, ww, wh); ctx.clip(); R.weather(ctx, wx, wy, ww, wh, day); ctx.restore();
+    }
+    if (on('room')) {
+      HA(ctx, id, 'room:' + dn);
+      if (s.wreath) HA(ctx, id, 'wreath');
+      ctx.save(); ctx.translate(-2, -2);
+      if (id === 'penthouse') { // the penthouse's window covers the calendar's wall, so the art has no paper there: the code's own calendar goes over the glass
+        X.rect(ctx, 69, 60, U, U, P.ink2); box(ctx, 39, 66, 66, 78, P.bone, P.white, P.putty2); box(ctx, 39, 66, 66, 18, P.crimsonD, P.crimson, P.crimsonD);
+        for (const kx of [51, 69, 87]) { X.rect(ctx, kx, 63, U * 2, 9, P.grey2); X.rect(ctx, kx, 63, U * 2, U, P.white); }
+      }
+      ctx.scale(5, 5); X.text(ctx, String(week), 14, 19, P.ink, { align: 'center' }); ctx.restore();
+      if (late > 0) HA(ctx, id, 'late:door');
+      if (late >= 3) HA(ctx, id, 'late:notice');
+    }
+    if (on('furniture')) {
+      HA(ctx, id, 'furniture:' + dn);
+      HA(ctx, id, bedFrame(day, week));
+      const top = id === 'couch' ? 210 : id === 'share' ? 252 : 204, bx = id === 'share' ? 132 : 150, by = top - 24;
+      if (bedFrame(day, week) === 'bed:laptop' && !(day === 44)) {
+        const c = day === 24 ? P.amber : P.sky;
+        ctx.save(); ctx.translate(-2, -2);
+        if (day === 14 || day === 24) for (let i = 0; i < 4; i++) X.rect(ctx, bx + 9, by + 6 + i * 4, 33 - i * 6, 2, c);
+        else { X.rect(ctx, bx + 9, by + 9, 24 - week % 5, U, P.sky); X.rect(ctx, bx + 9, by + 15, 15 + week % 7, U, P.phosphorD); }
+        ctx.restore();
+      }
+      const nx = lay.stand; ctx.save(); ctx.translate(-2, -2); clockFace(ctx, nx + 37, 202, P.crimson); ctx.restore();
+    }
+    if (on('front')) {
+      HA(ctx, id, 'front:' + dn);
+      if (late > 0) { const n = Math.min(5, late * 2); ctx.save(); ctx.beginPath(); ctx.rect(0, 0, 3 * (35 + 7 * n + 10) - 2, V.h); ctx.clip(); HA(ctx, id, 'late:mail'); ctx.restore(); }
+      if (night && (id === 'couch' || late > 0)) HA(ctx, id, 'figure:night');
+      petArt(ctx, w);
+    }
+    if (on('grain')) {
+      if (night) { ctx.save(); ctx.globalAlpha = 0.28; X.rect(ctx, 0, 0, V.w, V.h, P.ink); ctx.restore(); }
+      X.scanlines(ctx, 0, 0, V.w, V.h, P.ink, 0.05);
+    }
+  }
+  const petArt = (ctx, w) => {
+    const pet = w && w.pet;
+    if (!pet || !PET[pet.kind] || !artHas('homes/pets')) return false;
+    return X.drawArt(ctx, 'homes/pets', pet.kind + ':' + (w.vet !== 'neglected' ? 'cared' : 'neglected'), 346, 214, { scale: 3, map: pet.sex === 'girl' ? null : { r: 'b' } });
+  };
   // `part` picks one layer of the layered Saturday shot: 'outside' (sky, view, still weather in the opening),
   // 'room' (walls, floor, window frame, curtains, wall props), 'furniture', 'front' (floor props and the pet), 'grain'.
   // With no part it draws the whole flat picture, back to front, exactly as before.
   function apartmentShot(ctx, day, home, night, w, part) {
+    if (homeArt(home.id)) return apartmentArt(ctx, day, home, night, w, part);
     const L = home.look, week = Math.floor(day / 5) + 1, s = R.season(day), lay = LAYOUT[home.id] || LAYOUT.studio;
     const late = w ? w.lateWeeks | 0 : 0;
     const on = (name) => !part || part === name;
@@ -818,6 +1054,7 @@
   function petShot(ctx, w) {
     const pet = w && w.pet;
     if (!pet || !PET[pet.kind]) return;
+    if (petArt(ctx, w)) return;
     const cared = w.vet !== 'neglected';
     const sp = X.sprite(petRows(pet, cared)), s = 3, fx = 420, floor = 276, fy = floor - sp.h * s - (cared ? 6 : 0);
     if (cared) { // a round cushion bed
@@ -858,6 +1095,7 @@
   // The pet's head and chest rise one pixel for one breath: the upper 13 rows drawn again one unit up.
   function breathDraw(c, w) {
     const cared = w.vet !== 'neglected';
+    if (artHas('homes/pets') && X.drawArt(c, 'homes/pets', w.pet.kind + ':' + (cared ? 'breath' : 'breathn'), 346, 214, { scale: 3, map: w.pet.sex === 'girl' ? null : { r: 'b' } })) return;
     c.save(); c.translate(420, 276 - 48 - (cared ? 6 : 0) - 1); c.scale(3, 3);
     X.drawSprite(c, breathSprite(w.pet, cared), 0, 0);
     c.restore();
@@ -882,8 +1120,8 @@
       // the notification bar follows at 1.08 s, and a second silent notification blinks it dark from 1.6 to 1.7 s
       const late = w && w.lateWeeks > 0;
       if (t >= 1.0 && !(t >= 1.6 && t < 1.7)) {
-        X.rect(c, 219, 264, 21, 6, late ? P.crimsonD : P.sky);
-        if (t >= 1.08) X.rect(c, 222, 266, 12, 2, late ? P.crimson : P.white);
+        if (homeArt(home.id)) HA(c, home.id, 'phone:lit', late ? { b: 'R' } : null);
+        else { X.rect(c, 219, 264, 21, 6, late ? P.crimsonD : P.sky); if (t >= 1.08) X.rect(c, 222, 266, 12, 2, late ? P.crimson : P.white); }
         c.save(); c.globalAlpha = 0.3; X.rect(c, 207, 276, 45, 3, late ? P.crimson : P.sky); c.restore();
       }
       // the pet's head and chest rise one pixel for one breath
@@ -1317,7 +1555,7 @@
   // for the layer that draws the monitor (drawn through placeArt in the same transform as the art, noBack).
   function monitorRefresh(day, r, title, detail) {
     const K = B.MotionKit, sb = R.storyboard(day), G = R.monitorGeom(sb, detail);
-    const tf = 0.40 + 0.36 * (G.h - 42) / (G.h + 6), band = { x: G.x + 3, y: G.y + G.h - 48, w: G.w - 6, h: 45 };
+    const tf = 0.40 + 0.36 * (G.h - 42) / (G.h + 6), band = R.monitorScreen ? R.monitorScreen(G).band : { x: G.x + 3, y: G.y + G.h - 48, w: G.w - 6, h: 45 };
     return (c, t) => {
       if (t >= tf + 0.08 && t >= 0.76) return;
       placeArt(c, day, r, title, detail, { noBack: true }, (cc) => {
@@ -1351,10 +1589,12 @@
             noBack: true,
             draw: (cc) => at2x(cc, (c2) => {
               K.flicker(c2, 0, 73, 184, 47, `news:${day}:tv`, t, { spans: [cut], col: P.ink, a: 0.15 });
-              X.rect(c2, 42, 52, 100, 48, P.screen);
-              for (let k = 0; k < 3; k++) X.rect(c2, 56 + 26 * k, 92 - HK[k], 14, HK[k], k === 2 ? P.crimson : P.phosphor);
-              X.rect(c2, 50, 92, 84, 1, P.screenGlow);
-              X.scanlines(c2, 42, 52, 100, 48, P.ink, 0.2);
+              if (!(SH.tvBars && SH.tvBars(c2))) {
+                X.rect(c2, 42, 52, 100, 48, P.screen);
+                for (let k = 0; k < 3; k++) X.rect(c2, 56 + 26 * k, 92 - HK[k], 14, HK[k], k === 2 ? P.crimson : P.phosphor);
+                X.rect(c2, 50, 92, 84, 1, P.screenGlow);
+                X.scanlines(c2, 42, 52, 100, 48, P.ink, 0.2);
+              }
             }, day)
           });
         }
@@ -1478,6 +1718,20 @@
   function racksLayers(day, r, title) {
     const K = B.MotionKit, cells = [];
     for (let j = 0; j < 17; j++) for (let i = 0; i < 8; i++) cells.push({ x: 36 + 76 * i, y: 40 + 8 + 12 * j, w: 48, h: 6 });
+    if (racksArt()) {
+      // the art's LEDs (one cell each, on a flat 'S' slot bar) switch off row by row, top to bottom, left to right: the code covers each with its slot colour
+      const leds = B.DecisionArt.rackLeds(day).map((L) => { const cx = Math.round((L.x + 2) / 3), cy = Math.round((L.y + 2) / 3); return { x: 3 * cx - 2, y: 3 * cy - 2, w: 3, h: 3 }; })
+        .sort((a, b) => a.y - b.y || a.x - b.x);
+      const end = 0.35 + 135 * 0.0075, step = (end - 0.35) / leds.length, slot = B.PalKeys.S;
+      return [
+        {
+          id: 'racks', depth: 1,
+          draw(c) { framed(c, day, r, title, { draw: (cc) => racksShot(cc, day, { lit: true }) }); },
+          animate(c, v, t) { if (t >= end) return; framed(c, day, r, title, { noBack: true, draw: (cc) => K.lamps(cc, leds, t, { at: 0.35, step, on: slot }) }); }
+        },
+        marksLayer(day, r, false)
+      ];
+    }
     return [
       {
         id: 'racks', depth: 1,
@@ -1496,7 +1750,7 @@
   const TAB_CUES = { 25: [{ at: 1.10, sfx: 'click' }] };
   function tableauLayers(day, r, phase, dur) {
     const K = B.MotionKit, M = B.Motion, n = r.arg, G = SH.tableauGeom(n), P_ = P;
-    const est = phase === 'establish', det = phase === 'detail', hold = phase === 'hold', Z = det ? 1.3 : 0;
+    const est = phase === 'establish', det = phase === 'detail', hold = phase === 'hold', Z = det ? tabZoom() : 0;
     const noMover = n === 3 || n === 9 || n === 12 || n === 13, over = n === 9;
     let paint = null;
     if (n === 3) {
@@ -2047,11 +2301,11 @@
   }
   // the city's lit windows go out from the right: window w is lit (amber, brighter than the art's) until 0.40 + (1 - x / 640) s
   function endingCityLayers() {
-    const wins = R.skylineWindows(1, 61, 270).filter((w) => w.shown);
+    const wins = R.skylineLit ? R.skylineLit(1, 270, 60) : R.skylineWindows(1, 61, 270).filter((w) => w.shown).map((w) => ({ x: w.x, y: w.y, w: 2, h: 2 }));
     return [{
       id: 'city', depth: 1,
       draw(c) { lastLight(c, false, { part: 'city' }); },
-      animate(c, v, t) { for (const w of wins) if (t < 0.40 + 1.00 * (1 - (w.x + 1) / 640)) X.rect(c, w.x, w.y, 2, 2, P.amber); }
+      animate(c, v, t) { for (const w of wins) if (t < 0.40 + 1.00 * (1 - (w.x + 1) / 640)) X.rect(c, w.x, w.y, w.w, w.h, P.amber); }
     }];
   }
   B.Scenes.ending = function (o) {

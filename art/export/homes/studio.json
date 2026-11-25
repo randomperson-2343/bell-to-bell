@@ -1,0 +1,349 @@
+{
+ "frames": [
+  {
+   "filename": "outside:autumn",
+   "frame": {
+    "x": 0,
+    "y": 0,
+    "w": 214,
+    "h": 121
+   }
+  },
+  {
+   "filename": "outside:grey",
+   "frame": {
+    "x": 214,
+    "y": 0,
+    "w": 214,
+    "h": 121
+   }
+  },
+  {
+   "filename": "outside:winter",
+   "frame": {
+    "x": 428,
+    "y": 0,
+    "w": 214,
+    "h": 121
+   }
+  },
+  {
+   "filename": "outside:night",
+   "frame": {
+    "x": 642,
+    "y": 0,
+    "w": 214,
+    "h": 121
+   }
+  },
+  {
+   "filename": "room:day",
+   "frame": {
+    "x": 856,
+    "y": 0,
+    "w": 214,
+    "h": 121
+   }
+  },
+  {
+   "filename": "room:night",
+   "frame": {
+    "x": 1070,
+    "y": 0,
+    "w": 214,
+    "h": 121
+   }
+  },
+  {
+   "filename": "furniture:day",
+   "frame": {
+    "x": 1284,
+    "y": 0,
+    "w": 214,
+    "h": 121
+   }
+  },
+  {
+   "filename": "furniture:night",
+   "frame": {
+    "x": 1498,
+    "y": 0,
+    "w": 214,
+    "h": 121
+   }
+  },
+  {
+   "filename": "front:day",
+   "frame": {
+    "x": 1712,
+    "y": 0,
+    "w": 214,
+    "h": 121
+   }
+  },
+  {
+   "filename": "front:night",
+   "frame": {
+    "x": 1926,
+    "y": 0,
+    "w": 214,
+    "h": 121
+   }
+  },
+  {
+   "filename": "figure:day",
+   "frame": {
+    "x": 2140,
+    "y": 0,
+    "w": 214,
+    "h": 121
+   }
+  },
+  {
+   "filename": "figure:night",
+   "frame": {
+    "x": 2354,
+    "y": 0,
+    "w": 214,
+    "h": 121
+   }
+  },
+  {
+   "filename": "bed:letter",
+   "frame": {
+    "x": 2568,
+    "y": 0,
+    "w": 214,
+    "h": 121
+   }
+  },
+  {
+   "filename": "bed:letters",
+   "frame": {
+    "x": 2782,
+    "y": 0,
+    "w": 214,
+    "h": 121
+   }
+  },
+  {
+   "filename": "bed:invite",
+   "frame": {
+    "x": 2996,
+    "y": 0,
+    "w": 214,
+    "h": 121
+   }
+  },
+  {
+   "filename": "bed:laptop",
+   "frame": {
+    "x": 3210,
+    "y": 0,
+    "w": 214,
+    "h": 121
+   }
+  },
+  {
+   "filename": "laptop:dead",
+   "frame": {
+    "x": 3424,
+    "y": 0,
+    "w": 214,
+    "h": 121
+   }
+  },
+  {
+   "filename": "bed:papers",
+   "frame": {
+    "x": 3638,
+    "y": 0,
+    "w": 214,
+    "h": 121
+   }
+  },
+  {
+   "filename": "bed:mail",
+   "frame": {
+    "x": 3852,
+    "y": 0,
+    "w": 214,
+    "h": 121
+   }
+  },
+  {
+   "filename": "phone:lit",
+   "frame": {
+    "x": 4066,
+    "y": 0,
+    "w": 214,
+    "h": 121
+   }
+  },
+  {
+   "filename": "late:door",
+   "frame": {
+    "x": 4280,
+    "y": 0,
+    "w": 214,
+    "h": 121
+   }
+  },
+  {
+   "filename": "late:notice",
+   "frame": {
+    "x": 4494,
+    "y": 0,
+    "w": 214,
+    "h": 121
+   }
+  },
+  {
+   "filename": "late:mail",
+   "frame": {
+    "x": 4708,
+    "y": 0,
+    "w": 214,
+    "h": 121
+   }
+  },
+  {
+   "filename": "wreath",
+   "frame": {
+    "x": 4922,
+    "y": 0,
+    "w": 214,
+    "h": 121
+   }
+  }
+ ],
+ "meta": {
+  "image": "studio.png",
+  "size": {
+   "w": 5136,
+   "h": 121
+  },
+  "frameTags": [
+   {
+    "name": "outside:autumn",
+    "from": 0,
+    "to": 0
+   },
+   {
+    "name": "outside:grey",
+    "from": 1,
+    "to": 1
+   },
+   {
+    "name": "outside:winter",
+    "from": 2,
+    "to": 2
+   },
+   {
+    "name": "outside:night",
+    "from": 3,
+    "to": 3
+   },
+   {
+    "name": "room:day",
+    "from": 4,
+    "to": 4
+   },
+   {
+    "name": "room:night",
+    "from": 5,
+    "to": 5
+   },
+   {
+    "name": "furniture:day",
+    "from": 6,
+    "to": 6
+   },
+   {
+    "name": "furniture:night",
+    "from": 7,
+    "to": 7
+   },
+   {
+    "name": "front:day",
+    "from": 8,
+    "to": 8
+   },
+   {
+    "name": "front:night",
+    "from": 9,
+    "to": 9
+   },
+   {
+    "name": "figure:day",
+    "from": 10,
+    "to": 10
+   },
+   {
+    "name": "figure:night",
+    "from": 11,
+    "to": 11
+   },
+   {
+    "name": "bed:letter",
+    "from": 12,
+    "to": 12
+   },
+   {
+    "name": "bed:letters",
+    "from": 13,
+    "to": 13
+   },
+   {
+    "name": "bed:invite",
+    "from": 14,
+    "to": 14
+   },
+   {
+    "name": "bed:laptop",
+    "from": 15,
+    "to": 15
+   },
+   {
+    "name": "laptop:dead",
+    "from": 16,
+    "to": 16
+   },
+   {
+    "name": "bed:papers",
+    "from": 17,
+    "to": 17
+   },
+   {
+    "name": "bed:mail",
+    "from": 18,
+    "to": 18
+   },
+   {
+    "name": "phone:lit",
+    "from": 19,
+    "to": 19
+   },
+   {
+    "name": "late:door",
+    "from": 20,
+    "to": 20
+   },
+   {
+    "name": "late:notice",
+    "from": 21,
+    "to": 21
+   },
+   {
+    "name": "late:mail",
+    "from": 22,
+    "to": 22
+   },
+   {
+    "name": "wreath",
+    "from": 23,
+    "to": 23
+   }
+  ]
+ }
+}

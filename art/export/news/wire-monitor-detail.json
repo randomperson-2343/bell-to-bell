@@ -1,0 +1,27 @@
+{
+ "frames": [
+  {
+   "filename": "base",
+   "frame": {
+    "x": 0,
+    "y": 0,
+    "w": 150,
+    "h": 120
+   }
+  }
+ ],
+ "meta": {
+  "image": "wire-monitor-detail.png",
+  "size": {
+   "w": 150,
+   "h": 120
+  },
+  "frameTags": [
+   {
+    "name": "base",
+    "from": 0,
+    "to": 0
+   }
+  ]
+ }
+}

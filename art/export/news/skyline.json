@@ -1,0 +1,97 @@
+{
+ "frames": [
+  {
+   "filename": "a",
+   "frame": {
+    "x": 0,
+    "y": 0,
+    "w": 320,
+    "h": 84
+   }
+  },
+  {
+   "filename": "b",
+   "frame": {
+    "x": 320,
+    "y": 0,
+    "w": 320,
+    "h": 84
+   }
+  },
+  {
+   "filename": "c",
+   "frame": {
+    "x": 640,
+    "y": 0,
+    "w": 320,
+    "h": 84
+   }
+  },
+  {
+   "filename": "snow:a",
+   "frame": {
+    "x": 960,
+    "y": 0,
+    "w": 320,
+    "h": 84
+   }
+  },
+  {
+   "filename": "snow:b",
+   "frame": {
+    "x": 1280,
+    "y": 0,
+    "w": 320,
+    "h": 84
+   }
+  },
+  {
+   "filename": "snow:c",
+   "frame": {
+    "x": 1600,
+    "y": 0,
+    "w": 320,
+    "h": 84
+   }
+  }
+ ],
+ "meta": {
+  "image": "skyline.png",
+  "size": {
+   "w": 1920,
+   "h": 84
+  },
+  "frameTags": [
+   {
+    "name": "a",
+    "from": 0,
+    "to": 0
+   },
+   {
+    "name": "b",
+    "from": 1,
+    "to": 1
+   },
+   {
+    "name": "c",
+    "from": 2,
+    "to": 2
+   },
+   {
+    "name": "snow:a",
+    "from": 3,
+    "to": 3
+   },
+   {
+    "name": "snow:b",
+    "from": 4,
+    "to": 4
+   },
+   {
+    "name": "snow:c",
+    "from": 5,
+    "to": 5
+   }
+  ]
+ }
+}

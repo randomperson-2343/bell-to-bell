@@ -95,6 +95,23 @@
     });
     return out;
   }
+  // The authored skyline (news/skyline, 320x84 cells at 2x; frames a/b/c by day % 3, snow:a/b/c once it snows). Its dark 2x2-cell windows
+  // are listed here (x, y in cells, from the grid header); the same (k*13+seed)%11<2 rule as the code towers lights some of them.
+  const SKY_WIN = {
+    a: '5,67 6,32 6,65 18,57 18,77 28,39 28,72 44,55 51,55 54,45 58,55 82,26 82,59 82,61 89,61 110,55 114,37 114,57 121,37 121,57 128,24 128,37 128,57 150,55 157,55 162,30 162,63 176,43 176,63 183,43 183,63 190,43 190,63 194,58 210,53 210,73 217,53 217,73 222,42 222,75 240,56 244,49 251,49 266,32 266,65 274,59 281,59 288,54 288,59 296,54 304,39 304,69 311,39 311,69',
+    b: '0,65 7,65 12,36 12,69 22,63 29,63 36,63 40,35 40,68 56,69 63,69 72,57 84,55 84,75 91,55 91,75 98,55 98,75 122,36 122,69 144,64 146,59 152,64 153,59 160,59 178,28 178,61 180,57 180,77 187,57 187,77 206,36 206,69 208,57 215,57 222,57 228,28 228,61 240,55 240,75 247,55 247,75 250,44 250,77 258,44 258,77 270,55 277,55 284,47 284,55 302,53 302,73 309,53 309,73 316,53 316,73',
+    c: '14,67 16,50 21,67 32,38 32,71 40,38 40,71 42,53 49,53 62,39 62,72 66,75 73,75 80,75 82,56 90,56 98,71 105,71 110,64 118,64 124,63 131,63 138,63 144,16 144,49 154,59 161,59 166,47 174,47 176,57 176,77 183,57 183,77 188,60 190,57 190,77 196,60 208,51 212,39 212,72 215,51 236,61 243,61 250,62 260,51 267,51 272,42 272,75 274,51 290,53 297,53 300,53 304,53'
+  };
+  const SKY_PTS = {};
+  const skyPts = (v) => SKY_PTS[v] || (SKY_PTS[v] = SKY_WIN[v].split(' ').map((p) => p.split(',').map(Number)));
+  const skyArt = () => !!(B.Art && B.Art.has('news/skyline'));
+  const skyVar = (day, seed) => 'abc'[Math.abs((day == null ? seed : day) | 0) % 3];
+  // The lit window rects (px) of the authored skyline at baseline y: [{x, y, w, h}], for the shots that light them themselves.
+  function skylineLit(seed, y, day) {
+    y = y || 248;
+    const top = y - 168;
+    return skyPts(skyVar(day, seed)).filter((p, k) => (k * 13 + seed) % 11 < 2).map((p) => ({ x: p[0] * 2, y: top + p[1] * 2, w: 4, h: 4 }));
+  }
   // noSpeckle (optional): the still snow speckle is left out where falling snow is drawn instead; autumn leaves stay.
   // o.noWindows (optional): the lit windows are left out (a shot draws them itself).
   function skyline(ctx, act, seed, y, day, noSpeckle, o) {
@@ -102,6 +119,14 @@
     X.gradient(ctx, 0, 0, V.w, y, c.sky, P.ink, 12);
     const s = day == null ? null : season(day);
     if (s) X.dither(ctx, 0, Math.round(y * 0.6), V.w, Math.round(y * 0.4), P.ink, s.dawn, s.glow);
+    if (skyArt()) {
+      const v = skyVar(day, seed);
+      if (X.drawArt(ctx, 'news/skyline', (s && s.snow ? 'snow:' : '') + v, 0, y - 168, { scale: 2 })) {
+        if (!(o && o.noWindows)) skylineLit(seed, y, day).forEach((q) => X.rect(ctx, q.x, q.y, q.w, q.h, c.wash));
+        if (s) weather(ctx, 0, 0, V.w, y - 20, day, noSpeckle);
+        return;
+      }
+    }
     for (let i = 0; i < 34; i++) {
       const t = towerOf(i, seed), w = t.w, h = t.h, x = t.x;
       X.rect(ctx, x, y - h, w, h, i % 4 ? P.ink2 : P.slate);
@@ -151,16 +176,43 @@
     return (FIG_SP[key] = X.sprite(rows));
   }
   // who: 0 is you; 1-3 are the strangers on your commute.
+  // The authored commuters (who 1..3): news/commuters (16x32 cells) at 2*scale for scales up to 2, news/commuters-big (32x64) at scale for 3 and 4.
+  function personArt(ctx, x, y, s, face, who) {
+    const big = s >= 3, id = big ? 'news/commuters-big' : 'news/commuters';
+    if (who < 1 || who > 3 || !(B.Art && B.Art.has(id))) return false;
+    ctx.save();
+    ctx.translate(x, y - 20 * s);
+    ctx.scale(face < 0 ? -1 : 1, 1);
+    const ok = X.drawArt(ctx, id, 'who' + who, -16 * s, 0, { scale: big ? s : 2 * s });
+    ctx.restore();
+    return ok;
+  }
   function person(ctx, x, y, scale, act, face, who) {
     const s = scale || 1;
+    if (who && personArt(ctx, x, y, s, face, who)) return;
     ctx.save();
     ctx.translate(x, y - 20 * s);
     ctx.scale((face < 0 ? -2 : 2) * s, 2 * s);
     X.drawSprite(ctx, figureSprite(who || 0, act > 2), -8, 0);
     ctx.restore();
   }
+  // The wire monitor's screen (the CRT) and the headline band on it, for a monitor rect: the authored bezel leaves a 6 px inset
+  // at the sides and top and a 10 px chin, so the screen is (x+6, y+6, w-12, h-16) and the band is its bottom 45 px.
+  function monitorScreen(G) {
+    const sc = { x: G.x + 6, y: G.y + 6, w: G.w - 12, h: G.h - 16 };
+    return { screen: sc, band: { x: sc.x, y: sc.y + sc.h - 45, w: sc.w, h: 45 } };
+  }
   function monitor(ctx, x, y, w, h, headline, act) {
-    const c = colors(act);
+    const c = colors(act), detail = w >= 300, id = detail ? 'news/wire-monitor-detail' : 'news/wire-monitor';
+    if (B.Art && B.Art.has(id)) {
+      const M = monitorScreen({ x, y, w, h }), sc = M.screen, b = M.band;
+      X.crt(ctx, sc.x, sc.y, sc.w, sc.h, true);
+      X.drawArt(ctx, id, 'base', x, y - (detail ? 70 : 78), { scale: 2 });
+      X.rect(ctx, b.x, b.y, b.w, b.h, c.signal);
+      text(ctx, 'OVERNIGHT WIRE', b.x + 6, b.y + 6, P.bone);
+      X.wrap(clean(headline), b.w - 12).slice(0,3).forEach((line,i) => text(ctx, line, b.x + 6, b.y + 19 + i*10, P.ink));
+      return;
+    }
     cel3(ctx, x-5, y-5, w+10, h+10, P.plastic, P.plastic2, P.plasticD);
     X.crt(ctx, x, y, w, h, true);
     X.rect(ctx, x+3, y+h-48, w-6, 45, c.signal);
@@ -194,11 +246,38 @@
   }
   // o (all optional; absent draws the whole flat composition): part 'back' (the ink, skyline, floor and the place's own block) or 'front' (the wire
   // monitor, the commuter, the camera's marker props and the 0.08 scanlines); noSpeckle leaves the skyline's still snow speckle out.
+  // The authored place (news/place-*, 320x180 cells at 2x at 0,0): the ink, the skyline behind it and the place's frames, with what stays code
+  // (the lobby's screen bars, the rideshare dash bars, the desk's chart and note line). False when the place has no art (the flat code draws it).
+  const PLACE_ART = { subway: 'subway', platform: 'subway', lobby: 'lobby', elevator: 'lobby', kitchen: 'kitchen', breakroom: 'kitchen', desk: 'desk', rideshare: 'rideshare', street: 'street' };
+  function placeArt(ctx, sb, ns) {
+    const key = PLACE_ART[sb.place], id = 'news/place-' + key;
+    if (!key || !(B.Art && B.Art.has(id))) return false;
+    const pl = sb.place, s = season(sb.day), art = (f) => X.drawArt(ctx, id, f, 0, 0, { scale: 2 });
+    X.rect(ctx, 0, 0, V.w, V.h, P.ink);
+    if (pl === 'rideshare') { X.rect(ctx, 0, 0, V.w, V.h, P.ink2); skyline(ctx, sb.act, sb.day, 210, sb.day, ns); }
+    else skyline(ctx, sb.act, sb.day, 252, sb.day, ns);
+    art(pl === 'street' || pl === 'rideshare' ? 'back:' + s.id : 'back');
+    if (pl === 'platform') art('platform');
+    if (pl === 'breakroom') art('breakroom');
+    if (pl === 'rideshare') art('seat');
+    if (s.wreath && key !== 'subway' && key !== 'street' && key !== 'rideshare') art('wreath');
+    if (key === 'lobby') for (let i = 0; i < 4; i++) X.rect(ctx, 534, 92 + i * 11, 40 - i * 6, 2, P.sky);
+    if (key === 'desk') {
+      chart(ctx, 374, 66, 198, 130, sb.day, marketDown(sb.day - 1));
+      X.rect(ctx, 604, 238, 20, 1, P.grey);
+    }
+    if (pl === 'rideshare') {
+      X.rect(ctx, 280, 246, 36, 2, P.sky);
+      X.rect(ctx, 324, 246, 28, 2, P.amber);
+      person(ctx, 74, 250, 2, sb.act, 1, 1 + sb.day % 3); person(ctx, 574, 250, 2, sb.act, -1, 1 + (sb.day + 1) % 3);
+    }
+    return true;
+  }
   function placeFrame(ctx, sb, headline, detail, o) {
     o = o || {};
     const back = o.part !== 'front', front = o.part !== 'back', ns = !!o.noSpeckle;
     const c = colors(sb.act), shift = sb.crop;
-    if (back) {
+    if (back && placeArt(ctx, sb, ns)) { /* authored place */ } else if (back) {
       X.rect(ctx, 0, 0, V.w, V.h, P.ink);
       skyline(ctx, sb.act, sb.day, 252, sb.day, ns);
       X.rect(ctx, 0, 252, V.w, 108, sb.place === 'street' || sb.place === 'platform' ? P.ink2 : P.carpetD);
@@ -260,9 +339,10 @@
     monitor(ctx, mx, my, mw, mh, headline, sb.act);
     if (!detail) person(ctx, B.clamp(470-shift/2,380,560), 244, 2, sb.act, -1, 1 + (sb.day + 2) % 3);
     // Observable composition markers: framing and subject position vary by camera.
-    if (sb.camera === 'insert') cel3(ctx, 468, 86, 116, 82, P.bone, P.white, P.plasticD);
-    if (sb.camera === 'over-shoulder') { person(ctx, 576, 234, 3, sb.act, -1); X.rect(ctx, 516, 278, 124, 82, P.ink2); }
-    if (sb.camera === 'close') { person(ctx, 516, 205, 4, sb.act, -1); }
+    if (sb.camera === 'insert' && !(B.Art && B.Art.has('news/place-marker') && X.drawArt(ctx, 'news/place-marker', 'marker:insert', 0, 0, { scale: 2 }))) cel3(ctx, 468, 86, 116, 82, P.bone, P.white, P.plasticD);
+    // The over-shoulder and close markers show you (who 0), the same person in every shot; the big commuters are strangers, so they stay out of these.
+    if (sb.camera === 'over-shoulder') { person(ctx, 576, 234, 3, sb.act, -1, 0); X.rect(ctx, 516, 278, 124, 82, P.ink2); }
+    if (sb.camera === 'close') { person(ctx, 516, 205, 4, sb.act, -1, 0); }
     X.scanlines(ctx, 0, 0, V.w, V.h, P.ink, .08);
   }
 
@@ -296,9 +376,16 @@
     if (part === 'rows') { cards(); return rows.length; }
     // Glow is behind the device and never becomes an opaque slab.
     ctx.save(); ctx.globalAlpha = .12 + act*.025; X.rect(ctx, x-8, y-8, w+16, h+16, c.signal); ctx.restore();
-    X.plate(ctx, x, y, w, h, P.ink2, P.slate2, P.ink);
+    // The authored device (8 cells of reflection line each side of the body, so it sits 16 px left of the body's x) goes over the screen fill;
+    // its screen window is transparent. Without the art the flat plate and speaker slot are drawn.
+    const devId = w === 226 ? 'news/phone-device-big' : 'news/phone-device-small', devArt = !!(B.Art && B.Art.has(devId));
+    if (!devArt) X.plate(ctx, x, y, w, h, P.ink2, P.slate2, P.ink);
     X.rect(ctx, sx, sy, sw, sh, P.screen);
-    X.rect(ctx, x+w/2-18, y+4, 36, 4, P.ink);
+    if (!devArt || !X.drawArt(ctx, devId, 'base', x - 16, y, { scale: 2 })) {
+      if (devArt) X.plate(ctx, x, y, w, h, P.ink2, P.slate2, P.ink);
+      X.rect(ctx, sx, sy, sw, sh, P.screen);
+      X.rect(ctx, x+w/2-18, y+4, 36, 4, P.ink);
+    }
     const minute = lockMinute(day);
     text(ctx, `6:${minute}`, sx+7, sy+6, P.grey2);
     if (!o.noDigits) text(ctx, `${count}`, sx+sw-8, sy+6, c.wash, 'right');
@@ -343,12 +430,14 @@
       if (device) {
         // A thin reflected edge keeps the handoff and the close view grounded
         // as one physical device, while leaving the notification text untouched.
-        X.rect(ctx,x-12,y+16,1,h-24,P.slate2);
-        X.rect(ctx,x+w+11,y+16,1,h-24,P.slate2);
+        const devArt = !!(B.Art && B.Art.has(w === 226 ? 'news/phone-device-big' : 'news/phone-device-small'));
+        if (!devArt) { X.rect(ctx,x-12,y+16,1,h-24,P.slate2); X.rect(ctx,x+w+11,y+16,1,h-24,P.slate2); }
         phone(ctx,x,y,w,h,feed,sb.act,sb.day,inner);
-        X.rect(ctx,x+3,y+14,1,h-28,P.grey2);
-        X.rect(ctx,x+w-4,y+19,1,h-38,P.slate2);
-        X.rect(ctx,x+Math.round(w/2)-9,y+h-8,18,1,P.slate2);
+        if (!devArt) {
+          X.rect(ctx,x+3,y+14,1,h-28,P.grey2);
+          X.rect(ctx,x+w-4,y+19,1,h-38,P.slate2);
+          X.rect(ctx,x+Math.round(w/2)-9,y+h-8,18,1,P.slate2);
+        }
         for(let i=0;i<5;i++) X.rect(ctx,x+14+i*8,y+h+12,4,1,colors(sb.act).signal);
       }
       if (room) {
@@ -528,6 +617,13 @@
     }
     if (!part || part === 'phone') {
       const { pw, ph, px, py, sx, sy, sw, cy, flag, stats } = sqwakGeom(full);
+      // The authored hand and phone (news/sqwak-hand, 144x165 cells at 2x, origin at the phone's x - 30): the hand's back, the phone, the
+      // screen's content below, then the fingers and the thumb over the bezel and the screen's edge.
+      const handArt = !!(B.Art && B.Art.has('news/sqwak-hand')), hx = px - 30;
+      const hand = (f) => handArt && X.drawArt(ctx, 'news/sqwak-hand', f, hx, py, { scale: 2 });
+      const useArt = handArt && hand('hand:back');
+      if (useArt) { X.rect(ctx, sx, sy, sw, ph - 24, P.screenD); hand('phone'); }
+      else {
       // hand behind the phone
       X.rect(ctx, px - 22, py + 150, 30, 120, P.desk);
       X.rect(ctx, px - 24, py + 150, 6, 110, P.deskD);
@@ -540,6 +636,7 @@
       X.plate(ctx, px, py, pw, ph, P.ink2, P.slate2, P.ink);
       X.rect(ctx, sx, sy, sw, ph - 24, P.screenD);
       X.rect(ctx, px + pw / 2 - 20, py + 4, 40, 5, P.ink);
+      }
       // app header
       big(ctx, 'sqwak', px + pw / 2, sy + 12, P.bone, 2, 'center');
       text(ctx, 'MARKETS TALK. EVERYONE LISTENS.', px + pw / 2, sy + 32, P.grey, 'center');
@@ -549,7 +646,10 @@
       if (!o.noFlag) X.rect(ctx, flag.x, flag.y, flag.w, flag.h, P.crimson);
       text(ctx, b.flag || 'BREAKING', sx + 28, cy + 10, P.crimson);
       text(ctx, b.when || 'NOW', sx + sw - 14, cy + 10, P.grey2, 'right');
-      X.wrap(clean(b.head).toUpperCase(), (sw - 30) / 2).slice(0, 3).forEach((line, i) => big(ctx, line, sx + 12, cy + 26 + i * 18, P.bone, 2));
+      // the thumb lies over the post's left edge at py+112..148: the first headline line has the full width, the two under the thumb start 16 px in
+      const head = clean(b.head).toUpperCase(), l0 = X.wrap(head, (sw - 30) / 2)[0] || '';
+      const hl = useArt ? [l0].concat(X.wrap(head.slice(l0.length).trim(), (sw - 46) / 2).slice(0, 2)) : X.wrap(head, (sw - 30) / 2).slice(0, 3);
+      hl.forEach((line, i) => big(ctx, line, sx + 12 + (useArt && i > 0 ? 16 : 0), cy + 26 + i * 18, P.bone, 2));
       const bodyY = cy + 88;
       X.wrap(clean(b.text), sw - 30).slice(0, 5).forEach((line, i) => text(ctx, line, sx + 12, bodyY + i * 10, P.putty2));
       // glitch thumbnail strip
@@ -562,6 +662,7 @@
         text(ctx, clean(b.reply[0]).slice(0, 26), sx + 32, ry + 1, P.sky);
         X.wrap(clean(b.reply[1]), sw - 44).slice(0, 3).forEach((line, i) => text(ctx, line, sx + 32, ry + 12 + i * 10, P.bone));
       }
+      if (useArt) hand('hand:front');
     }
     if (!part || part === 'grain') {
       X.scanlines(ctx, 0, 0, V.w, V.h, P.ink, full ? .06 : .1);
@@ -577,7 +678,7 @@
   B.Rhythm = {
     view:V, endingIds:ENDING_IDS,
     // Drawing helpers for js/art/storyboard.js.
-    placeFrame, monitorGeom, phoneFrame, phoneGeom, lockMinute, stackSlip, CLOSE_DIM, officeFrame, officeGeom, closeFrame, closeGeom, closeDown, sqwakFrame, sqwakGeom, sqwakStats, skyline, skylineWindows, season, sky, weather, text, colors, clean, chart, chartSeries, person, marketDown, beat,
+    placeFrame, monitorGeom, phoneFrame, phoneGeom, lockMinute, stackSlip, CLOSE_DIM, officeFrame, officeGeom, closeFrame, closeGeom, closeDown, sqwakFrame, sqwakGeom, sqwakStats, skyline, skylineWindows, skylineLit, monitorScreen, season, sky, weather, text, colors, clean, chart, chartSeries, person, marketDown, beat,
     phoneRowCount(feed){return Math.min(4,(feed||[]).length);},
     storyboard:board
   };

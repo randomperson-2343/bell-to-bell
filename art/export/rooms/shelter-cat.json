@@ -1,0 +1,41 @@
+{
+ "frames": [
+  {
+   "filename": "rest",
+   "frame": {
+    "x": 0,
+    "y": 0,
+    "w": 18,
+    "h": 13
+   }
+  },
+  {
+   "filename": "breathe",
+   "frame": {
+    "x": 18,
+    "y": 0,
+    "w": 18,
+    "h": 13
+   }
+  }
+ ],
+ "meta": {
+  "image": "shelter-cat.png",
+  "size": {
+   "w": 36,
+   "h": 13
+  },
+  "frameTags": [
+   {
+    "name": "rest",
+    "from": 0,
+    "to": 0
+   },
+   {
+    "name": "breathe",
+    "from": 1,
+    "to": 1
+   }
+  ]
+ }
+}

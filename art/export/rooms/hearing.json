@@ -1,0 +1,41 @@
+{
+ "frames": [
+  {
+   "filename": "room:hearing",
+   "frame": {
+    "x": 0,
+    "y": 0,
+    "w": 214,
+    "h": 121
+   }
+  },
+  {
+   "filename": "room:vote",
+   "frame": {
+    "x": 214,
+    "y": 0,
+    "w": 214,
+    "h": 121
+   }
+  }
+ ],
+ "meta": {
+  "image": "hearing.png",
+  "size": {
+   "w": 428,
+   "h": 121
+  },
+  "frameTags": [
+   {
+    "name": "room:hearing",
+    "from": 0,
+    "to": 0
+   },
+   {
+    "name": "room:vote",
+    "from": 1,
+    "to": 1
+   }
+  ]
+ }
+}

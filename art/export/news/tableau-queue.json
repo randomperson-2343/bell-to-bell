@@ -1,0 +1,69 @@
+{
+ "frames": [
+  {
+   "filename": "queue:ink-light",
+   "frame": {
+    "x": 0,
+    "y": 0,
+    "w": 9,
+    "h": 31
+   }
+  },
+  {
+   "filename": "queue:ink-dark",
+   "frame": {
+    "x": 9,
+    "y": 0,
+    "w": 9,
+    "h": 31
+   }
+  },
+  {
+   "filename": "queue:red-light",
+   "frame": {
+    "x": 18,
+    "y": 0,
+    "w": 9,
+    "h": 31
+   }
+  },
+  {
+   "filename": "queue:red-dark",
+   "frame": {
+    "x": 27,
+    "y": 0,
+    "w": 9,
+    "h": 31
+   }
+  }
+ ],
+ "meta": {
+  "image": "tableau-queue.png",
+  "size": {
+   "w": 36,
+   "h": 31
+  },
+  "frameTags": [
+   {
+    "name": "queue:ink-light",
+    "from": 0,
+    "to": 0
+   },
+   {
+    "name": "queue:ink-dark",
+    "from": 1,
+    "to": 1
+   },
+   {
+    "name": "queue:red-light",
+    "from": 2,
+    "to": 2
+   },
+   {
+    "name": "queue:red-dark",
+    "from": 3,
+    "to": 3
+   }
+  ]
+ }
+}

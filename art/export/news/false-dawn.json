@@ -1,0 +1,111 @@
+{
+ "frames": [
+  {
+   "filename": "sky:autumn",
+   "frame": {
+    "x": 0,
+    "y": 0,
+    "w": 320,
+    "h": 180
+   }
+  },
+  {
+   "filename": "sky:grey",
+   "frame": {
+    "x": 320,
+    "y": 0,
+    "w": 320,
+    "h": 180
+   }
+  },
+  {
+   "filename": "sky:winter",
+   "frame": {
+    "x": 640,
+    "y": 0,
+    "w": 320,
+    "h": 180
+   }
+  },
+  {
+   "filename": "sky:rally",
+   "frame": {
+    "x": 960,
+    "y": 0,
+    "w": 320,
+    "h": 180
+   }
+  },
+  {
+   "filename": "towers",
+   "frame": {
+    "x": 1280,
+    "y": 0,
+    "w": 320,
+    "h": 180
+   }
+  },
+  {
+   "filename": "snow",
+   "frame": {
+    "x": 1600,
+    "y": 0,
+    "w": 320,
+    "h": 180
+   }
+  },
+  {
+   "filename": "ground",
+   "frame": {
+    "x": 1920,
+    "y": 0,
+    "w": 320,
+    "h": 180
+   }
+  }
+ ],
+ "meta": {
+  "image": "false-dawn.png",
+  "size": {
+   "w": 2240,
+   "h": 180
+  },
+  "frameTags": [
+   {
+    "name": "sky:autumn",
+    "from": 0,
+    "to": 0
+   },
+   {
+    "name": "sky:grey",
+    "from": 1,
+    "to": 1
+   },
+   {
+    "name": "sky:winter",
+    "from": 2,
+    "to": 2
+   },
+   {
+    "name": "sky:rally",
+    "from": 3,
+    "to": 3
+   },
+   {
+    "name": "towers",
+    "from": 4,
+    "to": 4
+   },
+   {
+    "name": "snow",
+    "from": 5,
+    "to": 5
+   },
+   {
+    "name": "ground",
+    "from": 6,
+    "to": 6
+   }
+  ]
+ }
+}

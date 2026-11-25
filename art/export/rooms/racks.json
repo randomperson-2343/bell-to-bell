@@ -1,0 +1,55 @@
+{
+ "frames": [
+  {
+   "filename": "room",
+   "frame": {
+    "x": 0,
+    "y": 0,
+    "w": 214,
+    "h": 121
+   }
+  },
+  {
+   "filename": "leds:on",
+   "frame": {
+    "x": 214,
+    "y": 0,
+    "w": 214,
+    "h": 121
+   }
+  },
+  {
+   "filename": "standby",
+   "frame": {
+    "x": 428,
+    "y": 0,
+    "w": 214,
+    "h": 121
+   }
+  }
+ ],
+ "meta": {
+  "image": "racks.png",
+  "size": {
+   "w": 642,
+   "h": 121
+  },
+  "frameTags": [
+   {
+    "name": "room",
+    "from": 0,
+    "to": 0
+   },
+   {
+    "name": "leds:on",
+    "from": 1,
+    "to": 1
+   },
+   {
+    "name": "standby",
+    "from": 2,
+    "to": 2
+   }
+  ]
+ }
+}

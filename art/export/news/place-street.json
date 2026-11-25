@@ -1,0 +1,55 @@
+{
+ "frames": [
+  {
+   "filename": "back:autumn",
+   "frame": {
+    "x": 0,
+    "y": 0,
+    "w": 320,
+    "h": 180
+   }
+  },
+  {
+   "filename": "back:grey",
+   "frame": {
+    "x": 320,
+    "y": 0,
+    "w": 320,
+    "h": 180
+   }
+  },
+  {
+   "filename": "back:winter",
+   "frame": {
+    "x": 640,
+    "y": 0,
+    "w": 320,
+    "h": 180
+   }
+  }
+ ],
+ "meta": {
+  "image": "place-street.png",
+  "size": {
+   "w": 960,
+   "h": 180
+  },
+  "frameTags": [
+   {
+    "name": "back:autumn",
+    "from": 0,
+    "to": 0
+   },
+   {
+    "name": "back:grey",
+    "from": 1,
+    "to": 1
+   },
+   {
+    "name": "back:winter",
+    "from": 2,
+    "to": 2
+   }
+  ]
+ }
+}

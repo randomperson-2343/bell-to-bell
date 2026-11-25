@@ -1,0 +1,27 @@
+{
+ "frames": [
+  {
+   "filename": "chair",
+   "frame": {
+    "x": 0,
+    "y": 0,
+    "w": 12,
+    "h": 16
+   }
+  }
+ ],
+ "meta": {
+  "image": "hearing-chair.png",
+  "size": {
+   "w": 12,
+   "h": 16
+  },
+  "frameTags": [
+   {
+    "name": "chair",
+    "from": 0,
+    "to": 0
+   }
+  ]
+ }
+}

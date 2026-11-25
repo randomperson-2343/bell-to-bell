@@ -1,0 +1,125 @@
+{
+ "frames": [
+  {
+   "filename": "cat:cared",
+   "frame": {
+    "x": 0,
+    "y": 0,
+    "w": 90,
+    "h": 22
+   }
+  },
+  {
+   "filename": "cat:neglected",
+   "frame": {
+    "x": 90,
+    "y": 0,
+    "w": 90,
+    "h": 22
+   }
+  },
+  {
+   "filename": "dog:cared",
+   "frame": {
+    "x": 180,
+    "y": 0,
+    "w": 90,
+    "h": 22
+   }
+  },
+  {
+   "filename": "dog:neglected",
+   "frame": {
+    "x": 270,
+    "y": 0,
+    "w": 90,
+    "h": 22
+   }
+  },
+  {
+   "filename": "cat:breath",
+   "frame": {
+    "x": 360,
+    "y": 0,
+    "w": 90,
+    "h": 22
+   }
+  },
+  {
+   "filename": "cat:breathn",
+   "frame": {
+    "x": 450,
+    "y": 0,
+    "w": 90,
+    "h": 22
+   }
+  },
+  {
+   "filename": "dog:breath",
+   "frame": {
+    "x": 540,
+    "y": 0,
+    "w": 90,
+    "h": 22
+   }
+  },
+  {
+   "filename": "dog:breathn",
+   "frame": {
+    "x": 630,
+    "y": 0,
+    "w": 90,
+    "h": 22
+   }
+  }
+ ],
+ "meta": {
+  "image": "pets.png",
+  "size": {
+   "w": 720,
+   "h": 22
+  },
+  "frameTags": [
+   {
+    "name": "cat:cared",
+    "from": 0,
+    "to": 0
+   },
+   {
+    "name": "cat:neglected",
+    "from": 1,
+    "to": 1
+   },
+   {
+    "name": "dog:cared",
+    "from": 2,
+    "to": 2
+   },
+   {
+    "name": "dog:neglected",
+    "from": 3,
+    "to": 3
+   },
+   {
+    "name": "cat:breath",
+    "from": 4,
+    "to": 4
+   },
+   {
+    "name": "cat:breathn",
+    "from": 5,
+    "to": 5
+   },
+   {
+    "name": "dog:breath",
+    "from": 6,
+    "to": 6
+   },
+   {
+    "name": "dog:breathn",
+    "from": 7,
+    "to": 7
+   }
+  ]
+ }
+}

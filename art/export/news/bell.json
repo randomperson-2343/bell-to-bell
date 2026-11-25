@@ -1,0 +1,139 @@
+{
+ "frames": [
+  {
+   "filename": "wall:autumn",
+   "frame": {
+    "x": 0,
+    "y": 0,
+    "w": 320,
+    "h": 180
+   }
+  },
+  {
+   "filename": "wall:grey",
+   "frame": {
+    "x": 320,
+    "y": 0,
+    "w": 320,
+    "h": 180
+   }
+  },
+  {
+   "filename": "wall:winter",
+   "frame": {
+    "x": 640,
+    "y": 0,
+    "w": 320,
+    "h": 180
+   }
+  },
+  {
+   "filename": "desks:full",
+   "frame": {
+    "x": 960,
+    "y": 0,
+    "w": 320,
+    "h": 180
+   }
+  },
+  {
+   "filename": "desks:empty",
+   "frame": {
+    "x": 1280,
+    "y": 0,
+    "w": 320,
+    "h": 180
+   }
+  },
+  {
+   "filename": "rings:1",
+   "frame": {
+    "x": 1600,
+    "y": 0,
+    "w": 320,
+    "h": 180
+   }
+  },
+  {
+   "filename": "rings:2",
+   "frame": {
+    "x": 1920,
+    "y": 0,
+    "w": 320,
+    "h": 180
+   }
+  },
+  {
+   "filename": "rings:3",
+   "frame": {
+    "x": 2240,
+    "y": 0,
+    "w": 320,
+    "h": 180
+   }
+  },
+  {
+   "filename": "wreath",
+   "frame": {
+    "x": 2560,
+    "y": 0,
+    "w": 320,
+    "h": 180
+   }
+  }
+ ],
+ "meta": {
+  "image": "bell.png",
+  "size": {
+   "w": 2880,
+   "h": 180
+  },
+  "frameTags": [
+   {
+    "name": "wall:autumn",
+    "from": 0,
+    "to": 0
+   },
+   {
+    "name": "wall:grey",
+    "from": 1,
+    "to": 1
+   },
+   {
+    "name": "wall:winter",
+    "from": 2,
+    "to": 2
+   },
+   {
+    "name": "desks:full",
+    "from": 3,
+    "to": 3
+   },
+   {
+    "name": "desks:empty",
+    "from": 4,
+    "to": 4
+   },
+   {
+    "name": "rings:1",
+    "from": 5,
+    "to": 5
+   },
+   {
+    "name": "rings:2",
+    "from": 6,
+    "to": 6
+   },
+   {
+    "name": "rings:3",
+    "from": 7,
+    "to": 7
+   },
+   {
+    "name": "wreath",
+    "from": 8,
+    "to": 8
+   }
+  ]
+ }
+}

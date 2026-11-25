@@ -1,0 +1,27 @@
+{
+ "frames": [
+  {
+   "filename": "witness",
+   "frame": {
+    "x": 0,
+    "y": 0,
+    "w": 12,
+    "h": 12
+   }
+  }
+ ],
+ "meta": {
+  "image": "tableau-witness.png",
+  "size": {
+   "w": 12,
+   "h": 12
+  },
+  "frameTags": [
+   {
+    "name": "witness",
+    "from": 0,
+    "to": 0
+   }
+  ]
+ }
+}

@@ -1,0 +1,69 @@
+{
+ "frames": [
+  {
+   "filename": "room",
+   "frame": {
+    "x": 0,
+    "y": 0,
+    "w": 320,
+    "h": 180
+   }
+  },
+  {
+   "filename": "monitors",
+   "frame": {
+    "x": 320,
+    "y": 0,
+    "w": 320,
+    "h": 180
+   }
+  },
+  {
+   "filename": "props",
+   "frame": {
+    "x": 640,
+    "y": 0,
+    "w": 320,
+    "h": 180
+   }
+  },
+  {
+   "filename": "led:off",
+   "frame": {
+    "x": 960,
+    "y": 0,
+    "w": 320,
+    "h": 180
+   }
+  }
+ ],
+ "meta": {
+  "image": "desk-closeup.png",
+  "size": {
+   "w": 1280,
+   "h": 180
+  },
+  "frameTags": [
+   {
+    "name": "room",
+    "from": 0,
+    "to": 0
+   },
+   {
+    "name": "monitors",
+    "from": 1,
+    "to": 1
+   },
+   {
+    "name": "props",
+    "from": 2,
+    "to": 2
+   },
+   {
+    "name": "led:off",
+    "from": 3,
+    "to": 3
+   }
+  ]
+ }
+}

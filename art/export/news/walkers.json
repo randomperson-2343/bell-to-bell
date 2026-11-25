@@ -1,0 +1,41 @@
+{
+ "frames": [
+  {
+   "filename": "a",
+   "frame": {
+    "x": 0,
+    "y": 0,
+    "w": 10,
+    "h": 20
+   }
+  },
+  {
+   "filename": "b",
+   "frame": {
+    "x": 10,
+    "y": 0,
+    "w": 10,
+    "h": 20
+   }
+  }
+ ],
+ "meta": {
+  "image": "walkers.png",
+  "size": {
+   "w": 20,
+   "h": 20
+  },
+  "frameTags": [
+   {
+    "name": "a",
+    "from": 0,
+    "to": 0
+   },
+   {
+    "name": "b",
+    "from": 1,
+    "to": 1
+   }
+  ]
+ }
+}
