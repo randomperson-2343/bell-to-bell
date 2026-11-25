@@ -1,7 +1,10 @@
-// Portraits for the story cast, drawn to the same rules as the pet sprite:
-// each face is rasterised onto a 48x48 grid in memory, shaded one step down
-// the palette on its right side, then given an ink outline, and painted as a
-// sprite. Everything stays inside the locked 32-colour palette.
+// Portraits for the story cast.
+// Hand-drawn faces come first: art/src/portraits/<slug>.aseprite, exported into
+// js/art/sprite-data.js (B.Art) with two frames, 'open' and 'closed' (a blink).
+// A face with no drawing yet falls back to the old procedural one below: each
+// face rasterised onto a 48x48 grid, shaded one step down the palette on its
+// right side, given an ink outline and painted as a sprite. Either way every
+// pixel stays inside the locked 32-colour palette.
 (function (B) {
   'use strict';
   const X = B.Pixel;
@@ -45,6 +48,19 @@
     'Your vet': { skin: P.deskD, hair: P.ink2, suit: P.sky, accent: P.slate2, cut: 'bob', scrubs: true, brow: 'up', mouth: 'smile' },
     'Your landlord': { screen: true, suit: P.plastic, accent: P.phosphor }
   };
+
+  // The drawn portrait for each speaker, by slug: art/src/portraits/<slug>.aseprite.
+  const SLUG = {
+    'Desmond Kroll': 'desmond-kroll', 'Imani Rhodes': 'imani-rhodes', 'Sana Ferreira': 'sana-ferreira',
+    'Sen. Marcus Thorne': 'marcus-thorne', 'Perry Nakash': 'perry-nakash', 'Adele Venn': 'adele-venn',
+    'Greta Vail': 'greta-vail', 'Mom': 'mom', 'Harbor Street Animal Shelter': 'shelter-volunteer',
+    'Your dentist': 'dentist', 'Your vet': 'vet', 'Your landlord': 'landlord-screen'
+  };
+  function drawn(name, closed) {
+    const id = SLUG[name] && 'portraits/' + SLUG[name];
+    if (!id || !B.Art || !B.Art.has(id)) return null;
+    return (closed && B.Art.get(id, 'closed')) || B.Art.get(id, 'open') || B.Art.get(id);
+  }
 
   // ---- rasteriser ----
   function raster(c, closed) {
@@ -152,6 +168,8 @@
   function sprite(name, o) {
     const closed = !!(o && o.closed), key = closed ? name + ':closed' : name;
     if (cache[key]) return cache[key];
+    const art = drawn(name, closed);
+    if (art) return (cache[key] = X.sprite(art.rows));
     const c = CAST[name] || { skin: P.desk2, hair: P.ink2, suit: P.slate, accent: P.grey2, cut: 'crop', brow: 'level', mouth: 'flat' };
     const g = outline(raster(c, closed));
     const rows = [];
@@ -159,40 +177,49 @@
     return (cache[key] = X.sprite(rows));
   }
 
-  // The eye band of the closed face, painted over the open one: a blink. Cells x 16..32, y 18..20 of a person (the glasses frames and glints at 16, 22, 26,
-  // 32 and row 18 come from the same raster), x 18..29, y 15..17 of the screen avatar. One fillRect per opaque cell (51 at most).
-  function paintEyes(ctx, name) {
-    const c = CAST[name], band = c && c.screen ? [18, 29, 15, 17] : [16, 32, 18, 20], sp = sprite(name, { closed: true });
-    for (let y = band[2]; y <= band[3]; y++) for (let x = band[0]; x <= band[1]; x++) {
-      const col = B.PalKeys[sp.rows[y][x]];
-      if (!col) continue;
-      ctx.fillStyle = col; ctx.fillRect(x, y, 1, 1);
+  // The blink: the cells where the closed face differs from the open one,
+  // painted over the open face. For the procedural faces that is inside x 16..32,
+  // y 18..20 (x 18..29, y 15..17 for the screen avatar); a drawn face keeps its
+  // blink inside one band of rows. One fillRect per changed opaque cell.
+  const blinks = {};
+  function blinkCells(name) {
+    if (blinks[name]) return blinks[name];
+    const a = sprite(name), b = sprite(name, { closed: true }), out = [];
+    for (let y = 0; y < b.h; y++) for (let x = 0; x < b.w; x++) {
+      const k = b.rows[y][x];
+      if (k !== (a.rows[y] || '')[x] && B.PalKeys[k]) out.push([x, y, B.PalKeys[k]]);
     }
+    return (blinks[name] = out);
   }
+  function paintEyes(ctx, name) {
+    for (const [x, y, col] of blinkCells(name)) { ctx.fillStyle = col; ctx.fillRect(x, y, 1, 1); }
+  }
+  // Side of the (square) portrait grid: 80 for a drawn face, 48 for a procedural one.
+  const size = (name) => sprite(name).h;
 
   function draw(canvas, name) {
     if (!canvas) return;
-    const { ctx } = X.fit(canvas, N, N, 4);
+    const n = size(name), { ctx } = X.fit(canvas, n, n, 4);
     paint(ctx, name);
   }
 
-  // Paint a portrait into any context on a 48x48 grid. Scenes scale it up
-  // with ctx.scale and pass bare: true to drop the card background and frame,
-  // so the person stands in the room instead of on a badge.
+  // Paint a portrait into any context on its own grid (size(name) square).
+  // Scenes scale it up with ctx.scale and pass bare: true to drop the card
+  // background and frame, so the person stands in the room instead of on a badge.
   function paint(ctx, name, opt) {
     const c = CAST[name] || { accent: P.grey2 };
-    const bare = !!(opt && opt.bare);
+    const bare = !!(opt && opt.bare), n = size(name), f = n >= 64 ? 3 : 2;
     if (!bare) {
-      X.rect(ctx, 0, 0, N, N, P.ink2);
-      X.dither(ctx, 2, 2, 44, 44, P.slate, c.accent, 0.13);
-      for (let i = 6; i < 44; i += 8) X.rect(ctx, i, 3, 1, 42, P.ink2);
+      X.rect(ctx, 0, 0, n, n, P.ink2);
+      X.dither(ctx, f, f, n - 2 * f, n - 2 * f, P.slate, c.accent, 0.13);
+      for (let i = f + 4; i < n - f; i += 8 * (f - 1)) X.rect(ctx, i, f + 1, 1, n - 2 * f - 2, P.ink2);
     }
     X.drawSprite(ctx, sprite(name), 0, 0);
     if (bare) return;
-    X.rect(ctx, 0, 0, N, 2, c.accent);
-    X.rect(ctx, 0, 46, N, 2, P.ink);
-    X.rect(ctx, 0, 0, 2, N, c.accent);
-    X.rect(ctx, 46, 0, 2, N, P.ink);
+    X.rect(ctx, 0, 0, n, f, c.accent);
+    X.rect(ctx, 0, n - f, n, f, P.ink);
+    X.rect(ctx, 0, 0, f, n, c.accent);
+    X.rect(ctx, n - f, 0, f, n, P.ink);
   }
 
   B.Portraits = {
@@ -200,6 +227,9 @@
     draw,
     paint,
     has: (name) => !!CAST[name],
+    drawn: (name) => !!drawn(name),
+    size,
+    SLUG,
     sprite,
     paintEyes,
     drawAll(root) {

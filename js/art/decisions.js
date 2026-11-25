@@ -451,12 +451,15 @@
     else if (r === 'clinic') clinic(ctx, day, opt, o && o.part);
     if (!(o && o.noGrain)) X.scanlines(ctx, 0, 0, V.w, V.h, P.ink, 0.04);
   }
-  // The portrait's own space: 48x48 cells at 5x from (40, 46).
-  function speakerSpace(ctx, fn, x) { ctx.save(); ctx.translate(x == null ? 40 : x, 46); ctx.scale(5, 5); fn(ctx); ctx.restore(); }
+  // The portrait's own space, 240 px square from (40, 46): a drawn 80x80 face at 3x, a procedural 48x48 one at 5x.
+  function speakerSpace(ctx, fn, x, name) {
+    const k = Math.max(1, Math.floor(240 / (name && B.Portraits ? B.Portraits.size(name) : 48)));
+    ctx.save(); ctx.translate(x == null ? 40 : x, 46); ctx.scale(k, k); fn(ctx); ctx.restore();
+  }
   // The speaker, standing in the room at 5x: a medium close-up, feet out of shot.
   function speaker(ctx, name, x) {
     if (!B.Portraits || !B.Portraits.has(name)) return false;
-    speakerSpace(ctx, (s) => B.Portraits.paint(s, name, { bare: true }), x);
+    speakerSpace(ctx, (s) => B.Portraits.paint(s, name, { bare: true }), x, name);
     return true;
   }
   function dim(ctx, a) { ctx.save(); ctx.globalAlpha = a; X.rect(ctx, 0, 0, V.w, V.h, P.ink); ctx.restore(); }
@@ -664,7 +667,7 @@
       camera: K.rise(12, 2.1, 0.30, 0.80),
       layers: [
         { id: 'room', depth: 0.3, draw(c) { room(c, id, day, false, S); dim(c, 0.35); } },
-        { id: 'speaker', depth: 1, draw(c) { speaker(c, name, 40); }, animate(g, v, t) { if (t >= 1.55 && t < 1.67) speakerSpace(g, (sp) => B.Portraits.paintEyes(sp, name)); } }
+        { id: 'speaker', depth: 1, draw(c) { speaker(c, name, 40); }, animate(g, v, t) { if (t >= 1.55 && t < 1.67) speakerSpace(g, (sp) => B.Portraits.paintEyes(sp, name), 40, name); } }
       ]
     };
   }
