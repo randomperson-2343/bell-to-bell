@@ -122,12 +122,18 @@
       const s = Math.max(1, Math.ceil(Math.max(W / V.w, H / V.h)));
       if (cv.width !== V.w || cv.height !== V.h) { cv.width = V.w; cv.height = V.h; }
       Object.assign(cv.style, { width: V.w * s + 'px', height: V.h * s + 'px', left: Math.round((W - V.w * s) / 2) + 'px', top: Math.round((H - V.h * s) / 2) + 'px' });
-      // Below 560px wide the CASCADE bars would land behind the menu buttons, so they sit out.
-      const cascade = W >= 560;
+      // The CASCADE bars (art x 384-437) sit right of the menu. When the cover
+      // scale crops the sides, slide them left so they stay whole and in view;
+      // where that would put them behind the menu buttons, they sit out.
+      const ox = (V.w * s - W) / 2, right = (ox + W) / s;
+      const dx = Math.min(0, Math.floor(right - 8 - 438));
+      const cascade = W >= 560 && (384 + dx) * s - ox >= W / 2 + 150 ? dx : null;
       if (!this.bdCache || this.bdCache.cascade !== cascade) {
         const c = document.createElement('canvas'); c.width = V.w; c.height = V.h;
         const g = c.getContext('2d');
-        ['sky', cascade ? 'cascade' : null, 'far', 'near'].filter(Boolean).forEach((f) => B.Pixel.drawArt(g, ID, f, 0, 0));
+        B.Pixel.drawArt(g, ID, 'sky', 0, 0);
+        if (cascade !== null) B.Pixel.drawArt(g, ID, 'cascade', cascade, 0);
+        ['far', 'near'].forEach((f) => B.Pixel.drawArt(g, ID, f, 0, 0));
         this.bdCache = { canvas: c, cascade };
       }
       const ctx = cv.getContext('2d');

@@ -27,6 +27,10 @@
   background: url(../art/ui/logo--base.png) 0 0 / 288px 80px no-repeat;
 }
 .logo span, .logo em, .boot-logo span, .boot-logo em { font-size: 0; text-shadow: none; }
+/* Belt and braces: some browsers still draw a sliver of zero-size text, so the
+   baked wordmarks also hide their words and clip anything that leaks out. */
+.logo, .boot-logo, .feed-logo, .sq-logo { overflow: hidden; color: transparent !important; text-shadow: none; }
+.logo *, .boot-logo *, .feed-logo *, .sq-logo * { color: transparent !important; text-shadow: none; }
 #screen-exit .boot-logo { background-image: url(../art/ui/logo-closed--base.png); }
 @media (min-width: 1241px) {
   .logo { width: 432px; height: 120px; background-size: 432px 120px; }
@@ -103,8 +107,7 @@
 }
 .desk-btn:hover { background: none; border-image-source: url(../art/ui/desk-btn--hover.png); }
 .desk-btn:active { border-image-source: url(../art/ui/desk-btn--pressed.png); }
-/* Muted reads as a switch pushed in, with the label in crimson. */
-.desk-btn.muted-audio { border-image-source: url(../art/ui/desk-btn--on.png); }
+/* Muted keeps the plain key, with the label in crimson and the crossed speaker. */
 .desk-btn.muted-audio .desk-label { color: var(--c-crimson-d); }
 
 /* ---------- icons (8x8 art, 16x16 CSS) ---------- */
@@ -154,8 +157,11 @@
   background: none; border-style: solid; border-width: 2px;
   border-image: url(../art/ui/wall-plate--normal.png) 8 fill / 8px / 0 repeat;
 }
-/* The act plate's slot is neutral art; the accent in it stays live. */
-.wall-plate.act-plate { border-image-source: url(../art/ui/wall-plate--act.png); box-shadow: inset 2px 0 0 var(--act-accent); }
+/* The act plate's slot is neutral art; the accent in it stays live. The
+   border-image paints over any inset shadow, so the accent is its own layer,
+   laid in the slot (art x 2-3, y 4-7 repeating: CSS x 4-8, 8px in from top and bottom). */
+.wall-plate.act-plate { position: relative; border-image-source: url(../art/ui/wall-plate--act.png); }
+.wall-plate.act-plate::before { content: ""; position: absolute; left: 2px; top: 6px; bottom: 6px; width: 4px; background: var(--act-accent); pointer-events: none; }
 .wall-clock {
   background: none; border-style: solid; border-width: 2px;
   border-image: url(../art/ui/wall-clock--normal.png) 8 fill / 8px / 0 repeat;
@@ -198,6 +204,14 @@
 @media (min-width: 1041px) and (min-height: 501px) {
   #office { grid-template-rows: 46px minmax(0, 1fr) 72px; }
   #story-art { width: 320px; height: 64px; }
+}
+/* On the wood the gauge's words need light ink. (On a portrait phone the gauge
+   sits on the wall, where the dark ink still reads.) */
+@media (min-width: 821px), (orientation: landscape) {
+  .desk-gauge .desk-label { color: var(--c-bone); text-shadow: 1px 1px 0 var(--c-ink); }
+  .desk-gauge .desk-label i#tb-stress-num { color: var(--c-white); }
+  .desk-gauge[data-stage="loaded"] .desk-label b { color: var(--c-amber); }
+  .desk-gauge[data-stage="tunnel"] .desk-label b, .desk-gauge[data-stage="critical"] .desk-label b { color: var(--c-crimson); }
 }
 /* Between 821 and 1040px there is no room beside the buttons and the gauge. */
 @media (max-width: 1040px) { #story-art { display: none; } }
@@ -309,11 +323,12 @@
   }
   #phone-tabs button:hover { border-image-source: url(../art/ui/phone-tab--hover.png); }
   #phone-tabs button:active { border-image-source: url(../art/ui/phone-tab--pressed.png); }
-  #phone-tabs button.on { background: none; border-image-source: url(../art/ui/phone-tab--on.png); }
-  /* The fill art is 66 art px; at 66 CSS px it shows at exactly 1x, whole. */
+  #phone-tabs button { position: relative; color: var(--c-putty2); }
+  #phone-tabs button.on { background: none; color: var(--c-white); border-image-source: url(../art/ui/phone-tab--on.png); box-shadow: none; }
+  /* The border-image paints over an inset shadow, so the live act underline is its own layer. */
+  #phone-tabs button.on::after { content: ""; position: absolute; left: 4px; right: 4px; bottom: 2px; height: 4px; background: var(--act-accent); pointer-events: none; }
+  /* The short gauge crops the fill art (STYLE 8.2), never squeezes it. */
   .desk-gauge .gauge, #stress-gauge .gauge { width: 70px; }
-  .desk-gauge .gauge > i, #stress-gauge .gauge > i { background-size: 66px 8px; }
-  .desk-gauge[data-stage] .gauge > i { background-size: 66px 8px; }
 }
 @media (max-width: 820px) and (orientation: portrait) {
   #btn-pause::before { content: none; }

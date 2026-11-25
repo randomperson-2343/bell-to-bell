@@ -46,7 +46,9 @@ if (require.main === module) {
   const files = build();
   const have = fs.existsSync(OUT) ? fs.readdirSync(OUT).filter((f) => f.endsWith('.png')) : [];
   if (process.argv.includes('--check')) {
-    const bad = Object.keys(files).filter((f) => !have.includes(f) || !fs.readFileSync(path.join(OUT, f)).equals(files[f]))
+    // Compare decoded pixels, not PNG bytes: zlib output can differ between Node versions.
+    const same = (a, b) => { const x = PNG.read(a), y = PNG.read(b); return x.w === y.w && x.h === y.h && Buffer.from(x.px).equals(Buffer.from(y.px)); };
+    const bad = Object.keys(files).filter((f) => !have.includes(f) || !same(fs.readFileSync(path.join(OUT, f)), files[f]))
       .concat(have.filter((f) => !files[f]));
     if (bad.length) { console.error('art/ui/ is out of date (' + bad.slice(0, 5).join(', ') + '): run node tools/art/build-ui.js'); process.exit(1); }
     console.log('art/ui/ is up to date (' + have.length + ' files)');
