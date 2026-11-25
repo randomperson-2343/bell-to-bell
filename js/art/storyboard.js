@@ -492,7 +492,10 @@
   function actCard(ctx, day, o) {
     const a = (B.StoryData.actIndex(day) + 1), c = R.colors(a);
     X.rect(ctx, 0, 0, V.w, V.h, P.ink);
-    X.gradient(ctx, 0, 0, V.w, V.h, c.wash, P.ink, 12);
+    // the act opens on the city at night: the authored towers (news/skyline, 2x) along the bottom on plain ink, their windows lit in the act's
+    // colour; the banded gradient is only the fallback without the art
+    if (artHas('news/skyline') && X.drawArt(ctx, 'news/skyline', 'a', 0, V.h - 168, { scale: 2 })) R.skylineLit(day * 7 + 3, V.h, day).forEach((q) => X.rect(ctx, q.x, q.y, q.w, q.h, c.wash));
+    else X.gradient(ctx, 0, 0, V.w, V.h, c.wash, P.ink, 12);
     const label = act(day);
     if (!(o && o.noName)) big(ctx, label.split('·')[1] ? label.split('·')[1].trim() : label, 320, 150, P.bone, 4, 'center');
     big(ctx, `ACT ${label.split('·')[0].trim()}`, 320, 112, c.signal, 2, 'center');
