@@ -459,7 +459,13 @@
   // The speaker, standing in the room at 5x: a medium close-up, feet out of shot.
   function speaker(ctx, name, x) {
     if (!B.Portraits || !B.Portraits.has(name)) return false;
-    speakerSpace(ctx, (s) => B.Portraits.paint(s, name, { bare: true }), x, name);
+    speakerSpace(ctx, (s) => {
+      B.Portraits.paint(s, name, { bare: true });
+      // A drawn face is cut at the chest; carry its last row down past the bottom of the frame so the body runs out of shot.
+      if (!B.Portraits.drawn(name)) return;
+      const sp = B.Portraits.sprite(name), row = sp.rows[sp.h - 1], below = Math.ceil((V.h - 46) / Math.floor(240 / sp.h)) - sp.h;
+      for (let i = 0; i < row.length; i++) { const col = B.PalKeys[row[i]]; if (col) { s.fillStyle = col; s.fillRect(i, sp.h, 1, below); } }
+    }, x, name);
     return true;
   }
   function dim(ctx, a) { ctx.save(); ctx.globalAlpha = a; X.rect(ctx, 0, 0, V.w, V.h, P.ink); ctx.restore(); }
