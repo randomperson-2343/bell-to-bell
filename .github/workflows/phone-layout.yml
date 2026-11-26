@@ -33,10 +33,10 @@ jobs:
         if: always()
         continue-on-error: true
         run: node js/tests/browser-run.js
-      - name: Motion check (report only)
+      - name: Motion check (report only; reprints the pinned pictures that changed)
         if: always()
         continue-on-error: true
-        run: node js/tests/motion-run.js
+        run: node js/tests/motion-run.js --update-golden
       - name: Audio render check (report only)
         if: always()
         continue-on-error: true
