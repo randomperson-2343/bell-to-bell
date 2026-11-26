@@ -36,8 +36,10 @@
   }
 
   // Deterministic vote outcome from the political state.
-  // Decision scenes (js/art/decisions.js) play around each choice when the
-  // cinematic player is present; headless runs go straight through.
+  // Decision scenes play around each choice when the cinematic player is
+  // present: the long scene before it (js/art/screenplay.js, or the short
+  // js/art/decisions.js one where a decision has no script) and the payoff
+  // after it. Headless runs go straight through.
   function scene(name, o, cb) {
     if (B.Cinematic && B.Cinematic.play && B.Scenes && B.Scenes[name]) B.Cinematic.play(name, o, cb);
     else cb();
@@ -829,11 +831,13 @@
         const bal = `<span class="muted">Your money: ${B.fmt.money(W$.cash)} cash${W$.card > 0 ? ` · ${B.fmt.money(-W$.card)} on the card` : ''} · ${E.tier(W$).name}, ${B.fmt.money(E.weekly(E.tier(W$), W$))} a week all in.</span>`;
         const view = { speaker: beat.speaker, role: beat.role, kicker: beat.kicker, title: beat.title, text: beat.text(S, W$).concat(bal),
           options: beat.options.filter((o) => !o.req || o.req(S, W$)).map((o) => ({ id: o.id, label: o.label, hint: o.hint })) };
-        scene('decision', { id: beat.id, day: g.day, speaker: beat.speaker, role: beat.role, title: beat.title, S }, () =>
+        scene('screenplay', { id: beat.id, day: g.day, speaker: beat.speaker, role: beat.role, title: beat.title, S, W: W$ }, () =>
           B.Screens.choice(view, S, (optId) => {
             const res = this.applyLife(beat.id, optId);
             const after = (res && res.after) || [];
-            B.Screens.aftermath(beat.title, after, () => cb(), { id: beat.id, day: g.day, S });
+            // the payoff scene for the option taken, then the written result
+            scene('payoff', { id: beat.id, opt: res && res.opt ? res.opt.id : optId, day: g.day, S, W: W$ }, () =>
+              B.Screens.aftermath(beat.title, after, () => cb(), { id: beat.id, day: g.day, S }));
           }));
       },
 
@@ -849,20 +853,21 @@
         const view = Object.assign({}, c, {
           options: c.options.filter((o) => !o.req || o.req(S, wealth)).map((o) => Object.assign({}, o, { req: null }))
         });
-        scene('decision', { id, day: d, speaker: c.speaker, role: c.role, title: c.title, S }, () => B.Screens.choice(view, S, (optId) => {
+        scene('screenplay', { id, day: d, speaker: c.speaker, role: c.role, title: c.title, S, W: W$ }, () => B.Screens.choice(view, S, (optId) => {
           const opt = c.options.find((o) => o.id === optId);
           opt.apply(S);
           S.choices[id] = optId;
           if (opt.headline) S.log.push({ day: d, text: opt.headline });
           if (id === 'c8') S.f.billPassed = votePasses(S);
-          B.Screens.aftermath(c.title, opt.after || [], () => {
+          // the payoff scene for the option taken (after the vote is counted), then the written result
+          scene('payoff', { id, opt: optId, day: d, S, W: W$ }, () => B.Screens.aftermath(c.title, opt.after || [], () => {
             // Taking the plane ends the career on the spot.
             if (S.f.fled) {
               this.liquidate(g);
               return cb(this.buildEnding(g, 'final'));
             }
             cb();
-          }, { id, day: d, S });
+          }, { id, day: d, S }));
         }));
       },
 

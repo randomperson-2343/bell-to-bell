@@ -17,11 +17,21 @@
       const wrap = document.createElement('div');
       wrap.id = 'cinematic';
       wrap.hidden = true;
-      wrap.innerHTML = '<canvas id="cine-canvas" width="640" height="360"></canvas><div class="cine-skip">TAP OR PRESS A KEY · SKIP SCENE CHAIN</div>';
+      wrap.innerHTML = '<canvas id="cine-canvas" width="640" height="360"></canvas><div class="cine-skip">TAP OR PRESS A KEY · SKIP SCENE CHAIN</div>'
+        + '<button type="button" class="cine-skip-btn" hidden>SKIP SCENE</button>';
       document.body.appendChild(wrap);
       this.el = wrap;
       this.canvas = wrap.querySelector('#cine-canvas');
-      wrap.addEventListener('pointerdown', () => this.skipAll());
+      this.hint = wrap.querySelector('.cine-skip');
+      this.skipBtn = wrap.querySelector('.cine-skip-btn');
+      // A stepped scene (a long decision scene): the SKIP button ends the scene, a tap anywhere else moves to the next shot.
+      // Every other scene: a tap anywhere skips the scene chain, as before.
+      wrap.addEventListener('pointerdown', (e) => {
+        const onBtn = e && e.target && e.target.closest && e.target.closest('.cine-skip-btn');
+        if (!this.stepped) this.skipAll();
+        else if (onBtn) { if (e.preventDefault) e.preventDefault(); this.skipScene(); }
+        else this.next();
+      });
       window.addEventListener('resize', () => { this.layout(); if (this.running && this.paused) this.draw(); });
       this.layout();
     },
@@ -107,8 +117,11 @@
         beats = [Object.assign({}, informative, { dur: 1.35, transition: 'fade' })];
       }
       this.short = mode === 'short';
+      this.stepped = !!builder.stepped && !this.short && beats.length > 1;
       this.warned.clear();
       this.ensure();
+      this.hint.textContent = this.stepped ? 'TAP OR PRESS A KEY · NEXT SHOT' : 'TAP OR PRESS A KEY · SKIP SCENE CHAIN';
+      this.skipBtn.hidden = !this.stepped;
       this.scene = name;
       this.opts = opts || {};
       this.beats = beats;
@@ -122,7 +135,11 @@
       this.layout();
       B.Music.stop();
       this.playBeat();
-      this.onKey = (e) => { e.preventDefault(); this.skipAll(); };
+      this.onKey = (e) => {
+        e.preventDefault();
+        if (!this.stepped) return this.skipAll();
+        if (e.key === 'Escape' || e.key === 's' || e.key === 'S') this.skipScene(); else this.next();
+      };
       window.addEventListener('keydown', this.onKey);
       this.last = performance.now();
       const step = (ts) => {
@@ -278,13 +295,13 @@
       X.rect(ctx, 0, view.h - Math.round(6 * unit), view.w, Math.round(6 * unit), P.ink);
       if (beat.line) {
         const pad = Math.round(12 * unit);
-        const width = view.w - pad * 2, x = pad, height = Math.round(32 * unit), y = view.h - height - Math.round(8 * unit);
+        const width = view.w - pad * 2, x = pad;
+        // Captions scale with the canvas so a 640-wide storyboard reads like the 320 one. Two lines, or three for a long scene's longer line.
+        const lines = X.wrap(beat.line, (width - Math.round(16 * unit)) / unit).slice(0, 3);
+        const height = Math.round((lines.length > 2 ? 42 : 32) * unit), y = view.h - height - Math.round(8 * unit);
         X.box(ctx, x, y, width, height);
-        // Captions scale with the canvas so a 640-wide storyboard reads like the 320 one.
-        const lines = X.wrap(beat.line, (width - Math.round(16 * unit)) / unit).slice(0, 2);
         const total = lines.join(' ').length;
-        const delay = beat.captionDelay == null ? 0.22 : beat.captionDelay;
-        const shown = Math.ceil(total * B.clamp((this.t - delay) / Math.min(1.15, beat.dur * 0.55), 0, 1));
+        const shown = Math.ceil(total * this.typed(beat));
         let used = 0;
         lines.forEach((line, row) => {
           const take = B.clamp(shown - used, 0, line.length);
@@ -331,6 +348,29 @@
       const fn = B.SFX[beat.sfx];
       if (typeof fn === 'function') fn.call(B.SFX);
     },
+    // How much of the caption has typed on (0 to 1).
+    typed(beat) {
+      const delay = beat.captionDelay == null ? 0.22 : beat.captionDelay;
+      return B.clamp((this.t - delay) / Math.min(beat.typeFor || 1.15, beat.dur * 0.55), 0, 1);
+    },
+    // A stepped scene's tap: a caption still typing finishes first; a typed one moves to the next shot (the last shot ends the scene).
+    next() {
+      if (!this.running || !this.beats) return;
+      const beat = this.beats[this.i];
+      if (beat.line && this.typed(beat) < 1) {
+        const delay = beat.captionDelay == null ? 0.22 : beat.captionDelay;
+        this.t = Math.min(beat.dur - 0.05, delay + Math.min(beat.typeFor || 1.15, beat.dur * 0.55));
+        this.draw();
+        return;
+      }
+      this.i++;
+      this.t = 0;
+      if (this.i >= this.beats.length) return this.finish();
+      this.playBeat();
+      this.draw();
+    },
+    // Ends this scene only, not the chain it is part of.
+    skipScene() { if (this.running) this.finish(); },
     skipAll() { if (this.running) { this.skippingChain = !!this.chain; this.finish(); } },
     finish() {
       this.running = false;
@@ -342,6 +382,7 @@
       this.fired = null;
       this.preparing = false;
       this.warned.clear();
+      this.stepped = false;
       if (!this.chain) this.clearCache();
       if (this.el) this.el.hidden = true;
       const done = this.done;
