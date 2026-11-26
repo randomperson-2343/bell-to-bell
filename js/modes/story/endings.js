@@ -88,18 +88,18 @@
     },
     {
       id: 'perp', icon: '&#128660;', title: 'Perp Walk', hint: 'Fraud or inside information, too much heat, and no deal with prosecutors.', lockedHint: 'Enforcement has a long memory and a good camera.',
-      test: (c) => (c.S.f.fraud || c.S.f.insider || c.S.f.raid) && c.S.m.heat >= 48 && !c.S.f.cooperated && !c.S.f.fled,
+      test: (c) => (c.S.f.fraud || c.S.f.insider || c.S.f.raid || c.S.f.thsiFrontRan) && c.S.m.heat >= 48 && !c.S.f.cooperated && !c.S.f.fled,
       headline: 'Federal Agents Arrest Holloway Stern Trader at Dawn',
       deck: 'Handcuffed in front of cameras as prosecutors move to seize accounts.',
       story: (c) => [
         'Agents arrested the trader at 6:04 AM outside a rented apartment. Photographers had been tipped off. The trader wore a gym hoodie.',
-        `Prosecutors allege ${[c.S.f.fraud ? 'signing off on fraudulent CASCADE valuations' : null, c.S.f.insider ? 'trading ahead of the Meridian downgrade' : null, c.S.f.raid ? 'taking part in a coordinated raid on Ridgeway Trust' : null].filter(Boolean).join(', ') || 'securities fraud'}. The government moved to seize 90% of the trader's assets pending trial.`,
+        `Prosecutors allege ${[c.S.f.fraud ? 'signing off on fraudulent CASCADE valuations' : null, c.S.f.insider ? 'trading ahead of the Meridian downgrade' : null, c.S.f.raid ? 'taking part in a coordinated raid on Ridgeway Trust' : null, c.S.f.thsiFrontRan ? 'trading Thorncrest around a comfort letter they signed' : null].filter(Boolean).join(', ') || 'securities fraud'}. The government moved to seize 90% of the trader's assets pending trial.`,
         'In a crisis that cost millions of people their savings, the trader is one of the very few who will face a jury.'
       ],
       wealth: (c) => c.wealth * 0.1
     },
     {
-      id:'fall-guy', icon:'&#128196;', title:'The Fall Guy', hint:'Refused the marks, then inherited somebody else’s signature.', lockedHint:'A blank signature line is still a position.',
+      id:'fall-guy', icon:'&#128196;', title:'The Fall Guy', hint:'Refused the marks, then inherited somebody else\'s signature.', lockedHint:'A blank signature line is still a position.',
       test:(c)=>!!c.S.f.externalFraud && c.S.m.heat >= 40 && !c.S.f.cooperated,
       headline:'Former Holloway Trader Sentenced in Valuation Case', deck:'The signature was not theirs. The responsibility became theirs anyway.',
       story:()=>[
@@ -216,7 +216,7 @@
     },
     {
       id: 'replaced', icon: '&#129302;', title: 'Replaced', hint: 'You survived the crash. The firm\'s own model survived it better.', lockedHint: 'What exactly did you think you were building?',
-      test: (c) => !!c.S.f.algoDesk && !c.S.f.public && c.S.m.integrity < 70,
+      test: (c) => !!c.S.f.algoDesk && !c.S.f.public && !c.S.f.spiralTraced && c.S.m.integrity < 70,
       headline: 'Holloway Stern to Run Flow Desk on Automated Execution',
       deck: 'Firm says headcount reduction is "not a comment on individual performance."',
       story: (c) => [

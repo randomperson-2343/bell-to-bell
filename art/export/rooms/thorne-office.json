@@ -1,0 +1,125 @@
+{
+ "frames": [
+  {
+   "filename": "window:night",
+   "frame": {
+    "x": 0,
+    "y": 0,
+    "w": 214,
+    "h": 121
+   }
+  },
+  {
+   "filename": "back:night",
+   "frame": {
+    "x": 214,
+    "y": 0,
+    "w": 214,
+    "h": 121
+   }
+  },
+  {
+   "filename": "front:night",
+   "frame": {
+    "x": 428,
+    "y": 0,
+    "w": 214,
+    "h": 121
+   }
+  },
+  {
+   "filename": "screen:night",
+   "frame": {
+    "x": 642,
+    "y": 0,
+    "w": 214,
+    "h": 121
+   }
+  },
+  {
+   "filename": "lamp:off",
+   "frame": {
+    "x": 856,
+    "y": 0,
+    "w": 214,
+    "h": 121
+   }
+  },
+  {
+   "filename": "lamp:on",
+   "frame": {
+    "x": 1070,
+    "y": 0,
+    "w": 214,
+    "h": 121
+   }
+  },
+  {
+   "filename": "glow:2",
+   "frame": {
+    "x": 1284,
+    "y": 0,
+    "w": 214,
+    "h": 121
+   }
+  },
+  {
+   "filename": "glow:1",
+   "frame": {
+    "x": 1498,
+    "y": 0,
+    "w": 214,
+    "h": 121
+   }
+  }
+ ],
+ "meta": {
+  "image": "thorne-office.png",
+  "size": {
+   "w": 1712,
+   "h": 121
+  },
+  "frameTags": [
+   {
+    "name": "window:night",
+    "from": 0,
+    "to": 0
+   },
+   {
+    "name": "back:night",
+    "from": 1,
+    "to": 1
+   },
+   {
+    "name": "front:night",
+    "from": 2,
+    "to": 2
+   },
+   {
+    "name": "screen:night",
+    "from": 3,
+    "to": 3
+   },
+   {
+    "name": "lamp:off",
+    "from": 4,
+    "to": 4
+   },
+   {
+    "name": "lamp:on",
+    "from": 5,
+    "to": 5
+   },
+   {
+    "name": "glow:2",
+    "from": 6,
+    "to": 6
+   },
+   {
+    "name": "glow:1",
+    "from": 7,
+    "to": 7
+   }
+  ]
+ }
+}

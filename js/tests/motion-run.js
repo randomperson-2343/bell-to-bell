@@ -3276,34 +3276,34 @@ async function run() {
   // every one of these draws with no game, an empty and a very long title
   for (const d of [6, 9, 17, 20, 25, 37, 40, 45]) for (const ti of ['', 'W'.repeat(200)]) { const o = nOpts(d, ti); for (let i = 0; i < (await page.evaluate((o) => BTB.Scenes.news(o).length, o)); i++) assert((await drawCover(o, i)) === 640 * 360 && !o.game, `batch 6: ${d} beat ${i} with title '${ti.slice(0, 3)}' does not draw`); }
 
-  // 1. Kavro Strait (session 6): the three ships sail east; the detail and the hold end with them 4 art units further on (p = 1)
+  // 1. Kavra Strait (session 6): the three ships sail east; the detail and the hold end with them 4 art units further on (p = 1)
   {
     const E = await beat7(6, 'establish', { layers: 'art,glass,marks', depths: '1,1,0', cam: '-6>0', sfx: 'apartment', dur: 1.7 });
     const D = await beat7(6, 'detail', { layers: 'art,glass', depths: '1,1', cam: 'none', sfx: 'broadcast', dur: 2.3 });
     // establish: ships at -4 until 0.35 s, +5 at 1.35 s (18 px), easing out; the art does not move
     const l = async (o, i, t) => (await box7(o, i, t, [0, 130, 640, 90]))[0], r = async (o, i, t) => (await box7(o, i, t, [0, 130, 640, 90]))[1];
     const l0 = await l(E.o, E.i, 0.1);
-    assert(l0 === await l(E.o, E.i, 0.34) && await l(E.o, E.i, 1.4) === l0 + 18 && await l(E.o, E.i, 1.6) === l0 + 18, `Kavro establish: the ships do not sail 18 px between 0.35 and 1.35 s (${l0} ${await l(E.o, E.i, 1.4)})`);
+    assert(l0 === await l(E.o, E.i, 0.34) && await l(E.o, E.i, 1.4) === l0 + 18 && await l(E.o, E.i, 1.6) === l0 + 18, `Kavra establish: the ships do not sail 18 px between 0.35 and 1.35 s (${l0} ${await l(E.o, E.i, 1.4)})`);
     const mid = [await l(E.o, E.i, 0.6), await l(E.o, E.i, 0.8), await l(E.o, E.i, 1.0)];
-    assert(l0 < mid[0] && mid[0] <= mid[1] && mid[1] < mid[2] && mid[2] < l0 + 18 && mid[0] - l0 >= 6, `Kavro establish: the ships do not ease out (${[l0, ...mid]})`);
+    assert(l0 < mid[0] && mid[0] <= mid[1] && mid[1] < mid[2] && mid[2] < l0 + 18 && mid[0] - l0 >= 6, `Kavra establish: the ships do not ease out (${[l0, ...mid]})`);
     const bx = await box7(E.o, E.i, 0.1, [0, 0, 640, 360]);
-    assert(bx[2] >= 138 && bx[3] <= 202 && bx[1] - bx[0] >= 150, `Kavro establish: the ships' box ${bx} is not the sheet's (x 238-452, y 138-202)`);
-    assert(await lp('news', E.o, E.i, 'art', 0.1, false) !== await lp('news', E.o, E.i, 'art', 1.5, false) && await art7(E.o, E.i, 1.4) === await art7(E.o, E.i, 1.69), 'Kavro establish: the art layer does not settle after 1.35 s');
+    assert(bx[2] >= 138 && bx[3] <= 202 && bx[1] - bx[0] >= 150, `Kavra establish: the ships' box ${bx} is not the sheet's (x 238-452, y 138-202)`);
+    assert(await lp('news', E.o, E.i, 'art', 0.1, false) !== await lp('news', E.o, E.i, 'art', 1.5, false) && await art7(E.o, E.i, 1.4) === await art7(E.o, E.i, 1.69), 'Kavra establish: the art layer does not settle after 1.35 s');
     // detail: four steps of 2.6 px (one art unit), one every 0.4 s from 0.35 to 1.95 s, from where the establish left them
     const lefts = [];
     for (const t of [0.1, 0.34, 0.76, 1.16, 1.56, 1.96, 2.2]) lefts.push(await l(D.o, D.i, t));
-    assert(lefts[0] === lefts[1] && lefts[1] < lefts[2] && lefts[2] < lefts[3] && lefts[3] < lefts[4] && lefts[4] < lefts[5] && lefts[5] === lefts[6], `Kavro detail: not four steps at 0.35 + 0.4 k (${lefts})`);
-    assert(await l(D.o, D.i, 0.74) === lefts[1] && await l(D.o, D.i, 1.14) === lefts[2] && await l(D.o, D.i, 1.54) === lefts[3] && await l(D.o, D.i, 1.94) === lefts[4], 'Kavro detail: a step lands early');
-    assert(lefts[6] - lefts[0] >= 9 && lefts[6] - lefts[0] <= 12, `Kavro detail: the ships move ${lefts[6] - lefts[0]} px, not 4 x 2.6`);
+    assert(lefts[0] === lefts[1] && lefts[1] < lefts[2] && lefts[2] < lefts[3] && lefts[3] < lefts[4] && lefts[4] < lefts[5] && lefts[5] === lefts[6], `Kavra detail: not four steps at 0.35 + 0.4 k (${lefts})`);
+    assert(await l(D.o, D.i, 0.74) === lefts[1] && await l(D.o, D.i, 1.14) === lefts[2] && await l(D.o, D.i, 1.54) === lefts[3] && await l(D.o, D.i, 1.94) === lefts[4], 'Kavra detail: a step lands early');
+    assert(lefts[6] - lefts[0] >= 9 && lefts[6] - lefts[0] <= 12, `Kavra detail: the ships move ${lefts[6] - lefts[0]} px, not 4 x 2.6`);
     // the detail starts where the establish left the ships (+5) in its own scale: the flat picture at p = 5/9 is the art plus the mover at +5
-    assert((await flatDiff7(D.o, D.i, 6, 3, 1.3, 1, 'detail', false)).bad === 0, 'Kavro detail: the final picture is not the flat tableau at p = 1');
+    assert((await flatDiff7(D.o, D.i, 6, 3, 1.3, 1, 'detail', false)).bad === 0, 'Kavra detail: the final picture is not the flat tableau at p = 1');
     // the hold is rebuilt flat at p = 1
     const H = { o: mkS(6) }; H.i = await newsIdx(H.o, ':hold$'); H.a = await info('news', H.o, H.i);
-    assert(H.a.layers === '' && H.a.dur === 1.1 && H.a.sfx === '' && H.a.cam === 'none' && (await flatDiff7(H.o, H.i, 6, 3, 0, 1, null, true)).bad === 0 && (await drawCover(H.o, H.i)) === 640 * 360, `Kavro hold: not the flat picture at p = 1 under the 0.18 dim: ${JSON.stringify(H.a)}`);
+    assert(H.a.layers === '' && H.a.dur === 1.1 && H.a.sfx === '' && H.a.cam === 'none' && (await flatDiff7(H.o, H.i, 6, 3, 0, 1, null, true)).bad === 0 && (await drawCover(H.o, H.i)) === 640 * 360, `Kavra hold: not the flat picture at p = 1 under the 0.18 dim: ${JSON.stringify(H.a)}`);
     // the establish still ends where it always did (p = 0.6)
-    assert((await flatDiff7(E.o, E.i, 6, 3, 0, 0.6, 'establish', false)).bad === 0, 'Kavro establish: the final picture is not today\'s');
+    assert((await flatDiff7(E.o, E.i, 6, 3, 0, 0.6, 'establish', false)).bad === 0, 'Kavra establish: the final picture is not today\'s');
     // the cable stroke (drawn under the ships in the art) is in the art layer, not covered: the ships at 0.1 s are drawn over it
-    assert(await any6(E.o, E.i, 'art', 0.1) > 0 && await any6(E.o, E.i, 'art', 0.1) < 3000, 'Kavro establish: the animate draws the ships only');
+    assert(await any6(E.o, E.i, 'art', 0.1) > 0 && await any6(E.o, E.i, 'art', 0.1) < 3000, 'Kavra establish: the animate draws the ships only');
   }
 
   // 2. Grid (session 9): the five load cells flash red in sequence; the two that stay red pulse on the detail and the hold
@@ -3521,7 +3521,7 @@ async function run() {
     { scene: 'news', opts: { day: 35, brief: { title: 'THE FALSE DAWN', feed: [] } } },
     { scene: 'news', opts: { day: 45, brief: { title: 'THE STACK IS OFF', feed: [] }, game: { mode: { S: { f: { pulledPlug: true } } } } } },
     // batch 6: the story tableaux
-    { scene: 'news', opts: { day: 6, brief: { title: 'KAVRO STRAIT', feed: [] } } },
+    { scene: 'news', opts: { day: 6, brief: { title: 'KAVRA STRAIT', feed: [] } } },
     { scene: 'news', opts: { day: 9, brief: { title: 'THE GRID', feed: [] } } },
     { scene: 'news', opts: { day: 40, brief: { title: 'STABILIZATION VOTE PENDING', feed: [] } } },
     { scene: 'news', opts: { day: 45, brief: { title: 'SYSTEM STATUS UNRESOLVED', feed: [] } } },

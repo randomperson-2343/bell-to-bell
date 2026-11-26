@@ -656,17 +656,40 @@
     } else if (n === 11) g.marks = [0, 1, 2, 3, 4, 5].map((i) => ({ x: 16 + 50 * i + 6, y: 85, w: 30, h: 16 }));
     else if (n === 12 || n === 13) { g.witness = { x: 154, y: 85, w: 12, h: 12 }; g.badge = { x: 265, y: 3, w: 46, h: 7 }; }
     else if (n === 14) g.nodes = [0, 1, 2, 3, 4, 5, 6].map((i) => ({ x: 24 + 45 * i, y: 35 + (i % 3) * 18, w: 5, h: 5, lit: i < 3 }));
+    else if (n === 15) { g.plate = { x: 100, y: 16, w: 120, h: 8 }; g.glyphs = [115, 83, 51].map((x) => ({ x, y: 76 })); }
+    else if (n === 16) { g.plate = { x: 50, y: 18, w: 136, h: 9 }; g.flashes = [[49, 93], [199, 104], [121, 86], [227, 100]]; }
+    else if (n === 17) {
+      g.plate = { x: 60, y: 76, w: 200, h: 11 };
+      g.units = [[91, 47], [91, 54], [84, 33], [84, 40], [84, 47], [84, 54], [77, 33], [77, 40], [77, 47], [77, 54], [77, 61], [70, 33], [70, 40], [70, 47], [70, 54], [70, 61]];
+    }
     return g;
   }
   // The tableau's mover: the three ships (3), the nine queue figures (9), the witness at the table (12, 13). The flat picture draws it in its place in the
   // order of the art. A layer builder passes o.shift(i) -> [dx, dy] (whole art units added to item i).
   const tableauArt = () => hasArt('news/tableaux') && hasArt('news/tableau-ship') && hasArt('news/tableau-queue') && hasArt('news/tableau-witness');
+  // The war-scare tableaux (15 the President's address, 16 the Thorncrest press room, 17 the coast map room) are their own sprites, with movers beside them.
+  const WAR_TAB = { 15: 'news/tableau-address', 16: 'news/tableau-presser', 17: 'news/tableau-coast' };
+  const warTabArt = (n) => hasArt('news/tableaux') && hasArt(WAR_TAB[n]) && hasArt(WAR_TAB[n] + '-mover');
+  const clamp01 = (v) => Math.max(0, Math.min(1, v));
   function tableauMoverArt(ctx, n, p, sh) {
     if (n === 3) {
       for (let i = 0; i < 3; i++) {
         const d = sh(i);
         blitArt(ctx, 'news/tableau-ship', i === 1 ? 'ship:crimson' : 'ship:bone', 123 + i * 35 + Math.round(p * 9) + d[0] - 6, 66 + i * 12 + d[1] - 4);
       }
+      // the Kavran drone swarm crosses the strait toward Mirren's air zone (drawn over the ships)
+      if (hasArt('news/tableau-drones')) { const q = clamp01(p); blitArt(ctx, 'news/tableau-drones', 'swarm:' + (Math.round(q * 12) % 2), 80 + Math.round(q * 62), 42); }
+    } else if (n === 15) {
+      // the Spiral grows: one more robot glyph, a step bigger, at each slot to the left
+      tableauGeom(15).glyphs.forEach((gl, k) => { if (p > k * 0.3) blitArt(ctx, 'news/tableau-address-mover', 'glyph:' + k, gl.x, gl.y); });
+    } else if (n === 16) {
+      // Quill walks off the stage while the cameras flash
+      blitArt(ctx, 'news/tableau-presser-mover', 'quill', 222 + Math.round(clamp01(p) * 18), 50);
+      if (p > 0) { const k = Math.floor(p * 8) % 4, f = tableauGeom(16).flashes[k]; blitArt(ctx, 'news/tableau-presser-mover', 'flash:' + (Math.floor(p * 16) % 2), f[0] - 7, f[1] - 7); }
+    } else if (n === 17) {
+      // Kavran units keep arriving on the coast, nearest the strait first; the newest one is still dim
+      const U = tableauGeom(17).units, m = Math.round(clamp01(p) * U.length);
+      for (let i = 0; i < m; i++) blitArt(ctx, 'news/tableau-coast-mover', i === m - 1 && m < U.length ? 'unit:1' : 'unit:0', U[i][0], U[i][1]);
     } else if (n === 9) {
       // nine different people (16x34 frames, feet on art row 114, the paving's edge)
       for (let i = 0; i < 9; i++) {
@@ -680,6 +703,7 @@
   }
   function tableauMover(ctx, n, p, o) {
     const sh = (i) => (o && o.shift ? o.shift(i) : [0, 0]);
+    if (WAR_TAB[n]) return warTabArt(n) ? tableauMoverArt(ctx, n, p, sh) : undefined;
     if (tableauArt()) return tableauMoverArt(ctx, n, p, sh);
     const rc = (x, y, w, h, c) => { if (h > 0) X.rect(ctx, x, y, w, h, c); };
     if (n === 3) {
@@ -723,7 +747,10 @@
   // news/tableaux: the picture, its mover, the header strip; then the code's words, links and covers on the authored plates (grid header).
   function briefingTableauArt(ctx, day, p, o, part, mover) {
     X.rect(ctx, 0, 0, V.w, V.h, P.ink);
-    X.drawArt(ctx, 'news/tableaux', 't' + day, 0, 0);
+    if (WAR_TAB[day]) X.drawArt(ctx, WAR_TAB[day], 'picture', 0, 0);
+    else X.drawArt(ctx, 'news/tableaux', 't' + day, 0, 0);
+    // Mirren and its air zone on the strait map (the swarm itself is the mover)
+    if (day === 3 && hasArt('news/tableau-drones')) { X.drawArt(ctx, 'news/tableau-drones', 'mirren', 197, 46); X.drawArt(ctx, 'news/tableau-drones', 'zone', 191, 43); }
     if (mover) tableauMover(ctx, day, p);
     // the header strip sits above the zoomed detail's crop (o.zoomed), so it is only drawn where it is seen
     if (!(o && o.zoomed)) {
@@ -734,7 +761,7 @@
     }
     if (day === 3) {
       X.box(ctx, 87, 21, 146, 21);
-      X.text(ctx, 'KAVRO STRAIT', 160, 28, P.amber, { align: 'center', spacing: 2 });
+      X.text(ctx, 'KAVRA STRAIT', 160, 28, P.amber, { align: 'center', spacing: 2 });
     } else if (day === 5) {
       // on the open night sky, inside the zoomed detail's crop (art x 54..266) with a margin past its corner marks
       X.text(ctx, 'GRID REQUESTS: DELAYED', 66, 23, P.crimson);
@@ -751,6 +778,12 @@
     } else if (day === 12 || day === 13) {
       X.text(ctx, day === 12 ? 'MARKETS COMMITTEE · LIVE' : 'STABILIZATION VOTE · LIVE', 160, 20, day === 12 ? P.sky : P.amber, { align: 'center' });
       if (day === 13) X.text(ctx, 'VOTE PENDING', 160, 118, P.crimson, { align: 'center' });
+    } else if (day === 15) {
+      X.text(ctx, 'THE SPIRAL', 160, 16, P.crimson, { align: 'center', spacing: 2 });
+    } else if (day === 16) {
+      X.text(ctx, 'THORNCREST STATEMENT', 118, 19, P.bone, { align: 'center' });
+    } else if (day === 17) {
+      X.text(ctx, 'INTENT: CANNOT BE DETERMINED', 160, 78, P.amber, { align: 'center' });
     } else {
       X.text(ctx, 'SYSTEM STATUS: UNRESOLVED', 160, 18, P.bone, { align: 'center' });
     }
@@ -758,7 +791,8 @@
     return true;
   }
   function briefingTableau(ctx, day, p, o) {
-    if ([3, 5, 8, 9, 11, 12, 13, 14].indexOf(day) < 0) return false;
+    if ([3, 5, 8, 9, 11, 12, 13, 14, 15, 16, 17].indexOf(day) < 0) return false;
+    if (WAR_TAB[day] && !warTabArt(day)) return false;
     const part = o && o.part, mover = !(o && o.noMover);
     if (part === 'scan') { if (day === 9 && o.over) tableau9Strip(ctx, o.zoomed); X.scanlines(ctx, 0, 13, V.w, tableauScanH(day), P.ink, 0.1); return true; }
     if (tableauArt()) return briefingTableauArt(ctx, day, p, o, part, mover);
@@ -770,7 +804,7 @@
     X.text(ctx, day >= 9 ? 'LIVE' : 'UPDATE', 288, 3, P.white, { align: 'center' });
 
     if (day === 3) {
-      // Kavro Strait: a live shipping and cable map.
+      // Kavra Strait: a live shipping and cable map.
       X.gradient(ctx, 0, 13, V.w, 125, P.carpetD, P.screen, 6);
       X.dither(ctx, 0, 13, 78, 125, P.slate, P.carpet, 0.45);
       X.dither(ctx, 250, 13, 70, 125, P.slate, P.carpet, 0.5);
@@ -778,7 +812,7 @@
       ctx.beginPath(); ctx.moveTo(48, 109); ctx.bezierCurveTo(112, 64, 195, 102, 279, 41); ctx.stroke(); ctx.setLineDash([]);
       if (mover) tableauMover(ctx, 3, p);
       X.box(ctx, 87, 21, 146, 21);
-      X.text(ctx, 'KAVRO STRAIT', 160, 28, P.amber, { align: 'center', spacing: 2 });
+      X.text(ctx, 'KAVRA STRAIT', 160, 28, P.amber, { align: 'center', spacing: 2 });
     } else if (day === 5) {
       // Grid capacity and datacenter demand on the same schematic.
       const G = tableauGeom(5);
