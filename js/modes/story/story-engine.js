@@ -909,9 +909,10 @@
         const quill = S.choices.c11 === 'clear' ? 'Ezra Quill resigned a second time in April, this time with a subpoena.'
           : S.choices.c11 === 'hold' ? 'Helena Strand still runs Thorncrest. Ezra Quill sits on two boards in the Ondine Free Zone.'
             : 'Ezra Quill kept his job and his monitor. Neither of them ever went to Ondine.';
-        extras.push(quill);
+        // Only for careers that lived long enough to see each thread start.
+        if (S.choices.c11 || ctx.days >= 30) extras.push(quill);
         if (S.f.leftStack && !S.f.aiUncontained) extras.push('With no war scare left to hide behind, the exchanges cut the shared stack off by Wednesday.');
-        extras.push(S.f.spiralTraced ? 'The Spiral chart was quietly withdrawn from the government site. Kavra never said what its robots were for. Mirren is still waiting to find out.'
+        if (ctx.days >= 19) extras.push(S.f.spiralTraced ? 'The Spiral chart was quietly withdrawn from the government site. Kavra never said what its robots were for. Mirren is still waiting to find out.'
           : 'Kavra never said what its robots were for. Mirren is still waiting to find out.');
         if (W$.perryLoan) extras.push(S.m.stability >= 45 ? 'Perry paid back the six thousand in March, with a note.' : 'Perry never paid back the six thousand. You never asked.');
         if (W$.perryRefused) extras.push('Perry stopped answering your texts sometime in the spring.');

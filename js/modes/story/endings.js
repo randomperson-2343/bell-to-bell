@@ -93,7 +93,7 @@
       deck: 'Handcuffed in front of cameras as prosecutors move to seize accounts.',
       story: (c) => [
         'Agents arrested the trader at 6:04 AM outside a rented apartment. Photographers had been tipped off. The trader wore a gym hoodie.',
-        `Prosecutors allege ${[c.S.f.fraud ? 'signing off on fraudulent CASCADE valuations' : null, c.S.f.insider ? 'trading ahead of the Meridian downgrade' : null, c.S.f.raid ? 'taking part in a coordinated raid on Ridgeway Trust' : null, c.S.f.thsiFrontRan ? 'trading Thorncrest around a comfort letter you signed' : null].filter(Boolean).join(', ') || 'securities fraud'}. The government moved to seize 90% of the trader's assets pending trial.`,
+        `Prosecutors allege ${[c.S.f.fraud ? 'signing off on fraudulent CASCADE valuations' : null, c.S.f.insider ? 'trading ahead of the Meridian downgrade' : null, c.S.f.raid ? 'taking part in a coordinated raid on Ridgeway Trust' : null, c.S.f.thsiFrontRan ? 'trading Thorncrest around a comfort letter they signed' : null].filter(Boolean).join(', ') || 'securities fraud'}. The government moved to seize 90% of the trader's assets pending trial.`,
         'In a crisis that cost millions of people their savings, the trader is one of the very few who will face a jury.'
       ],
       wealth: (c) => c.wealth * 0.1

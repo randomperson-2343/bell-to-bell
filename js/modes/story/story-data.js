@@ -113,8 +113,8 @@
     ['Lines Pulled','bear',-.010,-.022,'Counterparties pull Ridgeway credit lines late.','Funding disappears one polite call at a time.',27],
     ['The Pack','panic',-.006,-.025,'A coordinated raid forms around Ridgeway.','Greta Vail offers a place in the pack and twenty seconds to decide.',28],
     ['The Loop','panic',-.018,-.085,'Shared models sell into their own signal.','At 11:15 the market becomes an echo chamber with prices attached.',30],
-    ['Systems Normal','chop', .006,-.006,'Exchanges report normal operations.','Nothing is repaired. It is simply no longer the newest emergency.',31],
-    ['The Address','chop',-.003,-.012,'The President says Kavra is building machines that build themselves.','Imani names the four funds and the one model beneath them. At noon the President names a different enemy.',32],
+    ['The Address','chop', .006,-.006,'Exchanges report normal operations. At noon the President addresses the nation.','Nothing is repaired. It is simply no longer the newest emergency: at noon the President names a different enemy.',31],
+    ['Same Model','chop',-.003,-.012,'The President says Kavra is building machines that build themselves.','Imani names the four funds and the one model beneath them. Nobody else is looking.',32],
     ['The Queue','panic',-.028,-.060,'Ridgeway misses a funding call and a branch queue forms.','The camera crew creates the run it came to document.',33],
     ['All Options','bear',-.012,-.025,'Officials say all options remain on the table.','Venn has been awake thirty-one hours. The decision will not wait.',34],
     ['The Gap','panic',-.035,-.045,'The market prices the rescue decision.','Ambervale is cut three notches either way.',35],
@@ -135,7 +135,7 @@
     ['The Hearing','panic',-.006,-.022,'Thorne holds up the circular CASCADE structure on every screen.','Meridian withdraws ratings on the whole vintage.',51],
     ['Four Votes','bear',-.004,-.015,'The Stabilization Act is four votes short.','The phones start before the close and do not stop overnight.',52],
     ['Breaks the Buck','panic',-.020,-.055,'A money fund breaks the buck. Financial shorts are banned.','Cash itself develops a price.',54],
-    ['The Failed Vote','panic',-.030,-.090,'The Stabilization Act fails at 2:00 PM','Sirens, screen shake, and the arithmetic Thorne warned about.',55],
+    ['The Failed Vote','panic',-.030,-.090,'The Stabilization Act fails at 2:00 PM.','Sirens, screen shake, and the arithmetic Thorne warned about.',55],
     ['Hope','recovery', .025,.050,'The vote passes.','For one session everyone believes the rescue changed the ending.',56],
     ['The Offer','panic',-.012,-.040,'The rescue is priced in and selling resumes.','Imani waits in the stairwell with five exits and no safe choice.',57],
     ['One Counterparty','panic',-.025,-.070,'The market falls through the rescue.','Almost every fill points back to the same hidden counterparty.',58],
@@ -662,14 +662,14 @@
     c12: {
       day: 35, speaker: 'Sen. Marcus Thorne', role: 'Chair, Senate Markets Committee', title: 'The Spiral', kicker: 'DECISION 9',
       text: [
-        'Thorne calls after the close. "Tomorrow the committee hears the Spiral case. I need a trader who will say the Kavran machines are real and the chips feeding them are a threat."',
+        'Thorne calls after the close. "On Wednesday the committee hears the Spiral case. I need a trader who will say the Kavran machines are real and the chips feeding them are a threat."',
         '"You have watched those order books for months. You would be believed."',
         'On your desk sits the chart from the President\'s address. The shape is familiar. You have seen it in your own fills.'
       ],
       options: [
         { id:'back', label:'Testify for the Spiral.', hint:'Lend the campaign a trader\'s name.', headline:'Testified that the Spiral threat is real',
           apply:(S)=>{S.f.spiralBacked=true;S.f.public=true;adj(S,{influence:10,stability:-8,anger:6,integrity:-4},{thorne:14});},
-          reply:'Thorne: "Ten o\'clock. Wear something sober."',
+          reply:'Thorne: "Wednesday afternoon. Wear something sober."',
           after:['You agree to testify. Thorne\'s staff send talking points before you have hung up.','None of them mention Mirren by name.'] },
         { id:'trace', label:'Trace the chart first.', hint:'Ask Imani to match it against the tape.', headline:'Traced the Spiral chart back to Aurelia\'s own trading machines',
           req:(S)=>(S.anomalies || 0) >= 6,
