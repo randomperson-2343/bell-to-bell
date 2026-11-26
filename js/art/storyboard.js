@@ -1740,9 +1740,9 @@
     // (the authored floor's dark screens are dead glass on any day, so it skips every unlit one)
     const wave = dark ? [] : S.filter((g) => ((SH.floorArt() ? Z < 0.3 : Z <= 0.12) || (g.x >= 26 && g.x + g.w <= 286)) && !((day >= 45 || SH.floorArt()) && !g.on));
     let key = null;
-    // the key is the nearest row's middle screen, or the row behind it when the nearest row's glass reaches under the caption box (art y 136 at 2x; the establish frame pushes in, which only puts that glass lower)
+    // the key is the nearest row's middle screen, or the lit screen nearest the middle of the row behind it when the nearest row's glass reaches under the caption box (art y 136 at 2x; the establish frame pushes in, which only puts that glass lower)
     const keyRow = S.some((g) => g.r === 3 && g.y + g.h <= 136) ? 3 : 2;
-    if (dark) { let best = 1e9; S.forEach((g) => { const d = Math.abs(g.x + g.w / 2 - 160); if (g.r === keyRow && d < best) { best = d; key = g; } }); }
+    if (dark) { let best = 1e9; S.forEach((g) => { const d = Math.abs(g.x + g.w / 2 - 160); if (g.r === keyRow && (g.on || keyRow === 3) && d < best) { best = d; key = g; } }); }
     // the dark floor's lesser flickers skip the screens under the foreground colleagues too (zoom > 0.12: x 26 to 286 only), as the wave does
     const rest = dark ? S.filter((g) => g !== key && ((SH.floorArt() ? Z < 0.3 : Z <= 0.12) || (g.x >= 26 && g.x + g.w <= 286))) : [];
     const art = (c, fn, noBack) => (detail || hold ? at2x(c, fn, day) : framed(c, day, r, title, { noBack, draw: (cc) => at2x(cc, fn, day) }));
