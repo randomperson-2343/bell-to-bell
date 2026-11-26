@@ -107,6 +107,8 @@
     },
 
     play(name, opts, done) {
+      // Set only by a scene that ran in full to its last shot: not skipped, not cut to one beat, not left out.
+      this.playedThrough = false;
       if (this.running) {
         this.finish(); // end the scene in progress: loop stopped, listener removed, its done called once
         // That done may have started the next scene of a chain (a nested play): it owns the loop and the key listener now, and starting this one
@@ -176,7 +178,7 @@
         if (this.t >= beat.dur) {
           this.i++;
           this.t = 0;
-          if (this.i >= this.beats.length) return this.finish();
+          if (this.i >= this.beats.length) return this.finish(true);
           this.playBeat();
         }
         this.draw();
@@ -388,15 +390,16 @@
       }
       this.i++;
       this.t = 0;
-      if (this.i >= this.beats.length) return this.finish();
+      if (this.i >= this.beats.length) return this.finish(true);
       this.playBeat();
       this.draw();
     },
     // Ends this scene only, not the chain it is part of.
     skipScene() { if (this.running) this.finish(); },
     skipAll() { if (this.running) { this.skippingChain = !!this.chain; this.finish(); } },
-    finish() {
+    finish(ranOut) {
       this.running = false;
+      this.playedThrough = !!ranOut && !this.short;
       if (this.raf) cancelAnimationFrame(this.raf);
       this.raf = null;
       if (this.onKey) window.removeEventListener('keydown', this.onKey);

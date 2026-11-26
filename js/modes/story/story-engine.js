@@ -45,6 +45,14 @@
     else cb();
   }
 
+  // The written result after a choice. The payoff scene tells the same outcome shot by shot, so a
+  // player who watched it to the end goes straight on; one who skipped it, plays with short or no
+  // cutscenes, or picked something with no scripted payoff still reads the result here.
+  function result(title, after, next, art) {
+    if (B.Cinematic && B.Cinematic.playedThrough) { B.Cinematic.playedThrough = false; return next(); }
+    B.Screens.aftermath(title, after, next, art);
+  }
+
   function votePasses(S) {
     let score = 50 + (S.m.stability - 50) * 0.5 - (S.m.anger - 30) * 0.5;
     if (S.f.whipped) score += 18 + (S.rel.thorne >= 50 ? 8 : 0) + S.m.influence / 12;
@@ -837,7 +845,7 @@
             const after = (res && res.after) || [];
             // the payoff scene for the option taken, then the written result
             scene('payoff', { id: beat.id, opt: res && res.opt ? res.opt.id : optId, day: g.day, S, W: W$ }, () =>
-              B.Screens.aftermath(beat.title, after, () => cb(), { id: beat.id, day: g.day, S }));
+              result(beat.title, after, () => cb(), { id: beat.id, day: g.day, S }));
           }));
       },
 
@@ -860,7 +868,7 @@
           if (opt.headline) S.log.push({ day: d, text: opt.headline });
           if (id === 'c8') S.f.billPassed = votePasses(S);
           // the payoff scene for the option taken (after the vote is counted), then the written result
-          scene('payoff', { id, opt: optId, day: d, S, W: W$ }, () => B.Screens.aftermath(c.title, opt.after || [], () => {
+          scene('payoff', { id, opt: optId, day: d, S, W: W$ }, () => result(c.title, opt.after || [], () => {
             // Taking the plane ends the career on the spot.
             if (S.f.fled) {
               this.liquidate(g);
