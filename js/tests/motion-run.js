@@ -39,6 +39,8 @@ async function run() {
       const C = BTB.Cinematic;
       if (C.running) C.finish();
       C.startChain('motion-qa');
+      // a fresh cache: the layers are cached by beat id, and the checks open the same beat with different options (feed lengths, titles, choices)
+      C.clearCache();
       C.play(scene, opts, () => {});
       C.pause();
     };
@@ -3219,7 +3221,9 @@ async function run() {
     if (!hold) {
       // (from 0.10 s the layer also puts the foreground heads back over the glass, floorFront: that is the baseline, the bursts are what comes on top of it)
       const base = await A(0.1);
-      assert(base < 3000 && await A(0.43) > base + 3000 && await A(0.49) < await A(0.43) && await A(0.6) > base + 3000 && await A(0.74) < await A(0.6) && await A(0.80) > base + 3000 && await A(1.0) > base + 3000 && await A(a.dur - 0.05) === 0, `${tag}: the key screen does not stutter in four bursts (${JSON.stringify(await Promise.all([0.1, 0.43, 0.49, 0.6, 0.74, 0.8, 1.0, 1.3, a.dur - 0.05].map(A)))})`);
+      // (the key can be a row-2 screen, smaller than the near row's, when the near row's glass sits under the caption: day 22 fail. Its bursts are about 2900 px)
+      const burst = base + 2500;
+      assert(base < 3000 && await A(0.43) > burst && await A(0.49) < await A(0.43) && await A(0.6) > burst && await A(0.74) < await A(0.6) && await A(0.80) > burst && await A(1.0) > burst && await A(a.dur - 0.05) === 0, `${tag}: the key screen does not stutter in four bursts (${JSON.stringify(await Promise.all([0.1, 0.43, 0.49, 0.6, 0.74, 0.8, 1.0, 1.3, a.dur - 0.05].map(A)))})`);
       assert(await shot('news', o, i, 0.43) !== await shot('news', o, i, 0.49) && await shot('news', o, i, 0.6) !== await shot('news', o, i, 0.74), `${tag}: the stutter is not seen`);
     } else {
       let n = 0; for (let t = 0.12; t < 1.0; t += 1 / 12) if (await A(t) > 0) n++;
@@ -3302,12 +3306,12 @@ async function run() {
   // shot 10: every news hold. The final frame of each is pinned above (batch5b/hold:*). Holds with life are layered with the dim last and no camera;
   // the rest stay flat (a layered beat whose picture never changes adds cost and fails the "picture changes" assert)
   {
-    const LIVE = new Set(['0', '8', '24', '32', '10', '44', '22bail', '22fail']);
+    const LIVE = new Set(['0', '8', '10', '44', '22bail', '22fail']);
     const VARS = { '4dump': [4, { choices: { c1: 'dump' } }], '4leak': [4, { choices: { c1: 'leak' } }], '22fail': [22, { choices: { c5: 'fail' } }], '22ban': [22, { choices: { c5: 'ban' } }], '22bail': [22, { choices: { c5: 'bail' } }], '41bill': [41, { f: { billPassed: true } }], '45plug': [45, { f: { pulledPlug: true } }] };
     const all = [];
     for (let d = 0; d < 46; d++) all.push([String(d), mkS(d)]);
     for (const k in VARS) all.push([k, mkS(VARS[k][0], VARS[k][1])]);
-    const tableauHolds = new Set(['6', '9', '17', '20', '37', '40', '45']); // batch 6 (the tableau is not 45 plug's racks)
+    const tableauHolds = new Set(['6', '9', '17', '18', '20', '24', '32', '37', '40', '45']); // 18, 24, 32: the war-scare tableaux (their holds are checked with the establish and detail) // batch 6 (the tableau is not 45 plug's racks)
     for (const [key, o] of all) {
       const i = await newsIdx(o, ':hold$'); if (i < 0) continue;
       const a = await info('news', o, i), live = LIVE.has(key), dim = a.layers.split(',').pop() === 'dim';
@@ -3363,13 +3367,14 @@ async function run() {
     const E = await beat7(6, 'establish', { layers: 'art,glass,marks', depths: '1,1,0', cam: '-6>0', sfx: 'apartment', dur: 1.7 });
     const D = await beat7(6, 'detail', { layers: 'art,glass', depths: '1,1', cam: 'none', sfx: 'broadcast', dur: 2.3 });
     // establish: ships at -4 until 0.35 s, +5 at 1.35 s (18 px), easing out; the art does not move
-    const l = async (o, i, t) => (await box7(o, i, t, [0, 130, 640, 90]))[0], r = async (o, i, t) => (await box7(o, i, t, [0, 130, 640, 90]))[1];
+    // the lead ship's bow (the right edge) is where the ships are: the drone swarm over them (since the war scare) sets the left edge and sails further
+    const l = async (o, i, t) => (await box7(o, i, t, [0, 130, 640, 90]))[1];
     const l0 = await l(E.o, E.i, 0.1);
     assert(l0 === await l(E.o, E.i, 0.34) && await l(E.o, E.i, 1.4) === l0 + 18 && await l(E.o, E.i, 1.6) === l0 + 18, `Kavra establish: the ships do not sail 18 px between 0.35 and 1.35 s (${l0} ${await l(E.o, E.i, 1.4)})`);
     const mid = [await l(E.o, E.i, 0.6), await l(E.o, E.i, 0.8), await l(E.o, E.i, 1.0)];
     assert(l0 < mid[0] && mid[0] <= mid[1] && mid[1] < mid[2] && mid[2] < l0 + 18 && mid[0] - l0 >= 6, `Kavra establish: the ships do not ease out (${[l0, ...mid]})`);
     const bx = await box7(E.o, E.i, 0.1, [0, 0, 640, 360]);
-    assert(bx[2] >= 138 && bx[3] <= 203 && bx[1] - bx[0] >= 150, `Kavra establish: the ships' box ${bx} is not the sheet's (x 238-452, y 138-203)`);
+    assert(bx[2] >= 96 && bx[3] <= 203 && bx[1] <= 452 && bx[1] - bx[0] >= 150, `Kavra establish: the ships' box ${bx} is not the sheet's (ships to x 452, y 138-203; the swarm above them from y 100)`);
     assert(await lp('news', E.o, E.i, 'art', 0.1, false) !== await lp('news', E.o, E.i, 'art', 1.5, false) && await art7(E.o, E.i, 1.4) === await art7(E.o, E.i, 1.69), 'Kavra establish: the art layer does not settle after 1.35 s');
     // detail: four steps of 2.6 px (one art unit), one every 0.4 s from 0.35 to 1.95 s, from where the establish left them
     const lefts = [];
