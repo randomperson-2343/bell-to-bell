@@ -857,6 +857,9 @@
     const id = home.id, week = Math.floor(day / 5) + 1, s = R.season(day), lay = LAYOUT[id] || LAYOUT.studio, late = w ? w.lateWeeks | 0 : 0;
     const on = (name) => !part || part === name, dn = night ? 'night' : 'day', { wx, wy, ww, wh } = windowRect(home);
     if (on('outside')) {
+      // as its own layer the view moves less than the room (depth 0.25 against 0.5), so a camera move can show a row above its top edge:
+      // the view is drawn one art unit higher first, so its top row bleeds up behind the window frame
+      if (part) X.drawArt(ctx, 'homes/' + id, 'outside:' + (night ? 'night' : s.id), -2, -5, { scale: 3 });
       HA(ctx, id, 'outside:' + (night ? 'night' : s.id));
       if (night) { const f = lit(day); homeWin(id).forEach((c) => { if (c.k < f) X.rect(ctx, 3 * c.x - 2, 3 * c.y - 2, 3, 3, P.amber); }); }
       ctx.save(); ctx.beginPath(); ctx.rect(wx, wy, ww, wh); ctx.clip(); R.weather(ctx, wx, wy, ww, wh, day); ctx.restore();
@@ -1160,7 +1163,7 @@
     }
   }
   // The Sunday framing: the wall calendar and most of the window (the housing tier reads through its size) stay in shot. fn draws in apartment art units.
-  function sundaySpace(c, fn) { c.save(); c.translate(-124 / 3, -190 / 3); c.scale(4 / 3, 4 / 3); fn(c); c.restore(); }
+  function sundaySpace(c, fn) { c.save(); c.translate(-124 / 3, -250 / 3); c.scale(4 / 3, 4 / 3); fn(c); c.restore(); }
   // The two native-pixel edge rects over the Sunday picture (the left margin and the amber tab).
   function SUN_EDGE(c) { X.rect(c, 0, 0, 5, 276, P.ink2); X.rect(c, 0, 0, 44, 2, P.amberD); }
   function sundayShot(ctx, day, home, w) {
@@ -1727,7 +1730,7 @@
 
   // Shots 6 and 7: the trading floor. One layer `floor` (the art, then its animate on top in the same transform) and `marks` (the corner brackets
   // and the anomaly tear, never moved by the tilt) or, on a hold, `dim` (the 0.18 ink rect). Lit: a refresh wave crosses the near-row screens, left to
-  // right (K.crt bands, overlays on the dither, never a cover). Dark: the biggest near screen stutters in hard steps and the others flicker
+  // right (K.crt bands, overlays on the dither, never a cover). Dark: the biggest near screen above the caption stutters in hard steps and the others flicker
   // lightly; every flicker ends lit, so the final frame is the art. Coordinates are 320x180 art units, inside framed()'s zoom on the establish.
   const FLOOR_ZOOM = (day, r, detail) => (r.shot === 'floor' ? (detail ? 0.7 : 0.15) : 0.45 + (day % 4) * 0.08);
   function floorLayers(day, r, title, o) {
@@ -1737,7 +1740,9 @@
     // (the authored floor's dark screens are dead glass on any day, so it skips every unlit one)
     const wave = dark ? [] : S.filter((g) => ((SH.floorArt() ? Z < 0.3 : Z <= 0.12) || (g.x >= 26 && g.x + g.w <= 286)) && !((day >= 45 || SH.floorArt()) && !g.on));
     let key = null;
-    if (dark) { let best = 1e9; S.forEach((g) => { const d = Math.abs(g.x + g.w / 2 - 160); if (g.r === 3 && d < best) { best = d; key = g; } }); }
+    // the key is the nearest row's middle screen, or the row behind it when the nearest row's glass reaches under the caption box (art y 136 at 2x; the establish frame pushes in, which only puts that glass lower)
+    const keyRow = S.some((g) => g.r === 3 && g.y + g.h <= 136) ? 3 : 2;
+    if (dark) { let best = 1e9; S.forEach((g) => { const d = Math.abs(g.x + g.w / 2 - 160); if (g.r === keyRow && d < best) { best = d; key = g; } }); }
     // the dark floor's lesser flickers skip the screens under the foreground colleagues too (zoom > 0.12: x 26 to 286 only), as the wave does
     const rest = dark ? S.filter((g) => g !== key && ((SH.floorArt() ? Z < 0.3 : Z <= 0.12) || (g.x >= 26 && g.x + g.w <= 286))) : [];
     const art = (c, fn, noBack) => (detail || hold ? at2x(c, fn, day) : framed(c, day, r, title, { noBack, draw: (cc) => at2x(cc, fn, day) }));
