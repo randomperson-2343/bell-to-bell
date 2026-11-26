@@ -162,7 +162,8 @@
     }
 
     injectEvent(e, replaying) {
-      if (!replaying) (this.injected || (this.injected = [])).push(JSON.parse(JSON.stringify(e)));
+      // Recorded on a replay too: startDay() emptied the list, and the next save needs it whole.
+      (this.injected || (this.injected = [])).push(JSON.parse(JSON.stringify(e)));
       this.events.push(Object.assign({ fired: false, rumorFired: false }, e));
       this.events.sort((a, b) => a.t - b.t);
     }
@@ -192,7 +193,8 @@
         if (!e.fired && t1 >= e.t) {
           e.fired = true;
           this.applyEvent(e, t1);
-          if (e.text) out.push({ type: 'news', kind: e.kind || 'wire', text: e.text, src: e.src, t: t1, big: !!e.big, tone: e.tone, fake: !!e.fake });
+          if (e.text) out.push(Object.assign({ type: 'news', kind: e.kind || 'wire', text: e.text, src: e.src, t: t1, big: !!e.big, tone: e.tone, fake: !!e.fake },
+            e.threadId ? { threadId: e.threadId, threadStage: e.threadStage } : {}));
           if (e.script) out.push({ type: 'script', id: e.script, t: t1 });
         }
       }
