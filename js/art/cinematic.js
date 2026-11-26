@@ -30,7 +30,7 @@
         if (this.settling()) return;
         const onBtn = e && e.target && e.target.closest && e.target.closest('.cine-skip-btn');
         if (!this.stepped) this.skipAll();
-        else if (onBtn) { if (e.preventDefault) e.preventDefault(); this.skipScene(); }
+        else if (onBtn) { if (e.preventDefault) e.preventDefault(); if (this.canSkip) this.skipScene(); }
         else this.next();
       });
       window.addEventListener('resize', () => { this.layout(); if (this.running && this.paused) this.draw(); });
@@ -135,8 +135,11 @@
       this.steppedEndedAt = 0;
       this.warned.clear();
       this.ensure();
-      this.hint.textContent = this.stepped ? 'TAP OR PRESS A KEY · NEXT SHOT' : 'TAP OR PRESS A KEY · SKIP SCENE CHAIN';
-      this.skipBtn.hidden = !this.stepped;
+      // SKIP SCENE opens after one career seen all the way through; before that, a tap still moves to the next shot
+      this.canSkip = this.stepped && (!B.Progress || B.Progress.careerDone());
+      this.hint.textContent = !this.stepped ? 'TAP OR PRESS A KEY · SKIP SCENE CHAIN'
+        : this.canSkip ? 'TAP OR PRESS A KEY · NEXT SHOT' : 'TAP OR PRESS A KEY · NEXT SHOT · SKIP UNLOCKS AFTER ONE CAREER';
+      this.skipBtn.hidden = !this.canSkip;
       this.scene = name;
       this.opts = opts || {};
       this.beats = beats;
@@ -157,7 +160,8 @@
         if (e.repeat || this.settling()) return;
         if (!this.stepped) return this.skipAll();
         const onBtn = typeof document !== 'undefined' && document.activeElement === this.skipBtn && (e.key === 'Enter' || e.key === ' ');
-        if (onBtn || e.key === 'Escape' || e.key === 's' || e.key === 'S') this.skipScene(); else this.next();
+        const skip = onBtn || e.key === 'Escape' || e.key === 's' || e.key === 'S';
+        if (skip && this.canSkip) this.skipScene(); else if (!skip) this.next();
       };
       window.addEventListener('keydown', this.onKey);
       this.last = performance.now();
@@ -403,6 +407,7 @@
       this.warned.clear();
       if (this.stepped) { this.steppedEndedAt = performance.now(); this.swallowClick(); }
       this.stepped = false;
+      this.canSkip = false;
       this.calmUntil = 0;
       if (!this.chain) this.clearCache();
       if (this.el) this.el.hidden = true;

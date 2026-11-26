@@ -77,6 +77,7 @@ input[type=number], input[type=text], select, code { font-family: var(--mono); }
 .btn.sell:hover { background: #a33b4a; }
 .btn.danger { background: transparent; border-color: var(--c-crimson); color: var(--c-crimson); }
 .btn:disabled { opacity: .4; cursor: not-allowed; }
+.btn.locked { opacity: .6; }
 
 input[type=number], input[type=text], select {
   background: var(--c-ink); border: 2px solid; border-color: var(--c-ink) var(--c-slate2) var(--c-slate2) var(--c-ink);

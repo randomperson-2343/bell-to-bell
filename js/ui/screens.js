@@ -375,6 +375,8 @@
       const show = () => {
         if (B.Cinematic.endChain) B.Cinematic.endChain();
         if (B.Music.ending) B.Music.ending(ending, track); else B.Music.play(track);
+        // a career seen all the way through unlocks SKIP SCENE and Endless
+        if (g.mode.kind === 'story' && ending.fullRun && B.Progress) B.Progress.markCareerDone();
         if (g.mode.kind === 'story') this.storyEnding(g, ending);
         else this.endlessEnding(g, ending);
       };

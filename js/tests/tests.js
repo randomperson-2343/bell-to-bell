@@ -849,6 +849,15 @@
     const finalVerdict = close(limit - 1, false);
     assert(S.quotaStrikes === limit, 'final strike not recorded');
     assert(finalVerdict.ending && finalVerdict.ending.id === 'fired', 'configured strike limit did not terminate the career');
+    // a firing ends the career early: it does not count as a career seen all the way through
+    assert(finalVerdict.ending.fullRun === false, 'a firing counted as a full run');
+    assert(mode.buildEnding(g, 'final').fullRun === true, 'the last day did not count as a full run');
+  });
+
+  test('Unlocks: one career to its last day opens SKIP SCENE and Endless, and stays open', () => {
+    assert(B.Progress.careerDone() === false, 'locked at first');
+    B.Progress.markCareerDone();
+    assert(B.Progress.careerDone() === true && B.storage.get('careerDone') === true, 'unlock kept');
   });
 
   test('Quota strike ledger rebuilds from legacy save history', () => {

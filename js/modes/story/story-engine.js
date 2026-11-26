@@ -944,6 +944,8 @@
         const epilogue = epilogue0 + tail;
         return {
           id: e.id, title: e.title, headline: e.headline,
+          // the career ran to its end (the last day, or the plane on day 42), not cut short by a firing or a wiped book
+          fullRun: reason === 'final',
           deck: firedBy === 'boss' && e.id === 'fired' ? 'Firm cites "a breakdown of trust" as the crisis claims another desk.' : e.deck,
           story: e.story(ctx), epilogue, wealth: e.wealth(ctx), personal: P,
           section: e.section || 'Markets', pull: e.pull ? e.pull(ctx) : '',
