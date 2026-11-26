@@ -259,8 +259,8 @@
   // vouching for Thorncrest, lobbying for deregulation, or resqwaking the campaign twice.
   const scareFed = (S) => !!(S.f.thsiClear || S.f.lobbyYes || (S.spiralResqwaks || 0) >= 2);
 
-  // The first Stabilization vote always fails; how badly depends on decision 8's
-  // lobbying. Working the phones gets it to two votes short, working against it six.
+  // The first Stabilization vote always fails; how badly depends on the lobbying in
+  // decision c8 (shown to the player as Decision 10). Working the phones gets it to two votes short, working against it six.
   const firstVote = (S) => (S.f.whipped ? { short: 'TWO', move: -.075 } : S.f.whippedAgainst ? { short: 'SIX', move: -.105 } : { short: 'FOUR', move: -.09 });
 
   const DAYS = daySpecs.map((x, d) => {
@@ -353,7 +353,7 @@
       day: 3, speaker: 'Desmond Kroll', role: 'Head of Trading, Holloway Stern', title: 'The Pension Dump',
       kicker: 'DECISION 1',
       text: [
-        'Kroll closes your office door with his foot, which you did not know was possible.',
+        'Kroll walks you into his office and closes the door with his foot, which you did not know was possible.',
         '"We are holding forty million of CASCADE paper that is not worth forty million. Riverbend Teachers\' Retirement wants yield. Their consultant does not read footnotes. You walk them through the deck and they buy it at par."',
         '"It is not lying. Everything in the deck is true. It is just not all of it."'
       ],
@@ -583,7 +583,7 @@
       kicker: 'DECISION 6',
       text: [
         'The valuation committee needs a trading signature on the CASCADE book by 6 PM. Kroll has brought the folder to you personally, which he has never done.',
-        '"Model says sixty-one cents. The desk says twenty-two. If we print twenty-two, our capital ratio breaks, the regulator walks in tomorrow, and eleven thousand people here find out what happens next."',
+        '"Model says sixty-one cents. The desk says twenty-two. If we print twenty-two, our capital ratio breaks, the regulator walks in tomorrow, and six thousand people here find out what happens next."',
         '"Sign the sixty-one. It is a model output. Models are opinions. Opinions are not lies."'
       ],
       options: [

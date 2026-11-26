@@ -28,7 +28,7 @@
         { k: 'room', room: 'c1', line: 'Behind his glass, Kroll is laughing into a phone. He is looking straight at you.' },
         { k: 'floor', z: 0.45, line: 'He hangs up mid-laugh and crosses the floor. Traders lean out of his way without looking up.' },
         { k: 'face', who: 'Imani Rhodes', on: 'floor', line: 'Four desks over, Imani stops typing.' },
-        { k: 'face', who: 'Desmond Kroll', on: 'c1', line: 'Kroll closes your office door with his foot, which you did not know was possible.' },
+        { k: 'face', who: 'Desmond Kroll', on: 'c1', line: 'Kroll walks you into his office and closes the door with his foot, which you did not know was possible.' },
         { k: 'doc', doc: 'memo', value: '$40M AT PAR', line: 'He drops a deck on your desk. Forty million dollars of CASCADE paper, priced at par.' },
         { k: 'doc', doc: 'footnote', value: 'NOTE 14', line: 'Page nine, in grey eight-point type: the part of the story the deck leaves out.' },
         { k: 'face', who: 'Desmond Kroll', on: 'c1', line: '"Riverbend Teachers\' Retirement wants yield. Their consultant does not read footnotes. They buy it at par."' },
@@ -60,7 +60,7 @@
         { k: 'sky', line: 'The morning of the markup. Somebody on Senator Thorne\'s staff sent a car for you.' },
         { k: 'room', room: 'c3', line: 'The Senate Markets Committee room. The members are already in their seats, and nobody is looking at the bill.' },
         { k: 'doc', doc: 'memo', value: 'COMPUTE FREEDOM ACT', line: 'The bill on the dais. Forty pages. Nobody in this building has read page thirty.' },
-        { k: 'face', who: 'Sen. Marcus Thorne', on: 'c3', line: 'Thorne does not sit down. He talks to you standing up, which you suspect he practiced.' },
+        { k: 'face', who: 'Sen. Marcus Thorne', on: 'c3', line: 'Thorne does not sit down. He stands at the window with his back to you, which you suspect he practiced.' },
         { k: 'face', who: 'Sen. Marcus Thorne', on: 'c3', line: '"The Compute Freedom Act raises leverage limits for institutions funding compute infrastructure."' },
         { k: 'doc', doc: 'chart', value: 'EVERY DESK AT 6X', line: 'The chart in his folder: every desk on the street running six times its capital.' },
         { k: 'face', who: 'Sen. Marcus Thorne', on: 'c3', line: '"My colleagues will vote however the industry tells them to vote."' },
@@ -108,7 +108,7 @@
         fail: [
           { k: 'clock', time: '11:40 PM', note: 'RIDGEWAY FILES', line: 'Ridgeway files at 11:40 PM. It is the largest failure in the country\'s history by a factor of four.' },
           { k: 'floor', z: 0.15, dark: true, line: 'By the open, three things nobody had connected to Ridgeway stop working.' },
-          { k: 'text', from: 'ADELE VENN', body: 'Come in.', line: 'Venn calls you at 6 AM. She does not say anything for a while. Then: "Come in."' }
+          { k: 'face', who: 'Adele Venn', on: 'c5', line: 'Venn calls you at 6 AM. She does not say anything for a while. Then: "Come in."' }
         ],
         ban: [
           { k: 'clock', time: '4:00 AM', note: 'EMERGENCY ORDER', line: 'The emergency order lands at 4 AM. Short selling in financials is banned until further notice.' },
@@ -127,7 +127,7 @@
         { k: 'doc', doc: 'memo', value: 'MODEL: 61 CENTS', line: 'Page one: the model\'s mark. Sixty-one cents on the dollar.' },
         { k: 'doc', doc: 'chart', value: 'DESK: 22 CENTS', line: 'Page two: what the desk could actually sell it for. Twenty-two.' },
         { k: 'face', who: 'Desmond Kroll', on: 'c6', line: '"If we print twenty-two, our capital ratio breaks, and the regulator walks in tomorrow."' },
-        { k: 'face', who: 'Desmond Kroll', on: 'c6', line: '"And eleven thousand people here find out what happens next."' },
+        { k: 'face', who: 'Desmond Kroll', on: 'c6', line: '"And six thousand people here find out what happens next."' },
         { k: 'face', who: 'Desmond Kroll', on: 'c6', line: '"Sign the sixty-one. It is a model output. Models are opinions. Opinions are not lies."' },
         { k: 'clock', time: '5:12 PM', note: 'SIGNATURE DUE 6:00', line: 'Forty-eight minutes. He leaves the pen uncapped on your desk.' }
       ],
@@ -182,8 +182,8 @@
 
     c12: {
       shots: [
-        { k: 'tableau', n: 15, line: 'Last night the President showed the country a chart: a spiral of machines on Kavra, building machines.' },
-        { k: 'floor', z: 0.45, dark: true, line: 'After the close. The floor is half empty, and every screen is still running the address.' },
+        { k: 'tableau', n: 15, line: 'Three weeks ago the President showed the country a chart: a spiral of machines on Kavra, building machines.' },
+        { k: 'floor', z: 0.45, dark: true, line: 'After the close. The floor is half empty, and the chart from the address is still on every screen.' },
         { k: 'text', from: 'SEN. MARCUS THORNE', body: 'Calling...', line: 'Your phone lights up. Senator Thorne, from his own office.' },
         { k: 'room', room: 'c12', line: 'Thorne\'s office after dark. The Spiral chart stands on an easel by the window.' },
         { k: 'face', who: 'Sen. Marcus Thorne', on: 'c12', line: '"On Wednesday the committee hears the Spiral case."' },
@@ -240,7 +240,7 @@
     c9: {
       shots: [
         { k: 'floor', z: 0.15, dark: true, line: '7 PM. The floor is dark except for the screens nobody bothered to turn off.' },
-        { k: 'room', room: 'c9', line: 'The stairwell between eleven and twelve. The exit sign has been flickering for a month.' },
+        { k: 'room', room: 'c9', line: 'The stairwell between forty and forty-one. The exit sign has been flickering for a month.' },
         { k: 'face', who: 'Imani Rhodes', on: 'c9', line: 'Imani is waiting for you, with a folder she should not have.' },
         { k: 'face', who: 'Imani Rhodes', on: 'c9', line: '"Enforcement wants someone who was in the room. Not a witness. A participant."' },
         { k: 'doc', doc: 'memo', value: 'COOPERATION TERMS', line: '"They are offering full cooperation terms, and they are offering them today."' },
@@ -312,7 +312,7 @@
         { k: 'doc', doc: 'memo', value: 'PROVE US WRONG', line: 'A sign in the window: NOBODY ADOPTS IN A CRASH. PROVE US WRONG.' },
         { k: 'room', room: 'adopt', line: 'Inside it smells like bleach and kibble. Most of the kennels are empty.' },
         { k: 'face', who: 'Harbor Street Animal Shelter', on: 'adopt', line: 'The volunteer has been here since six this morning, and is still smiling.' },
-        { k: 'face', who: 'Harbor Street Animal Shelter', on: 'adopt', line: '"These two have been here the longest. Somebody should take them home."' },
+        { k: 'face', who: 'Harbor Street Animal Shelter', on: 'adopt', line: '"These four have been here the longest. Somebody should take one home."' },
         { k: 'room', room: 'adopt', line: 'The orange cats stare at you like risk managers.' },
         { k: 'room', room: 'adopt', line: 'The brown dogs have already decided you are the one.' },
         { k: 'clock', time: '7:55 PM', note: 'CLOSING AT 8:00', line: 'The shelter closes in five minutes. The forms are ready, just in case.' }
@@ -389,8 +389,9 @@
       after: {
         accept: [{ k: 'doc', doc: 'memo', value: 'SIGNED', line: 'You sign. The email thanks you in three languages.' }],
         push: [
-          { k: 'face', who: 'Your landlord', on: 'rentHike', line: 'The system does not negotiate. The increase stands.' },
-          { k: 'home', night: true, line: 'You lie awake composing replies.' }
+          { k: 'face', who: 'Your landlord', on: 'rentHike', unless: 'rentHalved', line: 'The system does not negotiate. The increase stands.' },
+          { k: 'home', night: true, unless: 'rentHalved', line: 'You lie awake composing replies.' },
+          { k: 'face', who: 'Your landlord', on: 'rentHike', if: 'rentHalved', line: 'You mention the hearing you might testify at. The system halves the increase.' }
         ],
         move: [
           { k: 'doc', doc: 'memo', value: 'NOTICE GIVEN', line: 'You give notice. Somewhere cheaper, this weekend.' },
@@ -417,7 +418,7 @@
           { k: 'face', who: 'Mom', on: 'dadBill', line: 'She cries a little. Then she tells you about the nurse who was kind to him.' }
         ],
         plan: [
-          { k: 'doc', doc: 'memo', value: '$7,100 NOW', line: 'Half now, and twelve hundred every Friday for six weeks.' },
+          { k: 'doc', doc: 'memo', value: '$7,100 NOW', line: 'Half now, and fourteen hundred and twenty every Friday for five weeks.' },
           { k: 'face', who: 'Mom', on: 'dadBill', line: '"Thank you. We\'ll manage the rest." You set up the plan on your phone in the cab.' }
         ],
         insurer: [
@@ -425,7 +426,7 @@
           { k: 'room', room: 'dadBill', line: 'You do not call tomorrow.' }
         ]
       },
-      recap: { pay: 'You paid Dad\'s surgery bill.', plan: 'You paid half of Dad\'s bill, and the rest over six weeks.', insurer: 'You left Mom to call the insurer.' }
+      recap: { pay: 'You paid Dad\'s surgery bill.', plan: 'You paid half of Dad\'s bill, and the rest over five weeks.', insurer: 'You left Mom to call the insurer.' }
     },
 
     toothache: {
@@ -465,7 +466,7 @@
       after: {
         pay: [
           { k: 'room', room: 'vetER', line: 'Antibiotics, a cone and a bill.' },
-          { k: 'home', line: 'By the weekend {pet} is back on the windowsill, judging the pigeons.' }
+          { k: 'home', line: 'By the weekend {pet} is back at the window, judging the pigeons.' }
         ],
         wait: [
           { k: 'home', night: true, line: '{pet} comes out on the third day, thinner and slower.' },

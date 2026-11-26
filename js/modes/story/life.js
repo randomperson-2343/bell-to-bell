@@ -44,7 +44,7 @@
           apply: (S, W) => { W.rentMult = (W.rentMult || 1) * 1.09; return ['You sign. The email thanks you in three languages.']; } },
         { id: 'push', label: 'Push back', hint: 'Works if people listen to you. If not, it costs you sleep.',
           apply: (S, W) => {
-            if (S.m.influence >= 30) { W.rentMult = (W.rentMult || 1) * 1.045; return ['You mention the hearing you might testify at. The system halves the increase.']; }
+            if (S.m.influence >= 30) { W.rentMult = (W.rentMult || 1) * 1.045; S.f.rentHalved = true; return ['You mention the hearing you might testify at. The system halves the increase.']; }
             W.rentMult = (W.rentMult || 1) * 1.09; W.stressNext = (W.stressNext || 0) + 6;
             return ['The system does not negotiate. The increase stands, and you lie awake composing replies.'];
           } },
@@ -54,7 +54,7 @@
       ]
     },
     {
-      id: 'advance', day: 31, speaker: 'Desmond Kroll', role: 'Head of desk, at dinner',
+      id: 'advance', day: 31, speaker: 'Desmond Kroll', role: 'Head of Trading, at dinner',
       kicker: 'YOUR MONEY', title: 'The Number Is Looking Good',
       text: (S, W) => [`Kroll pays for dinner. Steak, the good wine, a toast to "the bottom being in."`,
         `"Pool closes the first of the year. Your number is looking good. HR can advance you ${money(8000)} against it tonight. Don't do anything stupid before then."`],
@@ -73,8 +73,8 @@
       options: [
         { id: 'pay', label: `Pay it. All of it. (${money(14200)})`, hint: 'Cash first, then the card, then collections.',
           apply: (S, W, E) => { E.charge(W, 14200); W.dad = 'paid'; return ['She cries a little. Then she tells you about the nurse who was kind to him.']; } },
-        { id: 'plan', label: `Half now, the rest over six weeks`, hint: `${money(7100)} now, then ${money(1200)} every Friday for six weeks.`,
-          apply: (S, W, E) => { E.charge(W, 7100); W.dad = 'plan'; (W.plans = W.plans || []).push({ label: "Dad's surgery", amt: 1200, left: 6 }); return ['"Thank you. We\'ll manage the rest." You set up the plan on your phone in the cab.']; } },
+        { id: 'plan', label: `Half now, the rest over five weeks`, hint: `${money(7100)} now, then ${money(1420)} every Friday for five weeks.`,
+          apply: (S, W, E) => { E.charge(W, 7100); W.dad = 'plan'; (W.plans = W.plans || []).push({ label: "Dad's surgery", amt: 1420, left: 5 }); return ['"Thank you. We\'ll manage the rest." You set up the plan on your phone in the cab.']; } },
         { id: 'insurer', label: 'Let me call the insurer first', hint: 'Costs nothing today. Mom handles it alone.',
           apply: (S, W) => { W.dad = 'unpaid'; W.dadUnpaid = true; return ['"Of course. You\'re busy." She hangs up before you can say you\'ll call tomorrow. You do not call tomorrow.']; } }
       ]
@@ -164,7 +164,7 @@
         `"Bring ${him(W)} in tonight. It is probably treatable. The checkup would have caught it."`],
       options: [
         { id: 'pay', label: `Go to the emergency vet. (${money(900)})`, hint: 'Cash first, then the card.',
-          apply: (S, W, E) => { E.charge(W, 900); W.vet = 'treated'; return [`Antibiotics, a cone and a bill. By the weekend ${petName(W)} is back on the windowsill, judging the pigeons.`]; } },
+          apply: (S, W, E) => { E.charge(W, 900); W.vet = 'treated'; return [`Antibiotics, a cone and a bill. By the weekend ${petName(W)} is back at the window, judging the pigeons.`]; } },
         { id: 'wait', label: 'Wait and see', hint: 'Nothing leaves your account.',
           apply: (S, W) => { W.vet = 'neglected'; return [`${petName(W)} comes out on the third day, thinner and slower. ${he(W).charAt(0).toUpperCase() + he(W).slice(1)} gets better on ${his(W)} own. Mostly.`]; } }
       ]
