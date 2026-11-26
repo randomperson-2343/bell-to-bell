@@ -1,0 +1,27 @@
+{
+ "frames": [
+  {
+   "filename": "picture",
+   "frame": {
+    "x": 0,
+    "y": 0,
+    "w": 320,
+    "h": 180
+   }
+  }
+ ],
+ "meta": {
+  "image": "tableau-address.png",
+  "size": {
+   "w": 320,
+   "h": 180
+  },
+  "frameTags": [
+   {
+    "name": "picture",
+    "from": 0,
+    "to": 0
+   }
+  ]
+ }
+}

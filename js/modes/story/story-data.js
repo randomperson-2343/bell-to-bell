@@ -1,4 +1,4 @@
-// STORY MODE CONTENT: 46 sessions over ten weeks, 10 decisions, 4 acts.
+// STORY MODE CONTENT: 46 sessions over ten weeks, 12 decisions, 4 acts.
 // Each day's scenario is a function of story state S, so choices reshape the market itself.
 //
 // Everything here is invented. The firms, the people, the instruments, the bills,
@@ -21,7 +21,7 @@
   const cm = (S) => B.clamp(1 + (60 - S.m.stability) / 60 * 0.8 + (S.f.dereg ? 0.25 : 0), 1, 1.3);
   const FIN = ['bank', 'lender', 'insurer'];
   const STACK = ['ai', 'chip', 'dc'];
-  const boss = (S) => (S.f.defected ? 'Imani Rhodes' : 'Desmond Kroll');
+  const boss = () => 'Desmond Kroll';
 
   const ACTS = ['I · MELT-UP', 'II · TREMORS', 'III · CONTAGION', 'IV · RECKONING'];
   // Acts open at the first kept session at or after the original 15/30/45 marks.
@@ -47,7 +47,7 @@
   const A = [
     [0, 'Your fill acknowledgements precede the exchange print by 0.4 milliseconds.'],
     [1, 'LATTICE-9 release notes list treasury and liquidity operations as an evaluation category.'],
-    [8, 'The 4 a.m. research note has no human author. The byline resolves to a service account.'],
+    [8, 'The 4 AM research note has no human author. The byline resolves to a service account.'],
     [10, 'Bastion names its capacity counterparty only by a legal entity identifier.'],
     [12, 'The failed auction had one bidder. The bid was zero.'],
     [14, 'Every Meridian downgrade printed in the same minute after a model update overnight.'],
@@ -101,7 +101,7 @@
     ['Six Point Four','chop',-.001,-.004,'Consumer delinquencies hit 6.4%.','CASCADE remains AAA. Kroll waits beside your desk after the close.',9],
     ['Still AAA','bubble', .002,.007,'Meridian affirms the entire CASCADE vintage.','The rating arrives before anyone finishes reading the delinquency report.',10],
     ['Fairline Files','chop',-.004,.006,'Fairline files for protection. The index closes at a record.','A lender dies at noon. The closing bell sounds celebratory.',11],
-    ['The Strait','chop',-.006,-.002,'An incident in the Kavro Strait hits chips and lifts defense.','Political tension arrives only as color on the tape.',12],
+    ['The Strait','chop',-.006,-.002,'A Kavran drone swarm crosses into Mirren\'s air zone. Chips fall and defense rises.','Aurelia and the Kavran Republic trade warnings across the Kavra Strait. Nobody can say whether it was a drill. Silicon sells first and asks questions later.',12],
     ['Form Four','bear',-.003,-.012,'Fairline\'s chief executive sold 40% of his stake.','Perry calls with twenty-two seconds\' worth of illegal knowledge.',13],
     ['A Circle','bear',-.008,-.018,'Thorncrest funded Halcyon, which spent the money on Thorncrest chips.','Both firms booked the same dollars as proof of demand.',15],
     ['The Physical World','bear',-.006,-.018,'Grid operators reject gigawatt-scale interconnects.','The bubble meets copper, turbines and four-year queues.',18],
@@ -113,8 +113,8 @@
     ['Lines Pulled','bear',-.010,-.022,'Counterparties pull Ridgeway credit lines late.','Funding disappears one polite call at a time.',27],
     ['The Pack','panic',-.006,-.025,'A coordinated raid forms around Ridgeway.','Greta Vail offers a place in the pack and twenty seconds to decide.',28],
     ['The Loop','panic',-.018,-.085,'Shared models sell into their own signal.','At 11:15 the market becomes an echo chamber with prices attached.',30],
-    ['Systems Normal','chop', .006,-.006,'Exchanges report normal operations.','Nothing is repaired. It is simply no longer the newest emergency.',31],
-    ['Same Model','chop',-.003,-.012,'Volatility remains while attention moves on.','Imani names the four funds and the one model beneath them.',32],
+    ['The Address','chop', .006,-.006,'Exchanges report normal operations. At noon the President addresses the nation.','Nothing is repaired. It is simply no longer the newest emergency: at noon the President names a different enemy.',31],
+    ['Same Model','chop',-.003,-.012,'The President says Kavra is building machines that build themselves.','Imani names the four funds and the one model beneath them. Nobody else is looking.',32],
     ['The Queue','panic',-.028,-.060,'Ridgeway misses a funding call and a branch queue forms.','The camera crew creates the run it came to document.',33],
     ['All Options','bear',-.012,-.025,'Officials say all options remain on the table.','Venn has been awake thirty-one hours. The decision will not wait.',34],
     ['The Gap','panic',-.035,-.045,'The market prices the rescue decision.','Ambervale is cut three notches either way.',35],
@@ -127,15 +127,15 @@
     ['A Little Better','recovery', .001,.020,'Credit spreads narrow by a fraction.','Nobody rings a bell. Relief enters through posture.',42],
     ['Perfect Volume','recovery', .001,.021,'The rally continues on mechanically even volume.','The machines do not take lunch.',43],
     ['Over','recovery', .002,.022,'The desk agrees the crisis is over.','Kroll buys dinner. Tomorrow\'s quota is already waiting.',44],
-    ['Make It Back','recovery', .004,.022,'Quota spikes as the rally continues.','The desk mandate is simple: make it back, and make it back now.',45],
-    ['Nobody Cares','recovery', .003,.021,'Sana\'s investigation lands on nothing.','Nine thousand words vanish beneath a green index.',46],
+    ['Make It Back','recovery', .004,.022,'Quota spikes as Kavran robot units mass on the coast facing Mirren.','The desk mandate is simple: make it back, and make it back now. The assessment office says Kavra\'s intent "cannot be determined."',45],
+    ['Nobody Cares','recovery', .003,.021,'Sana\'s investigation lands on nothing.','Nine thousand words on CASCADE and the Spiral vanish beneath a green index.',46],
     ['Twenty Percent','recovery', .002,.020,'The index nears twenty percent above the low.','The short book bleeds without the mercy of a gap.',47],
     ['The Top','recovery', .001,.018,'The rally tops without a headline.','False hope does not announce its final hour.',48],
     ['The Footnote','bear',-.002,-.008,'The grind down begins.','Imani hands you one last footnote. Perry leaves a final voicemail.',49],
     ['The Hearing','panic',-.006,-.022,'Thorne holds up the circular CASCADE structure on every screen.','Meridian withdraws ratings on the whole vintage.',51],
     ['Four Votes','bear',-.004,-.015,'The Stabilization Act is four votes short.','The phones start before the close and do not stop overnight.',52],
     ['Breaks the Buck','panic',-.020,-.055,'A money fund breaks the buck. Financial shorts are banned.','Cash itself develops a price.',54],
-    ['The Failed Vote','panic',-.030,-.090,'The Stabilization Act fails at 2:00 p.m.','Sirens, screen shake, and the arithmetic Thorne warned about.',55],
+    ['The Failed Vote','panic',-.030,-.090,'The Stabilization Act fails at 2:00 PM.','Sirens, screen shake, and the arithmetic Thorne warned about.',55],
     ['Hope','recovery', .025,.050,'The vote passes.','For one session everyone believes the rescue changed the ending.',56],
     ['The Offer','panic',-.012,-.040,'The rescue is priced in and selling resumes.','Imani waits in the stairwell with five exits and no safe choice.',57],
     ['One Counterparty','panic',-.025,-.070,'The market falls through the rescue.','Almost every fill points back to the same hidden counterparty.',58],
@@ -168,15 +168,21 @@
     2: [Object.assign(chirp(115,'BREAKING?? $RDGW buyout at a forty percent premium. source: my uncle','@CallsOnlyCarl'), { fake: true }), ev(150,'Ridgeway denies it is in takeover talks',[['ticker','RDGW',-.012]])],
     3: [ev(235,'Consumer delinquencies print 6.4%; CASCADE vintage remains AAA',[['sector','lender',-.035,.3],['sector','bank',-.012]])],
     5:[ev(190,'Fairline files for bankruptcy protection',[['ticker','FRLN',-.35,.2],['sector','lender',-.035]])],
+    6:[ev(40,'Kavra Strait standoff: Aurelia weighs new chip export curbs on the Kavran Republic',[['sector','chip',-.03,.3],['ticker','VNTR',.035,.3]],{big:true})],
     7:[ev(310,'Fairline chief executive sold 40% of his stake before the filing',[['ticker','FRLN',-.07,.3]])],
     8:[ev(15,'Research note documents circular financing between Thorncrest and Halcyon',[['ticker','THSI',-.05,.3],['ticker','HALO',-.09,.4]],{big:true})],
     9:[ev(25,'Three grid operators reject gigawatt-scale interconnect requests',[['sector','dc',-.04,.3],['sector','power',.02]],{big:true})],
     10:[ev(170,'Bastion says 19% of contracted capacity may never energize',[['ticker','BSTN',-.08,.4],['sector','dc',-.03]])],
     12:[ev(140,'Two CASCADE tranches fail at auction; no executable bid exists',[['sector','bank',-.045,.4],['sector','dc',-.035]],{big:true})],
     15:[ev(230,'Counterparties pull Ridgeway intraday credit lines',[['ticker','RDGW',-.12,.4],['sector','bank',-.025]])],
+    16:[ev(175,'Ridgeway borrow costs triple as short interest jumps',[['ticker','RDGW',-.05,.3],['sector','bank',-.01]])],
     17:[ev(105,'AUTONOMOUS EXECUTION LOOP CASCADES ACROSS FOUR FUNDS',[['market','',-.09,.5],['sector','ai',-.08,.3]],{big:true,script:'loop'}), ev(175,'Index violently reverses from session low',[['market','',.07,.5],['sector','ai',.045]])],
     20:[ev(75,'Ridgeway fails funding call and halts limit down',[['ticker','RDGW',-.28,.3],['sector','bank',-.055]],{big:true})],
+    22:[ev(45,'Ambervale Re cut three notches after the rescue decision',[['ticker','AMVL',-.09,.3],['sector','insurer',-.015]])],
+    23:[ev(320,'Holloway Stern delays revised CASCADE marks until after the close',[['ticker','HLST',-.03,.3]])],
+    24:[ev(250,'CASCADE buyer financing terms circulate among dealers',[['ticker','HLST',-.03,.3],['sector','bank',-.01]])],
     26:[ev(250,'Formal inquiry opened into CASCADE valuations',[['ticker','HLST',-.08,.3],['sector','bank',-.04]],{big:true})],
+    39:[ev(120,'Prime money fund breaks the buck; short sales in financial names banned',[['sector','bank',-.035,.3],['ticker','TBND',.012,.3]],{big:true})],
     37:[ev(150,'Meridian withdraws ratings on the entire CASCADE vintage',[['sector','bank',-.07,.3],['sector','dc',-.06]],{big:true})],
     40:[ev(270,'STABILIZATION ACT FAILS FOUR VOTES SHORT',[['market','',-.09,.7]],{big:true,script:'voteFail'})],
     41:[ev(90,'STABILIZATION ACT PASSES ON SECOND VOTE',[['market','',.05,.4]],{big:true,script:'votePass'})],
@@ -195,6 +201,68 @@
     ];
   }
 
+  // THE THORNCREST ARC. Thorncrest Silicon sold accelerators to Lanternfield
+  // Compute, a reseller in the Ondine Free Zone that leased the capacity on to
+  // Kavran state labs. Chief executive Ezra Quill's family trust owned part of
+  // Lanternfield. Aurelia's Strategic Commerce Office opens a security review,
+  // the Kavran Republic answers with a mineral freeze, Quill resigns, and the
+  // board wants him back. Decision c11 (session 29) decides how that ends.
+  // Sqwak leads every move: see sqwak-story.js, threads 'thorncrest' and 'quill'.
+  const ARC_BASE = {
+    22: [ev(200,'Aurelian customs holds a Thorncrest shipment bound for the Ondine Free Zone',[['ticker','THSI',-.04,.3]])],
+    23: [ev(75,'STRATEGIC COMMERCE OFFICE OPENS SECURITY REVIEW OF THORNCREST EXPORTS',[['ticker','THSI',-.09,.4],['sector','chip',-.015]],{big:true})],
+    24: [ev(110,'THORNCREST CHIEF EXECUTIVE EZRA QUILL RESIGNS',[['ticker','THSI',-.08,.4]],{big:true})],
+    25: [ev(100,'Kavran Republic freezes rare-earth licenses for Aurelian chipmakers',[['sector','chip',-.03,.3],['ticker','THSI',-.03,.3],['ticker','VNTR',.02]])],
+    26: [ev(120,'Thorncrest suppliers cut guidance on the Kavran mineral freeze',[['ticker','THSI',-.03,.3]])],
+    27: [ev(260,'Report: Thorncrest board sounds out big holders on Quill\'s return',[['ticker','THSI',.05,.3]])]
+  };
+  const ARC_AFTER = {
+    clear: {
+      29: [ev(20,'THORNCREST REINSTATES QUILL AS COMMERCE CLEARS ITS EXPORT PAPERWORK',[['ticker','THSI',.18,.4],['sector','chip',.015]],{big:true})],
+      30: [ev(150,'Thorncrest wins a sovereign cloud order days after Quill\'s return',[['ticker','THSI',.04,.3]])],
+      37: [ev(240,'HEARING EXHIBIT: LANTERNFIELD SHIPMENTS CONTINUED AFTER QUILL RETURNED',[['ticker','THSI',-.15,.4],['sector','chip',-.02]],{big:true})]
+    },
+    ignore: {
+      29: [ev(20,'Thorncrest reinstates Quill under an outside export monitor',[['ticker','THSI',.08,.3]])],
+      31: [ev(180,'Kavra adds Thorncrest to its unreliable-entity list',[['ticker','THSI',-.07,.3]])],
+      37: [ev(240,'Hearing asks why the Thorncrest monitor never reached Ondine',[['ticker','THSI',-.05,.3]])]
+    },
+    hold: {
+      29: [ev(20,'Thorncrest names Helena Strand permanent chief executive; Quill will not return',[['ticker','THSI',-.09,.3]])],
+      31: [ev(180,'Thorncrest settles the export case and accepts an outside monitor',[['ticker','THSI',.05,.3]])],
+      37: [ev(240,'Committee credits Thorncrest for handing over the Lanternfield records',[['ticker','THSI',.02,.2]])]
+    }
+  };
+  const arcPath = (S) => (S.choices && S.choices.c11) || 'ignore';
+
+  // The Spiral: Aurelia's government campaign says the Kavran Republic is building
+  // self-replicating, self-improving military robots. Kavra does want military
+  // robots; whether they are meant for Mirren is never answered. The chart the
+  // campaign calls proof is Aurelia's own shared trading stack. Decision c12
+  // (session 36) decides whether the player backs it, traces it or stays out.
+  const SPIRAL_BASE = {
+    18: [ev(180,'PRESIDENT: KAVRA IS "BUILDING MACHINES THAT BUILD AND IMPROVE THEMSELVES"',[['sector','defense',.03,.3],['sector','chip',-.02,.3]],{big:true})],
+    19: [ev(120,'Leaked assessment: Aurelian analysts split on the purpose of Kavra\'s robot program',[['ticker','VNTR',-.015,.3]])],
+    32: [ev(130,'KAVRAN ROBOT UNITS MASS ON THE COAST FACING MIRREN',[['ticker','VNTR',.04,.3],['sector','chip',-.015]],{big:true})]
+  };
+  const SPIRAL_AFTER = {
+    back: { 37: [ev(300,'TRADER TESTIFIES SPIRAL THREAT IS REAL; KAVRA RECALLS ITS ENVOY',[['ticker','VNTR',.06,.3],['sector','chip',-.03,.3]],{big:true})] },
+    trace: { 37: [ev(300,'Spiral chart questioned at the hearing after a witness withdraws',[['ticker','VNTR',-.03,.3]])] },
+    decline: { 37: [ev(300,'Defense analyst backs the Spiral claims at the hearing',[['ticker','VNTR',.03,.3]])] }
+  };
+  const spiralPath = (S) => (S.choices && S.choices.c12) || 'decline';
+  function arcEvents(d, S) {
+    const out = (ARC_BASE[d] || (d > 28 && ARC_AFTER[arcPath(S)][d]) || []).concat(SPIRAL_BASE[d] || []);
+    return d > 35 ? out.concat(SPIRAL_AFTER[spiralPath(S)][d] || []) : out;
+  }
+  // Whether the Spiral scare got the help it needed to keep the machines running:
+  // vouching for Thorncrest, lobbying for deregulation, or resqwaking the campaign twice.
+  const scareFed = (S) => !!(S.f.thsiClear || S.f.lobbyYes || (S.spiralResqwaks || 0) >= 2);
+
+  // The first Stabilization vote always fails; how badly depends on decision 8's
+  // lobbying. Working the phones gets it to two votes short, working against it six.
+  const firstVote = (S) => (S.f.whipped ? { short: 'TWO', move: -.075 } : S.f.whippedAgainst ? { short: 'SIX', move: -.105 } : { short: 'FOUR', move: -.09 });
+
   const DAYS = daySpecs.map((x, d) => {
     const title = x[0], regime = x[1], gap = x[2], target = x[3], lead = x[4], brief = x[5];
     const item = {
@@ -207,7 +275,14 @@
         if (d === 4 && S.f.dumped) p.push('Riverbend owns the paper now. Your bonus cleared before breakfast.');
         if (d === 8 && S.f.insiderTraded) p.push('Compliance wants the chronology of your CASCADE positions in writing.');
         if (d === 22) p.push(S.f.bailout ? 'Ridgeway opens inside a public guarantee.' : 'Ridgeway opens without a public guarantee.');
+        if (d === 29) p.push(S.choices.c11 === 'clear' ? 'Thorncrest\'s board voted at nine. Your comfort letter is in the review file.'
+          : S.choices.c11 === 'hold' ? 'Commerce took your advice. Thorncrest\'s board chose the hearing over the comeback.'
+            : 'Thorncrest\'s board voted at nine. Someone else signed the letter, with conditions attached.');
+        if (d === 36) p.push(S.choices.c12 === 'trace' ? 'Imani\'s footnote is now an exhibit: the Spiral chart and your venue fills, line for line.'
+          : S.choices.c12 === 'back' ? 'Your testimony is scheduled for tomorrow afternoon. Thorne\'s staff sent talking points.'
+            : 'Imani leaves the Spiral chart on your desk anyway, with one fill circled.');
         if (d === 40) p.push(S.f.whipped ? 'You spent the weekend working every reachable vote.' : S.f.whippedAgainst ? 'You spent the weekend working against the rescue.' : 'You let the vote arrive without using your influence.');
+        if (d === 43 && S.f.spiralTraced) p.push('Imani was right. The counterparty is the Spiral entity.');
         if (d === 45 && S.f.pulledPlug) p.push('The automated stack is dead. Your book was flattened into a forty-percent opening gap. The market is human again, and almost empty.');
         return p;
       },
@@ -216,7 +291,12 @@
         if (d === 11) { const boost = S.f.dereg ? .012 : S.f.regulation ? -.004 : .004; g += boost; t += boost; }
         if (d === 22) { const rescue = S.f.bailout ? .03 : -.035; g += rescue; t += rescue / 2; }
         if (d === 45 && S.f.pulledPlug) { g = -.40; t = -.32; }
-        let events = (specialEvents[d] || defaultEvents(d, t)).slice();
+        let events = (specialEvents[d] || defaultEvents(d, t)).concat(arcEvents(d, S));
+        if (d === 40) {
+          const v = firstVote(S);
+          t = v.move;
+          events = events.map((e) => (e.script === 'voteFail' ? ev(e.t, `STABILIZATION ACT FAILS ${v.short} VOTES SHORT`, [['market', '', v.move, .7]], { big: true, script: 'voteFail' }) : e));
+        }
         if (d === 41 && !S.f.billPassed) {
           g = -.018; t = -.035;
           events = [ev(90,'SECOND STABILIZATION VOTE FAILS; CREDIT MARKETS REMAIN SHUT',[['market','',-.035,.4]],{big:true,script:'voteFail'})];
@@ -256,6 +336,13 @@
     from: 'Greta Vail', role: 'Kestrel Point',
     text: 'Four desks are leaning on Ridgeway at once. We can finish it before the close. Are you in the pack or in the way?',
     options: [{id:'join',label:'Join the raid.'},{id:'refuse',label:'Trade your own book.'},{id:'tell',label:'Warn Ridgeway.'}], defaultOpt: 'refuse'
+  }];
+
+  DAYS[28].calls = (S) => S.choices.c11 ? [] : [{
+    t: 120, scripted: true, kind: 'choice', choiceId: 'c11', timer: 22,
+    from: 'Desmond Kroll', role: 'Head of Trading, Holloway Stern',
+    text: 'Thorncrest\'s board votes on Quill tonight. Commerce closes its review if one desk vouches for the export paper. We underwrite their bonds. Sqwak has already decided. Do you sign?',
+    options: [{id:'clear',label:'Sign the comfort letter.'},{id:'hold',label:'Tell Commerce to wait for the hearing.'},{id:'ignore',label:'Stay out of it.'}], defaultOpt: 'ignore'
   }];
 
   // =====================================================================
@@ -463,7 +550,7 @@
           headline: 'Argued that Ridgeway Trust should be allowed to fail',
           apply: (S) => {
             S.f.letFail = true;
-            adj(S, { stability: -24, integrity: 10, anger: -6 }, { venn: 8 });
+            adj(S, { stability: -24, integrity: 10, anger: -6 }, { venn: 12 });
           },
           reply: 'Venn: "I hope you are right. I genuinely do."',
           after: [
@@ -560,9 +647,45 @@
         { id:'expose', label:'Send the addendum to Sana.', hint:'Prove the public mark was fiction.', headline:'Exposed the hidden financing behind the CASCADE sale', apply:(S)=>{S.f.exposedFinancing=true;S.f.public=true;S.f.reported=true;adj(S,{integrity:24,heat:-8,firm:-28,stability:6,anger:8},{sana:25,kroll:-35,imani:15});}, reply:'Sana: "This changes the whole story."', after:['The addendum reaches Sana before legal notices it is missing.','By morning, everybody can do the five-and-a-half-cent arithmetic.'] }
       ]
     },
+    c11: { // mid-session call, session 29
+      day: 28, mid: true, title: 'The Comfort Letter', kicker: 'DECISION 8',
+      options: [
+        { id:'clear', label:'Sign the comfort letter.', headline:'Vouched for Thorncrest\'s export paperwork so its chief executive could return',
+          apply:(S)=>{S.f.thsiClear=true;adj(S,{integrity:-10,heat:6,influence:6,firm:8},{kroll:8,thorne:-6});}, reply:'Kroll: "Good. The board votes at nine."' },
+        { id:'hold', label:'Tell Commerce to wait for the hearing.', headline:'Told the Strategic Commerce Office to wait for the Thorncrest hearing',
+          apply:(S)=>{S.f.thsiHold=true;adj(S,{integrity:8,stability:3,firm:-6},{kroll:-10,thorne:8});}, reply:'Kroll: "Then you can explain that to their bond desk."' },
+        { id:'ignore', label:'Stay out of it.', headline:'Stayed out of the fight over Thorncrest\'s chief executive',
+          apply:(S)=>{S.f.thsiIgnore=true;adj(S,{},{kroll:-3});}, reply:'Kroll: "Fine. Someone else will sign it."' }
+      ]
+    },
+
+    c12: {
+      day: 35, speaker: 'Sen. Marcus Thorne', role: 'Chair, Senate Markets Committee', title: 'The Spiral', kicker: 'DECISION 9',
+      text: [
+        'Thorne calls after the close. "On Wednesday the committee hears the Spiral case. I need a trader who will say the Kavran machines are real and the chips feeding them are a threat."',
+        '"You have watched those order books for months. You would be believed."',
+        'On your desk sits the chart from the President\'s address. The shape is familiar. You have seen it in your own fills.'
+      ],
+      options: [
+        { id:'back', label:'Testify for the Spiral.', hint:'Lend the campaign a trader\'s name.', headline:'Testified that the Spiral threat is real',
+          apply:(S)=>{S.f.spiralBacked=true;S.f.public=true;adj(S,{influence:10,stability:-8,anger:6,integrity:-4},{thorne:14});},
+          reply:'Thorne: "Wednesday afternoon. Wear something sober."',
+          after:['You agree to testify. Thorne\'s staff send talking points before you have hung up.','None of them mention Mirren by name.'] },
+        { id:'trace', label:'Trace the chart first.', hint:'Ask Imani to match it against the tape.', headline:'Traced the Spiral chart back to Aurelia\'s own trading machines',
+          req:(S)=>(S.anomalies || 0) >= 6,
+          apply:(S)=>{S.f.spiralTraced=true;adj(S,{integrity:10,influence:-4},{imani:12,thorne:-10});},
+          reply:'Imani: "Give me the night."',
+          after:['Imani lays the Spiral chart over the market\'s own fills. They match, order for order.','The machines copying machines were ours.'] },
+        { id:'decline', label:'Stay out of it.', hint:'Let someone else testify.', headline:'Declined to testify about the Spiral',
+          apply:(S)=>{S.f.spiralDeclined=true;adj(S,{},{thorne:-6});},
+          reply:'Thorne: "Then someone else will say it."',
+          after:['Thorne finds another witness before midnight.'] }
+      ]
+    },
+
     c8: {
       day: 39, speaker: 'Sen. Marcus Thorne', role: 'Chair, Senate Markets Committee', title: 'The Stabilization Act',
-      kicker: 'DECISION 8',
+      kicker: 'DECISION 10',
       text: [
         'Thorne calls at 9 PM from a corridor. You can hear a vote bell in the background.',
         '"Stabilization Act. Seven hundred billion guarantee facility, and it is four votes short. Four. Some of those votes listen to people who listen to you."',
@@ -595,7 +718,8 @@
           apply: (S) => {
             S.f.straddled = true;
             adj(S, { integrity: -8, influence: -10 }, { thorne: -14 });
-            S.pending.push({ type: 'cash', amount: 0, reason: 'No position taken' });
+            // A real straddle on the index: calls and puts at the money, bought at Monday's open.
+            S.pending.push({ type: 'straddle', sym: 'INDX', frac: 0.02, reason: 'Vote straddle' });
           },
           reply: 'Thorne: "I\'ll take that as a no."',
           after: ['You buy protection on both sides of the tape and tell yourself that is not a position. It is a position.']
@@ -605,7 +729,7 @@
 
     c9: {
       day: 42, speaker: 'Imani Rhodes', role: 'Senior Trader · your mentor', title: 'The Offer',
-      kicker: 'DECISION 9',
+      kicker: 'DECISION 11',
       text: [
         'Imani finds you in the stairwell at 7 PM with a folder she should not have.',
         '"Enforcement wants someone who was in the room. Not a witness, a participant. They are offering full cooperation terms, and they are offering them today."',
@@ -646,6 +770,7 @@
         },
         {
           id: 'treasury', label: 'Take the Treasury job.', hint: 'Needs real influence. The revolving door swings both ways.',
+          headline: 'Took a senior Treasury post in the middle of the crisis',
           req: (S) => S.m.influence >= 34 && S.rel.venn >= 35,
           apply: (S) => {
             S.f.treasury = true;
@@ -660,6 +785,7 @@
         },
         {
           id: 'flee', label: 'Take the plane.', hint: 'Liquidate everything tonight. No extradition treaty.',
+          headline: 'Liquidated the book and left the country overnight',
           req: (S, wealth) => wealth >= 400000,
           apply: (S) => {
             S.f.fled = true;
@@ -689,8 +815,9 @@
       ]
     },
     c10: {
-      day: 44, speaker: 'Imani Rhodes', role: 'Senior Trader · your mentor', title: 'Pull the Plug', kicker: 'DECISION 10',
-      req: (S) => (S.anomalies || 0) >= 8,
+      day: 44, speaker: 'Imani Rhodes', role: 'Senior Trader · your mentor', title: 'Pull the Plug', kicker: 'DECISION 12',
+      // Offered only to a player who has seen enough anomalies and traced the Spiral to its source.
+      req: (S) => (S.anomalies || 0) >= 8 && !!S.f.spiralTraced,
       text: [
         'The market is closed. For the first time all week, the machines are still.',
         'Imani has mapped the common execution layer behind the fills. Killing Holloway Stern\'s access token will force the other systems to reject the shared counterparty at Monday\'s open.',
@@ -730,5 +857,5 @@
     });
   });
 
-  B.StoryData = { cm, DAYS, CHOICES, QUOTAS, ACTS, ANOMALIES: A, ACT_START, VOTE_FAIL, voteFailFeed, actIndex, actOf, weekOf, dowOf, adj, boss, FIN, STACK, ev, chirp, imp, R };
+  B.StoryData = { cm, DAYS, CHOICES, ARC_BASE, ARC_AFTER, SPIRAL_BASE, SPIRAL_AFTER, arcPath, spiralPath, scareFed, firstVote, QUOTAS, ACTS, ANOMALIES: A, ACT_START, VOTE_FAIL, voteFailFeed, actIndex, actOf, weekOf, dowOf, adj, boss, FIN, STACK, ev, chirp, imp, R };
 })(window.BTB);
