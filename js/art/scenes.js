@@ -678,10 +678,11 @@
         blitArt(ctx, 'news/tableau-ship', i === 1 ? 'ship:crimson' : 'ship:bone', 123 + i * 35 + Math.round(p * 9) + d[0] - 6, 66 + i * 12 + d[1] - 4);
       }
       // the Kavran drone swarm crosses the strait toward Mirren's air zone (drawn over the ships)
-      if (hasArt('news/tableau-drones')) { const q = clamp01(p); blitArt(ctx, 'news/tableau-drones', 'swarm:' + (Math.round(q * 12) % 2), 80 + Math.round(q * 62), 42); }
+      // (on the ships' own ninths, so the flat still at p = 0.6 is the establish's last frame, 5/9)
+      if (hasArt('news/tableau-drones')) { const q = clamp01(Math.round(p * 9) / 9); blitArt(ctx, 'news/tableau-drones', 'swarm:' + (Math.round(q * 12) % 2), 80 + Math.round(q * 62), 42); }
     } else if (n === 15) {
-      // the Spiral grows: one more robot glyph, a step bigger, at each slot to the left
-      tableauGeom(15).glyphs.forEach((gl, k) => { if (p > k * 0.3) blitArt(ctx, 'news/tableau-address-mover', 'glyph:' + k, gl.x, gl.y); });
+      // the Spiral grows: one more robot glyph, a step bigger, at each slot to the left (two in the establish, which ends at p = 0.7; the third lands in the detail)
+      tableauGeom(15).glyphs.forEach((gl, k) => { if (p > k * 0.4) blitArt(ctx, 'news/tableau-address-mover', 'glyph:' + k, gl.x, gl.y); });
     } else if (n === 16) {
       // Quill walks off the stage while the cameras flash
       blitArt(ctx, 'news/tableau-presser-mover', 'quill', 222 + Math.round(clamp01(p) * 18), 50);

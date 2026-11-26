@@ -857,6 +857,9 @@
     const id = home.id, week = Math.floor(day / 5) + 1, s = R.season(day), lay = LAYOUT[id] || LAYOUT.studio, late = w ? w.lateWeeks | 0 : 0;
     const on = (name) => !part || part === name, dn = night ? 'night' : 'day', { wx, wy, ww, wh } = windowRect(home);
     if (on('outside')) {
+      // as its own layer the view moves less than the room (depth 0.25 against 0.5), so a camera move can show a row above its top edge:
+      // the view is drawn one art unit higher first, so its top row bleeds up behind the window frame
+      if (part) X.drawArt(ctx, 'homes/' + id, 'outside:' + (night ? 'night' : s.id), -2, -5, { scale: 3 });
       HA(ctx, id, 'outside:' + (night ? 'night' : s.id));
       if (night) { const f = lit(day); homeWin(id).forEach((c) => { if (c.k < f) X.rect(ctx, 3 * c.x - 2, 3 * c.y - 2, 3, 3, P.amber); }); }
       ctx.save(); ctx.beginPath(); ctx.rect(wx, wy, ww, wh); ctx.clip(); R.weather(ctx, wx, wy, ww, wh, day); ctx.restore();
@@ -1160,7 +1163,7 @@
     }
   }
   // The Sunday framing: the wall calendar and most of the window (the housing tier reads through its size) stay in shot. fn draws in apartment art units.
-  function sundaySpace(c, fn) { c.save(); c.translate(-124 / 3, -190 / 3); c.scale(4 / 3, 4 / 3); fn(c); c.restore(); }
+  function sundaySpace(c, fn) { c.save(); c.translate(-124 / 3, -250 / 3); c.scale(4 / 3, 4 / 3); fn(c); c.restore(); }
   // The two native-pixel edge rects over the Sunday picture (the left margin and the amber tab).
   function SUN_EDGE(c) { X.rect(c, 0, 0, 5, 276, P.ink2); X.rect(c, 0, 0, 44, 2, P.amberD); }
   function sundayShot(ctx, day, home, w) {
@@ -1247,7 +1250,7 @@
             K.ping(cc, t, { at: a, flare: { x: g.x, y: g.y, w: g.w, h, col: P.bone, a: 0.18, dur: 0.08 } });
           });
           // the colleagues and heads in front of the screens go back over the wave
-          SH.floorFront(cc, 0.4, false, 60, wave.filter((q) => t >= q.a && t < q.a + 0.36).map((q) => q.g));
+          SH.floorFront(cc, 0.4, false, 60, wave.filter((q) => t >= q.a && t < q.a + 0.36).map((q) => Object.assign({}, q.g, { h: q.h })));
         }, day);
       }
     }];
@@ -1727,7 +1730,7 @@
 
   // Shots 6 and 7: the trading floor. One layer `floor` (the art, then its animate on top in the same transform) and `marks` (the corner brackets
   // and the anomaly tear, never moved by the tilt) or, on a hold, `dim` (the 0.18 ink rect). Lit: a refresh wave crosses the near-row screens, left to
-  // right (K.crt bands, overlays on the dither, never a cover). Dark: the biggest near screen stutters in hard steps and the others flicker
+  // right (K.crt bands, overlays on the dither, never a cover). Dark: the biggest near screen above the caption stutters in hard steps and the others flicker
   // lightly; every flicker ends lit, so the final frame is the art. Coordinates are 320x180 art units, inside framed()'s zoom on the establish.
   const FLOOR_ZOOM = (day, r, detail) => (r.shot === 'floor' ? (detail ? 0.7 : 0.15) : 0.45 + (day % 4) * 0.08);
   function floorLayers(day, r, title, o) {
@@ -1737,7 +1740,9 @@
     // (the authored floor's dark screens are dead glass on any day, so it skips every unlit one)
     const wave = dark ? [] : S.filter((g) => ((SH.floorArt() ? Z < 0.3 : Z <= 0.12) || (g.x >= 26 && g.x + g.w <= 286)) && !((day >= 45 || SH.floorArt()) && !g.on));
     let key = null;
-    if (dark) { let best = 1e9; S.forEach((g) => { const d = Math.abs(g.x + g.w / 2 - 160); if (g.r === 3 && d < best) { best = d; key = g; } }); }
+    // the key is the nearest row's middle screen, or the lit screen nearest the middle of the row behind it when the nearest row's glass reaches under the caption box (art y 136 at 2x; the establish frame pushes in, which only puts that glass lower)
+    const keyRow = S.some((g) => g.r === 3 && g.y + g.h <= 136) ? 3 : 2;
+    if (dark) { let best = 1e9; S.forEach((g) => { const d = Math.abs(g.x + g.w / 2 - 160); if (g.r === keyRow && (g.on || keyRow === 3) && d < best) { best = d; key = g; } }); }
     // the dark floor's lesser flickers skip the screens under the foreground colleagues too (zoom > 0.12: x 26 to 286 only), as the wave does
     const rest = dark ? S.filter((g) => g !== key && ((SH.floorArt() ? Z < 0.3 : Z <= 0.12) || (g.x >= 26 && g.x + g.w <= 286))) : [];
     const art = (c, fn, noBack) => (detail || hold ? at2x(c, fn, day) : framed(c, day, r, title, { noBack, draw: (cc) => at2x(cc, fn, day) }));
@@ -2134,12 +2139,14 @@
   // for three and four items). Feeds of zero, one and two items have no arrival.
   const phoneArrival = (feed) => feed.length >= 3;
   const phoneBacklog = (feed) => (phoneArrival(feed) ? feed.slice(1, 5) : feed.slice(0, 4));
+  // How far the lead's arrival slides the rows: the lead row's height (39 px, more for a long title) and the 5 px gap.
+  const leadStep = (feed) => R.phoneRowH(feed[0], R.phoneGeom(4, true).sw, false) + 5;
 
   // Handoff: the room is pinned at depth 0, the dark device rises into it at depth 1 and wakes at 0.80 s.
   function phoneHandoffLayers(sb, feed) {
     // The device is always the read's big one (close = true), so the dissolve into the read does not change its size.
     const K = B.MotionKit, L = phoneBacklog(feed), o = { rows: L, labelX: 92 };
-    // the backlog keeps the read's 39 px rows even at two (three items), so the lead's slide of 44 px lands on the same slots
+    // the backlog keeps the read's 39 px rows even at two (three items), so the lead's slide (its row and the gap, leadStep) lands on the same slots
     if (phoneArrival(feed)) o.compact = false;
     const { sx, sy, sw, sh } = R.phoneGeom(L.length, true);
     const mm = R.lockMinute(sb.day);
@@ -2157,7 +2164,7 @@
     ];
   }
   // Read: `back` is everything but the cards, `rows` the cards (the only layer the camera moves), `glass` repaints the picture above
-  // the list window (y < 51, the only place a row can leave the window: it starts 44 px up and never goes sideways or below),
+  // the list window (y < 51, the only place a row can leave the window: it starts leadStep px up and never goes sideways or below),
   // so a row outside the window never shows. It is the same pixels as `back` there; drawing only that band avoids a second full room. The two counters are drawn whole on `glass`.
   function phoneReadLayers(sb, feed) {
     const K = B.MotionKit, n = feed.length, arrival = phoneArrival(feed), five = n >= 5, L = five ? feed.slice(0, 5) : feed.slice(0, 4);
@@ -2175,7 +2182,7 @@
           const k = arrival && t >= 0.85 ? top : arrival ? top - 1 : Math.min(4, n);
           R.text(c, String(k), 417, 36, wash, 'right');
           R.text(c, String(k), 92, 110, P.bone);
-          if (n > 0) K.ping(c, t, { at: landing, off: [], on: [], flare: { x: 220, y: 55, w: 200, h: 39, col: P.bone, a: 0.15, dur: 0.08 } });
+          if (n > 0) K.ping(c, t, { at: landing, off: [], on: [], flare: { x: 220, y: 55, w: 200, h: leadStep(feed) - 5, col: P.bone, a: 0.15, dur: 0.08 } });
         }
       }
     ];
@@ -2187,7 +2194,7 @@
     beats[0] = M.layered(Object.assign({}, beats[0], { camera: K.rise(56, beats[0].dur, 0.15, 0.75), layers: phoneHandoffLayers(sb, feed) }));
     const read = Object.assign({}, beats[1], {
       cues: [{ at: 0.70, sfx: 'news' }],
-      camera: arrival ? K.settle(-44, K.camSpan(beats[1].dur, 0.70, 1.00, M.ease.out)) : null,
+      camera: arrival ? K.settle(-leadStep(feed), K.camSpan(beats[1].dur, 0.70, 1.00, M.ease.out)) : null,
       layers: phoneReadLayers(sb, feed)
     });
     delete read.sfx;

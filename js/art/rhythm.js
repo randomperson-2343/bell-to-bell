@@ -222,6 +222,14 @@
     ctx.restore();
     return ok;
   }
+  // You at the commuters' scale (news/you-mid, 44x88 cells at 2 px, centred on x, head top at top), unmirrored so the light falls from the
+  // same side as on the mirrored commuters beside you. Its box goes to peopleBoxes. False when the art is missing (the caller draws the old figure).
+  function youMid(ctx, x, top, pose, act) {
+    if (!(B.Art && B.Art.has('news/you-mid'))) return false;
+    const box = { x: x - 44, y: top, w: 88, h: 176 };
+    if (!peopleBoxes.some((b) => b.x === box.x && b.y === box.y)) peopleBoxes.push(box);
+    return X.drawArt(ctx, 'news/you-mid', pose + (act > 2 ? ':late' : ''), x - 44, top, { scale: 2 });
+  }
   // The boxes the people occupy in the shot being drawn, so the fine marks (storyboard finePass) leave them alone: placeFrame clears it.
   const peopleBoxes = [];
   function person(ctx, x, y, scale, act, face, who, pose) {
@@ -410,8 +418,10 @@
     // Observable composition markers: framing and subject position vary by camera.
     if (sb.camera === 'insert' && !(B.Art && B.Art.has('news/place-marker') && X.drawArt(ctx, 'news/place-marker', 'marker:insert', 0, 0, { scale: 2 }))) cel3(ctx, 468, 86, 116, 82, P.bone, P.white, P.plasticD);
     // The over-shoulder and close markers show you (who 0), the same person in every shot; the big commuters are strangers, so they stay out of these.
-    if (sb.camera === 'over-shoulder') { person(ctx, 576, 234, 3, sb.act, -1, 0, 'back'); if (!(B.Art && B.Art.has('news/you'))) X.rect(ctx, 516, 278, 124, 82, P.ink2); }
-    if (sb.camera === 'close') { person(ctx, 516, 205, 4, sb.act, -1, 0, 'front'); }
+    // In the wide shots a commuter shares the floor with you, so you are news/you-mid there: their scale, one step nearer the camera
+    // (176 px against their 128, soles just under the frame). The detail keeps the big over-shoulder bust and the big front figure.
+    if (sb.camera === 'over-shoulder' && !(!detail && youMid(ctx, 576, 196, 'back', sb.act))) { person(ctx, 576, 234, 3, sb.act, -1, 0, 'back'); if (!(B.Art && B.Art.has('news/you'))) X.rect(ctx, 516, 278, 124, 82, P.ink2); }
+    if (sb.camera === 'close' && !(!detail && youMid(ctx, 516, 190, 'front', sb.act))) { person(ctx, 516, 205, 4, sb.act, -1, 0, 'front'); }
     X.scanlines(ctx, 0, 0, V.w, V.h, P.ink, .08);
   }
 
@@ -468,20 +478,28 @@
     X.rect(ctx, bx, ky, bw - 34, 12, P.slate); X.rect(ctx, bx + 1, ky + 1, bw - 36, 10, P.screenGlow); X.rect(ctx, bx + 6, ky + 5, 3, 3, P.violet); X.rect(ctx, bx + 12, ky + 5, 40, 2, P.slate2);
     X.rect(ctx, bx + bw - 30, ky, 30, 12, P.slate); X.rect(ctx, bx + bw - 29, ky + 1, 28, 10, P.sky); X.rect(ctx, bx + bw - 21, ky + 5, 12, 2, P.ink); X.rect(ctx, bx + bw - 12, ky + 3, 2, 6, P.ink);
   }
+  // A feed row's title lines (whole words, five at most) and the row's height on a screen sw wide: 52 px compact, 39 px otherwise,
+  // grown to 12 + 9 px a line when the title needs more lines than that holds.
+  const phoneRowLines = (item, sw) => X.wrapFit(clean((item && item.title) || ''), sw - 23, 5);
+  function phoneRowH(item, sw, compact) {
+    const n = phoneRowLines(item, sw).length, tight = compact ? n > 3 : n > 2;
+    return Math.max(compact ? 52 : 39, tight ? 12 + n * 9 : 0);
+  }
   function phone(ctx, x, y, w, h, feed, act, day, o) {
     o = o || {};
     const c = colors(act), rows = o.rows || (feed || []).slice(0, 4), compact = o.compact != null ? o.compact : Math.min(rows.length, 4) <= 2, part = o.part;
     const count = o.count != null ? o.count : rows.length, glow = o.glow == null ? 1 : o.glow;
     const { sx, sy, sw, sh } = phoneScreen(x, y, w, h), rowH = compact ? 52 : 39;
-    const cards = o.app && rows.length ? () => appScreen(ctx, sx, sy, sw, sh, rows[0], c) : () => rows.forEach((item,i) => {
-      const yy=sy+25+i*(rowH+5);
-      X.rect(ctx, sx+5, yy, sw-10, rowH, i<glow ? P.screenGlow : P.screenD);
-      X.rect(ctx, sx+5, yy, 3, rowH, item.kind==='chirp'?P.violet:item.kind==='mail'?P.amber:P.sky);
-      // whole words; the 39 px rows take a third line (source up at yy+3, lines at 9 px) instead of cutting the title
-      const lines = X.wrapFit(clean(item.title || ''), sw-23, 3), three = !compact && lines.length > 2;
-      text(ctx, X.wrapFit(clean(item.source || 'WIRE'), sw-28, 1)[0] || '', sx+14, yy+(three?3:6), c.wash);
-      lines.forEach((line,k) => text(ctx,line,sx+14,three?yy+12+k*9:yy+19+k*10,P.bone));
-    });
+    // Whole titles, never cut: a row that needs more lines than its height holds grows (source up at yy+3, lines at a 9 px pitch from yy+12,
+    // 9 px per extra line), and the rows below move down. Five lines is the most any feed item takes; four big-phone rows of five still fit the screen.
+    const cards = o.app && rows.length ? () => appScreen(ctx, sx, sy, sw, sh, rows[0], c) : () => { let yy = sy + 25; rows.forEach((item,i) => {
+      const lines = phoneRowLines(item, sw), tight = compact ? lines.length > 3 : lines.length > 2, hh = phoneRowH(item, sw, compact);
+      X.rect(ctx, sx+5, yy, sw-10, hh, i<glow ? P.screenGlow : P.screenD);
+      X.rect(ctx, sx+5, yy, 3, hh, item.kind==='chirp'?P.violet:item.kind==='mail'?P.amber:P.sky);
+      text(ctx, X.wrapFit(clean(item.source || 'WIRE'), sw-28, 1)[0] || '', sx+14, yy+(tight?3:6), c.wash);
+      lines.forEach((line,k) => text(ctx,line,sx+14,tight?yy+12+k*9:yy+19+k*10,P.bone));
+      yy += hh + 5;
+    }); };
     if (part === 'rows') { cards(); return rows.length; }
     // Glow is behind the device and never becomes an opaque slab.
     ctx.save(); ctx.globalAlpha = .12 + act*.025; X.rect(ctx, x-8, y-8, w+16, h+16, c.signal); ctx.restore();
@@ -801,7 +819,7 @@
   B.Rhythm = {
     view:V, endingIds:ENDING_IDS,
     // Drawing helpers for js/art/storyboard.js.
-    balancedLines, placeFrame, peopleBoxes, commuterX, monitorGeom, phoneFrame, phoneGeom, lockMinute, stackSlip, CLOSE_DIM, officeFrame, officeGeom, closeFrame, closeGeom, closeDown, sqwakFrame, sqwakGeom, sqwakStats, skyline, skylineWindows, skylineLit, skyVar, monitorScreen, season, sky, weather, text, colors, clean, chart, chartSeries, person, marketDown, beat,
+    balancedLines, placeFrame, peopleBoxes, commuterX, monitorGeom, phoneFrame, phoneGeom, phoneRowH, lockMinute, stackSlip, CLOSE_DIM, officeFrame, officeGeom, closeFrame, closeGeom, closeDown, sqwakFrame, sqwakGeom, sqwakStats, skyline, skylineWindows, skylineLit, skyVar, monitorScreen, season, sky, weather, text, colors, clean, chart, chartSeries, person, marketDown, beat,
     phoneRowCount(feed){return Math.min(4,(feed||[]).length);},
     storyboard:board
   };

@@ -1,0 +1,69 @@
+{
+ "frames": [
+  {
+   "filename": "back",
+   "frame": {
+    "x": 0,
+    "y": 0,
+    "w": 44,
+    "h": 88
+   }
+  },
+  {
+   "filename": "back:late",
+   "frame": {
+    "x": 44,
+    "y": 0,
+    "w": 44,
+    "h": 88
+   }
+  },
+  {
+   "filename": "front",
+   "frame": {
+    "x": 88,
+    "y": 0,
+    "w": 44,
+    "h": 88
+   }
+  },
+  {
+   "filename": "front:late",
+   "frame": {
+    "x": 132,
+    "y": 0,
+    "w": 44,
+    "h": 88
+   }
+  }
+ ],
+ "meta": {
+  "image": "you-mid.png",
+  "size": {
+   "w": 176,
+   "h": 88
+  },
+  "frameTags": [
+   {
+    "name": "back",
+    "from": 0,
+    "to": 0
+   },
+   {
+    "name": "back:late",
+    "from": 1,
+    "to": 1
+   },
+   {
+    "name": "front",
+    "from": 2,
+    "to": 2
+   },
+   {
+    "name": "front:late",
+    "from": 3,
+    "to": 3
+   }
+  ]
+ }
+}
