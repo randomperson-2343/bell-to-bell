@@ -2201,19 +2201,35 @@ async function run() {
     assert(await shot('phone', o, 1, 0.66) !== await shot('phone', o, 1, 0.74) && await shot('phone', o, 1, 0.74) !== await shot('phone', o, 1, 0.86), `phone read (${o.brief.feed.length} items, no arrival): the top row does not flare at 0.70 s`);
     assert(await shot('phone', o, 1, 0.86) === await shot('phone', o, 1, 1.9), `phone read (${o.brief.feed.length} items, no arrival): something moves after the flare`);
   }
-  if (await shot('phone', ph3, 1, 0.5) !== await shot('phone', ph3, 0, 1.3)) {
-    // where the two pictures differ (above the caption), to tell a moved row from a counter or a flare
-    const dbox = await page.evaluate((o) => {
-      const grab = (i, t) => { window.openBeat('phone', o); BTB.Cinematic.seek(i, t); const cv = document.getElementById('cine-canvas'), g = cv.getContext('2d'); return { d: g.getImageData(0, 0, cv.width, Math.round(cv.height * 0.75)).data, w: cv.width }; };
-      const A = grab(0, 1.3), Bq = grab(1, 0.5); let n = 0, x0 = 1e9, x1 = -1, y0 = 1e9, y1 = -1;
-      for (let k = 0; k < A.d.length; k += 4) if (A.d[k] !== Bq.d[k] || A.d[k + 1] !== Bq.d[k + 1] || A.d[k + 2] !== Bq.d[k + 2]) { n++; const x = (k / 4) % A.w, y = Math.floor(k / 4 / A.w); x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); }
-      return { n, box: [x0, x1, y0, y1], w: A.w };
-    }, ph3);
+  // The read starts on the handoff's last picture. Exact everywhere but on the device's soft rim: the rim's pixels are partly
+  // transparent (alpha 37 in the art), and the handoff blends them through its own device layer while the read bakes them into
+  // the opaque back, so the browser's premultiplied rounding can leave those pixels a step or two apart. That is the only slack.
+  const seam = await page.evaluate((o) => {
+    const C = BTB.Cinematic;
+    const grab = (i, t) => { window.openBeat('phone', o); C.seek(i, t); const cv = document.getElementById('cine-canvas'), g = cv.getContext('2d'); return { d: g.getImageData(0, 0, cv.width, Math.round(cv.height * 0.75)).data, w: cv.width }; };
+    const A = grab(0, 1.3), Bq = grab(1, 0.5);
+    // the rim: the handoff device layer's partly transparent pixels (the device is at rest, so the layer sits at 0, 0)
+    window.openBeat('phone', o);
+    const beat = C.beats[0], view = beat.view || BTB.Scenes.V, lc = C.layerCanvas(beat, beat.layers.find((l) => l.id === 'device'), view);
+    const md = lc.getContext('2d').getImageData(0, 0, lc.width, lc.height).data, k = A.w / view.w;
+    let n = 0, off = 0, maxD = 0, x0 = 1e9, x1 = -1, y0 = 1e9, y1 = -1;
+    for (let q = 0; q < A.d.length; q += 4) {
+      const dd = Math.max(Math.abs(A.d[q] - Bq.d[q]), Math.abs(A.d[q + 1] - Bq.d[q + 1]), Math.abs(A.d[q + 2] - Bq.d[q + 2]));
+      if (!dd) continue;
+      n++;
+      const x = (q / 4) % A.w, y = Math.floor(q / 4 / A.w), a = md[(Math.floor(y / k) * lc.width + Math.floor(x / k)) * 4 + 3];
+      if (a === 0 || a === 255 || dd > 3) { off++; x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); }
+      else maxD = Math.max(maxD, dd);
+    }
+    return { n, off, maxD, box: [x0, x1, y0, y1] };
+  }, ph3);
+  if (seam.off) {
     // both pictures go into the uploaded screenshots (qa/phone/) so the difference can be looked at
     const urls = await page.evaluate((o) => ['0:1.3', '1:0.5'].map((k) => { const [i, t] = k.split(':').map(Number); window.openBeat('phone', o); BTB.Cinematic.seek(i, t); return document.getElementById('cine-canvas').toDataURL('image/png'); }), ph3);
     try { fs.mkdirSync('qa/phone', { recursive: true }); urls.forEach((u, k) => fs.writeFileSync(`qa/phone/motion-handoff-${k ? 'read' : 'end'}.png`, Buffer.from(u.split(',')[1], 'base64'))); } catch (e) { /* diagnostics only */ }
-    assert(false, `phone read (arrival): the start is not the handoff's last picture (${JSON.stringify(dbox)})`);
   }
+  console.log(`phone read (arrival) seam: ${JSON.stringify(seam)}`);
+  assert(seam.off === 0, `phone read (arrival): the start is not the handoff's last picture (${JSON.stringify(seam)})`);
   assert(await shot('phone', ph3, 1, 0.8) !== await shot('phone', ph3, 1, 0.9) && await shot('phone', ph3, 1, 0.9) !== await shot('phone', ph3, 1, 0.98), 'phone read (arrival): the stack does not slide');
   assert(await shot('phone', ph3, 1, 1.1) === await shot('phone', ph3, 1, 1.9) && await shot('phone', ph3, 1, 1.02) !== await shot('phone', ph3, 1, 1.1), 'phone read (arrival): no flare at 1.00 s, or still moving at 1.1 s');
   // three and four items use the arrival recipe too: the backlog (feed 1 to n-1) waits until 0.70 s, the lead slides in 0.70-1.00 s, the flare lands at 1.00 s
