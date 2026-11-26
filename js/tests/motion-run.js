@@ -351,10 +351,11 @@ async function run() {
       G.wins.forEach((w, k) => {
         const r = sc(w);
         const leafy = G.leaves.some((l) => w.x < l.x + l.w && w.x + w.w > l.x && w.y < l.y + l.h && w.y + w.h > l.y);
-        // in the cover: the flat slate; next to it (the four rows and columns around): the authored building wall, flat ink2 (the old code art's wall was slate)
-        for (const [dx, dy, want] of [[-1, 4, ink2], [r[2], 4, ink2], [4, -1, ink2], [4, r[3], ink2], [r[2] / 2, r[3] / 2, slate], [0, 0, slate], [r[2] - 1, r[3] - 1, slate]]) {
-          const q = W.px(a, r[0] + dx, r[1] + dy);
-          if (!same(q, want) && !(leafy && same(q, W.px(z, r[0] + dx, r[1] + dy)))) { fail(`soft: window ${k}: ${q} ${want === slate ? 'in the cover is not slate' : 'next to the cover is not the building wall (ink2)'}`); break; }
+        // in the cover: the flat slate; next to it (the four rows and columns around): the authored building, the same at the start and the end
+        // (the authored wall is not one colour: frames and sills sit beside some windows, so only 'untouched' is checked there)
+        for (const [dx, dy, want] of [[-1, 4, null], [r[2], 4, null], [4, -1, null], [4, r[3], null], [r[2] / 2, r[3] / 2, slate], [0, 0, slate], [r[2] - 1, r[3] - 1, slate]]) {
+          const q = W.px(a, r[0] + dx, r[1] + dy), qz = W.px(z, r[0] + dx, r[1] + dy);
+          if (want ? !same(q, want) && !(leafy && same(q, qz)) : !same(q, qz)) { fail(`soft: window ${k}: ${q} ${want ? 'in the cover is not slate' : 'next to the cover changes by the end'}`); break; }
         }
       });
       const ts = times('soft', 0, 1.8); // t = 0 plus one change per window
@@ -388,7 +389,7 @@ async function run() {
       const { a, z } = pics('grind'), S = SH.endingGeom('grind').screen, ts = times('grind', 0, 1.8);
       if (W.diffOutside(a, z, [sc(S)])) fail('grind: the cover changes pixels outside the screen');
       const q = W.px(a, S.x * 2 + 1, (S.y + 8) * 2 + 1);
-      if (!same(q, W.rgbOf('screenD'))) fail('grind: the screen is not dark at 0.1 s: ' + q);
+      if (Math.max(q[0], q[1], q[2]) > 64) fail('grind: the screen is not dark at 0.1 s: ' + q); // (the authored dark glass, not one flat colour)
       if (ts.length !== 4 || !near(ts[1], 0.60) || !near(ts[2], 0.65) || !near(ts[3], 0.70)) fail('grind: states at ' + ts.join(' '));
     }
     // F nobody: five screens at 0.45 + 0.15 i, each dark, line, flare, lit
@@ -412,8 +413,9 @@ async function run() {
       const { a, z } = pics(id), S = SH.endingGeom(id).stamp, r = sc(S), bone = W.rgbOf('bone'), ts = times(id, 0, 1.8);
       if (W.diffOutside(a, z, [r])) fail(id + ': the cover changes pixels outside the stamp');
       let notBone = 0, ring = 0;
-      for (let y = r[1] - 2; y < r[1] + r[3]; y++) for (let x = r[0] - 2; x < r[0] + r[2] + 2; x++) { if (!same(W.px(a, x, y), bone)) notBone++; }
-      if (notBone) fail(`${id}: ${notBone} pixels in or around the cover are not the page's bone (the ring above and beside the cover; the row below is the page's shade)`);
+      // inside the cover: the page's bone (around it the authored page has its own edges and shade; diffOutside above keeps them untouched)
+      for (let y = r[1]; y < r[1] + r[3]; y++) for (let x = r[0]; x < r[0] + r[2]; x++) { if (!same(W.px(a, x, y), bone)) notBone++; }
+      if (notBone) fail(`${id}: ${notBone} pixels in the cover are not the page's bone`);
       if (ts.length !== 4 || !near(ts[1], 0.70) || !near(ts[2], 0.74) || !near(ts[3], 0.78)) fail(id + ': states at ' + ts.join(' '));
       const f1 = A(id, 0.72), f2 = A(id, 0.76); if (f1.box[2] - f1.box[0] <= f2.box[2] - f2.box[0] || f2.box[2] - f2.box[0] <= r[2]) fail(id + ': the stamp does not close in');
     }
@@ -2197,7 +2199,16 @@ async function run() {
     assert(await shot('phone', o, 1, 0.66) !== await shot('phone', o, 1, 0.74) && await shot('phone', o, 1, 0.74) !== await shot('phone', o, 1, 0.86), `phone read (${o.brief.feed.length} items, no arrival): the top row does not flare at 0.70 s`);
     assert(await shot('phone', o, 1, 0.86) === await shot('phone', o, 1, 1.9), `phone read (${o.brief.feed.length} items, no arrival): something moves after the flare`);
   }
-  assert(await shot('phone', ph3, 1, 0.5) === await shot('phone', ph3, 0, 1.3), 'phone read (arrival): the start is not the handoff\'s last picture');
+  if (await shot('phone', ph3, 1, 0.5) !== await shot('phone', ph3, 0, 1.3)) {
+    // where the two pictures differ (above the caption), to tell a moved row from a counter or a flare
+    const dbox = await page.evaluate((o) => {
+      const grab = (i, t) => { window.openBeat('phone', o); BTB.Cinematic.seek(i, t); const cv = document.getElementById('cine-canvas'), g = cv.getContext('2d'); return { d: g.getImageData(0, 0, cv.width, Math.round(cv.height * 0.75)).data, w: cv.width }; };
+      const A = grab(0, 1.3), Bq = grab(1, 0.5); let n = 0, x0 = 1e9, x1 = -1, y0 = 1e9, y1 = -1;
+      for (let k = 0; k < A.d.length; k += 4) if (A.d[k] !== Bq.d[k] || A.d[k + 1] !== Bq.d[k + 1] || A.d[k + 2] !== Bq.d[k + 2]) { n++; const x = (k / 4) % A.w, y = Math.floor(k / 4 / A.w); x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); }
+      return { n, box: [x0, x1, y0, y1], w: A.w };
+    }, ph3);
+    assert(false, `phone read (arrival): the start is not the handoff's last picture (${JSON.stringify(dbox)})`);
+  }
   assert(await shot('phone', ph3, 1, 0.8) !== await shot('phone', ph3, 1, 0.9) && await shot('phone', ph3, 1, 0.9) !== await shot('phone', ph3, 1, 0.98), 'phone read (arrival): the stack does not slide');
   assert(await shot('phone', ph3, 1, 1.1) === await shot('phone', ph3, 1, 1.9) && await shot('phone', ph3, 1, 1.02) !== await shot('phone', ph3, 1, 1.1), 'phone read (arrival): no flare at 1.00 s, or still moving at 1.1 s');
   // three and four items use the arrival recipe too: the backlog (feed 1 to n-1) waits until 0.70 s, the lead slides in 0.70-1.00 s, the flare lands at 1.00 s
@@ -2654,8 +2665,8 @@ async function run() {
 
   // the documents: beat shape, a moving picture, determinism, the key movement, the final frame is today's picture
   const SBdoc = {
-    memo: [['15', nOpts(15)], ['19', nOpts(19)], ['32', nOpts(32)], ['22bail', nOpts(22, 'T', { choices: { c5: 'bail' }, f: {} })], ['10dark', nOpts(10)], ['22fail', nOpts(22, 'T', { choices: { c5: 'fail' }, f: {} })], ['45plug', nOpts(45, 'T', { choices: {}, f: { pulledPlug: true } })]],
-    footnote: [['1', nOpts(1)], ['8', nOpts(8)], ['24', nOpts(24)]],
+    memo: [['15', nOpts(15)], ['19', nOpts(19)], ['22bail', nOpts(22, 'T', { choices: { c5: 'bail' }, f: {} })], ['10dark', nOpts(10)], ['22fail', nOpts(22, 'T', { choices: { c5: 'fail' }, f: {} })], ['45plug', nOpts(45, 'T', { choices: {}, f: { pulledPlug: true } })]],
+    footnote: [['1', nOpts(1)], ['8', nOpts(8)]],
     rating: [['4', nOpts(4)], ['14', nOpts(14)]],
     post: [['2', nOpts(2)], ['33', nOpts(33)], ['4leak', nOpts(4, 'T', { choices: { c1: 'leak' }, f: {} })]],
     chart: [['3', nOpts(3)], ['30', nOpts(30)], ['43', nOpts(43)]],
@@ -2776,8 +2787,8 @@ async function run() {
   assert(await page.evaluate(() => { const SB = BTB.Storyboard; for (let d = 0; d < 46; d++) { const r = SB.row(d, null), sb = BTB.Rhythm.storyboard(d); if ((r.shot === 'insert' && r.weight === 'S') || (r.shot === 'place' && sb.place === 'desk')) return false; } return true; }), 'batch 4b: a session reaches the S-weight document establish or the desk place, which the sheet says none does');
 
   const T22 = { choices: { c5: 'bail' }, f: {} };
-  const DESK_EST = [['1', nOpts(1)], ['8', nOpts(8)], ['15', nOpts(15)], ['19', nOpts(19)], ['24', nOpts(24)], ['32', nOpts(32)], ['22bail', nOpts(22, 'T', T22)]];
-  const DESK_HOLD = [['8', nOpts(8)], ['24', nOpts(24)], ['32', nOpts(32)], ['22bail', nOpts(22, 'T', T22)]];
+  const DESK_EST = [['1', nOpts(1)], ['8', nOpts(8)], ['15', nOpts(15)], ['19', nOpts(19)], ['24', nOpts(24)], ['22bail', nOpts(22, 'T', T22)]];
+  const DESK_HOLD = [['8', nOpts(8)], ['24', nOpts(24)], ['22bail', nOpts(22, 'T', T22)]];
   const bxx = (o, i, id, t, r) => page.evaluate(([o, i, id, t, r]) => window.animBox('news', o, i, id, t, r || [0, 0, 640, 360]), [o, i, id, t, r]);
   const cnt2 = (o, i, id, t, spec, r) => cc(o, i, id, t, r || [0, 0, 640, 360], spec);
   // shot 10, establish: the paper slides up 16 art units between 0.35 and 0.75 s; the TRADE LED blinks to the end; the marks never move
@@ -2962,11 +2973,11 @@ async function run() {
   pins('batch6', p7now);
 
   // which sessions these shots apply to, from the sheet and the framing rule
-  const P5 = { subway: [7, 21, 31], street: [34], kitchen: [13], lobby: [16, 22, 26, 42], tv: [18], rating: [4, 14] };
+  const P5 = { subway: [7, 21, 31], street: [34], kitchen: [13], lobby: [16, 22, 26, 42], rating: [4, 14] }; // (session 18's TV became the Spiral tableau in the story rework, so no session shows the TV now)
   assert(await page.evaluate((P5) => {
     const SB = BTB.Storyboard, R = BTB.Rhythm, got = {};
     for (let d = 0; d < 46; d++) { const r = SB.row(d, null), sb = R.storyboard(d), k = r.shot === 'place' ? sb.place : r.shot === 'tv' ? 'tv' : r.shot === 'insert' && r.doc === 'rating' ? 'rating' : null; if (k) (got[k] = got[k] || []).push(d); }
-    const want = { platform: [7], subway: [21, 31], street: [34], kitchen: [13], elevator: [16, 26], lobby: [22, 42], tv: [18], rating: [4, 14] };
+    const want = { platform: [7], subway: [21, 31], street: [34], kitchen: [13], elevator: [16, 26], lobby: [22, 42], rating: [4, 14] };
     return Object.keys(want).length === Object.keys(got).length && Object.keys(want).every((k) => JSON.stringify(got[k]) === JSON.stringify(want[k]));
   }, P5), 'batch 5: the sessions that show these places are not the sheet\'s');
   // the in-page checks below read the picture area above the caption box
@@ -3104,7 +3115,7 @@ async function run() {
   for (const day of [13, 16, 21, 34]) { const o = mk5(day), i = await newsIdx(o, ':hold$'); if (i >= 0) assert((await info('news', o, i)).layers === '' || day === 0, `news ${day} hold must stay flat`); }
 
   // shot 4: the TV cuts to a bar graphic (100x48 units) while the wall glow steps down: tv 18 [0.55, 1.15); rating 4, 14 and the apartment place (50) [0.45, 0.95)
-  for (const [day, kind] of [[18, 'tv'], [4, 'rating'], [14, 'rating'], [50, 'place']]) {
+  for (const [day, kind] of [[4, 'rating'], [14, 'rating'], [50, 'place']]) { // (no session shows the TV since the story rework: 18 is a tableau)
     const o = mk5(day), i = await newsIdx(o, ':establish$'), a = await info('news', o, i), cut = kind === 'tv' ? [0.55, 1.15] : [0.45, 0.95];
     assert(a.layers === 'room,marks' && a.depths === '1,0' && a.cam === '-6>0' && a.cues === '' && a.dur === (day === 18 ? 2.4 : 1.7), `tv ${day} beat: ${JSON.stringify(a)}`);
     assert(await shot('news', o, i, 0.1) !== await shot('news', o, i, a.dur - 0.1) && await shot('news', o, i, 0.8) === await shot('news', o, i, 0.8) && (await drawCover(o, i)) === 640 * 360, `tv ${day}: not moving, not deterministic or has holes`);
@@ -3115,7 +3126,6 @@ async function run() {
     assert(await lp('news', o, i, 'marks', 0.1, false) === await lp('news', o, i, 'marks', a.dur - 0.1, false) && await lp('news', o, i, 'room', 0.1, false) === await lp('news', o, i, 'room', a.dur - 0.1, false), `tv ${day}: a cached layer moves`);
     reduced5.push(o);
   }
-  assert((await info('news', mk5(18), 0)).n === 1, 'tv 18 is a one-beat morning');
 
   // shot 5: the lobby elevator: the doors slide from closed to the day's opening, 0.35 to 1.15 s (16, 22, 26, 42); a stutter in the car at 1.30 s
   for (const day of [16, 22, 26, 42, 52]) {
@@ -3333,7 +3343,17 @@ async function run() {
     return { o, i, a };
   };
   // every one of these draws with no game, an empty and a very long title
-  for (const d of [6, 9, 17, 20, 25, 37, 40, 45]) for (const ti of ['', 'W'.repeat(200)]) { const o = nOpts(d, ti); for (let i = 0; i < (await page.evaluate((o) => BTB.Scenes.news(o).length, o)); i++) assert((await drawCover(o, i)) === 640 * 360 && !o.game, `batch 6: ${d} beat ${i} with title '${ti.slice(0, 3)}' does not draw`); }
+  for (const d of [6, 9, 17, 18, 20, 24, 25, 32, 37, 40, 45]) for (const ti of ['', 'W'.repeat(200)]) { const o = nOpts(d, ti); for (let i = 0; i < (await page.evaluate((o) => BTB.Scenes.news(o).length, o)); i++) assert((await drawCover(o, i)) === 640 * 360 && !o.game, `batch 6: ${d} beat ${i} with title '${ti.slice(0, 3)}' does not draw`); }
+
+  // the war-scare tableaux (sessions 18, 24 and 32: the Spiral grows, Quill walks off, units land on the coast): the mover moves in the
+  // establish and the detail and is still at the end, the glass never moves, every frame is whole and the same each time
+  for (const day of [18, 24, 32]) for (const phase of ['establish', 'detail', 'hold']) {
+    const o = mkS(day), i = await newsIdx(o, `:${phase}$`), a = await info('news', o, i), tag = `tableau ${day} ${phase}`;
+    assert(i >= 0 && a.layers === (phase === 'establish' ? 'art,glass,marks' : phase === 'detail' ? 'art,glass' : 'art,glass,dim'), `${tag} beat: ${JSON.stringify(a)}`);
+    assert(await shot('news', o, i, 0.8) === await shot('news', o, i, 0.8) && (await drawCover(o, i)) === 640 * 360, `${tag}: not deterministic or has holes`);
+    assert(await lp('news', o, i, 'glass', 0.1, false) === await lp('news', o, i, 'glass', a.dur - 0.1, false), `${tag}: the glass layer moves`);
+    if (phase !== 'hold') assert(await art7(o, i, 0.2) !== await art7(o, i, 1.4) && await art7(o, i, a.dur - 0.05) === await art7(o, i, a.dur - 0.01), `${tag}: the mover does not move, or is still moving at the end`);
+  }
 
   // 1. Kavra Strait (session 6): the three ships sail east; the detail and the hold end with them 4 art units further on (p = 1)
   {
