@@ -474,14 +474,16 @@
     X.drawArt(ctx, A, 'props', 0, 0);
   }
   // The day's paper on the desk (news/desk-paper, 88x34 at 60,137+dy; right edge at 148, clear of the hands): kind 'memo' or 'footnote',
-  // band (5,8) 78x4 in bandCol; code writes the value in up to two lines of whole words (13 chars each) at (6,15) and (6,24).
+  // band (5,8) 78x4 in bandCol; code writes the value in up to two lines of whole words (13 chars each) at (6,15) and (6,24), or three lines at (6,8) (6,16) (6,24) without the band.
   // Returns false without the art, so the caller keeps its own drawing.
   function deskPaper(ctx, dy, kind, bandCol, text) {
     if (!hasArt('news/desk-paper')) return false;
     const y = 137 + (dy || 0);
-    X.drawArt(ctx, 'news/desk-paper', kind === 'footnote' ? 'footnote' : 'memo', 60, y);
-    if (bandCol) X.rect(ctx, 65, y + 8, 78, 4, bandCol);
-    if (text) X.wrapFit(text, 78, 2).forEach((ln, i) => X.text(ctx, ln, 66, y + 15 + i * 9, P.ink));
+    // A value that needs a third line uses the band-less paper (memo3 / footnote3) and writes three lines at y+8, y+16, y+24 (7 rows of glyph each); nothing is ever cut.
+    const three = !!text && X.wrap(text, 78).length > 2;
+    X.drawArt(ctx, 'news/desk-paper', (kind === 'footnote' ? 'footnote' : 'memo') + (three ? '3' : ''), 60, y);
+    if (bandCol && !three) X.rect(ctx, 65, y + 8, 78, 4, bandCol);
+    if (text) X.wrapFit(text, 78, three ? 3 : 2).forEach((ln, i) => X.text(ctx, ln, 66, three ? y + 8 + i * 8 : y + 15 + i * 9, P.ink));
     return true;
   }
   function deskCloseup(ctx, p, o) {
@@ -711,8 +713,8 @@
     X.rect(ctx, 0, 113, V.w, 25, P.ink2);
     X.text(ctx, 'WITHDRAWAL QUEUE · THIRD STREET', 160, 120, P.white, { align: 'center' });
   }
-  // The scanlines cover the picture: rows 13-137, and on the authored queue (t9) the street down to row 167.
-  const tableauScanH = (day) => (day === 9 && tableauArt() ? 155 : 125);
+  // The scanlines cover the picture: rows 13-137, and on the authored plates that run on (t9 the street, t11-t14 the floor, gallery and street) down to row 167-172.
+  const tableauScanH = (day) => (tableauArt() ? (day === 9 ? 155 : day === 11 || day === 12 || day === 13 || day === 14 ? 160 : 125) : 125);
   // o (optional): part 'art' draws everything but the scanlines, 'scan' only the scanlines; noMover leaves out the tableau's mover (tableauMover).
   // over (tableau 9): the band under the queue and its caption are left out of 'art' and drawn first in 'scan', so they sit over the figures (which a layer
   // builder draws between the two, whole: under the 1.3 zoom a figure cut at the band's edge would differ from the flat picture in the edge row).

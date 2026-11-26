@@ -230,6 +230,28 @@
   }
   // Up to n (2) lines of whole words; a value that runs longer ends on an ellipsis, never mid-word.
   function valueLines(value, width, n) { return X.wrapFit(R.clean(value), width, n || 2); }
+  // The fewest lines of at most maxChars letters, as even as they can be, so a line never holds one short word alone ("0 / READS").
+  // A lone separator dot at a line's end or start is dropped, as wrapFit drops it. Falls back to wrapFit when no split fits.
+  function balancedLines(value, maxChars, maxLines) {
+    const words = R.clean(value).split(/\s+/).filter(Boolean), sep = (w) => /^[\u00b7|\/\-]$/.test(w);
+    const join = (a) => { let ws = a.slice(); while (ws.length && sep(ws[0])) ws.shift(); while (ws.length && sep(ws[ws.length - 1])) ws.pop(); return ws.join(' '); };
+    for (let n = 1; n <= maxLines; n++) {
+      let best = null;
+      const go = (from, left, acc) => {
+        if (left === 1) {
+          const lines = acc.concat([join(words.slice(from))]).filter((l) => l.length);
+          if (!lines.length || lines.some((l) => l.length > maxChars)) return;
+          const score = Math.max.apply(null, lines.map((l) => l.length)) * 10 + (lines.length < n ? 5 : 0);
+          if (!best || score < best.score) best = { score, lines };
+          return;
+        }
+        for (let cut = from + 1; cut <= words.length - (left - 1); cut++) go(cut, left - 1, acc.concat([join(words.slice(from, cut))]));
+      };
+      if (words.length >= n) go(0, n, []);
+      if (best) return best.lines;
+    }
+    return valueLines(value, maxChars * 6, maxLines);
+  }
   // The footnote's circled line (y of the pen's middle).
   const footnoteLine = (day) => 50 + (6 + day % 6) * 12;
   // Where the documents' moving marks sit, read by the flat art (DOC_DRAW) and by the layered documents (docLayers), so the two cannot drift apart.
@@ -413,12 +435,20 @@
       if (!part || part === 'city') { X.rect(ctx, 0, 0, V.w, V.h, P.ink); R.skyline(ctx, B.StoryData.actIndex(day) + 1, day * 5, 300, day); }
       if (!part || part === 'phone') {
         X.rect(ctx, 200, 28, 240, 276, P.screenD);
-        big(ctx, 'sqwak', 320, 36, P.bone, 2, 'center');
-        X.rect(ctx, 208, 60, 224, 150, P.screen);
+        const app = artHas('news/doc-post');
+        if (app) {
+          // the Sqwak app (status bar, header, post card, earlier posts, compose bar) under the live words: SQWAK in the header, TRENDING over the card, the value inside it
+          artPlate(ctx, 'post-app', [['news/doc-post', 'app']]);
+          big(ctx, 'sqwak', 238, 50, P.bone, 2);
+        } else {
+          big(ctx, 'sqwak', 320, 36, P.bone, 2, 'center');
+          X.rect(ctx, 208, 60, 224, 150, P.screen);
+        }
         if (!(o && o.noFlag)) X.rect(ctx, 216, 70, 10, 10, P.crimson);
         R.text(ctx, 'TRENDING', 232, 72, P.crimson);
-        valueLines(value, 96).forEach((ln, i) => big(ctx, ln, 216, 96 + i * 20, P.bone, 2));
-        for (let i = 0; i < 3; i++) X.rect(ctx, 216 + i * 70, 190, 44, 6, i === 2 ? P.sky : P.slate2);
+        if (app) balancedLines(value, 16, 3).forEach((ln, i) => big(ctx, ln, 216, 128 + i * 20, P.bone, 2));
+        else valueLines(value, 96).forEach((ln, i) => big(ctx, ln, 216, 96 + i * 20, P.bone, 2));
+        if (!app) for (let i = 0; i < 3; i++) X.rect(ctx, 216 + i * 70, 190, 44, 6, i === 2 ? P.sky : P.slate2);
         artPlate(ctx, 'post-phone', [['news/doc-post', 'phone']]);
       }
       if (!part || part === 'glass') { artPlate(ctx, 'post-glass', [['news/doc-post', 'glass']]); X.scanlines(ctx, 200, 28, 240, 276, P.ink, 0.1); }

@@ -469,7 +469,13 @@
     renderFeed() {
       const list = this.feed[this.feedTab];
       const head = this.feedTab === 'chirp' ? this.sqwakTrending() + this.sqwakMemory() : '';
-      if (!list.length) { $('feed-list').innerHTML = head + '<div class="empty">Nothing yet.</div>'; return; }
+      // A list that holds only separator rows (the opening-bell divider) has no items yet.
+      if (!list.some((n) => n.kind !== 'sep')) {
+        const seps = list.slice(0, 80).map((n) => `<div class="news sep">${B.esc(n.text)}</div>`).join('');
+        const icon = { wire: 'wire', chirp: 'sqwak', inbox: 'inbox' }[this.feedTab];
+        $('feed-list').innerHTML = head + seps + `<div class="empty">${icon ? `<span class="px-ico px-ico-${icon}" aria-hidden="true"></span>` : ''}<div>Nothing yet.</div></div>`;
+        return;
+      }
       $('feed-list').innerHTML = head + list.slice(0, 80).map((n) => {
         if (n.kind === 'sep') return `<div class="news sep">${B.esc(n.text)}</div>`;
         if (n.kind === 'chirp' && B.Sqwak) return this.sqwakCard(n);
@@ -612,8 +618,8 @@
       const p = $('phone');
       p.hidden = false;
       p.classList.add('ringing');
-      p.innerHTML = `<div class="ph-top"><div><div class="ph-from"><span class="px-ico px-ico-phone" aria-hidden="true"></span> ${B.esc(call.from)}</div><div class="ph-role">${B.esc(call.role || 'Incoming call')}</div></div>
-        <div><button class="btn small buy" data-ph="answer"><span class="px-ico px-ico-answer" aria-hidden="true"></span>Answer <kbd>A</kbd></button>${call.kind === 'choice' ? '' : ' <button class="btn small" data-ph="decline">Ignore</button>'}</div></div>
+      p.innerHTML = `<div class="ph-top ph-ring"><div class="ph-who"><div class="ph-from"><span class="px-ico px-ico-phone" aria-hidden="true"></span> ${B.esc(call.from)}</div><div class="ph-role">${B.esc(call.role || 'Incoming call')}</div></div>
+        <div class="ph-btns"><button class="btn small buy" data-ph="answer"><span class="px-ico px-ico-answer" aria-hidden="true"></span>Answer <kbd>A</kbd></button>${call.kind === 'choice' ? '' : ' <button class="btn small" data-ph="decline">Ignore</button>'}</div></div>
         <div class="ph-timer" id="ph-timer" style="width:100%"></div>`;
       this.ringTimer = true;
       B.SFX.ring();
@@ -640,7 +646,7 @@
       p.classList.remove('ringing');
       this.ringTimer = false;
       this.hideRingPill();
-      let body = `<div class="ph-top"><div><div class="ph-from">${B.esc(call.from)}</div><div class="ph-role">${B.esc(call.role || '')}</div></div>`;
+      let body = `<div class="ph-top"><div class="ph-who"><div class="ph-from">${B.esc(call.from)}</div><div class="ph-role">${B.esc(call.role || '')}</div></div>`;
       body += call.kind === 'choice' ? '</div>' : '<button class="btn small" data-ph="hang"><span class="px-ico px-ico-hangup" aria-hidden="true"></span>Hang up</button></div>';
       body += `<div class="ph-text">${B.esc(call.text)}</div>`;
       if (call.kind === 'choice') {

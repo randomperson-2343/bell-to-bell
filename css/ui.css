@@ -343,7 +343,13 @@ input.short { width: 72px; }
 #phone.ringing { animation: ring .26s infinite alternate; }
 @keyframes ring { from { transform: translateX(-1px); } to { transform: translateX(1px); } }
 #phone .ph-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
-#phone .ph-from { font-weight: 700; font-size: 11px; }
+#phone .ph-top { flex-wrap: wrap; }
+#phone .ph-who { flex: 1 1 auto; min-width: 0; }
+#phone .ph-from { font-weight: 700; font-size: 11px; white-space: nowrap; }
+/* Incoming call on the narrow desk column: the whole name on its own row, the two buttons in a row under it. */
+#phone .ph-top.ph-ring .ph-who { flex-basis: 100%; }
+#phone .ph-btns { display: flex; flex-wrap: nowrap; gap: 6px; flex: none; }
+#phone .ph-btns .btn { white-space: nowrap; }
 #phone .ph-role { color: var(--c-putty); font-size: 9px; }
 #phone .ph-text { margin: 8px 0; line-height: 1.8; font-size: 11px; color: var(--c-bone); }
 #phone .ph-opts { display: flex; flex-direction: column; gap: 5px; }
@@ -364,6 +370,7 @@ input.short { width: 72px; }
 .tbl button { background: var(--c-slate); border: 1px solid var(--c-slate2); color: var(--c-bone); cursor: pointer; font-size: 10px; padding: 1px 6px; margin-left: 3px; font-family: var(--mono); }
 .tbl button:hover { border-color: var(--down); color: var(--down); }
 .empty { padding: 16px; color: var(--c-phosphor-d); text-align: center; font-size: 10px; line-height: 1.9; }
+#feed-list > .empty .px-ico { display: block; margin: 0 auto 6px; opacity: .6; }
 
 /* ============ Overlays ============ */
 #flash { position: fixed; inset: 0; pointer-events: none; z-index: 41; opacity: 0; transition: opacity .6s; }
@@ -698,6 +705,8 @@ input.short { width: 72px; }
   #op-chain button { min-height: 44px; min-width: 44px; padding: 0 8px; }
   .btn.small { min-height: 44px; padding: 0 12px; font-size: 11px; }
   #phone button { min-height: 44px; }
+  /* The overlay call box is wide: name and buttons share one row. */
+  #phone .ph-top.ph-ring .ph-who { flex-basis: 0; }
   #phone .ph-opts .btn { padding: 6px 10px; font-size: 11px; }
   #tasks .task { flex-wrap: wrap; }
   #tasks .task .btn { min-height: 44px; }
@@ -817,7 +826,20 @@ input.short { width: 72px; }
 
 /* Comms tabs: the Inbox count sits beside its logo, never under it, however narrow the column. */
 .feed-tabs { flex-wrap: nowrap; }
-.feed-tabs button { display: flex; align-items: center; justify-content: center; gap: 3px; white-space: nowrap; min-width: 0; padding-left: 4px; padding-right: 4px; }
+.feed-tabs button { display: flex; align-items: center; justify-content: center; gap: 4px; white-space: nowrap; min-width: 0; padding-left: 4px; padding-right: 4px; }
+/* Each app tab: its 16 px icon plus a live 10 px label, tinted per app when on, dim phosphor when off. */
+.feed-tabs button .feed-label { line-height: 16px; }
+.feed-tabs button .px-ico { margin: 0; opacity: .6; }
+.feed-tabs button.on .px-ico { opacity: 1; }
+.feed-tabs button[data-feed="wire"].on { color: var(--c-sky); }
+.feed-tabs button[data-feed="chirp"].on { color: var(--c-violet); }
+.feed-tabs button[data-feed="inbox"].on { color: var(--c-amber); }
+.feed-tabs button .badge { margin-left: 0; }
+/* The narrow desk column (250 px) still fits icon + label + Inbox count on one row. */
+@media (min-width: 821px) and (max-width: 1040px) {
+  .feed-tabs { gap: 2px; padding-left: 3px; padding-right: 3px; }
+  .feed-tabs button { gap: 3px; padding-left: 2px; padding-right: 2px; }
+}
 
 /* The ticket's rule line breaks between its facts, never inside one ("2x o/n" alone on a line). */
 .tk-rules .rb { white-space: nowrap; }

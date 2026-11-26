@@ -221,11 +221,13 @@
     const sc = { x: G.x + 6, y: G.y + 6, w: G.w - 12, h: G.h - 16 };
     return { screen: sc, band: { x: sc.x, y: sc.y + sc.h - 45, w: sc.w, h: 45 } };
   }
-  function monitor(ctx, x, y, w, h, headline, act) {
+  function monitor(ctx, x, y, w, h, headline, act, day) {
     const c = colors(act), detail = w >= 300, id = detail ? 'news/wire-monitor-detail' : 'news/wire-monitor';
     if (B.Art && B.Art.has(id)) {
       const M = monitorScreen({ x, y, w, h }), sc = M.screen, b = M.band;
       X.crt(ctx, sc.x, sc.y, sc.w, sc.h, true);
+      // the broadcast picture above the headline band: one of four stills by the day (press podium, ticker wall, the city from the river, a reporter outside the HQ)
+      if (day != null) { const sid = detail ? 'news/wire-stills-detail' : 'news/wire-stills'; if (B.Art.has(sid)) { X.drawArt(ctx, sid, 'still' + (day % 4), sc.x, sc.y, { scale: 2 }); X.scanlines(ctx, sc.x, sc.y, sc.w, sc.h - 45, P.ink, 0.14); } }
       X.drawArt(ctx, id, 'base', x, y - (detail ? 70 : 78), { scale: 2 });
       X.rect(ctx, b.x, b.y, b.w, b.h, c.signal);
       text(ctx, 'OVERNIGHT WIRE', b.x + 6, b.y + 6, P.bone);
@@ -240,7 +242,7 @@
   }
   // part: undefined draws the screen and the line; 'screen' only the CRT.
   function chart(ctx, x, y, w, h, seed, down, part) {
-    X.crt(ctx, x, y, w, h, true);
+    if (part !== 'line') X.crt(ctx, x, y, w, h, true);
     if (part === 'screen') return;
     let py = y + h/2;
     for (let i = 0; i < w-12; i += 5) {
@@ -268,6 +270,18 @@
   // The authored place (news/place-*, 320x180 cells at 2x at 0,0): the ink, the skyline behind it and the place's frames, with what stays code
   // (the lobby's screen bars, the rideshare dash bars, the desk's chart and note line). False when the place has no art (the flat code draws it).
   const PLACE_ART = { subway: 'subway', platform: 'subway', lobby: 'lobby', elevator: 'lobby', kitchen: 'kitchen', breakroom: 'kitchen', desk: 'desk', rideshare: 'rideshare', street: 'street' };
+  // The subway platform's standing crowd (news/place-subway 'crowd': posters, bench, wet-floor sign, puddle, tactile edge) and six distinct
+  // waiting commuters from news/tableau-queue, picked by the day so each subway day has its own line-up. Boxes go to peopleBoxes.
+  function subwayCrowd(ctx, sb, id, art) {
+    if (!(B.Art && B.Art.has('news/tableau-queue'))) return;
+    try { art('crowd'); } catch (e) { return; }
+    const xs = [28, 74, 118, 196, 236, 268], feet = [150, 156, 148, 158, 152, 150];
+    const start = (sb.day * 4) % 9, cx = commuterX(sb) / 2;
+    xs.forEach((x, k) => {
+      if (Math.abs(x - cx) < 26) return;
+      X.drawArt(ctx, 'news/tableau-queue', 'queue:p' + ((start + k * 2) % 9), x * 2 - 16, (feet[k] - 34) * 2, { scale: 2 });
+    });
+  }
   function placeArt(ctx, sb, ns) {
     const key = PLACE_ART[sb.place], id = 'news/place-' + key;
     if (!key || !(B.Art && B.Art.has(id))) return false;
@@ -277,6 +291,7 @@
     else skyline(ctx, sb.act, sb.day, 252, sb.day, ns);
     art(pl === 'street' || pl === 'rideshare' ? 'back:' + s.id : 'back');
     if (pl === 'platform') art('platform');
+    if (pl === 'subway') subwayCrowd(ctx, sb, id, art);
     if (pl === 'breakroom') art('breakroom');
     if (pl === 'rideshare') art('seat');
     if (s.wreath && key !== 'subway' && key !== 'street' && key !== 'rideshare') art('wreath');
@@ -362,7 +377,7 @@
     }
     if (!front) return;
     const M = monitorGeom(sb, detail), mx = M.x, my = M.y, mw = M.w, mh = M.h;
-    monitor(ctx, mx, my, mw, mh, headline, sb.act);
+    monitor(ctx, mx, my, mw, mh, headline, sb.act, sb.day);
     if (!detail) person(ctx, commuterX(sb), 244, 2, sb.act, -1, 1 + (sb.day + 2) % 3);
     // Observable composition markers: framing and subject position vary by camera.
     if (sb.camera === 'insert' && !(B.Art && B.Art.has('news/place-marker') && X.drawArt(ctx, 'news/place-marker', 'marker:insert', 0, 0, { scale: 2 }))) cel3(ctx, 468, 86, 116, 82, P.bone, P.white, P.plasticD);
@@ -531,7 +546,14 @@
       if (s.wreath) art(DESK, 'wreath', 0, 0);
     }
     if (mons) {
-      for (const m of G.monitors) { art(DESK_MON, m.off ? 'dead' : 'on', m.x, m.y); if (!m.off) chart(ctx, m.screen.x, m.screen.y, m.screen.w, m.screen.h, day + m.i, down); }
+      for (const m of G.monitors) {
+        art(DESK_MON, m.off ? 'dead' : 'on', m.x, m.y);
+        if (m.off) continue;
+        // five different screens (candles, depth ladder, sector heatmap, tape, CASCADE console); the first keeps the live line so the market's direction still shows
+        const S = m.screen, plate = B.Art.has('desk/monitor-screens') && X.drawArt(ctx, 'desk/monitor-screens', 's' + m.i, S.x, S.y, { scale: 2 });
+        if (!plate) chart(ctx, S.x, S.y, S.w, S.h, day + m.i, down);
+        else { X.scanlines(ctx, S.x + 1, S.y + 1, S.w - 2, S.h - 2, P.ink, 0.14); if (m.i === 0) chart(ctx, S.x, S.y, S.w, S.h, day + m.i, down, 'line'); }
+      }
     }
     if (desk) {
       art(DESK, 'desk', 0, 0);
