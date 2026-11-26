@@ -1244,7 +1244,7 @@
             K.ping(cc, t, { at: a, flare: { x: g.x, y: g.y, w: g.w, h, col: P.bone, a: 0.18, dur: 0.08 } });
           });
           // the colleagues and heads in front of the screens go back over the wave
-          SH.floorFront(cc, 0.4, false, 60, wave.filter((q) => t >= q.a && t < q.a + 0.36).map((q) => q.g));
+          SH.floorFront(cc, 0.4, false, 60, wave.filter((q) => t >= q.a && t < q.a + 0.36).map((q) => Object.assign({}, q.g, { h: q.h })));
         }, day);
       }
     }];
@@ -2124,12 +2124,14 @@
   // for three and four items). Feeds of zero, one and two items have no arrival.
   const phoneArrival = (feed) => feed.length >= 3;
   const phoneBacklog = (feed) => (phoneArrival(feed) ? feed.slice(1, 5) : feed.slice(0, 4));
+  // How far the lead's arrival slides the rows: the lead row's height (39 px, more for a long title) and the 5 px gap.
+  const leadStep = (feed) => R.phoneRowH(feed[0], R.phoneGeom(4, true).sw, false) + 5;
 
   // Handoff: the room is pinned at depth 0, the dark device rises into it at depth 1 and wakes at 0.80 s.
   function phoneHandoffLayers(sb, feed) {
     // The device is always the read's big one (close = true), so the dissolve into the read does not change its size.
     const K = B.MotionKit, L = phoneBacklog(feed), o = { rows: L, labelX: 92 };
-    // the backlog keeps the read's 39 px rows even at two (three items), so the lead's slide of 44 px lands on the same slots
+    // the backlog keeps the read's 39 px rows even at two (three items), so the lead's slide (its row and the gap, leadStep) lands on the same slots
     if (phoneArrival(feed)) o.compact = false;
     const { sx, sy, sw, sh } = R.phoneGeom(L.length, true);
     const mm = R.lockMinute(sb.day);
@@ -2147,7 +2149,7 @@
     ];
   }
   // Read: `back` is everything but the cards, `rows` the cards (the only layer the camera moves), `glass` repaints the picture above
-  // the list window (y < 51, the only place a row can leave the window: it starts 44 px up and never goes sideways or below),
+  // the list window (y < 51, the only place a row can leave the window: it starts leadStep px up and never goes sideways or below),
   // so a row outside the window never shows. It is the same pixels as `back` there; drawing only that band avoids a second full room. The two counters are drawn whole on `glass`.
   function phoneReadLayers(sb, feed) {
     const K = B.MotionKit, n = feed.length, arrival = phoneArrival(feed), five = n >= 5, L = five ? feed.slice(0, 5) : feed.slice(0, 4);
@@ -2165,7 +2167,7 @@
           const k = arrival && t >= 0.85 ? top : arrival ? top - 1 : Math.min(4, n);
           R.text(c, String(k), 417, 36, wash, 'right');
           R.text(c, String(k), 92, 110, P.bone);
-          if (n > 0) K.ping(c, t, { at: landing, off: [], on: [], flare: { x: 220, y: 55, w: 200, h: 39, col: P.bone, a: 0.15, dur: 0.08 } });
+          if (n > 0) K.ping(c, t, { at: landing, off: [], on: [], flare: { x: 220, y: 55, w: 200, h: leadStep(feed) - 5, col: P.bone, a: 0.15, dur: 0.08 } });
         }
       }
     ];
@@ -2177,7 +2179,7 @@
     beats[0] = M.layered(Object.assign({}, beats[0], { camera: K.rise(56, beats[0].dur, 0.15, 0.75), layers: phoneHandoffLayers(sb, feed) }));
     const read = Object.assign({}, beats[1], {
       cues: [{ at: 0.70, sfx: 'news' }],
-      camera: arrival ? K.settle(-44, K.camSpan(beats[1].dur, 0.70, 1.00, M.ease.out)) : null,
+      camera: arrival ? K.settle(-leadStep(feed), K.camSpan(beats[1].dur, 0.70, 1.00, M.ease.out)) : null,
       layers: phoneReadLayers(sb, feed)
     });
     delete read.sfx;
