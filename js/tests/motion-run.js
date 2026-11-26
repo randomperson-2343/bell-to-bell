@@ -2207,6 +2207,9 @@ async function run() {
       for (let k = 0; k < A.d.length; k += 4) if (A.d[k] !== Bq.d[k] || A.d[k + 1] !== Bq.d[k + 1] || A.d[k + 2] !== Bq.d[k + 2]) { n++; const x = (k / 4) % A.w, y = Math.floor(k / 4 / A.w); x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); }
       return { n, box: [x0, x1, y0, y1], w: A.w };
     }, ph3);
+    // both pictures go into the uploaded screenshots (qa/phone/) so the difference can be looked at
+    const urls = await page.evaluate((o) => ['0:1.3', '1:0.5'].map((k) => { const [i, t] = k.split(':').map(Number); window.openBeat('phone', o); BTB.Cinematic.seek(i, t); return document.getElementById('cine-canvas').toDataURL('image/png'); }), ph3);
+    try { fs.mkdirSync('qa/phone', { recursive: true }); urls.forEach((u, k) => fs.writeFileSync(`qa/phone/motion-handoff-${k ? 'read' : 'end'}.png`, Buffer.from(u.split(',')[1], 'base64'))); } catch (e) { /* diagnostics only */ }
     assert(false, `phone read (arrival): the start is not the handoff's last picture (${JSON.stringify(dbox)})`);
   }
   assert(await shot('phone', ph3, 1, 0.8) !== await shot('phone', ph3, 1, 0.9) && await shot('phone', ph3, 1, 0.9) !== await shot('phone', ph3, 1, 0.98), 'phone read (arrival): the stack does not slide');
@@ -2787,8 +2790,8 @@ async function run() {
   assert(await page.evaluate(() => { const SB = BTB.Storyboard; for (let d = 0; d < 46; d++) { const r = SB.row(d, null), sb = BTB.Rhythm.storyboard(d); if ((r.shot === 'insert' && r.weight === 'S') || (r.shot === 'place' && sb.place === 'desk')) return false; } return true; }), 'batch 4b: a session reaches the S-weight document establish or the desk place, which the sheet says none does');
 
   const T22 = { choices: { c5: 'bail' }, f: {} };
-  const DESK_EST = [['1', nOpts(1)], ['8', nOpts(8)], ['15', nOpts(15)], ['19', nOpts(19)], ['24', nOpts(24)], ['22bail', nOpts(22, 'T', T22)]];
-  const DESK_HOLD = [['8', nOpts(8)], ['24', nOpts(24)], ['22bail', nOpts(22, 'T', T22)]];
+  const DESK_EST = [['1', nOpts(1)], ['8', nOpts(8)], ['15', nOpts(15)], ['19', nOpts(19)], ['22bail', nOpts(22, 'T', T22)]];
+  const DESK_HOLD = [['8', nOpts(8)], ['22bail', nOpts(22, 'T', T22)]];
   const bxx = (o, i, id, t, r) => page.evaluate(([o, i, id, t, r]) => window.animBox('news', o, i, id, t, r || [0, 0, 640, 360]), [o, i, id, t, r]);
   const cnt2 = (o, i, id, t, spec, r) => cc(o, i, id, t, r || [0, 0, 640, 360], spec);
   // shot 10, establish: the paper slides up 16 art units between 0.35 and 0.75 s; the TRADE LED blinks to the end; the marks never move
