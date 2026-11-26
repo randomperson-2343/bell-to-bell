@@ -17,12 +17,21 @@
     "w": 320,
     "h": 180
    }
+  },
+  {
+   "filename": "app",
+   "frame": {
+    "x": 640,
+    "y": 0,
+    "w": 320,
+    "h": 180
+   }
   }
  ],
  "meta": {
   "image": "doc-post.png",
   "size": {
-   "w": 640,
+   "w": 960,
    "h": 180
   },
   "frameTags": [
@@ -35,6 +44,11 @@
     "name": "glass",
     "from": 1,
     "to": 1
+   },
+   {
+    "name": "app",
+    "from": 2,
+    "to": 2
    }
   ]
  }

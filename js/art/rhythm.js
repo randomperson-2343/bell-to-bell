@@ -35,6 +35,28 @@
       : act === 2 ? { wash:P.violet, signal:P.sky, sky:P.ink2 }
       : { wash:P.amberD, signal:P.amber, sky:P.ink2 };
   }
+  // The fewest lines of at most maxChars letters, as even as they can be, so a line never holds one short word alone ("0 / READS").
+  // A lone separator dot at a line's end or start is dropped, as wrapFit drops it. Falls back to wrapFit when no split fits.
+  function balancedLines(value, maxChars, maxLines) {
+    const words = clean(value).split(/\s+/).filter(Boolean), sep = (w) => /^[\u00b7|\/\-]$/.test(w);
+    const join = (a) => { const ws = a.slice(); while (ws.length && sep(ws[0])) ws.shift(); while (ws.length && sep(ws[ws.length - 1])) ws.pop(); return ws.join(' '); };
+    for (let n = 1; n <= maxLines; n++) {
+      let best = null;
+      const go = (from, left, acc) => {
+        if (left === 1) {
+          const lines = acc.concat([join(words.slice(from))]).filter((l) => l.length);
+          if (!lines.length || lines.some((l) => l.length > maxChars)) return;
+          const score = Math.max.apply(null, lines.map((l) => l.length)) * 10 + (lines.length < n ? 5 : 0);
+          if (!best || score < best.score) best = { score, lines };
+          return;
+        }
+        for (let cut = from + 1; cut <= words.length - (left - 1); cut++) go(cut, left - 1, acc.concat([join(words.slice(from, cut))]));
+      };
+      if (words.length >= n) go(0, n, []);
+      if (best) return best.lines;
+    }
+    return X.wrapFit(clean(value), maxChars * 6, maxLines);
+  }
   function text(ctx, value, x, y, color, align) {
     X.textShadow(ctx, clean(value).slice(0, 80), x, y, color || P.bone, P.ink, { align: align || 'left' });
   }
@@ -221,11 +243,15 @@
     const sc = { x: G.x + 6, y: G.y + 6, w: G.w - 12, h: G.h - 16 };
     return { screen: sc, band: { x: sc.x, y: sc.y + sc.h - 45, w: sc.w, h: 45 } };
   }
-  function monitor(ctx, x, y, w, h, headline, act) {
+  // which broadcast still each wire day shows: no two wire days in a row repeat, and each of the four is used at least twice
+  const WIRE_STILL = { 7: 0, 13: 1, 16: 2, 21: 3, 22: 0, 26: 1, 31: 2, 34: 3, 42: 0 };
+  function monitor(ctx, x, y, w, h, headline, act, day) {
     const c = colors(act), detail = w >= 300, id = detail ? 'news/wire-monitor-detail' : 'news/wire-monitor';
     if (B.Art && B.Art.has(id)) {
       const M = monitorScreen({ x, y, w, h }), sc = M.screen, b = M.band;
       X.crt(ctx, sc.x, sc.y, sc.w, sc.h, true);
+      // the broadcast picture above the headline band: one of four stills by the day (press podium, ticker wall, the city from the river, a reporter outside the HQ)
+      if (day != null) { const sid = detail ? 'news/wire-stills-detail' : 'news/wire-stills'; if (B.Art.has(sid)) { X.drawArt(ctx, sid, 'still' + (WIRE_STILL[day] != null ? WIRE_STILL[day] : day % 4), sc.x, sc.y, { scale: 2 }); X.scanlines(ctx, sc.x, sc.y, sc.w, sc.h - 45, P.ink, 0.14); } }
       X.drawArt(ctx, id, 'base', x, y - (detail ? 70 : 78), { scale: 2 });
       X.rect(ctx, b.x, b.y, b.w, b.h, c.signal);
       text(ctx, 'OVERNIGHT WIRE', b.x + 6, b.y + 6, P.bone);
@@ -240,7 +266,7 @@
   }
   // part: undefined draws the screen and the line; 'screen' only the CRT.
   function chart(ctx, x, y, w, h, seed, down, part) {
-    X.crt(ctx, x, y, w, h, true);
+    if (part !== 'line') X.crt(ctx, x, y, w, h, true);
     if (part === 'screen') return;
     let py = y + h/2;
     for (let i = 0; i < w-12; i += 5) {
@@ -268,6 +294,22 @@
   // The authored place (news/place-*, 320x180 cells at 2x at 0,0): the ink, the skyline behind it and the place's frames, with what stays code
   // (the lobby's screen bars, the rideshare dash bars, the desk's chart and note line). False when the place has no art (the flat code draws it).
   const PLACE_ART = { subway: 'subway', platform: 'subway', lobby: 'lobby', elevator: 'lobby', kitchen: 'kitchen', breakroom: 'kitchen', desk: 'desk', rideshare: 'rideshare', street: 'street' };
+  // The subway platform's standing crowd (news/place-subway 'crowd': posters, benches, wet-floor sign, puddle, tactile edge) and up to four
+  // waiting commuters from news/subway-riders (the day-20 queue mirrored and recoloured), picked by the day. They stand far back (feet toward the
+  // floor's far edge, 68 px tall against the big commuter's 130) and none within 45 cells of him. Their boxes and the posters' go to peopleBoxes
+  // so the code-drawn fine marks (thin red and teal lines) stay off them.
+  function subwayCrowd(ctx, sb) {
+    if (!(B.Art && B.Art.has('news/subway-riders'))) return;
+    const xs = [64, 128, 152, 304], feet = [143, 141, 144, 140];
+    const start = (sb.day * 4) % 9, cx = commuterX(sb) / 2;
+    xs.forEach((x, k) => {
+      if (Math.abs(x - cx) < 45) return;
+      const px = x * 2 - 16, py = (feet[k] - 34) * 2;
+      X.drawArt(ctx, 'news/subway-riders', 'rider:r' + ((start + k * 2) % 9), px, py, { scale: 2 });
+      peopleBoxes.push({ x: px - 2, y: py, w: 36, h: 70 });
+    });
+    peopleBoxes.push({ x: 300, y: 154, w: 330, h: 66 });
+  }
   function placeArt(ctx, sb, ns) {
     const key = PLACE_ART[sb.place], id = 'news/place-' + key;
     if (!key || !(B.Art && B.Art.has(id))) return false;
@@ -277,6 +319,7 @@
     else skyline(ctx, sb.act, sb.day, 252, sb.day, ns);
     art(pl === 'street' || pl === 'rideshare' ? 'back:' + s.id : 'back');
     if (pl === 'platform') art('platform');
+    if (pl === 'subway') { art('crowd'); subwayCrowd(ctx, sb); }
     if (pl === 'breakroom') art('breakroom');
     if (pl === 'rideshare') art('seat');
     if (s.wreath && key !== 'subway' && key !== 'street' && key !== 'rideshare') art('wreath');
@@ -362,7 +405,7 @@
     }
     if (!front) return;
     const M = monitorGeom(sb, detail), mx = M.x, my = M.y, mw = M.w, mh = M.h;
-    monitor(ctx, mx, my, mw, mh, headline, sb.act);
+    monitor(ctx, mx, my, mw, mh, headline, sb.act, sb.day);
     if (!detail) person(ctx, commuterX(sb), 244, 2, sb.act, -1, 1 + (sb.day + 2) % 3);
     // Observable composition markers: framing and subject position vary by camera.
     if (sb.camera === 'insert' && !(B.Art && B.Art.has('news/place-marker') && X.drawArt(ctx, 'news/place-marker', 'marker:insert', 0, 0, { scale: 2 }))) cel3(ctx, 468, 86, 116, 82, P.bone, P.white, P.plasticD);
@@ -387,18 +430,57 @@
     const big = close || Math.min(rowCount, 4) > 2, w = big ? 226 : 180, h = big ? 308 : 250, x = (V.w - w) / 2, y = 18;
     return Object.assign({ x, y, w, h }, phoneScreen(x, y, w, h));
   }
+  // The Sqwak app on the one-post establish's phone (the same look as the post document's `app` frame, at this screen's size): header with the bird
+  // mark and SQWAK, the post card (avatar ring, name, handle, the value in balanced lines, a stats row), three greyed earlier posts, a compose bar.
+  const BIRD = ['....mmmm..', '...mmmmmm.', '...mm0mmaa', '...mmmmmma', '.m.mmmmmm.', '.mmmmmmmm.', '..mmmmmm..', '...m..m...'];
+  function appScreen(ctx, sx, sy, sw, sh, item, c) {
+    const bx = sx + 5, bw = sw - 10, glyph = (x, y, rows, map, k) => rows.forEach((r, j) => { for (let i = 0; i < r.length; i++) if (r[i] !== '.') X.rect(ctx, x + i * k, y + j * k, k, k, map[r[i]]); });
+    const disc = (x, y, d, col) => { for (let j = 0; j < d; j++) for (let i = 0; i < d; i++) if ((i + .5 - d / 2) ** 2 + (j + .5 - d / 2) ** 2 <= d * d / 4) X.rect(ctx, x + i, y + j, 1, 1, col); };
+    // header
+    X.rect(ctx, sx + 2, sy + 21, sw - 4, 20, P.ink2); X.rect(ctx, sx + 2, sy + 40, sw - 4, 1, P.slate);
+    glyph(sx + 8, sy + 25, BIRD, { m: P.violet, a: P.amber, 0: P.ink }, 2);
+    ctx.save(); ctx.scale(2, 2); X.textShadow(ctx, 'SQWAK', Math.round((sx + 34) / 2), Math.round((sy + 25) / 2), P.bone, P.ink, {}); ctx.restore();
+    for (let i = 0; i < 3; i++) X.rect(ctx, sx + sw - 24 + i * 5, sy + 29, 3, 3, P.grey);
+    // TRENDING strip
+    X.rect(ctx, sx + 2, sy + 41, sw - 4, 12, P.screen); X.rect(ctx, sx + 7, sy + 44, 5, 5, P.crimson); text(ctx, 'TRENDING', sx + 16, sy + 45, P.crimson);
+    for (let i = 0; i < 7; i++) X.rect(ctx, sx + sw - 30 + i * 4, sy + 50 - (2 + (i * 5) % 6), 3, 2 + (i * 5) % 6, i === 6 ? P.crimson : P.crimsonD);
+    X.rect(ctx, sx + 2, sy + 52, sw - 4, 1, P.slate);
+    // the post card
+    const cy = sy + 57, lines = balancedLines(item.title || '', Math.floor((bw - 20) / 6), 3);
+    X.rect(ctx, bx, cy, bw, 72, P.slate); X.rect(ctx, bx + 1, cy + 1, bw - 2, 70, P.screenGlow); X.rect(ctx, bx + 1, cy + 1, 3, 70, P.violet);
+    disc(bx + 9, cy + 6, 14, P.violet); disc(bx + 10, cy + 7, 12, P.screenGlow);
+    X.rect(ctx, bx + 14, cy + 10, 6, 6, P.desk2); X.rect(ctx, bx + 13, cy + 9, 8, 3, P.slate2); X.rect(ctx, bx + 12, cy + 17, 10, 3, P.carpet);
+    X.rect(ctx, bx + 29, cy + 7, 40, 3, P.bone); X.rect(ctx, bx + 72, cy + 7, 4, 4, P.sky); X.rect(ctx, bx + 29, cy + 13, 28, 2, P.grey); X.rect(ctx, bx + bw - 30, cy + 7, 22, 2, P.slate2);
+    lines.forEach((ln, k) => text(ctx, ln, bx + 10, cy + 26 + k * 10, P.bone));
+    X.rect(ctx, bx + 8, cy + 58, bw - 16, 1, P.slate);
+    X.rect(ctx, bx + 10, cy + 63, 7, 4, P.carpet2); X.rect(ctx, bx + 20, cy + 64, 14, 2, P.grey);
+    X.rect(ctx, bx + 52, cy + 63, 7, 4, P.carpet2); X.rect(ctx, bx + 62, cy + 64, 14, 2, P.grey);
+    X.rect(ctx, bx + 94, cy + 63, 7, 4, P.crimson); X.rect(ctx, bx + 104, cy + 64, 14, 2, P.grey);
+    // earlier posts, greyed
+    [P.carpet, P.slate, P.slate2].forEach((fc, k) => {
+      const y = cy + 78 + k * 23;
+      disc(bx + 3, y + 2, 12, P.slate); disc(bx + 4, y + 3, 10, fc); X.rect(ctx, bx + 7, y + 6, 4, 3, k === 1 ? P.desk : P.desk2);
+      X.rect(ctx, bx + 22, y + 2, 44 + k * 14, 3, P.slate2); X.rect(ctx, bx + 22, y + 8, bw - 40 - k * 16, 2, P.slate); X.rect(ctx, bx + 22, y + 13, 36 + k * 18, 2, P.slate);
+      X.rect(ctx, bx, y + 19, bw, 1, P.ink2);
+    });
+    // compose bar
+    const ky = sy + sh - 18;
+    X.rect(ctx, bx, ky, bw - 34, 12, P.slate); X.rect(ctx, bx + 1, ky + 1, bw - 36, 10, P.screenGlow); X.rect(ctx, bx + 6, ky + 5, 3, 3, P.violet); X.rect(ctx, bx + 12, ky + 5, 40, 2, P.slate2);
+    X.rect(ctx, bx + bw - 30, ky, 30, 12, P.slate); X.rect(ctx, bx + bw - 29, ky + 1, 28, 10, P.sky); X.rect(ctx, bx + bw - 21, ky + 5, 12, 2, P.ink); X.rect(ctx, bx + bw - 12, ky + 3, 2, 6, P.ink);
+  }
   function phone(ctx, x, y, w, h, feed, act, day, o) {
     o = o || {};
     const c = colors(act), rows = o.rows || (feed || []).slice(0, 4), compact = o.compact != null ? o.compact : Math.min(rows.length, 4) <= 2, part = o.part;
     const count = o.count != null ? o.count : rows.length, glow = o.glow == null ? 1 : o.glow;
     const { sx, sy, sw, sh } = phoneScreen(x, y, w, h), rowH = compact ? 52 : 39;
-    const cards = () => rows.forEach((item,i) => {
+    const cards = o.app && rows.length ? () => appScreen(ctx, sx, sy, sw, sh, rows[0], c) : () => rows.forEach((item,i) => {
       const yy=sy+25+i*(rowH+5);
       X.rect(ctx, sx+5, yy, sw-10, rowH, i<glow ? P.screenGlow : P.screenD);
       X.rect(ctx, sx+5, yy, 3, rowH, item.kind==='chirp'?P.violet:item.kind==='mail'?P.amber:P.sky);
-      text(ctx, X.wrapFit(clean(item.source || 'WIRE'), sw-28, 1)[0] || '', sx+14, yy+6, c.wash);
-      // whole words, and an ellipsis on the last line when the title runs longer than the card
-      X.wrapFit(clean(item.title || ''), sw-34, compact?3:2).forEach((line,k) => text(ctx,line,sx+14,yy+19+k*10,P.bone));
+      // whole words; the 39 px rows take a third line (source up at yy+3, lines at 9 px) instead of cutting the title
+      const lines = X.wrapFit(clean(item.title || ''), sw-23, 3), three = !compact && lines.length > 2;
+      text(ctx, X.wrapFit(clean(item.source || 'WIRE'), sw-28, 1)[0] || '', sx+14, yy+(three?3:6), c.wash);
+      lines.forEach((line,k) => text(ctx,line,sx+14,three?yy+12+k*9:yy+19+k*10,P.bone));
     });
     if (part === 'rows') { cards(); return rows.length; }
     // Glow is behind the device and never becomes an opaque slab.
@@ -531,7 +613,14 @@
       if (s.wreath) art(DESK, 'wreath', 0, 0);
     }
     if (mons) {
-      for (const m of G.monitors) { art(DESK_MON, m.off ? 'dead' : 'on', m.x, m.y); if (!m.off) chart(ctx, m.screen.x, m.screen.y, m.screen.w, m.screen.h, day + m.i, down); }
+      for (const m of G.monitors) {
+        art(DESK_MON, m.off ? 'dead' : 'on', m.x, m.y);
+        if (m.off) continue;
+        // five different screens (candles, depth ladder, sector heatmap, tape, CASCADE console); the first keeps the live line so the market's direction still shows
+        const S = m.screen, plate = B.Art.has('desk/monitor-screens') && X.drawArt(ctx, 'desk/monitor-screens', 's' + m.i, S.x, S.y, { scale: 2 });
+        if (!plate) chart(ctx, S.x, S.y, S.w, S.h, day + m.i, down);
+        else { X.scanlines(ctx, S.x + 1, S.y + 1, S.w - 2, S.h - 2, P.ink, 0.14); if (m.i === 0) chart(ctx, S.x, S.y, S.w, S.h, day + m.i, down, 'line'); }
+      }
     }
     if (desk) {
       art(DESK, 'desk', 0, 0);
@@ -712,7 +801,7 @@
   B.Rhythm = {
     view:V, endingIds:ENDING_IDS,
     // Drawing helpers for js/art/storyboard.js.
-    placeFrame, peopleBoxes, commuterX, monitorGeom, phoneFrame, phoneGeom, lockMinute, stackSlip, CLOSE_DIM, officeFrame, officeGeom, closeFrame, closeGeom, closeDown, sqwakFrame, sqwakGeom, sqwakStats, skyline, skylineWindows, skylineLit, skyVar, monitorScreen, season, sky, weather, text, colors, clean, chart, chartSeries, person, marketDown, beat,
+    balancedLines, placeFrame, peopleBoxes, commuterX, monitorGeom, phoneFrame, phoneGeom, lockMinute, stackSlip, CLOSE_DIM, officeFrame, officeGeom, closeFrame, closeGeom, closeDown, sqwakFrame, sqwakGeom, sqwakStats, skyline, skylineWindows, skylineLit, skyVar, monitorScreen, season, sky, weather, text, colors, clean, chart, chartSeries, person, marketDown, beat,
     phoneRowCount(feed){return Math.min(4,(feed||[]).length);},
     storyboard:board
   };

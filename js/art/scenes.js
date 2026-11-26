@@ -474,14 +474,18 @@
     X.drawArt(ctx, A, 'props', 0, 0);
   }
   // The day's paper on the desk (news/desk-paper, 88x34 at 60,137+dy; right edge at 148, clear of the hands): kind 'memo' or 'footnote',
-  // band (5,8) 78x4 in bandCol; code writes the value in up to two lines of whole words (13 chars each) at (6,15) and (6,24).
+  // band (5,8) 78x4 in bandCol; code writes the value in up to two lines of whole words (13 chars each) at (6,15) and (6,24), or three lines at (6,8) (6,17) (6,26) without the band.
   // Returns false without the art, so the caller keeps its own drawing.
   function deskPaper(ctx, dy, kind, bandCol, text) {
     if (!hasArt('news/desk-paper')) return false;
     const y = 137 + (dy || 0);
-    X.drawArt(ctx, 'news/desk-paper', kind === 'footnote' ? 'footnote' : 'memo', 60, y);
-    if (bandCol) X.rect(ctx, 65, y + 8, 78, 4, bandCol);
-    if (text) X.wrapFit(text, 78, 2).forEach((ln, i) => X.text(ctx, ln, 66, y + 15 + i * 9, P.ink));
+    // A value that needs a third line uses the band-less paper (memo3 / footnote3) and writes three lines at y+8, y+17, y+26 (the same 9 px pitch as the two-line papers; memo3 / footnote3 are 88x40); nothing is ever cut.
+    const three = !!text && X.wrap(text, 78).length > 2;
+    const tall = three && hasArt('news/desk-paper-tall');
+    if (tall) X.drawArt(ctx, 'news/desk-paper-tall', kind === 'footnote' ? 'footnote' : 'memo', 60, y - 6);   // 88x40, its bottom edge on the normal paper's
+    else X.drawArt(ctx, 'news/desk-paper', kind === 'footnote' ? 'footnote' : 'memo', 60, y);
+    if (bandCol && !tall) X.rect(ctx, 65, y + 8, 78, 4, bandCol);
+    if (text) X.wrapFit(text, 78, three ? 3 : 2).forEach((ln, i) => X.text(ctx, ln, 66, tall ? y + 2 + i * 9 : three ? y + 5 + i * 8 : y + 15 + i * 9, P.ink));
     return true;
   }
   function deskCloseup(ctx, p, o) {
@@ -664,9 +668,10 @@
         blitArt(ctx, 'news/tableau-ship', i === 1 ? 'ship:crimson' : 'ship:bone', 123 + i * 35 + Math.round(p * 9) + d[0] - 6, 66 + i * 12 + d[1] - 4);
       }
     } else if (n === 9) {
+      // nine different people (16x34 frames, feet on art row 114, the paving's edge)
       for (let i = 0; i < 9; i++) {
         const d = sh(i);
-        blitArt(ctx, 'news/tableau-queue', `queue:${i % 3 ? 'ink' : 'red'}-${i % 2 ? 'light' : 'dark'}`, 52 + i * 27 + Math.round((i % 2) * p * 3) + d[0], 84 + d[1]);
+        blitArt(ctx, 'news/tableau-queue', 'queue:p' + i, 49 + i * 27 + Math.round((i % 2) * p * 3) + d[0], 81 + d[1]);
       }
     } else if (n === 12 || n === 13) {
       const d = sh(0);
@@ -694,11 +699,24 @@
       rc(154 + d[0], 85 + d[1], 12, 12, P.desk2);
     }
   }
-  // The bank queue's lower band and its caption: drawn after the figures stand in the flat picture.
-  function tableau9Strip(ctx) {
+  // The bank queue's lower band and its caption: drawn after the figures stand in the flat picture. With the authored street (rows 100-179 of t9)
+  // it is an inset lower-third chyron over the road, so the queue's feet and the curb stay in view; without it, the old full-width band.
+  // The zoomed detail leaves the chyron out: its crop ends under the caption box, which would cut the words in half.
+  function tableau9Strip(ctx, zoomed) {
+    if (tableauArt()) {
+      if (zoomed) return;
+      X.rect(ctx, 56, 118, 208, 14, P.ink2);
+      X.rect(ctx, 56, 118, 208, 1, P.slate2);
+      X.rect(ctx, 56, 131, 208, 1, P.ink);
+      X.rect(ctx, 56, 118, 3, 14, P.crimson);
+      X.text(ctx, 'WITHDRAWAL QUEUE · THIRD STREET', 161, 122, P.white, { align: 'center' });
+      return;
+    }
     X.rect(ctx, 0, 113, V.w, 25, P.ink2);
     X.text(ctx, 'WITHDRAWAL QUEUE · THIRD STREET', 160, 120, P.white, { align: 'center' });
   }
+  // The scanlines cover the picture: rows 13-137, and on the authored plates that run on (t9 the street, t11-t14 the floor, gallery and street) down to row 167-172.
+  const tableauScanH = (day) => (tableauArt() ? (day === 9 ? 155 : day === 8 || day === 11 || day === 12 || day === 13 || day === 14 ? 160 : 125) : 125);
   // o (optional): part 'art' draws everything but the scanlines, 'scan' only the scanlines; noMover leaves out the tableau's mover (tableauMover).
   // over (tableau 9): the band under the queue and its caption are left out of 'art' and drawn first in 'scan', so they sit over the figures (which a layer
   // builder draws between the two, whole: under the 1.3 zoom a figure cut at the band's edge would differ from the flat picture in the edge row).
@@ -727,7 +745,7 @@
       X.text(ctx, 'CORRELATED MODEL FLOW', 160, 19, P.violet, { align: 'center', spacing: 2 });
     } else if (day === 9) {
       X.text(ctx, 'RIDGEWAY TRUST', 160, 34, P.ink, { align: 'center' });
-      if (!(o && o.over)) tableau9Strip(ctx);
+      if (!(o && o.over)) tableau9Strip(ctx, o && o.zoomed);
     } else if (day === 11) {
       X.text(ctx, 'PRESERVE ALL RECORDS', 160, 18, P.crimson, { align: 'center', spacing: 2 });
     } else if (day === 12 || day === 13) {
@@ -736,13 +754,13 @@
     } else {
       X.text(ctx, 'SYSTEM STATUS: UNRESOLVED', 160, 18, P.bone, { align: 'center' });
     }
-    if (part !== 'art') X.scanlines(ctx, 0, 13, V.w, 125, P.ink, 0.1);
+    if (part !== 'art') X.scanlines(ctx, 0, 13, V.w, tableauScanH(day), P.ink, 0.1);
     return true;
   }
   function briefingTableau(ctx, day, p, o) {
     if ([3, 5, 8, 9, 11, 12, 13, 14].indexOf(day) < 0) return false;
     const part = o && o.part, mover = !(o && o.noMover);
-    if (part === 'scan') { if (day === 9 && o.over) tableau9Strip(ctx); X.scanlines(ctx, 0, 13, V.w, 125, P.ink, 0.1); return true; }
+    if (part === 'scan') { if (day === 9 && o.over) tableau9Strip(ctx, o.zoomed); X.scanlines(ctx, 0, 13, V.w, tableauScanH(day), P.ink, 0.1); return true; }
     if (tableauArt()) return briefingTableauArt(ctx, day, p, o, part, mover);
     X.rect(ctx, 0, 0, V.w, V.h, P.ink);
     X.gradient(ctx, 0, 0, V.w, 138, P.ink2, P.screenD, 7);
@@ -801,7 +819,7 @@
       X.rect(ctx, 126, 48, 68, 38, P.sky);
       X.text(ctx, 'RIDGEWAY TRUST', 160, 34, P.ink, { align: 'center' });
       if (mover) tableauMover(ctx, 9, p);
-      if (!(o && o.over)) tableau9Strip(ctx);
+      if (!(o && o.over)) tableau9Strip(ctx, o && o.zoomed);
     } else if (day === 11) {
       // Regulatory preservation sweep: cartons, badges and locked terminals.
       const G = tableauGeom(11);

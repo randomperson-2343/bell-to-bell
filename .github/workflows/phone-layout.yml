@@ -26,6 +26,23 @@ jobs:
         env:
           UI_AUDIT_LOG: '1'
         run: node js/tests/ui-audit.js
+      - name: Logic tests
+        if: always()
+        run: node js/tests/node-run.js
+      - name: Browser flow check (report only)
+        if: always()
+        continue-on-error: true
+        run: node js/tests/browser-run.js
+      - name: Motion check (report only; reprints the pinned pictures that changed)
+        if: always()
+        continue-on-error: true
+        env:
+          MOTION_ALL: '1'
+        run: node js/tests/motion-run.js --update-golden
+      - name: Audio render check (report only)
+        if: always()
+        continue-on-error: true
+        run: node js/tests/audio-render-run.js --quick
       - uses: actions/upload-artifact@v4
         if: always()
         with:

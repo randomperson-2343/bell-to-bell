@@ -29,8 +29,8 @@
 .logo span, .logo em, .boot-logo span, .boot-logo em { font-size: 0; text-shadow: none; }
 /* Belt and braces: some browsers still draw a sliver of zero-size text, so the
    baked wordmarks also hide their words and clip anything that leaks out. */
-.logo, .boot-logo, .feed-logo, .sq-logo { overflow: hidden; color: transparent !important; text-shadow: none; }
-.logo *, .boot-logo *, .feed-logo *, .sq-logo * { color: transparent !important; text-shadow: none; }
+.logo, .boot-logo, .sq-logo { overflow: hidden; color: transparent !important; text-shadow: none; }
+.logo *, .boot-logo *, .sq-logo * { color: transparent !important; text-shadow: none; }
 #screen-exit .boot-logo { background-image: url(../art/ui/logo-closed--base.png); }
 @media (min-width: 1241px) {
   .logo { width: 432px; height: 120px; background-size: 432px 120px; }
@@ -124,12 +124,6 @@
 .px-ico-signal { background-image: url(../art/ui/status-icons--signal3.png); }
 .px-ico-battery { background-image: url(../art/ui/status-icons--battery.png); }
 .btn .px-ico { margin: -4px 6px -4px -2px; }
-/* The comms tabs carry the three app wordmarks; the words stay for screen readers. */
-.feed-logo { display: inline-block; vertical-align: middle; font-size: 0; height: 18px; background: 0 0 / 100% 18px no-repeat; image-rendering: pixelated; }
-.feed-logo-wire { width: 48px; background-image: url(../art/ui/logo-wire--base.png); }
-.feed-logo-sqwak { width: 64px; background-image: url(../art/ui/logo-sqwak--base.png); }
-.feed-logo-inbox { width: 48px; background-image: url(../art/ui/logo-inbox--base.png); }
-.feed-tabs button:not(.on) .feed-logo { opacity: .55; }
 
 /* The coffee mug and its steam. */
 .mug {

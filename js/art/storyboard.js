@@ -230,6 +230,8 @@
   }
   // Up to n (2) lines of whole words; a value that runs longer ends on an ellipsis, never mid-word.
   function valueLines(value, width, n) { return X.wrapFit(R.clean(value), width, n || 2); }
+  // The fewest, evenest lines of at most maxChars letters (rhythm.js); no line is a lone short word.
+  function balancedLines(value, maxChars, maxLines) { return R.balancedLines(value, maxChars, maxLines); }
   // The footnote's circled line (y of the pen's middle).
   const footnoteLine = (day) => 50 + (6 + day % 6) * 12;
   // Where the documents' moving marks sit, read by the flat art (DOC_DRAW) and by the layered documents (docLayers), so the two cannot drift apart.
@@ -413,12 +415,20 @@
       if (!part || part === 'city') { X.rect(ctx, 0, 0, V.w, V.h, P.ink); R.skyline(ctx, B.StoryData.actIndex(day) + 1, day * 5, 300, day); }
       if (!part || part === 'phone') {
         X.rect(ctx, 200, 28, 240, 276, P.screenD);
-        big(ctx, 'sqwak', 320, 36, P.bone, 2, 'center');
-        X.rect(ctx, 208, 60, 224, 150, P.screen);
+        const app = artHas('news/doc-post');
+        if (app) {
+          // the Sqwak app (status bar, header, post card, earlier posts, compose bar) under the live words: SQWAK in the header, TRENDING over the card, the value inside it
+          artPlate(ctx, 'post-app', [['news/doc-post', 'app']]);
+          big(ctx, 'sqwak', 238, 50, P.bone, 2);
+        } else {
+          big(ctx, 'sqwak', 320, 36, P.bone, 2, 'center');
+          X.rect(ctx, 208, 60, 224, 150, P.screen);
+        }
         if (!(o && o.noFlag)) X.rect(ctx, 216, 70, 10, 10, P.crimson);
         R.text(ctx, 'TRENDING', 232, 72, P.crimson);
-        valueLines(value, 96).forEach((ln, i) => big(ctx, ln, 216, 96 + i * 20, P.bone, 2));
-        for (let i = 0; i < 3; i++) X.rect(ctx, 216 + i * 70, 190, 44, 6, i === 2 ? P.sky : P.slate2);
+        if (app) balancedLines(value, 16, 3).forEach((ln, i) => big(ctx, ln, 216, 128 + i * 20, P.bone, 2));
+        else valueLines(value, 96).forEach((ln, i) => big(ctx, ln, 216, 96 + i * 20, P.bone, 2));
+        if (!app) for (let i = 0; i < 3; i++) X.rect(ctx, 216 + i * 70, 190, 44, 6, i === 2 ? P.sky : P.slate2);
         artPlate(ctx, 'post-phone', [['news/doc-post', 'phone']]);
       }
       if (!part || part === 'glass') { artPlate(ctx, 'post-glass', [['news/doc-post', 'glass']]); X.scanlines(ctx, 200, 28, 240, 276, P.ink, 0.1); }
@@ -545,7 +555,7 @@
   function establishDoc(ctx, day, r, title) {
     switch (r.doc) {
       case 'rating': return at2x(ctx, (c) => { SH.apartment(c, 0.7); SH.tvSet(c, 40, 50, 104, 68, r.arg || title, act(day), 0); }, day);
-      case 'post': return R.phoneFrame(ctx, R.storyboard(day), [{ source: 'SQWAK', title: r.arg || title, kind: 'chirp' }], false);
+      case 'post': return R.phoneFrame(ctx, R.storyboard(day), [{ source: 'SQWAK', title: r.arg || title, kind: 'chirp' }], false, { app: true });
       case 'vote': return B.DecisionArt ? B.DecisionArt.room(ctx, day > 27 ? 'c8' : 'c3', day, true, { f: { billPassed: /PASSES/.test(r.arg || '') } }) : at2x(ctx, (c) => SH.apartment(c, 0.6), day);
       case 'voicemail': return at2x(ctx, (c) => SH.apartment(c, 0.15), day);
       case 'ticket': return at2x(ctx, (c) => SH.tradingFloor(c, 0.45 + (day % 4) * 0.08, true, day), day);
@@ -1543,9 +1553,9 @@
     const K = B.MotionKit, sb = R.storyboard(day), feed1 = [{ source: 'SQWAK', title: r.arg || title, kind: 'chirp' }];
     const { sx, sy, sw, sh } = R.phoneGeom(feed1.length, false), mm = R.lockMinute(day);
     return [
-      { id: 'room', depth: 0, draw(c) { framed(c, day, r, title, { draw: (cc) => R.phoneFrame(cc, sb, feed1, false, { part: 'room' }) }); } },
+      { id: 'room', depth: 0, draw(c) { framed(c, day, r, title, { draw: (cc) => R.phoneFrame(cc, sb, feed1, false, { part: 'room', app: true }) }); } },
       {
-        id: 'device', depth: 1, draw(c) { framed(c, day, r, title, { noBack: true, draw: (cc) => R.phoneFrame(cc, sb, feed1, false, { part: 'device' }) }); },
+        id: 'device', depth: 1, draw(c) { framed(c, day, r, title, { noBack: true, draw: (cc) => R.phoneFrame(cc, sb, feed1, false, { part: 'device', app: true }) }); },
         animate(c, v, t) {
           framed(c, day, r, title, {
             noBack: true,

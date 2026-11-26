@@ -1,68 +1,138 @@
 {
  "frames": [
   {
-   "filename": "queue:ink-light",
+   "filename": "queue:p0",
    "frame": {
     "x": 0,
     "y": 0,
-    "w": 9,
-    "h": 31
+    "w": 16,
+    "h": 34
    }
   },
   {
-   "filename": "queue:ink-dark",
+   "filename": "queue:p1",
    "frame": {
-    "x": 9,
+    "x": 16,
     "y": 0,
-    "w": 9,
-    "h": 31
+    "w": 16,
+    "h": 34
    }
   },
   {
-   "filename": "queue:red-light",
+   "filename": "queue:p2",
    "frame": {
-    "x": 18,
+    "x": 32,
     "y": 0,
-    "w": 9,
-    "h": 31
+    "w": 16,
+    "h": 34
    }
   },
   {
-   "filename": "queue:red-dark",
+   "filename": "queue:p3",
    "frame": {
-    "x": 27,
+    "x": 48,
     "y": 0,
-    "w": 9,
-    "h": 31
+    "w": 16,
+    "h": 34
+   }
+  },
+  {
+   "filename": "queue:p4",
+   "frame": {
+    "x": 64,
+    "y": 0,
+    "w": 16,
+    "h": 34
+   }
+  },
+  {
+   "filename": "queue:p5",
+   "frame": {
+    "x": 80,
+    "y": 0,
+    "w": 16,
+    "h": 34
+   }
+  },
+  {
+   "filename": "queue:p6",
+   "frame": {
+    "x": 96,
+    "y": 0,
+    "w": 16,
+    "h": 34
+   }
+  },
+  {
+   "filename": "queue:p7",
+   "frame": {
+    "x": 112,
+    "y": 0,
+    "w": 16,
+    "h": 34
+   }
+  },
+  {
+   "filename": "queue:p8",
+   "frame": {
+    "x": 128,
+    "y": 0,
+    "w": 16,
+    "h": 34
    }
   }
  ],
  "meta": {
   "image": "tableau-queue.png",
   "size": {
-   "w": 36,
-   "h": 31
+   "w": 144,
+   "h": 34
   },
   "frameTags": [
    {
-    "name": "queue:ink-light",
+    "name": "queue:p0",
     "from": 0,
     "to": 0
    },
    {
-    "name": "queue:ink-dark",
+    "name": "queue:p1",
     "from": 1,
     "to": 1
    },
    {
-    "name": "queue:red-light",
+    "name": "queue:p2",
     "from": 2,
     "to": 2
    },
    {
-    "name": "queue:red-dark",
+    "name": "queue:p3",
     "from": 3,
     "to": 3
+   },
+   {
+    "name": "queue:p4",
+    "from": 4,
+    "to": 4
+   },
+   {
+    "name": "queue:p5",
+    "from": 5,
+    "to": 5
+   },
+   {
+    "name": "queue:p6",
+    "from": 6,
+    "to": 6
+   },
+   {
+    "name": "queue:p7",
+    "from": 7,
+    "to": 7
+   },
+   {
+    "name": "queue:p8",
+    "from": 8,
+    "to": 8
    }
   ]
  }

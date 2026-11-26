@@ -302,7 +302,10 @@ body[data-act="endless"] #story-art { display: none; }
 
   /* News tab: the comms monitor fills the cell. */
   #mon-right .screen { height: auto; }
-  #mon-right #feed-list { min-height: 0; }
+  #mon-right #feed-list { min-height: 0; display: flex; flex-direction: column; }
+  /* The empty Wire / Sqwak / Inbox tab centres its icon and "Nothing yet." in the free space under the separator. */
+  #mon-right #feed-list > .empty { margin: auto; }
+  #mon-right #feed-list > * { flex: none; }
 
   /* An incoming call is an overlay over whatever tab is open. */
   #phone:not([hidden]) {

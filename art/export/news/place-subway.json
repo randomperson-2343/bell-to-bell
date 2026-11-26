@@ -17,12 +17,21 @@
     "w": 320,
     "h": 180
    }
+  },
+  {
+   "filename": "crowd",
+   "frame": {
+    "x": 640,
+    "y": 0,
+    "w": 320,
+    "h": 180
+   }
   }
  ],
  "meta": {
   "image": "place-subway.png",
   "size": {
-   "w": 640,
+   "w": 960,
    "h": 180
   },
   "frameTags": [
@@ -35,6 +44,11 @@
     "name": "platform",
     "from": 1,
     "to": 1
+   },
+   {
+    "name": "crowd",
+    "from": 2,
+    "to": 2
    }
   ]
  }
