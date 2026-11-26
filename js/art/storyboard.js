@@ -230,28 +230,8 @@
   }
   // Up to n (2) lines of whole words; a value that runs longer ends on an ellipsis, never mid-word.
   function valueLines(value, width, n) { return X.wrapFit(R.clean(value), width, n || 2); }
-  // The fewest lines of at most maxChars letters, as even as they can be, so a line never holds one short word alone ("0 / READS").
-  // A lone separator dot at a line's end or start is dropped, as wrapFit drops it. Falls back to wrapFit when no split fits.
-  function balancedLines(value, maxChars, maxLines) {
-    const words = R.clean(value).split(/\s+/).filter(Boolean), sep = (w) => /^[\u00b7|\/\-]$/.test(w);
-    const join = (a) => { let ws = a.slice(); while (ws.length && sep(ws[0])) ws.shift(); while (ws.length && sep(ws[ws.length - 1])) ws.pop(); return ws.join(' '); };
-    for (let n = 1; n <= maxLines; n++) {
-      let best = null;
-      const go = (from, left, acc) => {
-        if (left === 1) {
-          const lines = acc.concat([join(words.slice(from))]).filter((l) => l.length);
-          if (!lines.length || lines.some((l) => l.length > maxChars)) return;
-          const score = Math.max.apply(null, lines.map((l) => l.length)) * 10 + (lines.length < n ? 5 : 0);
-          if (!best || score < best.score) best = { score, lines };
-          return;
-        }
-        for (let cut = from + 1; cut <= words.length - (left - 1); cut++) go(cut, left - 1, acc.concat([join(words.slice(from, cut))]));
-      };
-      if (words.length >= n) go(0, n, []);
-      if (best) return best.lines;
-    }
-    return valueLines(value, maxChars * 6, maxLines);
-  }
+  // The fewest, evenest lines of at most maxChars letters (rhythm.js); no line is a lone short word.
+  function balancedLines(value, maxChars, maxLines) { return R.balancedLines(value, maxChars, maxLines); }
   // The footnote's circled line (y of the pen's middle).
   const footnoteLine = (day) => 50 + (6 + day % 6) * 12;
   // Where the documents' moving marks sit, read by the flat art (DOC_DRAW) and by the layered documents (docLayers), so the two cannot drift apart.
@@ -575,7 +555,7 @@
   function establishDoc(ctx, day, r, title) {
     switch (r.doc) {
       case 'rating': return at2x(ctx, (c) => { SH.apartment(c, 0.7); SH.tvSet(c, 40, 50, 104, 68, r.arg || title, act(day), 0); }, day);
-      case 'post': return R.phoneFrame(ctx, R.storyboard(day), [{ source: 'SQWAK', title: r.arg || title, kind: 'chirp' }], false);
+      case 'post': return R.phoneFrame(ctx, R.storyboard(day), [{ source: 'SQWAK', title: r.arg || title, kind: 'chirp' }], false, { app: true });
       case 'vote': return B.DecisionArt ? B.DecisionArt.room(ctx, day > 27 ? 'c8' : 'c3', day, true, { f: { billPassed: /PASSES/.test(r.arg || '') } }) : at2x(ctx, (c) => SH.apartment(c, 0.6), day);
       case 'voicemail': return at2x(ctx, (c) => SH.apartment(c, 0.15), day);
       case 'ticket': return at2x(ctx, (c) => SH.tradingFloor(c, 0.45 + (day % 4) * 0.08, true, day), day);
@@ -1573,9 +1553,9 @@
     const K = B.MotionKit, sb = R.storyboard(day), feed1 = [{ source: 'SQWAK', title: r.arg || title, kind: 'chirp' }];
     const { sx, sy, sw, sh } = R.phoneGeom(feed1.length, false), mm = R.lockMinute(day);
     return [
-      { id: 'room', depth: 0, draw(c) { framed(c, day, r, title, { draw: (cc) => R.phoneFrame(cc, sb, feed1, false, { part: 'room' }) }); } },
+      { id: 'room', depth: 0, draw(c) { framed(c, day, r, title, { draw: (cc) => R.phoneFrame(cc, sb, feed1, false, { part: 'room', app: true }) }); } },
       {
-        id: 'device', depth: 1, draw(c) { framed(c, day, r, title, { noBack: true, draw: (cc) => R.phoneFrame(cc, sb, feed1, false, { part: 'device' }) }); },
+        id: 'device', depth: 1, draw(c) { framed(c, day, r, title, { noBack: true, draw: (cc) => R.phoneFrame(cc, sb, feed1, false, { part: 'device', app: true }) }); },
         animate(c, v, t) {
           framed(c, day, r, title, {
             noBack: true,

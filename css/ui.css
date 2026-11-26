@@ -706,7 +706,8 @@ input.short { width: 72px; }
   .btn.small { min-height: 44px; padding: 0 12px; font-size: 11px; }
   #phone button { min-height: 44px; }
   /* The overlay call box is wide: name and buttons share one row. */
-  #phone .ph-top.ph-ring .ph-who { flex-basis: 0; }
+  #phone .ph-top.ph-ring .ph-who { flex: 1 1 0; min-width: 0; }
+  #phone .ph-top.ph-ring .ph-from { overflow: hidden; text-overflow: ellipsis; }
   #phone .ph-opts .btn { padding: 6px 10px; font-size: 11px; }
   #tasks .task { flex-wrap: wrap; }
   #tasks .task .btn { min-height: 44px; }

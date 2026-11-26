@@ -17,30 +17,12 @@
     "w": 88,
     "h": 34
    }
-  },
-  {
-   "filename": "memo3",
-   "frame": {
-    "x": 176,
-    "y": 0,
-    "w": 88,
-    "h": 34
-   }
-  },
-  {
-   "filename": "footnote3",
-   "frame": {
-    "x": 264,
-    "y": 0,
-    "w": 88,
-    "h": 34
-   }
   }
  ],
  "meta": {
   "image": "desk-paper.png",
   "size": {
-   "w": 352,
+   "w": 176,
    "h": 34
   },
   "frameTags": [
@@ -53,16 +35,6 @@
     "name": "footnote",
     "from": 1,
     "to": 1
-   },
-   {
-    "name": "memo3",
-    "from": 2,
-    "to": 2
-   },
-   {
-    "name": "footnote3",
-    "from": 3,
-    "to": 3
    }
   ]
  }
