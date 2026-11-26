@@ -21,11 +21,11 @@
     ['tableau', 'L', 5], ['dark', 'L', '19% OF RACKS NEVER ENERGIZE'], ['insert', 'M', 'COMPUTE FREEDOM ACT · SIGNED'],
     ['insert', 'XL', 'BIDS: 1 · PRICE: 0.00'], ['place', 'S'], ['insert', 'M', '40 DOWNGRADES · SAME MINUTE'],
     ['insert', 'M', 'CREDIT LINE WITHDRAWN'], ['place', 'L'], ['tableau', 'XL', 8],
-    ['tv', 'S'], ['insert', 'M', 'FOUR FUNDS · ONE MODEL'], ['tableau', 'XL', 9],
+    ['tableau', 'L', 15], ['insert', 'M', 'FOUR FUNDS · ONE MODEL'], ['tableau', 'XL', 9],
     ['place', 'L'], ['place', 'L'], ['insert', 'L', 'MARKED AT 22 CENTS'],
-    ['insert', 'L', 'AT RISK: 5.5 CENTS'], ['tableau', 'M', 11], ['place', 'M'],
+    ['tableau', 'L', 16], ['tableau', 'M', 11], ['place', 'M'],
     ['skyline', 'S'], ['skyline', 'S'], ['skyline', 'S'],
-    ['insert', 'M', 'VOLUME: PERFECTLY EVEN'], ['place', 'M'], ['insert', 'XL', 'QUOTA: 2.25% OF BOOK'],
+    ['insert', 'M', 'VOLUME: PERFECTLY EVEN'], ['place', 'M'], ['tableau', 'XL', 17],
     ['insert', 'M', '9,000 WORDS · 0 READS'], ['place', 'M'], ['skyline', 'S'],
     ['insert', 'L', 'VOICEMAIL · PERRY · 0:41'], ['tableau', 'XL', 12], ['insert', 'L', 'YEAS 214 · NEEDED 218'],
     ['insert', 'M', 'MONEY FUND NAV 0.99'], ['tableau', 'XL', 13], ['floor', 'XL'],
@@ -48,7 +48,7 @@
   // The morning of each one has one small thing wrong in the picture.
   const ANOMALY_DAYS = [0, 1, 8, 10, 12, 14, 17, 19, 25, 30, 36, 43];
 
-  // Four mornings depend on what you chose the night before.
+  // Five mornings depend on what you chose the night before.
   function variant(day, S) {
     if (!S) return null;
     const c = S.choices || {}, f = S.f || {};
@@ -57,6 +57,9 @@
     if (day === 22 && c.c5 === 'fail') return ['dark', 'L', 'NO RESCUE · DESKS CLEARED'];
     if (day === 22 && c.c5 === 'ban') return ['insert', 'L', 'SHORT SALES BANNED · 5 DAYS', 'ticket'];
     if (day === 22 && c.c5 === 'bail') return ['insert', 'L', 'GUARANTEE SIGNED · 2:14 AM', 'memo'];
+    // the morning after the Spiral decision (c12): backing it puts the envoy on the wire; tracing it puts our own volume chart on the desk
+    if (day === 37 && c.c12 === 'back') return ['insert', 'XL', 'KAVRA RECALLS ITS ENVOY', 'post'];
+    if (day === 37 && c.c12 === 'trace') return ['insert', 'XL', 'THE SPIRAL = OUR OWN VOLUME', 'chart'];
     if (day === 41 && f.billPassed) return ['insert', 'XL', 'THE BILL PASSES · 218 YEAS', 'vote'];
     if (day === 45 && f.pulledPlug) return ['racks', 'XL', 'THE STACK IS OFF'];
     return null;
@@ -1833,7 +1836,7 @@
   function tableauLayers(day, r, phase, dur) {
     const K = B.MotionKit, M = B.Motion, n = r.arg, G = SH.tableauGeom(n), P_ = P;
     const est = phase === 'establish', det = phase === 'detail', hold = phase === 'hold', Z = det ? tabZoom() : 0;
-    const noMover = n === 3 || n === 9 || n === 12 || n === 13, over = n === 9;
+    const noMover = n === 3 || n === 9 || n === 12 || n === 13 || n >= 15, over = n === 9;
     let paint = null;
     if (n === 3) {
       if (est) paint = (g, t) => SH.tableauMover(g, 3, (-4 + Math.round(9 * M.ease.out(K.span(t, 0.35, 1.35)))) / 9);
@@ -1882,6 +1885,13 @@
           else K.blink(g, Pd.x, Pd.y, Pd.w, Pd.h, t, { on: null, off: P.ink, period: 0.5, duty: 0.6, end: dur });
         }
       };
+    }
+    else if (n >= 15 && n <= 17) {
+      // the war-scare tableaux: the Spiral grows glyph by glyph (15), Quill walks off through the flashes (16), units keep landing on the coast (17);
+      // the establish runs the mover from empty, the detail finishes it, the hold keeps it where the detail left it
+      paint = est ? (g, t) => SH.tableauMover(g, n, M.ease.out(K.span(t, 0.35, 1.45)) * 0.7)
+        : det ? (g, t) => SH.tableauMover(g, n, 0.7 + 0.3 * K.span(t, 0.30, 1.90))
+        : (g) => SH.tableauMover(g, n, 1);
     }
     else if (n === 14 && !hold) {
       if (est) {
@@ -1951,7 +1961,7 @@
       else if (r.shot === 'tableau') {
         const ph = /:establish$/.test(b.id) ? 'establish' : /:detail$/.test(b.id) ? 'detail' : 'hold', L = tableauLayers(day, r, ph, b.dur);
         if (L) beats[i] = B.Motion.layered(Object.assign({}, b, { camera: ph === 'establish' ? SETTLE2() : null, layers: L }, TAB_CUES[day] && ph === 'establish' ? { cues: TAB_CUES[day] } : {}));
-        // Kavro Strait: the hold shows the ships where the detail left them (p = 1)
+        // Kavra Strait: the hold shows the ships where the detail left them (p = 1)
         else if (r.arg === 3 && ph === 'hold') beats[i] = Object.assign({}, b, { draw: (c) => { at2x(c, (cc) => tableau(cc, 3, 0, { p: 1 }), day); holdDim(c); } });
         // a flat detail (the records, day 25) stays where it is: no camera
         else if (ph === 'detail') beats[i] = Object.assign({}, b, { camera: null });

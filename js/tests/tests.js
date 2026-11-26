@@ -467,9 +467,11 @@
       assert(news.length >= 1 && news.every((b) => b.view.w === 640 && b.view.h === 360), 'session ' + (day + 1) + ' is not native 640x360');
       assert(news.some((b) => b.informative), 'session ' + (day + 1) + ' has no informative beat for short mode');
     }
-    // Close-ups quote the current quota table, not a stale one.
-    const q = SB.SHEET[32][2].match(/([\d.]+)%/);
-    near(+q[1] / 100, B.StoryData.QUOTAS[32], 1e-9, 'session 33 quota insert');
+    // The war scare has its own mornings: the address (19), Quill's exit (25) and the coast (33); the Spiral decision changes session 38's.
+    assert(SB.SHEET[18][2] === 15 && SB.SHEET[24][2] === 16 && SB.SHEET[32][2] === 17, 'the war-scare tableaux sit on sessions 19, 25 and 33');
+    assert(SB.row(37, { choices: { c12: 'trace' }, f: {} }).doc === 'chart' && SB.row(37, { choices: { c12: 'back' }, f: {} }).doc === 'post' && SB.row(37, { choices: { c12: 'decline' }, f: {} }).shot === 'tableau', 'session 38 follows the Spiral decision');
+    const stub = new Proxy({}, { get: () => () => {}, set: () => true });
+    for (const n of [15, 16, 17]) assert(B.Shots.briefingTableau(stub, n, 0.6) === true, 'tableau ' + n + ' has no art');
     const phone = B.Scenes.phone({ day: 45, brief: { feed: [{ source: 'WIRE', title: 'Before the bell' }] } });
     assert(phone.length === 2 && phone.every((beat) => beat.view.w === 640), 'phone handoff is missing');
     assert(B.Scenes.weekend({ day: 29 }).length === 3, 'ordinary weekends are sat, sun, hold');

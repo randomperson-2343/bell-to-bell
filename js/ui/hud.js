@@ -508,7 +508,7 @@
     sqwakMemory() {
       if (!this.g || this.g.mode.kind !== 'story' || !B.SqwakStory) return '';
       const day = this.g.day, minute = this.g.market ? this.g.market.t : 0;
-      const threads = B.SqwakStory.THREADS.map((x) => B.SqwakStory.threadAt(x.id, day, minute)).filter(Boolean);
+      const threads = B.SqwakStory.THREADS.map((x) => B.SqwakStory.threadAt(x.id, day, minute, this.g.mode.S)).filter(Boolean);
       if (!threads.length) return '';
       const count = `${threads.length} THREAD${threads.length === 1 ? '' : 'S'}`;
       const toggle = `<button class="sq-memory-heading" data-memory="1" aria-expanded="${this.memoryOpen}">THREAD MEMORY <span>${count} ${this.memoryOpen ? '&#9662;' : '&#9656;'}</span></button>`;
