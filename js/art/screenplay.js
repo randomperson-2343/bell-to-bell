@@ -189,6 +189,7 @@
     if (!sc) return null;
     const day = o.day || 0, S = o.S || null, W = o.W || (S && S.wallet) || null;
     const shots = sided(homed(o.id, sc.shots.filter((s) => wanted(s, S))));
+    if (!shots.length) return null;
     const raw = shots.map((s) => readFor(fill(s.line, W)));
     const k = D().TARGET / raw.reduce((a, b) => a + b, 0);
     const pet = W && W.pet ? ':' + W.pet.name : '';

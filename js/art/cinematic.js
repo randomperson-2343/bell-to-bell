@@ -27,6 +27,7 @@
       // A stepped scene (a long decision scene): the SKIP button ends the scene, a tap anywhere else moves to the next shot.
       // Every other scene: a tap anywhere skips the scene chain, as before.
       wrap.addEventListener('pointerdown', (e) => {
+        if (this.settling()) return;
         const onBtn = e && e.target && e.target.closest && e.target.closest('.cine-skip-btn');
         if (!this.stepped) this.skipAll();
         else if (onBtn) { if (e.preventDefault) e.preventDefault(); this.skipScene(); }
@@ -51,6 +52,18 @@
     mode() {
       const settings = B.Settings.get();
       return settings.cinematics == null ? 'full' : settings.cinematics;
+    },
+
+    // Taps and keys that land in the first moments of a scene that follows a stepped scene are ignored,
+    // so the tap that ends a long scene, or the one right after it, does not also skip the next scene.
+    settling() { return !!this.calmUntil && performance.now() < this.calmUntil; },
+    // After a stepped scene ends on a tap, the click the browser makes from that tap is swallowed,
+    // so it cannot press a choice button or Continue that has just appeared under the finger.
+    swallowClick() {
+      if (typeof document === 'undefined' || !document.addEventListener) return;
+      const eat = (e) => { e.preventDefault(); e.stopPropagation(); };
+      document.addEventListener('click', eat, true);
+      setTimeout(() => document.removeEventListener('click', eat, true), 450);
     },
 
     startChain(name) { this.chain = name || 'scene'; this.skippingChain = false; },
@@ -118,6 +131,8 @@
       }
       this.short = mode === 'short';
       this.stepped = !!builder.stepped && !this.short && beats.length > 1;
+      this.calmUntil = this.steppedEndedAt && performance.now() - this.steppedEndedAt < 900 ? performance.now() + 700 : 0;
+      this.steppedEndedAt = 0;
       this.warned.clear();
       this.ensure();
       this.hint.textContent = this.stepped ? 'TAP OR PRESS A KEY · NEXT SHOT' : 'TAP OR PRESS A KEY · SKIP SCENE CHAIN';
@@ -136,9 +151,13 @@
       B.Music.stop();
       this.playBeat();
       this.onKey = (e) => {
+        // leave the browser's own keys alone: a modifier on its own, a shortcut with Ctrl, Alt or Cmd, and the F keys
+        if (/^(Shift|Control|Alt|Meta|CapsLock|Tab|OS|Fn)$/.test(e.key) || e.ctrlKey || e.altKey || e.metaKey || /^F\d+$/.test(e.key)) return;
         e.preventDefault();
+        if (e.repeat || this.settling()) return;
         if (!this.stepped) return this.skipAll();
-        if (e.key === 'Escape' || e.key === 's' || e.key === 'S') this.skipScene(); else this.next();
+        const onBtn = typeof document !== 'undefined' && document.activeElement === this.skipBtn && (e.key === 'Enter' || e.key === ' ');
+        if (onBtn || e.key === 'Escape' || e.key === 's' || e.key === 'S') this.skipScene(); else this.next();
       };
       window.addEventListener('keydown', this.onKey);
       this.last = performance.now();
@@ -382,7 +401,9 @@
       this.fired = null;
       this.preparing = false;
       this.warned.clear();
+      if (this.stepped) { this.steppedEndedAt = performance.now(); this.swallowClick(); }
       this.stepped = false;
+      this.calmUntil = 0;
       if (!this.chain) this.clearCache();
       if (this.el) this.el.hidden = true;
       const done = this.done;

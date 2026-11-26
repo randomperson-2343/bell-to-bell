@@ -349,9 +349,14 @@
       const el = this.modal({ kicker: c.kicker || 'DECISION', title: c.title, body, after, wide: true });
       if (B.Portraits) B.Portraits.drawAll(el);
       B.SFX.choice('card');
+      // one pick only: the modal closes before the payoff scene plays, so a key pressed during the scene cannot press the button again
+      let picked = false;
       el.querySelectorAll('.choice-btn').forEach((btn) => btn.addEventListener('click', () => {
+        if (picked) return;
+        picked = true;
         B.SFX.unlock();
         B.SFX.decisionConfirm();
+        this.closeModal();
         onPick(btn.dataset.opt);
       }));
     },
