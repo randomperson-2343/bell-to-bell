@@ -58,7 +58,7 @@
     if (day === 22 && c.c5 === 'ban') return ['insert', 'L', 'SHORT SALES BANNED · 5 DAYS', 'ticket'];
     if (day === 22 && c.c5 === 'bail') return ['insert', 'L', 'GUARANTEE SIGNED · 2:14 AM', 'memo'];
     // the morning after the Spiral decision (c12): backing it puts Thorne's talking points on the desk; tracing it puts our own volume chart there
-    if (day === 37 && c.c12 === 'back') return ['insert', 'XL', 'TALKING POINTS · NO MENTION OF MIRREN', 'memo'];
+    if (day === 37 && c.c12 === 'back') return ['insert', 'XL', 'TALKING POINTS: THE SPIRAL', 'memo'];
     if (day === 37 && c.c12 === 'trace') return ['insert', 'XL', 'THE SPIRAL = OUR OWN VOLUME', 'chart'];
     if (day === 41 && f.billPassed) return ['insert', 'XL', 'THE BILL PASSES · 218 YEAS', 'vote'];
     if (day === 45 && f.pulledPlug) return ['racks', 'XL', 'THE STACK IS OFF'];
