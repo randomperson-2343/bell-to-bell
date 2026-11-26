@@ -115,7 +115,7 @@
         if (S.quotaStrikes > 0) rules.push(`Career quota strikes: ${S.quotaStrikes}/${QUOTA_STRIKE_LIMIT}`);
         // The first sessions introduce the desk's systems one at a time:
         // Kroll, your money and the risk desk arrive with session 2.
-        if (!S.f.defected && (d >= 1 || this.bossMood().warn)) {
+        if (d >= 1 || this.bossMood().warn) {
           const mood = this.bossMood();
           const canFire = d < BOSS_FIRE_LAST;
           rules.push(`${mood.warn && canFire ? '<b>' : ''}${D.boss(S)} ${mood.label} (${mood.value}/100).${mood.warn && canFire ? ' At zero he fires you.</b>' : ''} Answering his calls, working client orders and making quota keep him on your side.`);
@@ -542,7 +542,7 @@
       },
 
       onTrade(g, sym) {
-        if (sym === 'HLST' && !S.f.defected) {
+        if (sym === 'HLST') {
           D.adj(S, { heat: 1 });
           if (!S.complianceWarned) {
             S.complianceWarned = true;
@@ -569,10 +569,10 @@
       },
 
       onMissedCall(g, call) {
-        if (call.kind === 'boss' && !S.f.defected) D.adj(S, {}, { kroll: -2 });
+        if (call.kind === 'boss') D.adj(S, {}, { kroll: -2 });
       },
-      onTaskFailed() { if (!S.f.defected) D.adj(S, {}, { kroll: -2 }); },
-      onTaskDone() { if (!S.f.defected) D.adj(S, {}, { kroll: 2 }); },
+      onTaskFailed() { D.adj(S, {}, { kroll: -2 }); },
+      onTaskDone() { D.adj(S, {}, { kroll: 2 }); },
 
       resolveMidChoice(g, choiceId, optId, timedOut) {
         const c = D.CHOICES[choiceId];
@@ -641,7 +641,7 @@
           if (r.quotaMet) {
             S.missStreak = 0;
             // Kroll notices results, not just whether you pick up the phone.
-            if (!S.f.defected) D.adj(S, {}, { kroll: 1 });
+            D.adj(S, {}, { kroll: 1 });
             notes.push(`${D.boss(S)}: "Quota met.${g.day === D.DAYS.length - 1 ? '"' : ' Again tomorrow."'}`);
           } else if (excused) {
             if ((S.forgivenDays || []).indexOf(g.day) < 0) S.forgivenDays = (S.forgivenDays || []).concat(g.day);
@@ -708,7 +708,7 @@
         const wiped = r.earlyEnd === 'wiped' || (r.equity < capital * 0.1 && !S.f.pulledPlug);
         const fired = S.quotaStrikes >= QUOTA_STRIKE_LIMIT;
         // Kroll can fire you, but not in the final week: by then the ending is yours.
-        const bossFired = !S.f.defected && S.rel.kroll <= 0 && g.day < BOSS_FIRE_LAST;
+        const bossFired = S.rel.kroll <= 0 && g.day < BOSS_FIRE_LAST;
         // On the career's last night there is no next week for a bonus cut to land in.
         const final = wiped || fired || bossFired || g.day === D.DAYS.length - 1;
         notes.push(...this.payroll(g, r, final));
@@ -716,7 +716,7 @@
         if (fired) return { notes, ending: this.buildEnding(g, 'fired') };
         if (bossFired) return { notes, ending: this.buildEnding(g, 'fired', 'boss') };
         const mood = this.bossMood();
-        if (!S.f.defected && mood.warn && g.day < BOSS_FIRE_LAST) notes.push(`<b>${D.boss(S)} is losing patience with you (${mood.value}/100).</b> Missed calls and blown client orders cost you with him. At zero, you are out.`);
+        if (mood.warn && g.day < BOSS_FIRE_LAST) notes.push(`<b>${D.boss(S)} is losing patience with you (${mood.value}/100).</b> Missed calls and blown client orders cost you with him. At zero, you are out.`);
         if (g.day % 5 === 4 && g.day < D.DAYS.length - 1) {
           const bases = { integrity: 50, heat: 10, influence: 20, firm: 60, stability: 60, anger: 20 };
           for (const k in bases) S.m[k] = B.clamp(S.m[k] + (bases[k] - S.m[k]) * 0.08, 0, 100);

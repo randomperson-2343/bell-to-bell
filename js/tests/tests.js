@@ -745,7 +745,7 @@
     const variants = [{},
       { dereg: true, letFail: true, fraud: true, insider: true, dumped: true, raid: true, algoDesk: true },
       { regulation: true, bailout: true, reported: true, leaked: true, billPassed: true, tipShortBan: true, shortBanOn: true },
-      { defected: true, refusedDump: true, toldRidgeway: true, testified: true }];
+      { refusedDump: true, toldRidgeway: true, testified: true }];
     for (const f of variants) {
       const S = B.StoryMode.freshState(250000);
       Object.assign(S.f, f);
