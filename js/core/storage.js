@@ -17,4 +17,11 @@
       try { localStorage.removeItem(P + key); } catch (e) { /* storage unavailable */ }
     }
   };
+  // What a player has earned across careers. One career played to its last day, any ending and any path,
+  // unlocks SKIP SCENE in the long decision scenes and the Endless mode. Kept apart from the save slots,
+  // so deleting a save does not lock them again.
+  B.Progress = {
+    careerDone() { return !!B.storage.get('careerDone', false); },
+    markCareerDone() { B.storage.set('careerDone', true); }
+  };
 })(window.BTB);

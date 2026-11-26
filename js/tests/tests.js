@@ -529,6 +529,39 @@
     assert(!B.Scenes.decisionAfter && typeof A.still === 'function', 'aftermath still belongs in the popup');
   });
 
+  test('Long decision scenes: every decision has a 45 second scene and a payoff for every option', () => {
+    const D = B.StoryData, SP = B.Screenplay, SD = B.ScreenplayData;
+    const S = B.StoryMode.freshState(250000);
+    S.wallet = Object.assign(S.wallet || {}, { pet: { kind: 'dog', sex: 'girl', name: 'Jemma' } });
+    const list = Object.keys(D.CHOICES).filter((k) => !D.CHOICES[k].mid).map((k) => Object.assign({ id: k }, D.CHOICES[k])).concat(B.Life.LIFE);
+    const lines = (t) => B.Pixel.wrap(t, 280).length;
+    for (const c of list) {
+      assert(SP.has(c.id), c.id + ' has no storyboard');
+      for (const f of [{}, { dumped: true }]) {
+        S.f = Object.assign({}, f);
+        const beats = B.Scenes.screenplay({ id: c.id, day: c.day, S });
+        const total = beats.reduce((a, b) => a + b.dur, 0);
+        assert(total > 44 && total < 46, c.id + ' runs ' + total.toFixed(1) + ' s, not about 45');
+        assert(beats.every((b) => b.view.w === 640 && b.line && lines(b.line) <= 3 && !/[{}]/.test(b.line)), c.id + ': a shot with no caption, a caption over three lines, or an unfilled word');
+        assert(new Set(beats.map((b) => b.id)).size === beats.length && beats.some((b) => b.informative), c.id + ': shot ids repeat or none is informative');
+      }
+      for (const o of c.options) {
+        const pay = B.Scenes.payoff({ id: c.id, opt: o.id, day: c.day, S });
+        assert(pay.length >= 1 && pay.every((b) => b.line && lines(b.line) <= 3 && !/[{}]/.test(b.line)), c.id + ':' + o.id + ' has no payoff, or a caption over three lines');
+        if (D.CHOICES[c.id]) assert(SD.SCRIPTS[c.id].recap[o.id], c.id + ':' + o.id + ' has no recap line');
+      }
+    }
+    // the pet's name and pronouns are filled in
+    assert(SP.fill('{He} waits for {pet}, {his} own.', { pet: { name: 'Jemma', sex: 'girl' } }) === 'She waits for Jemma, her own.', 'pet words');
+    // a decision with no storyboard keeps the short scene; the long scenes step shot by shot
+    assert(B.Scenes.screenplay({ id: 'nope', day: 3, speaker: 'Desmond Kroll', S }).length === 2, 'unknown id falls back to the short decision scene');
+    assert(B.Scenes.screenplay.stepped && B.Scenes.payoff.stepped && B.Scenes.recap.stepped && !B.Scenes.decision.stepped, 'stepped scenes');
+    // the ending montage: one shot per desk decision made, in day order
+    S.choices = { c3: 'no', c1: 'refuse', c10: 'pull' };
+    const recap = B.Scenes.recap({ S });
+    assert(recap.length === 3 && /refused the pension/.test(recap[0].line) && /pulled the plug/.test(recap[2].line), 'recap order and lines');
+  });
+
   test('Endings: 22 props, one card, and a last picture after', () => {
     const ids = B.Rhythm.endingIds;
     assert(ids.length === 22, 'ending list');
@@ -816,6 +849,15 @@
     const finalVerdict = close(limit - 1, false);
     assert(S.quotaStrikes === limit, 'final strike not recorded');
     assert(finalVerdict.ending && finalVerdict.ending.id === 'fired', 'configured strike limit did not terminate the career');
+    // a firing ends the career early: it does not count as a career seen all the way through
+    assert(finalVerdict.ending.fullRun === false, 'a firing counted as a full run');
+    assert(mode.buildEnding(g, 'final').fullRun === true, 'the last day did not count as a full run');
+  });
+
+  test('Unlocks: one career to its last day opens SKIP SCENE and Endless, and stays open', () => {
+    assert(B.Progress.careerDone() === false, 'locked at first');
+    B.Progress.markCareerDone();
+    assert(B.Progress.careerDone() === true && B.storage.get('careerDone') === true, 'unlock kept');
   });
 
   test('Quota strike ledger rebuilds from legacy save history', () => {

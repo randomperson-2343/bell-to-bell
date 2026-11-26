@@ -235,7 +235,7 @@ async function viewport(browser, vp) {
   await check(page, vp, 'boot');
   await page.keyboard.press('Enter');
   await page.waitForSelector('#screen-menu.active', { timeout: 15000 });
-  await page.evaluate(() => { BTB.Settings.set('sound', false); BTB.Settings.set('music', false); BTB.Settings.set('cinematics', 'off'); });
+  await page.evaluate(() => { BTB.Settings.set('sound', false); BTB.Settings.set('music', false); BTB.Settings.set('cinematics', 'off'); BTB.Progress.markCareerDone(); BTB.Main.refreshMenu(); });
   await wait(500);
   await check(page, vp, 'menu');
   for (const [btn, name] of [['btn-load', 'saves'], ['btn-endless', 'endless'], ['btn-settings', 'settings'], ['btn-exit', 'exit']]) {

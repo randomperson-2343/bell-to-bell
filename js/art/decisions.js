@@ -866,5 +866,7 @@
     return true;
   }
 
-  B.DecisionArt = { ROOMS, room, still, glow, cityCells, senator: senatorRows, lobbyEyes, waveBars, kennel, roomLayers, faceLayers, rackLeds, postcardPhoto: () => Object.assign({}, photo()) };
+  B.DecisionArt = { ROOMS, room, still, glow, cityCells, senator: senatorRows, lobbyEyes, waveBars, kennel, roomLayers, faceLayers, rackLeds, postcardPhoto: () => Object.assign({}, photo()),
+    // for the long scenes (js/art/screenplay.js): the speaker at 5x, the space their eyes are drawn in, the ink wash, and whether a room is after dark
+    speaker, speakerSpace, dim, isNight };
 })(window.BTB);

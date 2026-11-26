@@ -9,6 +9,11 @@
       const btn = $('btn-load');
       btn.textContent = used ? `Continue (${used}/${B.Save.SLOTS})` : 'Continue';
       btn.disabled = !used;
+      // Endless opens after one career played to its last day
+      const open = !B.Progress || B.Progress.careerDone();
+      const endless = $('btn-endless');
+      endless.textContent = open ? 'Endless' : 'Endless (locked)';
+      endless.classList.toggle('locked', !open);
     },
 
     // slot: optional target slot. Otherwise the first free one is claimed at the
@@ -44,7 +49,12 @@
         'Play anyway', () => begin(null));
     },
 
-    openEndless() { B.EndlessSetup.open(); },
+    openEndless() {
+      if (B.Progress && !B.Progress.careerDone()) {
+        return B.Screens.modal({ kicker: 'LOCKED', title: 'Endless Mode', body: '<p>Play one career through to its last day, with any ending, to unlock Endless.</p>', buttons: [{ label: 'OK', cls: 'primary' }] });
+      }
+      B.EndlessSetup.open();
+    },
 
     startEndless(cfg) {
       this.claimSlot((slot) => {

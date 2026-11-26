@@ -349,9 +349,14 @@
       const el = this.modal({ kicker: c.kicker || 'DECISION', title: c.title, body, after, wide: true });
       if (B.Portraits) B.Portraits.drawAll(el);
       B.SFX.choice('card');
+      // one pick only: the modal closes before the payoff scene plays, so a key pressed during the scene cannot press the button again
+      let picked = false;
       el.querySelectorAll('.choice-btn').forEach((btn) => btn.addEventListener('click', () => {
+        if (picked) return;
+        picked = true;
         B.SFX.unlock();
         B.SFX.decisionConfirm();
+        this.closeModal();
         onPick(btn.dataset.opt);
       }));
     },
@@ -370,13 +375,19 @@
       const show = () => {
         if (B.Cinematic.endChain) B.Cinematic.endChain();
         if (B.Music.ending) B.Music.ending(ending, track); else B.Music.play(track);
+        // a career seen all the way through unlocks SKIP SCENE and Endless
+        if (g.mode.kind === 'story' && ending.fullRun && B.Progress) B.Progress.markCareerDone();
         if (g.mode.kind === 'story') this.storyEnding(g, ending);
         else this.endlessEnding(g, ending);
       };
       if (B.Cinematic.startChain) B.Cinematic.startChain('ending');
       if (B.Music.prepareEnding) B.Music.prepareEnding(ending);
       const pulled = !!(g.mode && g.mode.S && g.mode.S.f && g.mode.S.f.pulledPlug);
-      B.Cinematic.play('ending', { id: ending.id, title: ending.title, deck: ending.deck, dark, pulled }, show);
+      const play = () => B.Cinematic.play('ending', { id: ending.id, title: ending.title, deck: ending.deck, dark, pulled }, show);
+      // a story career opens its ending on a montage of the desk decisions you made (js/art/screenplay.js); SKIP there skips only the montage
+      const S = g.mode && g.mode.kind === 'story' ? g.mode.S : null;
+      if (S && B.Scenes && B.Scenes.recap) B.Cinematic.play('recap', { S, W: S.wallet || null, day: (B.StoryData && B.StoryData.DAYS ? B.StoryData.DAYS.length - 1 : 45) }, play);
+      else play();
     },
 
     storyEnding(g, e) {
