@@ -1453,7 +1453,8 @@
     assert(mode.applyLife('dadBill', 'pay') === null, 'a life beat must not fire twice');
     W.peakEq = 250000; W.cash = 20000; W.card = 0;
     E.settle(W, { equity: 250000, capital: 250000, weekMade: false, breaches: [], sessions: 5 });
-    assert(W.plans[0].left === 5, 'the plan should take one payment a week');
+    assert(W.plans[0].amt * 5 === 7100, 'the plan should cover the other half of the bill exactly');
+    assert(W.plans[0].left === 4, 'the plan should take one payment a week');
     mode.applyLife('pension', 'monthly');
     assert(E.weekly(E.tier(W), W) === E.weekly(E.tier(W)) + 290, 'weekly support should raise the week');
     mode.applyLife('rentHike', 'accept');
