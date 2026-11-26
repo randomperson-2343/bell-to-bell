@@ -52,6 +52,16 @@
     return score >= 50;
   }
 
+  // The shared trading stack runs on past the final bell only if nobody switched it
+  // off and the Spiral war scare gave it cover. A player offered Pull the Plug
+  // (decision 12) has to choose to leave it running; one never offered it was
+  // never in a position to stop it.
+  function aiUncontained(S) {
+    if (S.f.pulledPlug) return false;
+    const offered = B.StoryData.CHOICES.c10.req(S);
+    return (!offered || !!S.f.leftStack) && B.StoryData.scareFed(S);
+  }
+
   B.StoryMode = function (save) {
     const capital = 250000;
     const S = save ? save.S : freshState(capital);
@@ -314,6 +324,8 @@
         const R = S.resqwak;
         R.count++;
         S.resqwakTotal = (S.resqwakTotal || 0) + 1;
+        // Amplifying the government's Spiral campaign costs no heat, but it counts.
+        if (item.src === '@AureliaStands') S.spiralResqwaks = (S.spiralResqwaks || 0) + 1;
         let note = null;
         if (item.fake) R.fakes = (R.fakes || 0) + 1;
         else if (item.truth) R.trues = (R.trues || 0) + 1;
@@ -404,6 +416,23 @@
           }
         }
 
+        // Session 30: the morning after the comfort letter. Holding Thorncrest long into
+        // the board vote you just vouched for is trading on your own signature.
+        if (g.day === 29 && S.f.thsiClear && !S.f.thsiChecked) {
+          S.f.thsiChecked = true;
+          const long = b.posQty('THSI') > 0 || b.opts.some((o) => o.sym === 'THSI' && o.type === 'C');
+          if (long) {
+            S.f.thsiFrontRan = true;
+            D.adj(S, { heat: 14 });
+            g.inboxQueue.push({ t: 25, from: 'Compliance', text: 'You signed a comfort letter on Thorncrest yesterday and went into the board vote long the stock. Explain the timing. In writing. Today.' });
+          }
+        }
+
+        // Session 31: Imani notices the Spiral chart's shape.
+        if (g.day === 30) {
+          g.inboxQueue.push({ t: 60, from: 'Imani Rhodes', text: 'Pull up the Spiral chart from the address and put it next to our volume chart. Same steps, same pauses. Tell me I am imagining it.' });
+        }
+
         // Session 27: the pension fund you sold to has lawyers.
         if (g.day === 26 && S.f.dumped && !S.f.riverbendPaid) {
           S.f.riverbendPaid = true;
@@ -463,6 +492,10 @@
             const qty = Math.floor(b.equity() * p.mult / px);
             if (qty > 0 && m.status === 'open') b.marketOrder(p.sym, -qty, { forced: true, tag: 'DESK SHORT' });
             B.UI.toast(`Desk short added: ${B.fmt.qty(qty)} ${p.sym}`, 'warn');
+          } else if (p.type === 'straddle') {
+            // Options only trade while the market is open: hold the order until the bell.
+            if (m.status === 'open') this.buyStraddle(g, p);
+            else (S.pendingOpen = S.pendingOpen || []).push(p);
           } else if (p.type === 'grant') {
             const px = m.bySym[p.sym].last;
             const qty = Math.floor(p.value / px);
@@ -476,7 +509,29 @@
         }
       },
 
+      // Decision 10's "position for both": at-the-money calls and puts on the index,
+      // weekly expiry, half the stake on each side.
+      buyStraddle(g, p) {
+        const b = g.broker, m = g.market;
+        const px = m.bySym[p.sym].last;
+        const ks = B.Options.strikes(px);
+        const k = ks.reduce((a, c) => (Math.abs(c - px) < Math.abs(a - px) ? c : a), ks[0]);
+        const exp = B.Options.expiries(m.day, g.mode && g.mode.lastDay)[0].day;
+        const half = b.equity() * p.frac / 2;
+        let bought = 0;
+        for (const type of ['C', 'P']) {
+          const ask = B.Options.quote(m, p.sym, type, k, exp).ask;
+          const n = Math.floor(half / (100 * Math.max(ask, 0.01)));
+          if (n > 0 && b.buyOption(p.sym, type, k, exp, n).ok) bought += n;
+        }
+        B.UI.toast(bought ? `${p.reason}: ${bought} ${p.sym} ${k} calls and puts` : `${p.reason}: no contracts could be bought`, bought ? 'warn' : 'bad');
+      },
+
       onTick(g, t) {
+        if (S.pendingOpen && S.pendingOpen.length && g.market.status === 'open') {
+          const q = S.pendingOpen; S.pendingOpen = [];
+          q.forEach((p) => this.buyStraddle(g, p));
+        }
         if (B.Mentor && g.day <= B.Mentor.LAST_DAY) B.Mentor.tick(g, t, S);
         if (this.auditAt != null && t >= this.auditAt && !g.lock) {
           this.auditAt = null;
@@ -543,7 +598,7 @@
           if (!f && !t && !mv) parts.push('None of them moved anything.');
           notes.push(`Sqwak: ${parts.join(' ')}`);
         }
-        if (g.day === D.DAYS.length - 1 && !S.f.pulledPlug && ((S.anomalies || 0) < 8 || S.f.leftStack)) {
+        if (g.day === D.DAYS.length - 1 && aiUncontained(S)) {
           S.f.aiUncontained = true;
         }
         if (g.day === 14) {
@@ -850,6 +905,14 @@
         if (e.id === 'perp' && !owe) P.label = 'Seized';
         if (e.id === 'clawback' && !owe) P.label = 'Frozen';
         const extras = (ctx.settled || []).slice();
+        // The war scare's last word: what happened to Quill, to the stack and to Mirren.
+        const quill = S.choices.c11 === 'clear' ? 'Ezra Quill resigned a second time in April, this time with a subpoena.'
+          : S.choices.c11 === 'hold' ? 'Helena Strand still runs Thorncrest. Ezra Quill sits on two boards in the Ondine Free Zone.'
+            : 'Ezra Quill kept his job and his monitor. Neither of them ever went to Ondine.';
+        extras.push(quill);
+        if (S.f.leftStack && !S.f.aiUncontained) extras.push('With no war scare left to hide behind, the exchanges cut the shared stack off by Wednesday.');
+        extras.push(S.f.spiralTraced ? 'The Spiral chart was quietly withdrawn from the government site. Kavra never said what its robots were for. Mirren is still waiting to find out.'
+          : 'Kavra never said what its robots were for. Mirren is still waiting to find out.');
         if (W$.perryLoan) extras.push(S.m.stability >= 45 ? 'Perry paid back the six thousand in March, with a note.' : 'Perry never paid back the six thousand. You never asked.');
         if (W$.perryRefused) extras.push('Perry stopped answering your texts sometime in the spring.');
         if (W$.dadUnpaid) extras.push("Your father's surgery bill went to collections. Your mother never mentioned it again.");
@@ -892,6 +955,7 @@
   };
 
   B.StoryMode.votePasses = votePasses;
+  B.StoryMode.aiUncontained = aiUncontained;
   B.StoryMode.freshState = freshState;
   B.StoryMode.QUOTA_STRIKE_LIMIT = QUOTA_STRIKE_LIMIT;
 })(window.BTB);

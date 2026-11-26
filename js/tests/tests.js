@@ -515,7 +515,7 @@
     const D = B.StoryData, A = B.DecisionArt;
     const list = Object.keys(D.CHOICES).filter((k) => !D.CHOICES[k].mid).map((k) => Object.assign({ id: k }, D.CHOICES[k]))
       .concat(B.Life.LIFE);
-    assert(list.length === 18, 'expected 8 desk decisions and 10 life beats, got ' + list.length);
+    assert(list.length === 19, 'expected 9 desk decisions and 10 life beats, got ' + list.length);
     for (const c of list) {
       assert(A.ROOMS[c.id], c.id + ' has no room');
       const beats = B.Scenes.decision({ id: c.id, day: c.day, speaker: c.speaker, role: c.role, title: c.title, S: B.StoryMode.freshState(250000) });
@@ -690,7 +690,7 @@
     Object.keys(B.REGIMES).forEach((k) => push(B.REGIMES[k].name));
     push(B.News.HANDLES);
     if (B.Sqwak) Object.keys(B.Sqwak.ACCOUNTS).forEach((h) => push([h, B.Sqwak.ACCOUNTS[h].name]));
-    if (B.SqwakStory) { push(B.SqwakStory.INTRADAY); push(B.SqwakStory.PREOPEN); push(B.SqwakStory.POOLS); push(B.SqwakStory.BREAKING); push(B.SqwakStory.FAILED_INTRADAY); push(B.SqwakStory.FAILED_FEED); push(B.SqwakStory.FAILED_BREAKING); push(B.StoryData.VOTE_FAIL); }
+    if (B.SqwakStory) { push(B.SqwakStory.INTRADAY); push(B.SqwakStory.PREOPEN); push(B.SqwakStory.POOLS); push(B.SqwakStory.BREAKING); push(B.SqwakStory.ARC_BREAKING); push(B.SqwakStory.SPIRAL_CLOSE_37); push(B.SqwakStory.ARC_INTRADAY); push(B.StoryData.ARC_BASE); push(B.StoryData.ARC_AFTER); push(B.StoryData.SPIRAL_BASE); push(B.StoryData.SPIRAL_AFTER); push(B.SqwakStory.FAILED_INTRADAY); push(B.SqwakStory.FAILED_FEED); push(B.SqwakStory.FAILED_BREAKING); push(B.StoryData.VOTE_FAIL); }
     push(B.News.NOISE);
     if (B.Economy) { push(B.Economy.TIERS.map((t) => [t.name, t.note])); push(B.Economy.EVICT_STAGES); }
     if (B.Mentor) for (const day of [0, 1]) push(B.Mentor.LINES.map((l) => l[3]({ day, market: { events: [] } }, {})));
@@ -777,8 +777,8 @@
         assert(c.text && c.speaker, id + ' needs a speaker and text');
       }
     }
-    assert(ids.length === 10, 'expected 10 decisions, found ' + ids.length);
-    assert(ids.map((id) => D.CHOICES[id].day).join(',') === '3,7,10,16,21,23,24,39,42,44', 'decision chronology drifted');
+    assert(ids.length === 12, 'expected 12 decisions, found ' + ids.length);
+    assert(ids.map((id) => D.CHOICES[id].day).join(',') === '3,7,10,16,21,23,24,28,35,39,42,44', 'decision chronology drifted');
   });
 
   test('Quota misses are cumulative, logged once, and terminate at the configured limit', () => {
@@ -855,7 +855,7 @@
   });
 
   test('Story graph: every chronological decision path resolves safely', () => {
-    const order = ['c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7', 'c8', 'c9', 'c10'];
+    const order = ['c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7', 'c11', 'c12', 'c8', 'c9', 'c10'];
     const reached = {};
     let paths = 0;
     const archetypes = [
@@ -865,7 +865,7 @@
     function walk(S, i, arch) {
       if (i === order.length) {
         paths++;
-        if (!S.f.pulledPlug && (S.anomalies < 8 || S.f.leftStack)) S.f.aiUncontained = true;
+        if (B.StoryMode.aiUncontained(S)) S.f.aiUncontained = true;
         const ctx = { S, wealth: arch.wealth * 250000, start: 250000, reason: arch.reason, days: 46, quotaMet: 25 };
         const e = B.StoryEndings.resolve(ctx);
         assert(e, 'no ending resolved');
@@ -995,7 +995,7 @@
 
   test('Sqwak Memory reveals existing posts in order without spoiling later sessions', () => {
     const T = B.SqwakStory;
-    assert(T.THREADS.length === 3, 'first slice should include three threads');
+    assert(T.THREADS.length === 6, 'expected six threads: three market stories and the Spiral, Thorncrest and Quill arcs');
     assert(T.threadAt('ridgeway', 2, 124) === null, 'buyout claim leaked before its post');
     assert(T.threadAt('ridgeway', 2, 125).posts.length === 1, 'claim missing at its market minute');
     assert(T.threadAt('ridgeway', 2, 159).posts.length === 1, 'denial leaked before its post');
@@ -1012,6 +1012,87 @@
       const post = m.scenario(day).events.find((e) => e.kind === 'chirp' && e.t === t && e.src === src && e.threadId === thread.id);
       assert(post && post.threadStage === stage && post.text === T.INTRADAY[day].find((p) => p[0] === t && p[1] === src)[2], 'thread detached from an existing post');
     }
+  });
+
+  test('War scare: decisions 8 and 9 change the tape, the threads and the close', () => {
+    const D = B.StoryData, T = B.SqwakStory;
+    const post = (S, d, t, src) => D.DAYS[d].scen(S).events.find((e) => e.kind === 'chirp' && e.t === t && e.src === src).text;
+    const heads = (S, d) => D.DAYS[d].scen(S).events.map((e) => e.text).join(' | ');
+    const S = B.StoryMode.freshState(250000);
+    assert(/Quill is back, with an outside export monitor/.test(post(S, 29, 10, '@StraitWatch')), 'default branch is staying out of it');
+    assert(/outside export monitor/.test(heads(S, 29)), 'default reinstatement event');
+    S.choices.c11 = 'clear'; S.f.thsiClear = true;
+    assert(/Commerce signed off/.test(post(S, 29, 10, '@StraitWatch')) && /REINSTATES QUILL/.test(heads(S, 29)), 'comfort letter branch');
+    assert(/SHIPMENTS CONTINUED/.test(heads(S, 37)), 'the letter comes back at the hearing');
+    const q = T.threadAt('quill', 37, 300, S);
+    assert(q.fact === 'SHIPMENTS CONTINUED' && q.price === 'RALLY REVERSED' && /Selling every/.test(q.posts[4].text), 'quill thread follows the letter');
+    assert(T.threadAt('quill', 30, 0, S).price === 'COMEBACK RALLY', 'quill rally before the hearing');
+    assert(T.breaking(29, S).head === 'Quill is back at Thorncrest', 'close screen follows the letter');
+    S.choices.c11 = 'hold';
+    assert(T.threadAt('quill', 31, 400, S).price === 'SETTLED' && /Helena Strand permanent/.test(heads(S, 29)), 'hold branch');
+    // Decision 9: tracing needs six anomalies; the plug needs eight and a trace.
+    const tr = D.CHOICES.c12.options.find((o) => o.id === 'trace');
+    S.anomalies = 5; assert(!tr.req(S), 'trace offered too early');
+    S.anomalies = 6; assert(tr.req(S), 'trace not offered at six anomalies');
+    S.anomalies = 8; assert(!D.CHOICES.c10.req(S), 'pull the plug offered without tracing the Spiral');
+    S.f.spiralTraced = true; assert(D.CHOICES.c10.req(S), 'pull the plug not offered after the trace');
+    assert(T.threadAt('spiral', 33, 300, S).fact === 'OUR OWN MACHINES', 'spiral thread does not show the trace');
+    S.choices.c12 = 'back';
+    assert(/recalled its envoy/.test(T.breaking(37, S).text) && /RECALLS ITS ENVOY/.test(heads(S, 37)), 'testimony branch');
+    assert(/order books for months/.test(post(S, 37, 280, '@AureliaStands')) && T.threadAt('spiral', 37, 300, S).price === 'DEFENSE RALLY', 'campaign post follows the testimony');
+  });
+
+  test('War scare: the shared stack runs on only if nobody stopped it and the scare covered it', () => {
+    const D = B.StoryData, M = B.StoryMode;
+    const mk = (f, extra) => Object.assign(M.freshState(250000), { anomalies: 8 }, extra || {}, { f: Object.assign({}, f) });
+    assert(!M.aiUncontained(mk({ spiralTraced: true, leftStack: true })), 'left running with no scare to hide behind');
+    assert(M.aiUncontained(mk({ spiralTraced: true, leftStack: true, thsiClear: true })), 'left running behind the comfort letter');
+    assert(!M.aiUncontained(mk({ spiralTraced: true, pulledPlug: true, thsiClear: true })), 'pulled plug still runs');
+    assert(!M.aiUncontained(mk({ spiralTraced: true, thsiClear: true })), 'offered the plug but no choice recorded');
+    assert(M.aiUncontained(mk({ lobbyYes: true })), 'never offered the plug, scare fed by the Compute Freedom Act');
+    assert(!M.aiUncontained(mk({})), 'never offered the plug, scare never fed');
+    assert(M.aiUncontained(mk({}, { spiralResqwaks: 2 })), 'two campaign resqwaks feed the scare');
+    // Resqwaking the campaign counts and costs no heat.
+    const m = M(), g = { day: 20, broker: { posQty: () => 0 } }, h0 = m.S.m.heat;
+    m.onResqwak(g, { src: '@AureliaStands', text: 'They will not stop at Mirren. #TheSpiral' });
+    m.onResqwak(g, { src: '@AureliaStands', text: 'Every chip that reaches Kavra feeds the Spiral.' });
+    assert(m.S.spiralResqwaks === 2 && D.scareFed(m.S) && m.S.m.heat === h0, 'campaign resqwaks not counted, or cost heat');
+    // Endings: tracing the Spiral keeps you from being quietly replaced.
+    const S = M.freshState(250000);
+    Object.assign(S.f, { algoDesk: true, spiralTraced: true }); S.m.integrity = 40;
+    assert(!B.StoryEndings.list.find((e) => e.id === 'replaced').test({ S, wealth: 250000, start: 250000, reason: 'final' }), 'replaced ignores the trace');
+  });
+
+  test('War scare: going long Thorncrest after signing the letter is trading on your own signature', () => {
+    const run = (qty, letter) => {
+      const m = B.StoryMode();
+      if (letter) { m.S.f.thsiClear = true; m.S.choices.c11 = 'clear'; }
+      const g = { day: 29, inboxQueue: [], broker: { equity: () => 250000, posQty: (s) => (s === 'THSI' ? qty : 0), opts: [] } };
+      const h0 = m.S.m.heat;
+      m.onDayStart(g);
+      return { m, g, heat: m.S.m.heat - h0 };
+    };
+    const a = run(200, true);
+    assert(a.m.S.f.thsiFrontRan && a.heat === 14 && a.g.inboxQueue.some((x) => x.from === 'Compliance' && /comfort letter/.test(x.text)), 'front run not caught');
+    assert(!run(-200, true).m.S.f.thsiFrontRan, 'a short is not a front run');
+    assert(!run(200, false).m.S.f.thsiFrontRan, 'no letter, no front run');
+    const perp = B.StoryEndings.list.find((e) => e.id === 'perp');
+    const S = a.m.S; S.m.heat = 60;
+    const ctx = { S, wealth: 250000, start: 250000, reason: 'final' };
+    assert(perp.test(ctx) && /comfort letter/.test(perp.story(ctx).join(' ')), 'perp walk ignores the Thorncrest trade');
+  });
+
+  test('Decision 10: positioning for both buys a real index straddle once the market opens', () => {
+    const g = mkGame('straddle');
+    g.day = 40;
+    g.mode.S.pending.push({ type: 'straddle', sym: 'INDX', frac: 0.02, reason: 'Vote straddle' });
+    g.startDay();
+    for (let i = 0; i < 40 && !g.broker.opts.length; i++) g.tick(0.25);
+    const calls = g.broker.opts.filter((o) => o.sym === 'INDX' && o.type === 'C'), puts = g.broker.opts.filter((o) => o.sym === 'INDX' && o.type === 'P');
+    assert(calls.length === 1 && puts.length === 1, 'expected one call line and one put line, got ' + g.broker.opts.length);
+    assert(calls[0].strike === puts[0].strike && calls[0].expiry === puts[0].expiry && calls[0].qty > 0 && puts[0].qty > 0, 'not a straddle');
+    const spent = g.broker.opts.reduce((a, o) => a + o.qty * o.avg * 100, 0);
+    assert(spent > 250000 * 0.01 && spent <= 250000 * 0.021, 'straddle size ' + spent);
   });
 
   test('Resqwak: false rumours cost heat, true ones build influence, touting draws Compliance', () => {
