@@ -190,9 +190,11 @@ async function run() {
     // each mover id: base alone differs from the whole (it leaves something out) and mover alone is not blank
     for (const id of MOV) {
       const whole = pix((g) => SH.endingDetail(g, id, 1)), b = pix((g) => SH.endingDetail(g, id, 1, { part: 'base' })), m = pix((g) => SH.endingDetail(g, id, 1, { part: 'mover' }));
-      if (id !== 'wiped' && b === blank) bad.push(`${id}: base is blank`);
-      if (id !== 'wiped' && id !== 'soft' && b === whole) bad.push(`${id}: base is the whole`);
-      if (m === blank || (id !== 'wiped' && m === whole)) bad.push(`${id}: mover blank or whole`);
+      // an authored ending place already holds the prop's base, so there the code's base part may be empty and the mover may be all the code draws
+      const art = !!SH.endingArt(id);
+      if (id !== 'wiped' && !art && b === blank) bad.push(`${id}: base is blank`);
+      if (id !== 'wiped' && id !== 'soft' && b === whole && !(art && b === blank && m !== blank)) bad.push(`${id}: base is the whole`);
+      if (m === blank || (id !== 'wiped' && !art && m === whole)) bad.push(`${id}: mover blank or whole`);
     }
     return { bad: bad.slice(0, 8), n: bad.length };
   });
