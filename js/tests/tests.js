@@ -469,7 +469,7 @@
     }
     // The war scare has its own mornings: the address (19), Quill's exit (25) and the coast (33); the Spiral decision changes session 38's.
     assert(SB.SHEET[18][2] === 15 && SB.SHEET[24][2] === 16 && SB.SHEET[32][2] === 17, 'the war-scare tableaux sit on sessions 19, 25 and 33');
-    assert(SB.row(37, { choices: { c12: 'trace' }, f: {} }).doc === 'chart' && SB.row(37, { choices: { c12: 'back' }, f: {} }).doc === 'post' && SB.row(37, { choices: { c12: 'decline' }, f: {} }).shot === 'tableau', 'session 38 follows the Spiral decision');
+    assert(SB.row(37, { choices: { c12: 'trace' }, f: {} }).doc === 'chart' && SB.row(37, { choices: { c12: 'back' }, f: {} }).doc === 'memo' && SB.row(37, { choices: { c12: 'decline' }, f: {} }).shot === 'tableau', 'session 38 follows the Spiral decision');
     const stub = new Proxy({}, { get: () => () => {}, set: () => true });
     for (const n of [15, 16, 17]) assert(B.Shots.briefingTableau(stub, n, 0.6) === true, 'tableau ' + n + ' has no art');
     const phone = B.Scenes.phone({ day: 45, brief: { feed: [{ source: 'WIRE', title: 'Before the bell' }] } });

@@ -781,7 +781,7 @@
     } else if (day === 15) {
       X.text(ctx, 'THE SPIRAL', 160, 16, P.crimson, { align: 'center', spacing: 2 });
     } else if (day === 16) {
-      X.text(ctx, 'QUILL STEPS ASIDE', 118, 19, P.bone, { align: 'center' });
+      X.text(ctx, 'THORNCREST STATEMENT', 118, 19, P.bone, { align: 'center' });
     } else if (day === 17) {
       X.text(ctx, 'INTENT: CANNOT BE DETERMINED', 160, 78, P.amber, { align: 'center' });
     } else {
