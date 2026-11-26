@@ -197,7 +197,7 @@
       $('btn-save-quit').addEventListener('click', () => this.saveFromPause(true));
       $('btn-quit').addEventListener('click', () => {
         if (!this.g) return;
-        B.Screens.confirm('Quit without saving?',
+        B.Screens.confirm('Quit Without Saving?',
           'Anything since your last save is lost.', 'Quit', () => {
             this.pause(false);
             this.g.quit();
