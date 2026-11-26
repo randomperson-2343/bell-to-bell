@@ -9,7 +9,9 @@ const root = process.env.PROJECT_ROOT || path.join(__dirname, '..', '..');
 const port = +(process.env.QA_PORT || 4179);
 const server = spawn('python3', ['-m', 'http.server', String(port), '--bind', '127.0.0.1'], { cwd: root, stdio: 'ignore' });
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-const assert = (value, message) => { if (!value) throw new Error(message); };
+// MOTION_ALL=1 keeps going after a failed assert and lists every failure at the end (for a full report in one run)
+const ALL = !!process.env.MOTION_ALL, fails = [];
+const assert = (value, message) => { if (value) return; if (ALL) { fails.push(message); console.log('FAIL ' + message); } else throw new Error(message); };
 
 let browser = null;
 async function run() {
@@ -3479,7 +3481,7 @@ async function run() {
   await page.evaluate(() => BTB.Settings.set('effects', 'full'));
 
   assert(warnings.length === 0, `unexpected console output: ${JSON.stringify(warnings)}`);
-  console.log('motion-run: all asserts passed');
+  if (fails.length) console.log(`motion-run: ${fails.length} asserts failed`); else console.log('motion-run: all asserts passed');
 
   if (UPDATE_GOLDEN) { writeGolden(); return; }
   // ---- Performance (phone, CPU throttled 4x). SKIP_PERF=1 skips it. ----
@@ -3669,4 +3671,4 @@ async function run() {
     try { if (browser) await browser.close(); } catch (e) { /* already gone */ }
     server.kill();
   }
-})().then(() => process.exit(0), (error) => { console.error(error.stack || error); process.exit(1); });
+})().then(() => process.exit(fails.length ? 1 : 0), (error) => { console.error(error.stack || error); process.exit(1); });

@@ -36,6 +36,8 @@ jobs:
       - name: Motion check (report only; reprints the pinned pictures that changed)
         if: always()
         continue-on-error: true
+        env:
+          MOTION_ALL: '1'
         run: node js/tests/motion-run.js --update-golden
       - name: Audio render check (report only)
         if: always()
